@@ -1,0 +1,24 @@
+# 02: Importar e reutilizar decks .cod
+
+**What to build:** Cada usuário envia, guarda, escolhe e exclui decks .cod, resolvidos contra um catálogo único no servidor.
+
+**Blocked by:** 01: Criar contas e acessar a aplicação.
+
+**Status:** ready-for-agent
+
+- [ ] Servidor carrega catálogo de cartas e fichas seguindo os formatos e fontes funcionais do Cockatrice; nenhum usuário precisa configurar um dataset no navegador.
+- [ ] Upload de .cod reproduz nomes, quantidades e seção principal com fixtures representativas do Cockatrice; arquivos inválidos retornam erro compreensível.
+- [ ] Seções não utilizadas não criam reserva/sideboard; documentar o tratamento escolhido sem adicionar edição de deck.
+- [ ] Deck fica vinculado ao usuário no banco até exclusão e pode ser reutilizado sem novo upload.
+- [ ] Listagem, upload e exclusão funcionam em desktop e celular em PT-BR; somente o titular modifica seus decks.
+- [ ] Upload não permite alterar o catálogo global ou recursos de outros usuários.
+- [ ] Decks e catálogo permanecem disponíveis após reinício; atualização do catálogo não obriga reupload dos decks.
+- [ ] Testes públicos verificam importação, isolamento entre contas, exclusão e reutilização com catálogo controlado.
+
+## Regras de execução
+
+- Seguir as specs locais de acesso/salas/decks, mesa/interface e servidor/persistência e seu vocabulário; não alterar o escopo para reproduzir a arquitetura do Cockatrice.
+- Entregar comportamento completo com armazenamento, contrato público, interface e testes pertinentes; preferir testes de comportamento na API pública e fluxos de navegador para interação.
+- Toda nova ação compartilhada deve validar permissão, filtrar informação privada e preservar estado/log após reinício. Não deixar segurança ou persistência para uma etapa posterior.
+- Escolhas de banco, bibliotecas, contratos e estrutura interna devem ser documentadas durante implementação, com poucas camadas e dependências.
+- Estes tickets compõem uma única primeira versão; entregas intermediárias não são declaração de que o produto completo já está pronto.

@@ -1,0 +1,23 @@
+# 07: Navegar pelos campos no desktop e celular
+
+**What to build:** Cada jogador observa todos os campos quando há espaço ou coloca um deles em foco sem perder a própria mão e ações.
+
+**Blocked by:** 06: Comprar e mover cartas entre zonas.
+
+**Status:** ready-for-agent
+
+- [ ] Desktop mostra campos conjuntamente quando há espaço e permite ampliar um jogador.
+- [ ] Celular horizontal mostra campo principal próprio por padrão, miniaturas dos demais à direita e mão/menu próprios na faixa inferior.
+- [ ] Botão inferior/flutuante abre ações/configurações; menu e controles em PT-BR.
+- [ ] Trocar foco identifica o jogador observado e preserva mão, identidade, permissões e ações próprias.
+- [ ] Miniaturas indicam atividade sem trocar foco automaticamente; navegação atende seis participantes.
+- [ ] Na vertical, cobrir somente interface da partida com orientação para girar, mantendo conexão e estado; login, decks e salas continuam utilizáveis.
+- [ ] Fluxos de navegador com mouse/toque verificam foco, acesso às ações, seis campos e troca de orientação sem perda de partida.
+
+## Regras de execução
+
+- Seguir as specs locais de acesso/salas/decks, mesa/interface e servidor/persistência e seu vocabulário; não alterar o escopo para reproduzir a arquitetura do Cockatrice.
+- Entregar comportamento completo com armazenamento, contrato público, interface e testes pertinentes; preferir testes de comportamento na API pública e fluxos de navegador para interação.
+- Toda nova ação compartilhada deve validar permissão, filtrar informação privada e preservar estado/log após reinício. Não deixar segurança ou persistência para uma etapa posterior.
+- Escolhas de banco, bibliotecas, contratos e estrutura interna devem ser documentadas durante implementação, com poucas camadas e dependências.
+- Estes tickets compõem uma única primeira versão; entregas intermediárias não são declaração de que o produto completo já está pronto.
