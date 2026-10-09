@@ -1,3 +1,5 @@
+name: mtg4fun
+
 services:
   app:
     build:

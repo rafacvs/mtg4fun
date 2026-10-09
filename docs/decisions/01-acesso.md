@@ -35,8 +35,9 @@ Bcrypt (`golang.org/x/crypto/bcrypt`) com custo 12 e salt aleatório guarda
 senhas; aceitamos de 8 a 72 bytes UTF-8, rejeitando entradas maiores sem
 truncamento. Login diferencia maiúsculas, tem 3–64 caracteres ASCII
 (letras, números, ponto, hífen e sublinhado). Nome tem até 100 caracteres.
-O comando recebe a senha por stdin, para não colocá-la nos argumentos ou
-histórico do shell. Contas duplicadas falham sem substituir a senha existente.
+O comando aceita a senha diretamente em `--password`. Com `--name USUARIO`,
+o mesmo valor é usado como login quando `--login` é omitido. `--password-stdin`
+continua disponível para compatibilidade com o comando anterior. Contas duplicadas falham sem substituir a senha existente.
 
 Sessões usam 32 bytes aleatórios; somente o SHA-256 do token fica no banco.
 Cookie `mtg4fun_session`, HttpOnly, SameSite=Strict, Path=/, com validade de
@@ -113,9 +114,8 @@ Não representa a situação atual de aprovação do banco ou do ambiente dev.
 
 A organização aprovada separa `api/` (Go), `app/` (React/TypeScript) e `infra/`
 (Docker). Os módulos são agrupados por funcionalidade, com responsabilidades
-compartilhadas explícitas. O [mapa no README](../../README.md#organização-e-desenvolvimento)
-resume os diretórios; o [AGENTS.md](../../AGENTS.md) registra as regras, e o
-[guia de desenvolvimento](../desenvolvimento.md) reúne comandos locais e verificações.
+compartilhadas explícitas. O [mapa no README](../../README.md#organização-do-repositório)
+resume os diretórios; o [AGENTS.md](../../AGENTS.md) registra as regras.
 
 O módulo `auth` recebe a conexão aberta por `database`; o esquema existente é
 embutido no executável a partir de `schema.sql`, sem mudança de tabelas ou
@@ -144,3 +144,17 @@ Spec: 0 achados na revisão da issue 01 e do plano de reorganização aprovado.
 As revisões desde `7dd2b1d` foram realizadas por leitura em worktrees separadas;
 a execução dos testes e a persistência do volume Docker foram verificadas no
 checkout da tarefa.
+
+## Simplificação do comando de contas
+
+O usuário solicitou explicitamente um único comando com nome e senha em
+argumentos, dispensando a leitura oculta no terminal. A opção `--password`
+atende essa solicitação; `--login` só é necessário para diferenciar o login
+do nome exibido. O Compose define `mtg4fun` como projeto padrão, preservando
+o volume existente e dispensando `-p` nos comandos do ambiente principal.
+
+Exemplo executado em `infra/`:
+
+```bash
+docker compose exec app mtg4fun create-user --name rafa --password 'senha123'
+```

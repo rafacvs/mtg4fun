@@ -27,7 +27,7 @@ recriação com o usuário; não presumir descarte nem compatibilidade automáti
 - [ ] Executar o tratamento aprovado dos dados existentes; não excluir nem recriar dados sem autorização explícita.
 - [ ] Contas e sessões válidas permanecem utilizáveis após recriação dos serviços com o armazenamento persistente.
 - [ ] Testes do executável/API usam o banco real escolhido e cobrem criação, duplicatas, login, logout, falhas de persistência e reinício; os fluxos de navegador permanecem funcionais.
-- [ ] Verificação Docker usa projeto, porta e dados isolados e confirma durabilidade; atualizar README, guia de desenvolvimento e registro de acesso.
+- [ ] Verificação Docker usa projeto, porta e dados isolados e confirma durabilidade; atualizar a documentação operacional e o registro de acesso junto da implementação.
 
 ## Regras de execução
 

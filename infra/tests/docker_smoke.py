@@ -66,7 +66,7 @@ try:
     ready()
     require_status(request(), 401)
     compose("exec", "-T", "app", "mtg4fun", "create-user", "--login", "convidado",
-            "--name", "Convidado Docker", "--password-stdin", input="senha-exclusiva-do-teste")
+            "--name", "Convidado Docker", "--password", "senha-exclusiva-do-teste")
     credentials = {"login": "convidado", "password": "senha-exclusiva-do-teste"}
     require_status(request("POST", data={**credentials, "password": "senha-incorreta"}), 401)
     require_status(request("POST", data=credentials), 200)

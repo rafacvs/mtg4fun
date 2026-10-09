@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,6 +20,44 @@ func TestAccountCreatedByCommandCanAccessPrivateResource(t *testing.T) {
 	requireUser(t, result, "rafa", "Rafa")
 	cookie := sessionCookie(t, result)
 	requireUser(t, e.request("GET", "/api/session", "", cookie, nil), "rafa", "Rafa")
+}
+
+func TestAccountCreatedWithPasswordArgumentCanLogIn(t *testing.T) {
+	for _, example := range []struct {
+		label, login, name, password string
+		args                         []string
+	}{
+		{"nome como login", "rafa", "rafa", "senha123", []string{"--name", "rafa"}},
+		{"nome separado", "rafa", "Rafa Silva", " senha '$!é\n", []string{"--login", "rafa", "--name", "Rafa Silva"}},
+		{"apenas login", "amigo", "amigo", "senha123", []string{"--login", "amigo"}},
+	} {
+		t.Run(example.label, func(t *testing.T) {
+			e := newEnvironment(t)
+			args := append([]string{"create-user", "--db", e.db}, example.args...)
+			args = append(args, "--password", example.password)
+			output, err := exec.Command(executable, args...).CombinedOutput()
+			if err != nil || !strings.Contains(string(output), "Conta criada.") {
+				t.Fatalf("criar conta com argumentos: %v; %s", err, output)
+			}
+			e.start(false)
+			requireUser(t, e.login(example.login, example.password), example.login, example.name)
+		})
+	}
+}
+
+func TestPasswordArgumentIsRequiredAndCannotBeCombinedWithStdin(t *testing.T) {
+	for _, args := range [][]string{
+		{},
+		{"--password", ""},
+		{"--password", "senha123", "--password-stdin"},
+		{"--password", "", "--password-stdin"},
+	} {
+		e := newEnvironment(t)
+		commandArgs := append([]string{"create-user", "--db", e.db, "--name", "rafa"}, args...)
+		if output, err := exec.Command(executable, commandArgs...).CombinedOutput(); err == nil {
+			t.Fatalf("senha ausente ou ambígua aceita: %v; %s", args, output)
+		}
+	}
 }
 
 func TestInvalidCredentialsAndUnauthenticatedRequestsAreRejected(t *testing.T) {

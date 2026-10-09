@@ -29,7 +29,7 @@ não tratar este ticket como autorização para escolher a arquitetura.
 - [ ] Login, recarga de página e logout funcionam em ambos os modos, com encaminhamento de `/api` e cookies compatíveis com a origem usada pelo navegador.
 - [ ] Inicialização das dependências, portas e configuração são coerentes com o banco aprovado na issue 19; não fixar SQLite como solução definitiva.
 - [ ] Contas e dados persistem ao recriar serviços; projetos, portas, volumes e ambiente podem ser isolados por checkout.
-- [ ] Documentar inicialização, criação de conta, logs, parada, atualização de imagem e persistência no README, mantendo detalhes de desenvolvimento/verificação no guia próprio.
+- [ ] Escrever a documentação dos modos implementados, incluindo inicialização, criação de conta por um comando com `--password`, logs, parada, atualização de imagem, persistência e verificações. Não criar um guia separado sem aprovação do usuário.
 - [ ] Verificar ambos os modos em ambientes isolados, incluindo hot reload de frontend, recarga do backend e durabilidade; registrar os comandos efetivamente executados.
 
 ## Regras de execução

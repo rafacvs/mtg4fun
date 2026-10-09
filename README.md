@@ -14,21 +14,14 @@ A implementação atual permite criar contas pelo executável e entrar e sair
 pelo navegador, com persistência de contas e sessões. Não há cadastro público.
 Salas, decks e partidas ainda não estão implementados.
 
-Há duas correções pendentes da primeira entrega:
-
-- [Substituir SQLite](docs/issues/19-substituir-sqlite.md): o banco existente
-  foi escolhido sem aprovação e rejeitado pelo usuário. O substituto ainda
-  precisa ser definido.
-- [Docker para desenvolvimento e produção](docs/issues/20-docker-dev-e-producao.md):
-  hoje só existe uma imagem com frontend compilado. Falta um modo dev com
-  hot reload em containers.
-
 ## Executar com Docker
 
-Requisitos: Docker com Docker Compose. A partir da raiz do repositório:
+Requisitos: Docker com Docker Compose. Entre em `infra/` a partir da raiz;
+os comandos Docker abaixo são executados nesse diretório:
 
 ```bash
-docker compose -f infra/compose.yaml -p mtg4fun up --build -d
+cd infra
+docker compose up --build -d
 ```
 
 O Docker instala as dependências e compila Go e React dentro da imagem;
@@ -39,19 +32,21 @@ serve o React compilado. Este modo não oferece hot reload.
 Abra http://localhost:8080 após criar uma conta. Para conferir a execução:
 
 ```bash
-docker compose -f infra/compose.yaml -p mtg4fun ps
-docker compose -f infra/compose.yaml -p mtg4fun logs -f app
+docker compose ps
+docker compose logs -f app
 ```
 
 ### Criar uma conta
 
-No Bash, leia a senha sem exibi-la nem colocá-la no histórico ou nos argumentos:
+Crie a conta com um comando, informando usuário e senha:
 
 ```bash
-read -r -s -p 'Senha: ' account_password; echo
-printf '%s' "$account_password" | docker compose -f infra/compose.yaml -p mtg4fun exec -T app mtg4fun create-user --login rafa --name 'Rafa' --password-stdin
-unset account_password
+docker compose exec app mtg4fun create-user --name rafa --password 'senha123'
 ```
+
+Nesse exemplo, `rafa` é o login e o nome exibido. Para um nome diferente do login,
+acrescente `--login`, por exemplo `--login rafa --name 'Rafa Silva'`.
+O login na aplicação é feito pelo navegador.
 
 Entre com o login e a senha criados. Senhas aceitam 8–72 bytes UTF-8; login
 aceita 3–64 letras ASCII, números, ponto, hífen e sublinhado, diferenciando
@@ -62,12 +57,12 @@ detalha autenticação e API.
 ### Parar, reiniciar e preservar dados
 
 ```bash
-docker compose -f infra/compose.yaml -p mtg4fun restart app
-docker compose -f infra/compose.yaml -p mtg4fun down
-docker compose -f infra/compose.yaml -p mtg4fun up -d
+docker compose restart app
+docker compose down
+docker compose up -d
 ```
 
-Use o mesmo nome de projeto para reutilizar o volume `mtg4fun_data`, que
+O projeto padrão `mtg4fun` usa o volume `mtg4fun_data`, que
 conserva contas e sessões. `down -v` exclui esse volume e seus dados.
 Após alterações no código, execute novamente `up --build -d` para atualizar a imagem.
 
@@ -83,21 +78,19 @@ O cliente e a API devem ser acessados pela mesma origem. Para executar outro
 ambiente sem compartilhar porta ou dados:
 
 ```bash
-PORT=8081 docker compose -f infra/compose.yaml -p mtg4fun-outro up --build -d
+PORT=8081 docker compose -p mtg4fun-outro up --build -d
 ```
 
 Use esse mesmo projeto nos comandos de criação de contas e operação.
 
-## Organização e desenvolvimento
+## Organização do repositório
 
 | Diretório | Conteúdo |
 | --- | --- |
 | `api/` | Backend Go, executável e testes de integração. |
 | `app/` | Frontend React/TypeScript e testes de navegador. |
 | `infra/` | Dockerfile, Compose e verificação Docker. |
-| `docs/` | Especificações, issues, decisões e guia de desenvolvimento. |
+| `docs/` | Especificações, issues e decisões. |
 | `scripts/` | Ferramentas de desenvolvimento. |
 
-O [guia de desenvolvimento](docs/desenvolvimento.md) reúne execução local,
-hot reload com Vite e verificações. As instruções para agentes estão no
-[AGENTS.md](AGENTS.md).
+As instruções para agentes estão no [AGENTS.md](AGENTS.md).

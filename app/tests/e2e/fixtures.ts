@@ -16,7 +16,7 @@ export const test = base.extend<{}, { appURL: string }>({
       const executable = join(directory, 'mtg4fun');
       const database = join(directory, 'contas.db');
       execFileSync('go', ['build', '-o', executable, './cmd/mtg4fun'], { cwd: join(root, 'api') });
-      execFileSync(executable, ['create-user', '--db', database, '--login', 'amigo', '--name', 'Amigo da mesa', '--password-stdin'], { input: 'senha-do-navegador' });
+      execFileSync(executable, ['create-user', '--db', database, '--login', 'amigo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador']);
       server = spawn(executable, ['serve', '--db', database, '--addr', '127.0.0.1:0', '--web', join(root, 'app/dist')], { env: { ...process.env, COOKIE_SECURE: 'false' }, stdio: ['ignore', 'ignore', 'pipe'] });
       const address = await new Promise<string>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Servidor não iniciou')), 10_000);

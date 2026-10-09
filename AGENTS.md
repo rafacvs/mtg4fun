@@ -41,13 +41,16 @@
   decisões, organização e fluxo de trabalho.
 - `docs/specs/` descreve requisitos; `docs/issues/` descreve entregas e critérios
   de aceite; `docs/decisions/` registra escolhas e seu estado de aprovação.
-  `docs/desenvolvimento.md` contém comandos locais e verificações detalhadas.
 - Mantenha referências entre documentos em vez de duplicar políticas. Documente
   somente comandos e capacidades existentes como disponíveis; identifique
   propostas e limitações pendentes. Preserve resultados históricos de testes
   como históricos, sem apresentá-los como nova validação ou aprovação do usuário.
 
 ## Organização e verificações
+
+- O projeto é privado, para jogar entre amigos. Prefira comandos de operação
+  simples e diretos; não imponha leitura oculta de senha ou pipelines para
+  criar contas. O usuário autorizou senha por argumento `--password`.
 
 - Mantenha a separação de projetos: `api/` para Go (incluindo `go.mod` e
   `go.sum`), `app/` para React/TypeScript e `infra/` para Docker. Documentação
@@ -68,11 +71,11 @@
   não deixe essas garantias para uma etapa posterior.
 - Artefatos gerados ficam dentro do projeto correspondente (`api/bin/`,
   `api/data/`, `app/dist/` e relatórios do frontend), ignorados pelo Git.
-- Execute Go a partir de `api/` ou com `go -C api`. Execute Docker pela raiz
-  com `docker compose -f infra/compose.yaml -p <projeto> ...`, preservando o
-  nome do projeto ao reiniciar para reutilizar o volume persistente.
-- Use `docs/desenvolvimento.md` para os comandos de verificação. Execute as
-  verificações pertinentes ao que mudou e descreva o que foi efetivamente
+- Execute Go a partir de `api/` ou com `go -C api`. Execute Docker em `infra/`
+  com `docker compose ...` ou pela raiz com `docker compose -f infra/compose.yaml ...`.
+  O projeto padrão é `mtg4fun`; use `-p <projeto>` para ambientes isolados e
+  preserve o nome ao reiniciar para reutilizar o volume persistente.
+- Execute as verificações pertinentes ao que mudou e descreva o que foi efetivamente
   verificado. Para alterações somente documentais, confira links, comandos e
   consistência; não declare testes da aplicação que não foram executados.
 
