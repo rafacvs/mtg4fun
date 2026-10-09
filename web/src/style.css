@@ -1,0 +1,11 @@
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#edf4ec;background:#12251e;font-synthesis:none;line-height:1.6}
+*{box-sizing:border-box}
+body{margin:0;min-width:280px;background:radial-gradient(ellipse at 85% 10%,#29463a 0,transparent 55%),#12251e}
+main{width:min(100% - 40px,540px);margin:0 auto;padding:42px 0 24px}
+.brand{font-size:26px;font-weight:750;letter-spacing:-1px;margin-bottom:30px}.brand>span:not(.mark){color:#dfbd79}.mark{display:inline-grid;place-items:center;color:#dfbd79;border:1px solid #627360;border-radius:9px;width:36px;height:36px;margin-right:8px}
+.panel{background:#1b3027;border:1px solid #405344;border-radius:18px;padding:32px;box-shadow:0 24px 80px #07150d55}
+.eyebrow{font-size:11px;letter-spacing:2px;color:#dfbd79;margin:0 0 16px;font-weight:700}
+h1{font-size:clamp(25px,4vw,33px);line-height:1.22;letter-spacing:-.7px;margin:0 0 18px;overflow-wrap:anywhere}
+p{color:#b9ccbf;margin:0 0 22px}strong{color:#edf4ec}form{margin-top:26px}label{display:block;font-size:14px;font-weight:600;margin:15px 0 6px}input{width:100%;font:inherit;padding:11px 13px;border:1px solid #647966;border-radius:8px;background:#12251e;color:#fff;min-height:48px}button{width:100%;font:inherit;font-weight:700;border:1px solid transparent;border-radius:8px;padding:12px;min-height:48px;background:#dfbd79;color:#192b21;margin-top:24px;cursor:pointer}button:hover{background:#ecd29e}button:disabled{opacity:.65;cursor:wait}:focus-visible{outline:3px solid #e9cf92;outline-offset:3px}.secondary{background:transparent;border-color:#809182;color:#e4ede3}.secondary:hover{background:#304a3b}.invitation{font-size:13px;margin:24px 0 0}.error{background:#492e29;color:#ffd0c2;border:1px solid #b07865;border-radius:8px;padding:12px;margin:16px 0 0}.notice{color:#c9dacc;background:#243e30;padding:18px;border-radius:9px;margin-top:24px}footer{font-size:12px;color:#98af9f;text-align:center;padding:24px 0}
+@media(max-width:480px){main{width:calc(100% - 28px);padding-top:24px}.brand{margin-bottom:20px}.panel{padding:24px 20px}}
+@media(max-height:500px){main{padding-top:16px}.brand{margin-bottom:14px}.panel{padding:24px}footer{padding:16px}}
