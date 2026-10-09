@@ -1,7 +1,54 @@
 # Trabalho neste repositório
 
-- Leia `docs/specs/README.md` e as especificações relevantes antes de implementar
-  uma issue em `docs/issues/`.
+## Requisitos e decisões
+
+- Leia `docs/specs/README.md`, as especificações relevantes e a issue em
+  `docs/issues/` antes de implementar. Consulte os registros relacionados em
+  `docs/decisions/` e respeite as instruções do usuário na conversa.
+- **Toda decisão de grande impacto exige consulta e aprovação explícita do
+  usuário antes de implementar. Nunca assuma essa aprovação.** Isso inclui
+  escolha ou troca de banco, arquitetura/divisão de serviços, infraestrutura
+  de desenvolvimento ou produção, segurança/autenticação, dependências que
+  determinem a arquitetura, contratos que afetem compatibilidade e mudanças
+  de requisitos ou comportamento do produto.
+- Antes de perguntar, investigue o estado existente e apresente as alternativas
+  viáveis, a recomendação e os impactos em operação, dados, segurança e escopo,
+  conforme pertinente. Aguarde a resposta antes de implementar a escolha;
+  continue apenas o trabalho independente dela.
+- Silêncio, ausência de requisito, “a definir na implementação”, “escolher e
+  documentar”, preferência por simplicidade ou presença de código existente
+  **não são aprovação**. Registrar uma escolha depois de implementá-la não
+  substitui consultar o usuário antes. Na dúvida sobre o impacto, consulte.
+- Aprovações explícitas na conversa continuam válidas dentro do escopo aprovado;
+  não peça confirmação novamente sem mudança relevante de escopo ou impacto.
+- Decisões locais de baixo impacto, como nomes de arquivos e organização de
+  código dentro da arquitetura aprovada, podem ser resolvidas autonomamente.
+  Não transforme esses ajustes em escolhas de arquitetura ou requisitos.
+- Registre decisões relevantes em `docs/decisions/`, distinguindo proposta,
+  aprovação explícita (com contexto da autorização) e implementação existente.
+  Não atribua aprovação ao usuário sem evidência. Testes aprovam comportamentos
+  observados, não escolhas de arquitetura.
+- SQLite foi rejeitado pelo usuário e deve ser substituído conforme a issue 19.
+  Não o adote como decisão aprovada para funcionalidades futuras. Os modos
+  Docker dev e produção estão pendentes na issue 20; banco substituto e divisão
+  final de serviços precisam de aprovação antes da implementação.
+
+## Escopo da documentação
+
+- `README.md` apresenta o projeto, seu estágio, requisitos e operação disponível.
+  Não coloque nele instruções de conduta de agentes ou fluxo de commits/PRs.
+- `AGENTS.md` centraliza as regras para agentes neste repositório, inclusive
+  decisões, organização e fluxo de trabalho.
+- `docs/specs/` descreve requisitos; `docs/issues/` descreve entregas e critérios
+  de aceite; `docs/decisions/` registra escolhas e seu estado de aprovação.
+  `docs/desenvolvimento.md` contém comandos locais e verificações detalhadas.
+- Mantenha referências entre documentos em vez de duplicar políticas. Documente
+  somente comandos e capacidades existentes como disponíveis; identifique
+  propostas e limitações pendentes. Preserve resultados históricos de testes
+  como históricos, sem apresentá-los como nova validação ou aprovação do usuário.
+
+## Organização e verificações
+
 - Mantenha a separação de projetos: `api/` para Go (incluindo `go.mod` e
   `go.sum`), `app/` para React/TypeScript e `infra/` para Docker. Documentação
   fica em `docs/` e ferramentas de desenvolvimento em `scripts/`.
@@ -16,16 +63,26 @@
 - Testes de integração do executável/HTTP ficam em `api/tests/integration/`,
   testes de navegador em `app/tests/e2e/` e verificação Docker em `infra/tests/`.
   Testes menores, quando necessários, ficam junto do módulo exercitado.
+- Entregue comportamento completo com segurança e persistência pertinentes.
+  Prefira testes observáveis do contrato público e fluxos reais de navegador;
+  não deixe essas garantias para uma etapa posterior.
 - Artefatos gerados ficam dentro do projeto correspondente (`api/bin/`,
   `api/data/`, `app/dist/` e relatórios do frontend), ignorados pelo Git.
 - Execute Go a partir de `api/` ou com `go -C api`. Execute Docker pela raiz
   com `docker compose -f infra/compose.yaml -p <projeto> ...`, preservando o
   nome do projeto ao reiniciar para reutilizar o volume persistente.
-- Toda tarefa deve ter uma branch própria, mesmo quando não houver trabalho
-  paralelo. Use a branch atribuída pelo usuário; se não houver, crie uma antes
-  de editar. **Jamais faça commits na `master`.**
-- Para tarefas paralelas, use também uma worktree por tarefa. Os comandos e o
-  fluxo de desenvolvimento estão no `README.md` e em `scripts/worktree.sh`.
+- Use `docs/desenvolvimento.md` para os comandos de verificação. Execute as
+  verificações pertinentes ao que mudou e descreva o que foi efetivamente
+  verificado. Para alterações somente documentais, confira links, comandos e
+  consistência; não declare testes da aplicação que não foram executados.
+
+## Branch, commits e PR
+
+- Toda tarefa deve ter uma branch própria, mesmo sem trabalho paralelo. Use a
+  branch atribuída pelo usuário; se não houver, crie uma antes de editar.
+  **Jamais faça commits na `master`.** Escolha a base conforme a tarefa:
+  use a branch atual quando a correção depender de sua implementação; para
+  tarefa independente, use `master`.
 - Antes de editar e antes de cada commit, confira `pwd`, `git status` e
   `git branch --show-current`. Se estiver na `master`, troque para a branch da
   tarefa antes de prosseguir. Faça alterações e conventional commits somente
@@ -36,8 +93,29 @@
   descrevendo a mudança e as verificações realizadas. **Deixe o PR aberto,
   sem merge, para o usuário revisar.** Não faça merge local, merge do PR ou
   habilite auto-merge. A integração é responsabilidade do usuário.
-- Não exclua a branch da tarefa enquanto o PR aguarda revisão. Uma worktree
-  temporária pode ser removida depois que suas alterações estiverem commitadas
-  e publicadas, preservando a branch.
-- Quando houver serviços locais, mantenha portas, configuração de ambiente,
-  bancos e volumes independentes por worktree.
+- Não exclua a branch da tarefa enquanto o PR aguarda revisão.
+
+## Worktrees e ambientes independentes
+
+- Para tarefas paralelas, use uma worktree por tarefa. `scripts/worktree.sh`
+  cria branches `work/<nome>` e checkouts em `../mtg4fun-worktrees/<nome>`:
+
+  ```bash
+  ./scripts/worktree.sh create <nome> master
+  ./scripts/worktree.sh list
+  ./scripts/worktree.sh remove <nome>
+  ```
+
+- Sem base explícita, `create` usa o `HEAD` atual. Só arquivos commitados na
+  base aparecem no novo checkout. Se o script não existir na base, invoque-o
+  pelo caminho do checkout que o contém. Para reabrir uma branch preservada,
+  execute `create` com o mesmo nome e sem base; uma branch só pode estar aberta
+  em uma worktree por vez.
+- Uma worktree temporária pode ser removida depois que suas alterações estiverem
+  commitadas e publicadas e o PR estiver aberto, preservando a branch. `remove`
+  recusa checkouts com alterações locais ou bloqueados; não use força para
+  contornar essa proteção.
+- Instale dependências por checkout. Quando houver serviços locais, mantenha
+  portas, arquivos de ambiente, bancos e volumes independentes por worktree.
+  Use projetos Compose e portas distintos em cada ambiente; configuração e
+  histórico do Git são compartilhados entre worktrees.

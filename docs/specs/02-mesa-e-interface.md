@@ -46,6 +46,8 @@ Mesa virtual manual com ações genéricas, posicionamento em fileiras e seleç�
 
 ## Decisões de implementação
 
+Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões). Expressões como “a definir na implementação” não autorizam decisões de grande impacto sem aprovação explícita do usuário.
+
 ### Layout e interação
 
 - Interface PT-BR, excluindo o conteúdo das cartas/dataset.
@@ -104,7 +106,7 @@ Mesa virtual manual com ações genéricas, posicionamento em fileiras e seleç�
 
 ## Decisões de teste
 
-Proposta: testar operações/permissões pela interface pública do servidor; testar layout, foco e gestos em fluxos de navegador com mouse e toque. Não há testes anteriores no repositório.
+Proposta: testar operações/permissões pela interface pública do servidor; testar layout, foco e gestos em fluxos de navegador com mouse e toque. Na elaboração original desta spec, ainda não existiam testes no repositório.
 
 Critérios observáveis:
 

@@ -30,6 +30,8 @@ Oferecer autenticação simples, contas provisionadas pelo responsável pelo ser
 
 ## Decisões de implementação
 
+Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões). Expressões como “a definir na implementação” não autorizam decisões de grande impacto sem aprovação explícita do usuário.
+
 ### Acesso
 
 - Autenticação por login e senha; contas são criadas somente pelo responsável pelo servidor usando um comando do executável Go.
@@ -68,7 +70,7 @@ Oferecer autenticação simples, contas provisionadas pelo responsável pelo ser
 
 ## Decisões de teste
 
-Proposta: testar autenticação, biblioteca e ciclo de sala pela interface pública do servidor, usando persistência real de teste quando durabilidade/importação fizerem parte do comportamento. Não existem testes ou módulos prévios no repositório.
+Proposta: testar autenticação, biblioteca e ciclo de sala pela interface pública do servidor, usando persistência real de teste quando durabilidade/importação fizerem parte do comportamento. Na elaboração original desta spec, ainda não existiam testes ou módulos no repositório.
 
 Critérios observáveis:
 

@@ -1,12 +1,35 @@
 # Acesso: armazenamento, credenciais e contrato
 
-Issue: `docs/issues/01-criar-contas-e-acessar.md`.
+Issue: [01: Criar contas e acessar](../issues/01-criar-contas-e-acessar.md).
+
+## Estado das decisões e pendências
+
+Este documento descreve a implementação existente e suas verificações
+históricas. A presença de uma escolha aqui não comprova aprovação do usuário.
+SQLite foi escolhido sem consulta prévia e rejeitado como inviável para o
+projeto. Sua substituição está na [issue 19](../issues/19-substituir-sqlite.md);
+o banco substituto e o tratamento dos dados existentes aguardam aprovação.
+
+O Docker atual executa somente backend e frontend compilado em um serviço.
+O requisito de modos distintos, dev com hot reload e produção com build,
+está na [issue 20](../issues/20-docker-dev-e-producao.md). A divisão final de
+serviços ainda precisa de aprovação.
+
+As demais escolhas técnicas abaixo descrevem o que existe; não recebem
+aprovação retroativa por esta atualização. Novas decisões de grande impacto
+seguem a [política do AGENTS.md](../../AGENTS.md#requisitos-e-decisões).
+Resultados históricos de testes e revisões são preservados como registros
+da entrega anterior; não foram reexecutados nesta atualização documental e
+não encerram as pendências acima.
+
+## Implementação existente
 
 Um executável Go serve HTTP e os arquivos compilados do React/TypeScript com
 Vite. SQLite (`database/sql` + `github.com/mattn/go-sqlite3`, com CGO) mantém
 contas e sessões em um volume Docker, sem um serviço de banco adicional.
 WAL, foreign keys, busy timeout e transações permitem criar contas pelo comando
-enquanto o servidor está ativo. Futuras tabelas podem usar o mesmo banco.
+enquanto o servidor está ativo. Esse banco não deve ser tratado como base
+aprovada para funcionalidades futuras.
 
 Bcrypt (`golang.org/x/crypto/bcrypt`) com custo 12 e salt aleatório guarda
 senhas; aceitamos de 8 a 72 bytes UTF-8, rejeitando entradas maiores sem
@@ -55,7 +78,7 @@ com reinício e fluxo de navegador. A implementação inicial precedeu essa
 confirmação; os testes seguintes reproduziram e corrigiram o conflito de
 registro de rotas do servidor e a saída de uma sessão já revogada no cliente.
 
-## Validação da entrega
+## Validação histórica da entrega
 
 - `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram.
 - `npm run build --prefix app` e `npm run typecheck --prefix app`: passaram.
@@ -67,29 +90,32 @@ registro de rotas do servidor e a saída de uma sessão já revogada no cliente.
   conta e sessão no volume. Projeto, porta e volume de teste isolados e
   removidos ao terminar.
 
-## Standards
+## Revisão histórica de padrões
 
 Nenhum achado na revisão desde `7dd2b1d`: sem violações documentadas ou smells
 concretos. A implementação mantém poucas camadas e dependências, documenta
 escolhas e contrato, testa comportamentos públicos e isola bancos e serviços
 de teste. Revisão por leitura em worktree própria.
 
-## Spec
+## Revisão histórica de escopo
 
-Nenhum achado: sem requisito ausente/parcial, desvio de escopo ou comportamento
-incorreto para a issue 01. Contas pelo executável, bcrypt, API privada, interface
-PT-BR responsiva, persistência, Docker, documentação e testes cobrem a entrega.
+A revisão anterior registrou ausência de achados de requisitos ou comportamento
+para a issue 01. Essa conclusão antecede as correções exigidas pelo usuário.
+A revisão considerou contas pelo executável, bcrypt, API privada, interface
+PT-BR responsiva, persistência, Docker, documentação e testes.
 Transferência de conexão permanece na issue 16. Revisão por leitura em worktree
 própria; verificação operacional Docker confirmada após a revisão.
 
-Total: Standards 0 achados; Spec 0 achados.
+Resultado histórico registrado: Standards 0 achados; Spec 0 achados.
+Não representa a situação atual de aprovação do banco ou do ambiente dev.
 
 ## Organização do código
 
 A organização aprovada separa `api/` (Go), `app/` (React/TypeScript) e `infra/`
 (Docker). Os módulos são agrupados por funcionalidade, com responsabilidades
-compartilhadas explícitas. O [mapa no README](../../README.md#organização-do-repositório)
-descreve os diretórios; o [AGENTS.md](../../AGENTS.md) registra as regras.
+compartilhadas explícitas. O [mapa no README](../../README.md#organização-e-desenvolvimento)
+resume os diretórios; o [AGENTS.md](../../AGENTS.md) registra as regras, e o
+[guia de desenvolvimento](../desenvolvimento.md) reúne comandos locais e verificações.
 
 O módulo `auth` recebe a conexão aberta por `database`; o esquema existente é
 embutido no executável a partir de `schema.sql`, sem mudança de tabelas ou
@@ -102,7 +128,7 @@ O desenvolvimento local do backend passa a usar `api/` como diretório de
 trabalho e `../app/dist` como cliente compilado. Docker mantém serviço `app`,
 volume `data` e os caminhos de armazenamento, usando o mesmo nome de projeto.
 
-## Validação da reorganização
+## Validação histórica da reorganização
 
 Os comandos de validação acima foram executados novamente com os novos caminhos:
 Go, build e tipos do cliente, os 9 cenários de navegador e o teste Docker passaram.
