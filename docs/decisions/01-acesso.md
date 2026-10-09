@@ -97,7 +97,24 @@ migração de dados. `httpserver` recebe o handler de autenticação, aplica
 proteções compartilhadas e serve o frontend compilado. No cliente, as telas,
 o estado de autenticação, o contrato HTTP e os estilos têm arquivos próprios.
 
-Os endpoints, mensagens, cookies, hash de senhas e transações permanecem iguais.
+Os endpoints e suas mensagens, cookies, hash de senhas e transações permanecem iguais.
 O desenvolvimento local do backend passa a usar `api/` como diretório de
 trabalho e `../app/dist` como cliente compilado. Docker mantém serviço `app`,
 volume `data` e os caminhos de armazenamento, usando o mesmo nome de projeto.
+
+## Validação da reorganização
+
+Os comandos de validação acima foram executados novamente com os novos caminhos:
+Go, build e tipos do cliente, os 9 cenários de navegador e o teste Docker passaram.
+As capturas de desktop e celular mantêm a aparência anterior. O servidor também
+foi iniciado a partir de `api/` usando o caminho padrão `../app/dist`.
+
+Uma verificação adicional criou conta e sessão com o executável anterior e
+abriu o mesmo banco com o reorganizado: a sessão existente e um novo login
+funcionaram, sem migração ou alteração das credenciais.
+
+Standards: 0 achados na revisão das regras documentadas e organização final.
+Spec: 0 achados na revisão da issue 01 e do plano de reorganização aprovado.
+As revisões desde `7dd2b1d` foram realizadas por leitura em worktrees separadas;
+a execução dos testes e a persistência do volume Docker foram verificadas no
+checkout da tarefa.
