@@ -80,65 +80,94 @@ python3 tests/docker_smoke.py
 Essa verificação cria projeto, porta, conta e volume temporários e remove o
 ambiente ao terminar. Não altera as contas do serviço em uso.
 
+## Fluxo de desenvolvimento: branch, commits e PR
+
+Toda tarefa usa uma branch própria, inclusive quando executada sem outras
+tarefas em paralelo. **Jamais faça commits na `master`.** Use a branch
+atribuída pelo usuário. Se nenhuma tiver sido atribuída, crie uma antes de
+editar:
+
+```bash
+git switch -c feat/01-contas master
+```
+
+Antes de editar e antes de cada commit, confira o checkout:
+
+```bash
+pwd
+git status
+git branch --show-current
+```
+
+Se estiver na `master`, troque para a branch da tarefa antes de prosseguir.
+Adicione ao stage apenas arquivos da tarefa, faça conventional commits e rode
+as verificações pertinentes. Ao concluir, publique a branch e abra um PR para
+a `master`:
+
+```bash
+git commit -m "feat(auth): criar contas e autenticar convidados"
+git push -u origin HEAD
+gh pr create --base master --fill
+```
+
+Revise o título e a descrição do PR para explicar o comportamento entregue e
+as verificações realizadas. **Deixe o PR aberto, sem merge, para o usuário
+revisar.** Não faça merge local, merge do PR ou habilite auto-merge. A integração
+é responsabilidade do usuário. Preserve a branch enquanto o PR aguarda revisão.
+
 ## Trabalhos em paralelo com Git worktrees
 
-Requisitos: Git e Bash. Cada tarefa tem sua branch e seu diretório de trabalho.
-Os checkouts ficam ao lado do repositório principal, em `../mtg4fun-worktrees/`,
-sem misturar os arquivos das tarefas.
+Requisitos: Git e Bash. Para tarefas paralelas, cada tarefa tem sua branch e
+seu diretório de trabalho. Os checkouts ficam ao lado do repositório principal,
+em `../mtg4fun-worktrees/`, sem misturar os arquivos das tarefas.
 
 No checkout principal:
 
 ```bash
-./scripts/worktree.sh create 01-contas
-./scripts/worktree.sh create 02-decks
+./scripts/worktree.sh create 01-contas master
+./scripts/worktree.sh create 02-decks master
 ./scripts/worktree.sh list
 ```
 
-Isso cria as branches `work/01-contas` e `work/02-decks` a partir de `HEAD` e os
+Isso cria as branches `work/01-contas` e `work/02-decks` a partir da `master` e os
 diretórios `../mtg4fun-worktrees/01-contas` e `../mtg4fun-worktrees/02-decks`.
 Abra cada diretório em um terminal, editor ou sessão de agente independente:
 
 ```bash
 cd ../mtg4fun-worktrees/01-contas
+pwd
 git status
-# Implementar, verificar e fazer commits nesta branch.
+git branch --show-current
+# Implementar, verificar, fazer conventional commits e abrir PR nesta branch.
 ```
 
 O script também funciona a partir de uma worktree, usando o mesmo diretório
-externo. A base padrão é o `HEAD` do checkout atual. Para escolher outra base:
+externo. Sem uma base explícita, usa o `HEAD` do checkout atual; informe `master`
+para iniciar uma tarefa independente sem incluir alterações de outra branch.
+
+Somente arquivos commitados na base aparecem no novo checkout. Se o script
+não estiver disponível na base, execute-o pelo caminho absoluto do checkout
+que contém o script, mantendo o terminal no checkout cuja base deseja usar.
+
+## Encerrar o trabalho sem integrar
+
+Após publicar a branch e abrir o PR, uma worktree temporária sem alterações
+locais pode ser removida. Essa operação preserva a branch e não faz merge:
 
 ```bash
-./scripts/worktree.sh create 03-salas master
-```
-
-Somente arquivos commitados na base aparecem no novo checkout. Faça commit
-desta configuração para que o script e as instruções também estejam disponíveis
-nas novas worktrees. Até lá, execute o script pelo caminho absoluto do checkout
-principal, mantendo o terminal no checkout cuja base deseja usar.
-
-## Integrar e encerrar uma tarefa
-
-Depois de revisar e verificar os commits, integre a branch pelo fluxo de PR do
-projeto ou localmente no checkout principal:
-
-```bash
-git switch master
-git merge work/01-contas
 ./scripts/worktree.sh remove 01-contas
-git branch -d work/01-contas
 ```
 
-`remove` recusa checkouts com alterações locais ou bloqueados e preserva a
-branch. A exclusão da branch é um passo separado; `git branch -d` verifica se
-ela foi integrada. Para retomar uma branch preservada, execute novamente
-`create` com o mesmo nome, sem informar uma base.
+`remove` recusa checkouts com alterações locais ou bloqueados. Não exclua a
+branch enquanto o PR aguarda revisão. Para retomar uma branch preservada,
+execute novamente `create` com o mesmo nome, sem informar uma base.
 
 Cada branch só pode estar aberta em uma worktree por vez. Combine a divisão
 das tarefas quando houver arquivos em comum; worktrees isolam os checkouts,
-mas conflitos ainda podem ocorrer na integração. Configuração e histórico do
-Git são compartilhados entre elas.
+mas conflitos ainda podem ocorrer na revisão e integração pelo usuário.
+Configuração e histórico do Git são compartilhados entre elas.
 
-Quando a aplicação existir, instale dependências por checkout e use portas,
-arquivos `.env`, bancos e volumes próprios para cada ambiente. Com Docker
-Compose, use um nome de projeto distinto por tarefa (`docker compose -p
-mtg4fun-01-contas ...`) e portas diferentes para os serviços publicados.
+Instale dependências por checkout e use portas, arquivos `.env`, bancos e
+volumes próprios para cada ambiente. Com Docker Compose, use um nome de
+projeto distinto por tarefa (`docker compose -p mtg4fun-01-contas ...`) e portas
+diferentes para os serviços publicados.
