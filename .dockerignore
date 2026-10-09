@@ -1,8 +1,8 @@
 .git
-web/node_modules
-web/dist
-web/test-results
-web/playwright-report
-data
-bin
+api/bin
+api/data
+app/node_modules
+app/dist
+app/test-results
+app/playwright-report
 .env

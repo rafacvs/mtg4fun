@@ -57,12 +57,12 @@ registro de rotas do servidor e a saída de uma sessão já revogada no cliente.
 
 ## Validação da entrega
 
-- `go vet ./...` e `go test ./... -count=1`: passaram.
-- `npm run build --prefix web` e `npm run typecheck --prefix web`: passaram.
-- `npm test --prefix web -- --workers=3`: 9 cenários passaram, em desktop,
+- `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram.
+- `npm run build --prefix app` e `npm run typecheck --prefix app`: passaram.
+- `npm test --prefix app -- --workers=3`: 9 cenários passaram, em desktop,
   celular vertical e celular horizontal, incluindo credenciais inválidas,
   recarga com sessão e logout. Capturas conferidas; sem overflow horizontal.
-- `python3 tests/docker_smoke.py`: passou com imagem compilada, comando de
+- `python3 infra/tests/docker_smoke.py`: passou com imagem compilada, comando de
   criação de conta, autenticação, logout e recriação do serviço mantendo
   conta e sessão no volume. Projeto, porta e volume de teste isolados e
   removidos ao terminar.
@@ -83,3 +83,21 @@ Transferência de conexão permanece na issue 16. Revisão por leitura em worktr
 própria; verificação operacional Docker confirmada após a revisão.
 
 Total: Standards 0 achados; Spec 0 achados.
+
+## Organização do código
+
+A organização aprovada separa `api/` (Go), `app/` (React/TypeScript) e `infra/`
+(Docker). Os módulos são agrupados por funcionalidade, com responsabilidades
+compartilhadas explícitas. O [mapa no README](../../README.md#organização-do-repositório)
+descreve os diretórios; o [AGENTS.md](../../AGENTS.md) registra as regras.
+
+O módulo `auth` recebe a conexão aberta por `database`; o esquema existente é
+embutido no executável a partir de `schema.sql`, sem mudança de tabelas ou
+migração de dados. `httpserver` recebe o handler de autenticação, aplica
+proteções compartilhadas e serve o frontend compilado. No cliente, as telas,
+o estado de autenticação, o contrato HTTP e os estilos têm arquivos próprios.
+
+Os endpoints, mensagens, cookies, hash de senhas e transações permanecem iguais.
+O desenvolvimento local do backend passa a usar `api/` como diretório de
+trabalho e `../app/dist` como cliente compilado. Docker mantém serviço `app`,
+volume `data` e os caminhos de armazenamento, usando o mesmo nome de projeto.

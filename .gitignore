@@ -1,9 +1,9 @@
-/web/node_modules/
-/web/dist/
-/web/playwright-report/
-/web/test-results/
-/data/
-/bin/
+/api/bin/
+/api/data/
+/app/node_modules/
+/app/dist/
+/app/playwright-report/
+/app/test-results/
 .env
 *.db
 *.db-shm

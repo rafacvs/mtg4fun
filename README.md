@@ -5,15 +5,62 @@ Aplicação web para jogar Magic entre amigos. O repositório contém as
 A primeira entrega implementa contas provisionadas pelo responsável e acesso
 por login e senha. Salas, decks e partidas serão entregues nas próximas issues.
 
+## Organização do repositório
+
+| Diretório | Responsabilidade |
+| --- | --- |
+| `api/` | Projeto Go: executável, módulos do backend, testes, `go.mod` e `go.sum`. |
+| `app/` | Projeto React/TypeScript: telas, funcionalidades, estilos, testes e dependências npm. |
+| `infra/` | Imagem Docker, Docker Compose e verificação da execução em containers. |
+| `docs/` | Especificações, issues e decisões de implementação. |
+| `scripts/` | Ferramentas de desenvolvimento, como gerenciamento de worktrees. |
+
+```text
+api/
+  cmd/mtg4fun/          main.go inicia; serve.go e create_user.go executam comandos
+  internal/auth/       accounts.go, sessions.go e handlers.go: acesso autenticado
+  internal/database/   sqlite.go e schema.sql: conexão e esquema do banco
+  internal/httpserver/ router.go, middleware.go e responses.go: HTTP compartilhado
+  tests/integration/   access_test.go: comportamentos; fixtures_test.go: ambiente
+app/
+  src/main.tsx         Inicializa o React
+  src/App.tsx          Compõe layout e telas conforme a sessão
+  src/components/      AppLayout.tsx e seu CSS: estrutura visual compartilhada
+  src/features/auth/   Telas, estado, chamadas HTTP e estilos de autenticação
+  src/styles/          Estilos globais
+  tests/e2e/           Fluxos reais no navegador e preparação do servidor de teste
+infra/
+  Dockerfile           Compila e empacota backend e frontend
+  compose.yaml         Configura serviço, porta e volume persistente
+  tests/               Verifica criação de conta e durabilidade com Docker
+```
+
+Dentro de cada projeto, organize o código por funcionalidade. `auth/` reúne
+contas, senhas, sessões e seus endpoints; futuras funcionalidades recebem
+módulos próprios quando implementadas. Nomes de arquivos descrevem suas
+responsabilidades. `database` e `httpserver` concentram responsabilidades
+compartilhadas; não crie pastas genéricas de utilitários ou módulos vazios.
+
+O executável monta os módulos: abre o banco, constrói a autenticação e entrega
+seu handler ao servidor HTTP. `httpserver` recebe um `http.Handler` e não importa
+funcionalidades. No React, `sessionApi.ts` concentra o contrato HTTP, `useAuth.ts`
+cuida do estado e as telas cuidam da apresentação.
+
+Artefatos gerados ficam em `api/bin/`, `api/data/`, `app/dist/` e nos diretórios
+de dependências e relatórios do frontend, todos ignorados pelo Git. Na raiz
+ficam documentação de entrada e configuração do repositório. Há apenas um
+módulo Go, em `api/`, sem workspace Go na raiz.
+
 ## Executar e criar contas
 
-Requisitos: Docker com Docker Compose. No diretório deste checkout:
+Requisitos: Docker com Docker Compose. Execute os comandos Docker a partir
+da raiz deste checkout:
 
 ```bash
-docker compose -p mtg4fun up --build -d
+docker compose -f infra/compose.yaml -p mtg4fun up --build -d
 # Digite uma senha de 8 a 72 bytes; ela não aparece no terminal ou histórico.
 read -r -s -p 'Senha: ' account_password; echo
-printf '%s' "$account_password" | docker compose -p mtg4fun exec -T app mtg4fun create-user --login rafa --name 'Rafa' --password-stdin
+printf '%s' "$account_password" | docker compose -f infra/compose.yaml -p mtg4fun exec -T app mtg4fun create-user --login rafa --name 'Rafa' --password-stdin
 unset account_password
 ```
 
@@ -23,16 +70,15 @@ números, ponto, hífen e sublinhado, diferenciando maiúsculas. Nome é obrigat
 (até 100 caracteres). Criar login duplicado falha, sem substituir a conta.
 
 ```bash
-docker compose -p mtg4fun restart app
+docker compose -f infra/compose.yaml -p mtg4fun restart app
 # Ou parar e subir novamente, preservando o volume:
-docker compose -p mtg4fun down
-docker compose -p mtg4fun up -d
+docker compose -f infra/compose.yaml -p mtg4fun down
+docker compose -f infra/compose.yaml -p mtg4fun up -d
 ```
 
 O volume `mtg4fun_data` conserva contas e sessões. `down -v` remove esse volume.
 Use o mesmo nome de projeto em todos os comandos de um ambiente. Para outro
-checkout, use projeto e porta próprios: `PORT=8081 docker compose -p
-mtg4fun-01-contas up --build -d`. Use esse projeto também para criar contas.
+checkout, use projeto e porta próprios: `PORT=8081 docker compose -f infra/compose.yaml -p mtg4fun-01-contas up --build -d`. Use esse projeto também para criar contas.
 
 A publicação padrão aceita conexões somente no computador local. Para acesso
 pela rede, configure `BIND_ADDR=0.0.0.0`. Na hospedagem HTTPS com proxy reverso,
@@ -43,10 +89,12 @@ cliente. SQLite e bcrypt (custo 12), sessões e API estão documentados em
 ## Desenvolvimento e verificações
 
 Requisitos locais: Go 1.26+, GCC (driver SQLite usa CGO), Node 22.12+ e npm.
+Comece na raiz; após compilar o frontend, entre em `api/` para executar o backend:
 
 ```bash
-npm ci --prefix web
-npm run build --prefix web
+npm ci --prefix app
+npm run build --prefix app
+cd api
 go build -o bin/mtg4fun ./cmd/mtg4fun
 read -r -s -p 'Senha: ' account_password; echo
 printf '%s' "$account_password" | bin/mtg4fun create-user --login rafa --name Rafa --password-stdin
@@ -54,27 +102,32 @@ unset account_password
 bin/mtg4fun serve
 ```
 
-Em outro terminal, `npm run dev --prefix web` oferece recarga automática em
-http://localhost:5173 e encaminha `/api` para o Go na porta 8080. Variáveis:
-`DB_PATH` (padrão `data/mtg4fun.db`), `ADDR` (`:8080`), `WEB_DIR` (`web/dist`)
-e `COOKIE_SECURE` (`false`). Também existem flags `--db`, `--addr` e `--web`.
+Em outro terminal, a partir da raiz, `npm run dev --prefix app` oferece
+recarga automática em http://localhost:5173 e encaminha `/api` para o Go na porta 8080. Variáveis:
+`DB_PATH` (padrão `data/mtg4fun.db`, dentro de `api/`), `ADDR` (`:8080`),
+`WEB_DIR` (`../app/dist`) e `COOKIE_SECURE` (`false`). Também existem flags `--db`, `--addr` e `--web`.
+O backend local é executado com `api/` como diretório de trabalho. Se já tiver
+um banco em `data/mtg4fun.db` na raiz, use `--db ../data/mtg4fun.db` para continuar
+usando esse arquivo sem migrar ou recriar contas.
+
+Da raiz do repositório, rode as verificações:
 
 ```bash
-npm run typecheck --prefix web
-go vet ./...
-go test ./...
-npm exec --prefix web -- playwright install chromium
-npm test --prefix web
+npm run typecheck --prefix app
+go -C api vet ./...
+go -C api test ./...
+npm exec --prefix app -- playwright install chromium
+npm test --prefix app
 ```
 
 Os testes usam bancos temporários próprios. Playwright inicia um servidor Go
 isolado em uma porta aleatória e testa desktop e celular com o cliente compilado
-(`npm run build --prefix web` antes dos testes). Não usa contas do seu ambiente.
+(`npm run build --prefix app` antes dos testes). Não usa contas do seu ambiente.
 
 Para verificar a imagem e a durabilidade do volume Docker (Python 3 e Docker):
 
 ```bash
-python3 tests/docker_smoke.py
+python3 infra/tests/docker_smoke.py
 ```
 
 Essa verificação cria projeto, porta, conta e volume temporários e remove o
@@ -169,5 +222,5 @@ Configuração e histórico do Git são compartilhados entre elas.
 
 Instale dependências por checkout e use portas, arquivos `.env`, bancos e
 volumes próprios para cada ambiente. Com Docker Compose, use um nome de
-projeto distinto por tarefa (`docker compose -p mtg4fun-01-contas ...`) e portas
+projeto distinto por tarefa (`docker compose -f infra/compose.yaml -p mtg4fun-01-contas ...`) e portas
 diferentes para os serviços publicados.

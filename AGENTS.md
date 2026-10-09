@@ -2,6 +2,25 @@
 
 - Leia `docs/specs/README.md` e as especificações relevantes antes de implementar
   uma issue em `docs/issues/`.
+- Mantenha a separação de projetos: `api/` para Go (incluindo `go.mod` e
+  `go.sum`), `app/` para React/TypeScript e `infra/` para Docker. Documentação
+  fica em `docs/` e ferramentas de desenvolvimento em `scripts/`.
+- Organize módulos por funcionalidade, com arquivos nomeados por
+  responsabilidade. No backend, mantenha a entrada em `api/cmd/mtg4fun/` e
+  os módulos em `api/internal/`. No frontend, funcionalidades ficam em
+  `app/src/features/`; apresentação, estado e chamadas HTTP têm arquivos
+  distintos. Extraia responsabilidades compartilhadas quando houver uso real.
+- Não concentre banco, autenticação, HTTP e apresentação em arquivos genéricos
+  como `app.go`. Não crie pastas vazias para funcionalidades futuras ou pastas
+  genéricas de utilitários. Preserve nomes claros e formatação legível.
+- Testes de integração do executável/HTTP ficam em `api/tests/integration/`,
+  testes de navegador em `app/tests/e2e/` e verificação Docker em `infra/tests/`.
+  Testes menores, quando necessários, ficam junto do módulo exercitado.
+- Artefatos gerados ficam dentro do projeto correspondente (`api/bin/`,
+  `api/data/`, `app/dist/` e relatórios do frontend), ignorados pelo Git.
+- Execute Go a partir de `api/` ou com `go -C api`. Execute Docker pela raiz
+  com `docker compose -f infra/compose.yaml -p <projeto> ...`, preservando o
+  nome do projeto ao reiniciar para reutilizar o volume persistente.
 - Toda tarefa deve ter uma branch própria, mesmo quando não houver trabalho
   paralelo. Use a branch atribuída pelo usuário; se não houver, crie uma antes
   de editar. **Jamais faça commits na `master`.**

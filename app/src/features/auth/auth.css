@@ -1,0 +1,76 @@
+form {
+  margin-top: 26px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 15px 0 6px;
+}
+
+input {
+  width: 100%;
+  font: inherit;
+  padding: 11px 13px;
+  border: 1px solid #647966;
+  border-radius: 8px;
+  background: #12251e;
+  color: #fff;
+  min-height: 48px;
+}
+
+button {
+  width: 100%;
+  font: inherit;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 48px;
+  background: #dfbd79;
+  color: #192b21;
+  margin-top: 24px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #ecd29e;
+}
+
+button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+.secondary {
+  background: transparent;
+  border-color: #809182;
+  color: #e4ede3;
+}
+
+.secondary:hover {
+  background: #304a3b;
+}
+
+.invitation {
+  font-size: 13px;
+  margin: 24px 0 0;
+}
+
+.error {
+  background: #492e29;
+  color: #ffd0c2;
+  border: 1px solid #b07865;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 16px 0 0;
+}
+
+.notice {
+  color: #c9dacc;
+  background: #243e30;
+  padding: 18px;
+  border-radius: 9px;
+  margin-top: 24px;
+}
