@@ -49,3 +49,37 @@ credenciais inválidas, duplicatas, logout e acesso privado. Playwright exercita
 login, recarga e saída com desktop e celular. A leitura dos arquivos duráveis
 é uma auditoria adicional para detectar senha em texto puro, não um teste de
 organização de tabelas.
+
+As fronteiras de teste foram confirmadas pelo usuário: executável, API HTTP
+com reinício e fluxo de navegador. A implementação inicial precedeu essa
+confirmação; os testes seguintes reproduziram e corrigiram o conflito de
+registro de rotas do servidor e a saída de uma sessão já revogada no cliente.
+
+## Validação da entrega
+
+- `go vet ./...` e `go test ./... -count=1`: passaram.
+- `npm run build --prefix web` e `npm run typecheck --prefix web`: passaram.
+- `npm test --prefix web -- --workers=3`: 9 cenários passaram, em desktop,
+  celular vertical e celular horizontal, incluindo credenciais inválidas,
+  recarga com sessão e logout. Capturas conferidas; sem overflow horizontal.
+- `python3 tests/docker_smoke.py`: passou com imagem compilada, comando de
+  criação de conta, autenticação, logout e recriação do serviço mantendo
+  conta e sessão no volume. Projeto, porta e volume de teste isolados e
+  removidos ao terminar.
+
+## Standards
+
+Nenhum achado na revisão desde `7dd2b1d`: sem violações documentadas ou smells
+concretos. A implementação mantém poucas camadas e dependências, documenta
+escolhas e contrato, testa comportamentos públicos e isola bancos e serviços
+de teste. Revisão por leitura em worktree própria.
+
+## Spec
+
+Nenhum achado: sem requisito ausente/parcial, desvio de escopo ou comportamento
+incorreto para a issue 01. Contas pelo executável, bcrypt, API privada, interface
+PT-BR responsiva, persistência, Docker, documentação e testes cobrem a entrega.
+Transferência de conexão permanece na issue 16. Revisão por leitura em worktree
+própria; verificação operacional Docker confirmada após a revisão.
+
+Total: Standards 0 achados; Spec 0 achados.
