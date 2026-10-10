@@ -26,45 +26,87 @@ type datasetCard struct {
 	XML   string     `xml:",innerxml" json:"-"`
 }
 
+type entry struct {
+	name  string
+	text  string
+	token bool
+	xml   strings.Builder
+}
+
+const (
+	batchRows  = 500
+	batchBytes = 1 << 20
+)
+
 // Import replaces the shared dataset atomically. Deck names and quantities remain intact.
+// The full dataset exceeds MySQL's default redo log capacity, so rows are written in
+// small committed batches to a staging table that replaces the current one by RENAME.
 func Import(ctx context.Context, db *sql.DB, cardsPath, tokensPath string) error {
-	tx, err := db.BeginTx(ctx, nil)
+	entries, err := read(cardsPath, tokensPath)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
-	if _, err = tx.ExecContext(ctx, "DELETE FROM catalog_cards"); err != nil {
+	for _, statement := range []string{
+		"DROP TABLE IF EXISTS catalog_cards_import, catalog_cards_previous",
+		"CREATE TABLE catalog_cards_import LIKE catalog_cards",
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			return err
+		}
+	}
+	defer db.ExecContext(context.Background(), "DROP TABLE IF EXISTS catalog_cards_import")
+	for start := 0; start < len(entries); {
+		end, size := start, 0
+		for end < len(entries) && end-start < batchRows && (end == start || size < batchBytes) {
+			size += entries[end].xml.Len()
+			end++
+		}
+		values := make([]any, 0, (end-start)*4)
+		for _, entry := range entries[start:end] {
+			values = append(values, entry.name, entry.text, entry.token, entry.xml.String())
+		}
+		placeholders := strings.TrimSuffix(strings.Repeat("(?,?,?,?),", end-start), ",")
+		if _, err := db.ExecContext(ctx, "INSERT INTO catalog_cards_import (name, text, is_token, card_xml) VALUES "+placeholders, values...); err != nil {
+			return err
+		}
+		start = end
+	}
+	if _, err := db.ExecContext(ctx, "RENAME TABLE catalog_cards TO catalog_cards_previous, catalog_cards_import TO catalog_cards"); err != nil {
 		return err
 	}
-	count := 0
-	seen := map[string]bool{}
+	_, err = db.ExecContext(ctx, "DROP TABLE catalog_cards_previous")
+	return err
+}
+
+func read(cardsPath, tokensPath string) ([]*entry, error) {
+	var entries []*entry
+	byName := map[string]*entry{}
 	for _, path := range []string{cardsPath, tokensPath} {
-		if err = readDataset(path, func(card datasetCard) error {
-			if seen[card.Name] {
+		if err := readDataset(path, func(card datasetCard) error {
+			if existing, ok := byName[card.Name]; ok {
 				// Cockatrice keeps the first definition and merges subsequent printings.
-				var extra strings.Builder
 				for _, set := range card.Sets {
 					data, err := xml.Marshal(set)
 					if err != nil {
 						return err
 					}
-					extra.Write(data)
+					existing.xml.Write(data)
 				}
-				_, err := tx.ExecContext(ctx, "UPDATE catalog_cards SET card_xml=CONCAT(card_xml,?) WHERE name=?", extra.String(), card.Name)
-				return err
+				return nil
 			}
-			seen[card.Name] = true
-			_, err := tx.ExecContext(ctx, "INSERT INTO catalog_cards (name, text, is_token, card_xml) VALUES (?, ?, ?, ?)", card.Name, card.Text, card.Token == "1", card.XML)
-			count++
-			return err
+			created := &entry{name: card.Name, text: card.Text, token: card.Token == "1"}
+			created.xml.WriteString(card.XML)
+			byName[card.Name] = created
+			entries = append(entries, created)
+			return nil
 		}); err != nil {
-			return fmt.Errorf("catálogo %s: %w", path, err)
+			return nil, fmt.Errorf("catálogo %s: %w", path, err)
 		}
 	}
-	if count == 0 {
-		return errors.New("catálogo vazio")
+	if len(entries) == 0 {
+		return nil, errors.New("catálogo vazio")
 	}
-	return tx.Commit()
+	return entries, nil
 }
 
 func readDataset(path string, accept func(datasetCard) error) error {

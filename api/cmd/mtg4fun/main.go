@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"mtg4fun/internal/auth"
 	"mtg4fun/internal/catalog"
@@ -29,15 +30,15 @@ func env(key, fallback string) string {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("uso: mtg4fun serve | create-user --name USUARIO --password SENHA | import-catalog --cards cards.xml --tokens tokens.xml")
+		return errors.New("uso: mtg4fun serve | create-user --name USUARIO --password SENHA | import-catalog [--cards cards.xml] [--tokens tokens.xml]")
 	}
 	command := os.Args[1]
 	if command != "serve" && command != "create-user" && command != "import-catalog" {
 		return errors.New("comando desconhecido")
 	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
-	cards := flags.String("cards", "", "cards.xml Cockatrice")
-	tokens := flags.String("tokens", "", "tokens.xml Cockatrice")
+	cards := flags.String("cards", "catalog/cards.xml", "cards.xml Cockatrice")
+	tokens := flags.String("tokens", "catalog/tokens.xml", "tokens.xml Cockatrice")
 	login := flags.String("login", "", "login da conta")
 	name := flags.String("name", "", "nome da pessoa")
 	password := flags.String("password", "", "senha da conta")
@@ -87,6 +88,11 @@ func run() error {
 	config, timeout, err := database.ConfigFromEnvironment()
 	if err != nil {
 		return err
+	}
+	if command == "import-catalog" {
+		// Bulk writes may stall while InnoDB flushes; HTTP request limits do not apply.
+		config.ReadTimeout = 5 * time.Minute
+		config.WriteTimeout = 5 * time.Minute
 	}
 	db, err := database.Open(config, timeout)
 	if err != nil {
