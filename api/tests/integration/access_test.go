@@ -3,8 +3,10 @@ package integration_test
 import (
 	"bytes"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -15,6 +17,44 @@ func TestAPIStartsWithoutFrontendBuild(t *testing.T) {
 	e.start(false)
 	requireStatus(t, e.request("GET", "/api/session", "", nil, nil), 401)
 	requireStatus(t, e.request("GET", "/", "", nil, nil), 404)
+}
+
+func TestConcurrentLoginsAllReceiveIndependentDurableSessions(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("amigo", "Amigo", "senha-segura-de-teste")
+	e.start(false)
+	for round := 0; round < 10; round++ {
+		start := make(chan struct{})
+		results := make(chan response, 6)
+		var workers sync.WaitGroup
+		for player := 0; player < 6; player++ {
+			workers.Add(1)
+			go func() {
+				defer workers.Done()
+				<-start
+				results <- e.login("amigo", "senha-segura-de-teste")
+			}()
+		}
+		close(start)
+		workers.Wait()
+		close(results)
+		if len(results) != 6 {
+			t.Fatal("nem todos os logins responderam")
+		}
+		var cookies []*http.Cookie
+		for result := range results {
+			if result.status != 200 {
+				logs, _ := os.ReadFile(e.logs)
+				t.Fatalf("login concorrente retornou %d: %s; logs: %s", result.status, result.body, logs)
+			}
+			requireUser(t, result, "amigo", "Amigo")
+			cookies = append(cookies, sessionCookie(t, result))
+		}
+		for _, cookie := range cookies {
+			requireUser(t, e.request("GET", "/api/session", "", cookie, nil), "amigo", "Amigo")
+			requireStatus(t, e.request("DELETE", "/api/session", "", cookie, nil), 204)
+		}
+	}
 }
 
 func TestFailedSessionWritesDoNotConfirmLoginOrLogout(t *testing.T) {

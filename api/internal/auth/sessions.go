@@ -45,7 +45,9 @@ func (s *Service) createSession(ctx context.Context, userID int64) (string, time
 	}
 	token := hex.EncodeToString(bytes)
 	expiry := time.Now().Add(24 * time.Hour)
-	tx, err := s.db.BeginTx(ctx, nil)
+	// Expired-session cleanup must not gap-lock an empty sessions table while
+	// other logins insert their tokens. Both writes still commit atomically.
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return "", time.Time{}, err
 	}

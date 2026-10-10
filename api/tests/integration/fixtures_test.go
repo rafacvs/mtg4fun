@@ -60,6 +60,7 @@ type environment struct {
 	process *exec.Cmd
 	done    chan error
 	url     string
+	logs    string
 }
 
 func newEnvironment(t *testing.T) *environment {
@@ -139,6 +140,7 @@ func (e *environment) start(secure bool) {
 		e.t.Fatal(err)
 	}
 	defer logFile.Close()
+	e.logs = logFile.Name()
 	e.process.Stdout, e.process.Stderr = logFile, logFile
 	if err := e.process.Start(); err != nil {
 		e.t.Fatal(err)

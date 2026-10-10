@@ -61,6 +61,16 @@ Testes usam MySQL 26.7.0 real em containers com portas e dados isolados.
   permanecem disponíveis; o banco MySQL inicial é vazio e as contas são
   recriadas pelo comando com `--password`.
 
+A verificação adicional de seis logins simultâneos encontrou um deadlock
+MySQL (erro 1213) na limpeza de sessões expiradas seguida da inserção do token.
+A transação de criação de sessão usa `READ COMMITTED` para não bloquear o
+intervalo vazio de sessões durante inserções concorrentes. Esse detalhe local
+preserva a atomicidade das gravações e os contratos de autenticação; não
+altera o isolamento de futuras operações de salas/partidas. O teste reproduziu
+o erro na versão anterior e a correção passou dez rodadas de seis logins,
+seguida da suíte completa Go. As falhas reais de gravação continuam retornando
+erro sem confirmar login ou logout.
+
 Operação: [README](../../README.md#executar-com-docker).
 
 ## Validação em andamento
@@ -77,3 +87,10 @@ Operação: [README](../../README.md#executar-com-docker).
 Os testes do executável/navegador usam containers MySQL reais com diretório
 temporário em tmpfs para acelerar a preparação. A durabilidade após recriação
 do banco é verificada separadamente em volumes Docker persistentes.
+
+## Revisão
+
+Revisão de `b3d08b9` até `9ffd53f`, em worktrees independentes, com dois eixos
+da skill `code-review`: Standards, 0 achados; Spec, 0 achados. Ambos os
+revisores fizeram leitura estática, sem executar testes. A conclusão não
+substitui a verificação operacional Docker ainda em andamento.
