@@ -1,0 +1,10 @@
+.deck-library { border-top: 1px solid #405344; margin-top: 28px; padding-top: 20px; }
+.deck-library h2 { margin-top: 0; }
+.deck-library input[type=file], .deck-library select { width: 100%; max-width: 100%; margin-bottom: 16px; color: #edf4ec; background: #12251e; border: 1px solid #627360; border-radius: 8px; padding: 12px; font: inherit; }
+.deck-library label { display: block; margin-bottom: 8px; }
+.deck-library article, .deck-library li { overflow-wrap: anywhere; }
+.deck-library ul { padding-left: 22px; }
+.deck-library form { margin-bottom: 20px; }
+
+.deck-filename { display: block; margin: 8px 0 16px; overflow-wrap: anywhere; color: #b9ccbf; }
+.deck-library input[hidden] { display: none; }

@@ -4,16 +4,16 @@
 
 **Blocked by:** 01: Criar contas e acessar a aplicação.
 
-**Status:** ready-for-agent
+**Status:** implementado; aguardando revisão do PR
 
-- [ ] Servidor carrega catálogo de cartas e fichas seguindo os formatos e fontes funcionais do Cockatrice; nenhum usuário precisa configurar um dataset no navegador.
-- [ ] Upload de .cod reproduz nomes, quantidades e seção principal com fixtures representativas do Cockatrice; arquivos inválidos retornam erro compreensível.
-- [ ] Seções não utilizadas não criam reserva/sideboard; documentar o tratamento escolhido sem adicionar edição de deck.
-- [ ] Deck fica vinculado ao usuário no banco até exclusão e pode ser reutilizado sem novo upload.
-- [ ] Listagem, upload e exclusão funcionam em desktop e celular em PT-BR; somente o titular modifica seus decks.
-- [ ] Upload não permite alterar o catálogo global ou recursos de outros usuários.
-- [ ] Decks e catálogo permanecem disponíveis após reinício; atualização do catálogo não obriga reupload dos decks.
-- [ ] Testes públicos verificam importação, isolamento entre contas, exclusão e reutilização com catálogo controlado.
+- [x] Servidor carrega catálogo de cartas e fichas seguindo os formatos e fontes funcionais do Cockatrice; nenhum usuário precisa configurar um dataset no navegador.
+- [x] Upload de .cod reproduz nomes, quantidades e seção principal com fixtures representativas do Cockatrice; arquivos inválidos retornam erro compreensível.
+- [x] Seções não utilizadas não criam reserva/sideboard; documentar o tratamento escolhido sem adicionar edição de deck.
+- [x] Deck fica vinculado ao usuário no banco até exclusão e pode ser reutilizado sem novo upload.
+- [x] Listagem, upload e exclusão funcionam em desktop e celular em PT-BR; somente o titular modifica seus decks.
+- [x] Upload não permite alterar o catálogo global ou recursos de outros usuários.
+- [x] Decks e catálogo permanecem disponíveis após reinício; atualização do catálogo não obriga reupload dos decks.
+- [x] Testes públicos verificam importação, isolamento entre contas, exclusão e reutilização com catálogo controlado.
 
 ## Regras de execução
 
@@ -22,3 +22,5 @@
 - Toda nova ação compartilhada deve validar permissão, filtrar informação privada e preservar estado/log após reinício. Não deixar segurança ou persistência para uma etapa posterior.
 - Seguir a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões): decisões de grande impacto exigem consulta e aprovação explícita do usuário antes de implementar; documentar a escolha não substitui aprovação.
 - Estes tickets compõem uma única primeira versão; entregas intermediárias não são declaração de que o produto completo já está pronto.
+
+Implementação e contexto de aprovação: [decks e catálogo](../decisions/02-decks-e-catalogo.md).

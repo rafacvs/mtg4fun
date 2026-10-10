@@ -18,7 +18,8 @@ func cookie(secure bool, token string, expires time.Time, maxAge int) *http.Cook
 	return &http.Cookie{Name: cookieName, Value: token, Path: "/", HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode, Expires: expires, MaxAge: maxAge}
 }
 
-func (s *Service) currentUser(r *http.Request) (User, string, error) {
+// CurrentUser validates the session token against durable authenticated access.
+func (s *Service) CurrentUser(r *http.Request) (User, string, error) {
 	c, err := r.Cookie(cookieName)
 	if err != nil {
 		return User{}, "", sql.ErrNoRows
@@ -39,7 +40,7 @@ func (s *Service) Handler(secure bool) http.Handler {
 }
 
 func (s *Service) session(w http.ResponseWriter, r *http.Request) {
-	user, _, err := s.currentUser(r)
+	user, _, err := s.CurrentUser(r)
 	if errors.Is(err, sql.ErrNoRows) {
 		httpserver.WriteError(w, 401, "Entre para continuar.")
 		return
@@ -52,7 +53,7 @@ func (s *Service) session(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) logout(w http.ResponseWriter, r *http.Request, secure bool) {
-	_, token, err := s.currentUser(r)
+	_, token, err := s.CurrentUser(r)
 	if errors.Is(err, sql.ErrNoRows) {
 		httpserver.WriteError(w, 401, "Entre para continuar.")
 		return
