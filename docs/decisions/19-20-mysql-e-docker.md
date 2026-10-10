@@ -108,3 +108,40 @@ também em worktrees independentes: Standards, 0 achados; Spec, 0 achados.
 Os revisores fizeram leitura estática; a suíte Go e os testes Docker foram
 executados separadamente. As revisões verificam o código, sem substituir
 a aprovação explícita da arquitetura registrada no início deste documento.
+
+## Simplificação dos comandos Compose
+
+Após a entrega, o usuário pediu comandos como `docker compose up -d api app`,
+com `api` iniciando Go e MySQL e `app` representando React. Esse pedido autoriza
+a simplificação operacional; a arquitetura aprovada de containers separados
+é preservada.
+
+O `.env.example` seleciona dev por `COMPOSE_FILE` e habilita `local-db` por
+`COMPOSE_PROFILES`; Compose lê o `.env` automaticamente na raiz. Produção
+seleciona somente o arquivo base no mesmo `.env`. Os arquivos Docker continuam
+em `infra/`. O serviço frontend passa a se chamar `app`, dependente de `api`;
+`api` depende de `mysql` quando o perfil local está ativo. A dependência é
+opcional para conservar o modo externo sem subir MySQL local. Usa-se
+`service_started`: a API continua responsável por esperar a prontidão do banco.
+
+O comando de contas também é único nos dois modos:
+`docker compose exec api mtg4fun create-user --name rafa --password 'senha123'`.
+O diretório do binário Go no dev faz parte do PATH do container.
+
+Verificação da simplificação: descoberta automática do `.env`, serviços,
+targets dev/prod e configuração externa passaram via `docker compose config`.
+`python3 infra/tests/docker_smoke.py --mode dev` passou: `api` iniciou apenas
+Go/MySQL; `api app` iniciou a aplicação completa; criação e duplicata de contas,
+9 cenários de navegador, hot reload React/Go e conta/sessão após recriação dos
+serviços foram verificados.
+
+A primeira rodada prod, executada em paralelo com dev, apresentou HTTP 500 em
+cenários de navegador. A causa não foi confirmada nessa rodada. A repetição
+separada de `python3 infra/tests/docker_smoke.py --mode prod` passou os mesmos
+cenários de contas, 9 cenários de navegador e durabilidade, sem alterar Go ou
+React. Durante essa repetição houve uma parada dos containers locais; retomou-se
+somente o projeto isolado de teste, com as mesmas portas e o volume existente,
+antes de concluir o fluxo. Os resultados anteriores acima são históricos.
+
+Sintaxe Python, links locais e `git diff --check` passaram. Nenhum banco externo
+foi conectado e nenhum volume de usuário foi alterado.

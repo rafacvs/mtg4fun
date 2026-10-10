@@ -35,7 +35,9 @@ def verify(mode):
     cookies = http.cookiejar.CookieJar()
     client = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookies))
     with tempfile.TemporaryDirectory(prefix=f"mtg4fun-{mode}-") as staging:
-        command = ["docker", "compose", "--env-file", "/dev/null", "-f", str(ROOT / "infra/compose.yaml")]
+        files = [str(ROOT / "infra/compose.yaml")]
+        env_file = Path(staging) / ".env"
+        command = ["docker", "compose", "--env-file", str(env_file), "-p", project]
         if mode == "dev":
             # Never mutate the developer's files to verify reload.
             sources = Path(staging)
@@ -45,10 +47,13 @@ def verify(mode):
             override = sources / "mounts.json"
             override.write_text(json.dumps({"services": {
                 "api": {"volumes": [f"{sources / 'api'}:/src/api"]},
-                "frontend": {"volumes": [f"{sources / 'app'}:/src/app"]},
+                "app": {"volumes": [f"{sources / 'app'}:/src/app"]},
             }}))
-            command += ["-f", str(ROOT / "infra/compose.dev.yaml"), "-f", str(override)]
-        command += ["-p", project, "--profile", "local-db"]
+            files += [str(ROOT / "infra/compose.dev.yaml"), str(override)]
+        # Use Compose's .env mode selection instead of CLI file/profile flags.
+        env_file.write_text(f"COMPOSE_FILE={os.pathsep.join(files)}\nCOMPOSE_PROFILES=local-db\n")
+        env.pop("COMPOSE_FILE", None)
+        env.pop("COMPOSE_PROFILES", None)
 
         def compose(*args, check=True):
             result = subprocess.run([*command, *args], cwd=ROOT, env=env, text=True, capture_output=True)
@@ -83,13 +88,17 @@ def verify(mode):
                 raise AssertionError(f"HTTP {actual[0]}, esperado {status}: {actual[1]!r}")
 
         def create(login, name, password, check=True):
-            executable = "/src/api/bin/mtg4fun" if mode == "dev" else "mtg4fun"
+            executable = "mtg4fun"
             return compose("exec", "-T", "api", executable, "create-user", "--login", login,
                            "--name", name, "--password", password, check=check)
 
         try:
             print(f"{mode}: construindo e iniciando projeto isolado {project}...", flush=True)
-            compose("up", "--build", "--detach")
+            compose("up", "--build", "--detach", "api")
+            running = set(compose("ps", "--services", "--status", "running").split())
+            if running != {"api", "mysql"}:
+                raise AssertionError(f"Subir api deve iniciar apenas api e mysql: {running}")
+            compose("up", "--build", "--detach", "api", "app")
             ready()
             version = compose("exec", "-T", "mysql", "mysql", "--version")
             if "26.7.0" not in version:
@@ -98,7 +107,7 @@ def verify(mode):
             require(request(path="/preparacao"), 200)
             create("amigo", "Amigo da mesa", "senha-do-navegador")
             create("convidado", "Convidado Docker", "senha-exclusiva-do-teste")
-            executable = "/src/api/bin/mtg4fun" if mode == "dev" else "mtg4fun"
+            executable = "mtg4fun"
             duplicate = subprocess.run([*command, "exec", "-T", "api", executable, "create-user", "--name", "convidado", "--password", "outra-senha"],
                                        cwd=ROOT, env=env, capture_output=True, text=True)
             if duplicate.returncode == 0 or "login já existe" not in duplicate.stderr:
@@ -117,7 +126,7 @@ def verify(mode):
                                cwd=ROOT, env=browser_env, check=True)
             print(f"{mode}: recriando todos os serviços e reutilizando o volume...", flush=True)
             compose("down")
-            compose("up", "--detach")
+            compose("up", "--detach", "api", "app")
             ready()
             after_restart = request()
             require(after_restart, 200)

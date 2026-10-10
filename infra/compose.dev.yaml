@@ -9,7 +9,7 @@ services:
       - go-build:/root/.cache/go-build
       - api-bin:/src/api/bin
 
-  frontend:
+  app:
     build:
       target: frontend-development
     environment:

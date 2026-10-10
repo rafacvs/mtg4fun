@@ -74,8 +74,10 @@
   não deixe essas garantias para uma etapa posterior.
 - Artefatos gerados ficam dentro do projeto correspondente (`api/bin/`,
   `api/data/`, `app/dist/` e relatórios do frontend), ignorados pelo Git.
-- Execute Go a partir de `api/` ou com `go -C api`. Execute Docker em `infra/`
-  com `docker compose ...` ou pela raiz com `docker compose -f infra/compose.yaml ...`.
+- Execute Go a partir de `api/` ou com `go -C api`. Execute Docker pela raiz
+  com `docker compose ...`; o `.env` seleciona arquivos e perfil conforme o README.
+  Os serviços operacionais são `api`, `app` e `mysql`; `api` inicia o banco local
+  como dependência quando o perfil `local-db` está habilitado.
   O projeto padrão é `mtg4fun`; use `-p <projeto>` para ambientes isolados e
   preserve o nome ao reiniciar para reutilizar o volume persistente.
 - Execute as verificações pertinentes ao que mudou e descreva o que foi efetivamente

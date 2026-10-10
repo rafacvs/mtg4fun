@@ -16,7 +16,8 @@ Salas, decks e partidas ainda não estão implementados.
 
 ## Executar com Docker
 
-Requisitos: Docker com Docker Compose. Execute os comandos a partir da raiz.
+Requisitos: Docker com Docker Compose 2.20 ou mais recente. Execute os comandos
+a partir da raiz.
 Go, Node e MySQL são instalados dentro das imagens, sem builds manuais no host.
 
 Copie a configuração e defina senhas locais diferentes para a aplicação e root:
@@ -26,6 +27,15 @@ cp .env.example .env
 ```
 
 Edite `DB_PASSWORD` e `MYSQL_ROOT_PASSWORD` no `.env`, ignorado pelo Git.
+Se já tem `.env`, preserve suas credenciais e acrescente `COMPOSE_FILE` e
+`COMPOSE_PROFILES` conforme o exemplo. Ao atualizar da configuração anterior
+(serviço `frontend`), use `docker compose down --remove-orphans` uma vez para
+remover os containers antigos, preservando os volumes.
+O `.env` também seleciona o modo: o exemplo já vem configurado para dev.
+O Compose lê essa configuração automaticamente na raiz, sem `-f` ou
+`--profile` nos comandos. Os serviços são `api` (Go, que inicia seu MySQL
+local como dependência) e `app` (React, que também inicia a API).
+
 O banco é **MySQL 26.7.0**, com armazenamento persistente e porta local
 `127.0.0.1:3307`. API e frontend são serviços separados. O navegador usa uma
 única origem, com `/api` encaminhado para o Go.
@@ -33,26 +43,32 @@ O banco é **MySQL 26.7.0**, com armazenamento persistente e porta local
 ### Desenvolvimento com hot reload
 
 ```bash
-docker compose --env-file .env -f infra/compose.yaml -f infra/compose.dev.yaml --profile local-db up --build -d
+docker compose up -d api app
 ```
+
+O primeiro `up` constrói as imagens automaticamente. Para subir somente o
+backend e o banco, use `docker compose up -d api`; para subir a aplicação
+completa, também pode usar `docker compose up -d app`.
 
 Abra http://localhost:8080. Vite atualiza React/TypeScript no navegador; Air
 recompila e reinicia a API ao alterar Go, SQL ou dependências. A API inicia
 sem `app/dist`. Código é montado do checkout; dependências e binários ficam
-em volumes próprios de desenvolvimento. O container frontend executa `npm ci`
+em volumes próprios de desenvolvimento. O serviço `app` executa `npm ci`
 ao iniciar, respeitando o lockfile. Após mudar dependências React, reinicie-o;
-para atualizar Air/Go/Node ou Dockerfile, repita `up --build -d`.
-
-Crie uma conta com um comando:
-
-```bash
-docker compose --env-file .env -f infra/compose.yaml -f infra/compose.dev.yaml exec api /src/api/bin/mtg4fun create-user --name rafa --password 'senha123'
-```
+para atualizar Air/Go/Node ou Dockerfile, repita `docker compose up --build -d api app`.
 
 ### Produção com build
 
+No `.env`, troque a seleção de arquivos para:
+
+```dotenv
+COMPOSE_FILE=infra/compose.yaml
+```
+
+Depois use os mesmos nomes de serviços:
+
 ```bash
-docker compose --env-file .env -f infra/compose.yaml --profile local-db up --build -d
+docker compose up --build -d api app
 ```
 
 O Docker compila Go e React. A API executa como usuário sem privilégios; Nginx
@@ -60,11 +76,13 @@ serve o cliente compilado e encaminha `/api`, preservando o host da origem.
 Não há código montado nem Vite/Air neste modo. O MySQL continua sendo local;
 este comando não conecta o banco de produção externo.
 
+### Criar conta em qualquer modo
+
 ```bash
-docker compose --env-file .env -f infra/compose.yaml exec api mtg4fun create-user --name rafa --password 'senha123'
+docker compose exec api mtg4fun create-user --name rafa --password 'senha123'
 ```
 
-Nos dois comandos de contas, `rafa` é o login e o nome exibido. Para um nome
+No comando de contas, `rafa` é o login e o nome exibido. Para um nome
 diferente, use `--login rafa --name 'Rafa Silva'`. Senhas aceitam 8–72 bytes
 UTF-8; login aceita 3–64 letras ASCII, números, ponto, hífen e sublinhado,
 diferenciando maiúsculas. Nome tem até 100 caracteres. Duplicatas falham sem
@@ -76,25 +94,26 @@ detalha autenticação e API.
 Em produção:
 
 ```bash
-docker compose --env-file .env -f infra/compose.yaml --profile local-db ps
-docker compose --env-file .env -f infra/compose.yaml --profile local-db logs -f api frontend mysql
-docker compose --env-file .env -f infra/compose.yaml --profile local-db restart api frontend
-docker compose --env-file .env -f infra/compose.yaml --profile local-db down
-docker compose --env-file .env -f infra/compose.yaml --profile local-db up -d
+docker compose ps
+docker compose logs -f api app mysql
+docker compose restart api app
+docker compose down
+docker compose up -d api app
 ```
 
-Em desenvolvimento, acrescente `-f infra/compose.dev.yaml` após o arquivo base
-em todos os comandos. Para alternar os modos, pare o modo atual com `down` e
-inicie o outro com `up --build -d`. O projeto padrão é `mtg4fun`; ambos os
-modos reutilizam o volume `mtg4fun_mysql-data` para contas e sessões.
+Os comandos são iguais nos dois modos. Para alternar, use `docker compose down`
+antes de editar `COMPOSE_FILE` no `.env`, e então `docker compose up --build -d api app`.
+Para voltar ao dev, use `COMPOSE_FILE=infra/compose.yaml:infra/compose.dev.yaml`.
+O projeto padrão é `mtg4fun`; ambos os modos reutilizam o volume `mtg4fun_mysql-data` para contas e sessões.
 `down` conserva os volumes; `down -v` os exclui e apaga os dados.
 O volume SQLite antigo `mtg4fun_data`, quando existente, e os arquivos antigos
 não são migrados nem excluídos. Contas antigas devem ser recriadas no MySQL,
 conforme a [decisão aprovada](docs/decisions/19-20-mysql-e-docker.md).
 
-Após alterações de código para produção, repita `up --build -d`. Para atualizar
-imagens base, execute `build --pull` e depois `up -d`; para baixar novamente a
-imagem de banco fixada, use `pull mysql`. Alterar senhas no `.env` não altera
+Após alterações de código para produção, repita `docker compose up --build -d api app`.
+Para atualizar imagens base, execute `docker compose build --pull` e depois
+`docker compose up -d api app`; para baixar novamente a imagem de banco fixada,
+use `docker compose pull mysql`. Alterar senhas no `.env` não altera
 usuários de um volume MySQL já inicializado: faça a rotação no banco também.
 
 ### Configuração e futuro banco externo
@@ -105,6 +124,8 @@ O Go lê variáveis de ambiente; o Compose lê o `.env` e fornece essas variáve
 
 | Variável | Padrão | Finalidade |
 | --- | --- | --- |
+| `COMPOSE_FILE` | `infra/compose.yaml:infra/compose.dev.yaml` | Modo dev; use somente `infra/compose.yaml` para produção. |
+| `COMPOSE_PROFILES` | `local-db` | Habilita MySQL local; vazio para banco externo. |
 | `DB_HOST` / `DB_PORT` | `mysql` / `3306` | Endereço acessado pela API. |
 | `DB_NAME` / `DB_USER` | `mtg4fun` / `mtg4fun` | Banco e usuário da aplicação. |
 | `DB_PASSWORD` | obrigatório | Senha da aplicação. |
@@ -119,7 +140,9 @@ O Go lê variáveis de ambiente; o Compose lê o `.env` e fornece essas variáve
 
 Para um banco externo futuro, configure `DB_HOST`, `DB_PORT`, `DB_NAME`,
 `DB_USER`, `DB_PASSWORD` e `DB_TLS=true` em um arquivo de ambiente próprio.
-Inicie o Compose **sem `--profile local-db`**, para subir apenas API e frontend.
+Esvazie `COMPOSE_PROFILES=` no arquivo de ambiente para desabilitar o MySQL
+local. `docker compose up -d api app` sobe então somente API e frontend.
+A dependência local da API é opcional para permitir esse modo externo.
 Nenhuma conexão externa foi configurada ou executada nesta entrega.
 Se precisar de CA própria, monte o PEM como somente leitura em um override
 Compose e indique seu caminho em `DB_TLS_CA`. A API cria as tabelas ausentes;
@@ -130,10 +153,10 @@ O contrato antigo `--db`/`DB_PATH` foi removido; use as variáveis `DB_*`.
 Para outro checkout/ambiente, use portas e projeto distintos:
 
 ```bash
-PORT=8081 MYSQL_PORT=3308 docker compose --env-file .env -f infra/compose.yaml -f infra/compose.dev.yaml -p mtg4fun-outro --profile local-db up --build -d
+PORT=8081 MYSQL_PORT=3308 docker compose -p mtg4fun-outro up -d api app
 ```
 
-Preserve `-p`, arquivos Compose e configuração ao operar esse ambiente, para
+Preserve `-p` e o `.env` ao operar esse ambiente, para
 reutilizar os volumes corretos. A API não publica porta própria no host.
 A primeira inicialização do MySQL pode levar alguns minutos; acompanhe os logs.
 

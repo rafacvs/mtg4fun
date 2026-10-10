@@ -22,6 +22,10 @@ services:
     restart: unless-stopped
 
   api:
+    depends_on:
+      mysql:
+        condition: service_started
+        required: false
     build:
       context: ..
       dockerfile: infra/Dockerfile
@@ -39,7 +43,7 @@ services:
       COOKIE_SECURE: "${COOKIE_SECURE:-false}"
     restart: unless-stopped
 
-  frontend:
+  app:
     build:
       context: ..
       dockerfile: infra/Dockerfile

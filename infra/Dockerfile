@@ -6,6 +6,7 @@ RUN go mod download
 FROM api-dependencies AS api-development
 RUN go install github.com/air-verse/air@v1.67.4
 COPY infra/air.toml /etc/air.toml
+ENV PATH="/src/api/bin:${PATH}"
 ENTRYPOINT ["air", "-c", "/etc/air.toml"]
 
 FROM api-dependencies AS api-build
