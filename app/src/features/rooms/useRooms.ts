@@ -8,24 +8,19 @@ export function useRooms() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const events = new EventSource('/api/rooms/events');
-    events.addEventListener('rooms', event => {
-      setRooms(JSON.parse((event as MessageEvent<string>).data).rooms);
+  useEffect(() => roomsApi.subscribe({
+    onRooms: updated => {
+      setRooms(updated);
       setLoading(false);
       setConnection('Salas atualizadas em tempo real.');
-    });
-    events.addEventListener('session-expired', () => {
-      events.close();
+    },
+    onSessionExpired: () => {
       setConnection('Sua sessão terminou. Saia e entre novamente para continuar.');
       setLoading(false);
-    });
-    events.addEventListener('sync-error', () => {
-      setConnection('Não foi possível atualizar as salas. Reconectando…');
-    });
-    events.onerror = () => setConnection('Conexão interrompida. Reconectando…');
-    return () => events.close();
-  }, []);
+    },
+    onSyncError: () => setConnection('Não foi possível atualizar as salas. Reconectando…'),
+    onDisconnected: () => setConnection('Conexão interrompida. Reconectando…'),
+  }), []);
 
   async function act(action: () => Promise<void>) {
     setBusy(true);
