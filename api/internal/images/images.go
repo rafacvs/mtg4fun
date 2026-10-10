@@ -19,6 +19,11 @@ import (
 
 const maxImageSize = 20 * 1024 * 1024
 
+const (
+	imageAccept    = "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+	imageUserAgent = "mtg4fun/1.0 (+https://github.com/rafacvs/mtg4fun)"
+)
+
 var ErrUnavailable = errors.New("imagem indisponível")
 
 type Image struct {
@@ -70,7 +75,13 @@ func readCached(cache, key string) (Image, error) {
 }
 
 func (s *Service) download(source, key string) (Image, error) {
-	response, err := s.client.Get(source)
+	request, err := http.NewRequest(http.MethodGet, source, nil)
+	if err != nil {
+		return Image{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
+	}
+	request.Header.Set("Accept", imageAccept)
+	request.Header.Set("User-Agent", imageUserAgent)
+	response, err := s.client.Do(request)
 	if err != nil {
 		return Image{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
 	}

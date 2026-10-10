@@ -14,6 +14,10 @@ import (
 func TestCardImageUsesSharedPersistentCache(t *testing.T) {
 	var downloads atomic.Int32
 	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("User-Agent") != "mtg4fun/1.0 (+https://github.com/rafacvs/mtg4fun)" || r.Header.Get("Accept") != "image/avif,image/webp,image/apng,image/*,*/*;q=0.8" {
+			http.Error(w, "cabeçalhos ausentes", http.StatusBadRequest)
+			return
+		}
 		downloads.Add(1)
 		w.Header().Set("Content-Type", "image/jpeg")
 		_, _ = w.Write([]byte("imagem-controlada"))
