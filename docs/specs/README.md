@@ -1,6 +1,6 @@
 # Especificações do mtg4fun
 
-Estas especificações consolidam o esboço inicial e as decisões da conversa de refinamento. São autossuficientes: o esboço pode ser removido posteriormente sem perda de requisitos. Esta tarefa não altera nem exclui o esboço.
+Estas especificações consolidam o esboço inicial e as decisões da conversa de refinamento. São autossuficientes: o esboço pode ser removido posteriormente sem perda de requisitos.
 
 ## Leitura
 
@@ -9,13 +9,6 @@ Estas especificações consolidam o esboço inicial e as decisões da conversa d
 3. [Servidor, sincronização e persistência](03-servidor-e-persistencia.md).
 
 As três especificações formam uma única primeira versão, incluindo jogo completo no celular desde o início.
-
-## Fluxo de desenvolvimento
-
-Siga o [AGENTS.md](../../AGENTS.md) e o [README](../../README.md): uma branch por
-tarefa, conventional commits e PR para revisão do usuário. Jamais faça commits
-na `master`. Ao concluir, publique a branch e deixe o PR aberto, sem merge
-local, merge do PR ou auto-merge; a integração é responsabilidade do usuário.
 
 ## Objetivo e direção
 
@@ -44,9 +37,11 @@ Preferir menos componentes, camadas, dependências e código, desde que os compo
 
 ## Decisões técnicas ainda abertas
 
-Banco específico, bibliotecas, estrutura interna de módulos, mecanismo exato de realtime, formato de mensagens, contratos detalhados da API, algoritmo de hash de senha e intervalos de atualização do catálogo serão definidos na implementação. Não são requisitos já aprovados.
+Banco específico, bibliotecas, estrutura interna de módulos, mecanismo exato de realtime, formato de mensagens, contratos detalhados da API, algoritmo de hash de senha e intervalos de atualização do catálogo não foram fixados por estas specs. Isso não autoriza decisões autônomas de grande impacto: siga a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões), consultando o usuário e obtendo aprovação explícita antes de implementar essas escolhas. Detalhes locais de baixo impacto seguem a mesma política.
 
-As fronteiras de teste descritas são propostas desta síntese; não houve aprovação separada delas nem código/testes existentes para reutilizar. Testar comportamento público do servidor e fluxos reais no navegador, evitando testes que espelhem estruturas internas.
+A implementação da issue 01 usa SQLite, mas essa escolha foi feita sem aprovação e rejeitada pelo usuário. A [issue 19](../issues/19-substituir-sqlite.md) acompanha a substituição, sem banco substituto aprovado. A [issue 20](../issues/20-docker-dev-e-producao.md) acompanha a separação dos modos Docker dev (hot reload) e produção (build); a divisão final de serviços permanece pendente de aprovação.
+
+As fronteiras de teste descritas são propostas da síntese original, quando ainda não havia código/testes existentes para reutilizar. O registro de acesso documenta as verificações da implementação posterior. Testar comportamento público do servidor e fluxos reais no navegador, evitando testes que espelhem estruturas internas.
 
 ## Fora da primeira versão
 
