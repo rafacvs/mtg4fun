@@ -12,7 +12,9 @@ as [issues](docs/issues/) dividem sua implementação.
 
 A implementação atual permite criar contas pelo executável e entrar e sair
 pelo navegador, com persistência de contas e sessões. Não há cadastro público.
-Salas, decks e partidas ainda não estão implementados.
+Usuários autenticados criam e entram em salas persistentes de até seis
+participantes, com atualizações em tempo real. Decks e partidas ainda não
+estão implementados nesta branch.
 
 ## Executar com Docker
 
@@ -190,3 +192,17 @@ Use `--mode dev` ou `--mode prod` para verificar somente um modo.
 | `scripts/` | Ferramentas de desenvolvimento. |
 
 As instruções para agentes estão no [AGENTS.md](AGENTS.md).
+
+## Salas
+
+Após entrar, qualquer usuário cria uma sala ou entra em uma sala em preparação
+com vaga. O criador ocupa a primeira das seis vagas; participantes e vagas são
+atualizados sem recarregar, em computador ou celular vertical/horizontal.
+A participação permanece após saída da aplicação e reinício do servidor.
+Ainda não há preparação de decks, prontidão ou início de partidas nesta entrega.
+
+A API oferece `GET /api/rooms`, `POST /api/rooms` e
+`POST /api/rooms/{id}/participants` (ações com JSON `{}`). Atualizações usam
+`GET /api/rooms/events` por SSE, com sessão existente e snapshot inicial após
+reconexão. O Nginx de produção está configurado para streaming sem buffering.
+Contrato, aprovação e impactos futuros: [decisão de salas/SSE](docs/decisions/03-salas-sse.md).

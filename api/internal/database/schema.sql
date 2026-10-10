@@ -12,3 +12,20 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id),
     INDEX sessions_expiry (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS rooms (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    creator_id BIGINT NOT NULL,
+    snapshot JSON NOT NULL,
+    FOREIGN KEY (creator_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS room_events (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    room_id BIGINT NOT NULL,
+    actor_id BIGINT NOT NULL,
+    action VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    FOREIGN KEY (actor_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

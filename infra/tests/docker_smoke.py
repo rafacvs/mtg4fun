@@ -106,6 +106,7 @@ def verify(mode):
             require(request(), 401)
             require(request(path="/preparacao"), 200)
             create("amigo", "Amigo da mesa", "senha-do-navegador")
+            create("segundo", "Segundo amigo", "senha-do-navegador")
             create("convidado", "Convidado Docker", "senha-exclusiva-do-teste")
             executable = "mtg4fun"
             duplicate = subprocess.run([*command, "exec", "-T", "api", executable, "create-user", "--name", "convidado", "--password", "outra-senha"],
@@ -119,6 +120,8 @@ def verify(mode):
             require(first, 200)
             browser_env = {**env, "E2E_BASE_URL": url}
             subprocess.run(["npm", "test", "--prefix", "app", "--", "acesso.spec.ts", "--workers=3"],
+                           cwd=ROOT, env=browser_env, check=True)
+            subprocess.run(["npm", "test", "--prefix", "app", "--", "salas.spec.ts", "--workers=1"],
                            cwd=ROOT, env=browser_env, check=True)
             if mode == "dev":
                 browser_env["E2E_HOT_RELOAD_ROOT"] = staging

@@ -35,7 +35,7 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 - Banco guarda credenciais com hash, decks por usuário, configuração de vida inicial, estado persistente e logs.
 - Catálogo e cache de imagens são compartilhados no servidor; armazenamento concreto será escolhido na implementação.
 - Hospedagem própria com Docker; não reproduzir toda a infraestrutura do Servatrice.
-- HTTP e comunicação realtime, com WebSocket ou equivalente a definir. Não fixar bibliotecas, banco, esquema detalhado ou organização física de módulos nesta spec.
+- HTTP para ações; salas recebem atualizações por SSE conforme a [decisão aprovada da issue 03](../decisions/03-salas-sse.md). O transporte realtime das partidas permanece a definir (WebSocket ou equivalente), exigindo aprovação explícita. O stream de salas não resolve filtragem privada, controle único de conexão, prontidão ou votações. Não fixar bibliotecas, banco, esquema detalhado ou organização física de módulos nesta spec.
 - Separação de responsabilidades não implica múltiplos serviços ou camadas desnecessárias.
 - A sessão de autenticação/conexão não representa a duração da partida.
 - Cockatrice informa conceitos úteis; não determina interfaces internas ou protocolo.

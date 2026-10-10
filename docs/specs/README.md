@@ -16,7 +16,7 @@ Criar uma aplicação web própria para jogar Magic online entre amigos que conh
 
 Cockatrice é referência funcional para ações, zonas, estados de cartas e interações. Servatrice é referência para responsabilidades de servidor. Não há tradução direta de C++/Qt, obrigação de repetir sua arquitetura ou compatibilidade de protocolo. A compatibilidade explicitamente necessária é com decks .cod e o fluxo de catálogo/imagens.
 
-A arquitetura usa React e TypeScript no navegador, Go no servidor, banco de dados e hospedagem própria com Docker. Desktop e celular compartilham cliente e servidor. HTTP atende operações comuns; comunicação em tempo real usa WebSocket ou mecanismo equivalente, a escolher na implementação.
+A arquitetura usa React e TypeScript no navegador, Go no servidor, banco de dados e hospedagem própria com Docker. Desktop e celular compartilham cliente e servidor. HTTP atende operações comuns. Para salas, atualizações em tempo real usam SSE, conforme a [decisão aprovada](../decisions/03-salas-sse.md); o transporte de partidas permanece aberto (WebSocket ou mecanismo equivalente), exigindo aprovação antes da implementação.
 
 Preferir menos componentes, camadas, dependências e código, desde que os comportamentos permaneçam corretos e claros.
 
@@ -37,7 +37,7 @@ Preferir menos componentes, camadas, dependências e código, desde que os compo
 
 ## Decisões técnicas ainda abertas
 
-Banco específico, bibliotecas, estrutura interna de módulos, mecanismo exato de realtime, formato de mensagens, contratos detalhados da API, algoritmo de hash de senha e intervalos de atualização do catálogo não foram fixados por estas specs. Isso não autoriza decisões autônomas de grande impacto: siga a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões), consultando o usuário e obtendo aprovação explícita antes de implementar essas escolhas. Detalhes locais de baixo impacto seguem a mesma política.
+Banco específico, bibliotecas, estrutura interna de módulos, mecanismo exato de realtime, formato de mensagens, contratos detalhados da API, algoritmo de hash de senha e intervalos de atualização do catálogo não foram fixados por estas specs. A [decisão de SSE para salas](../decisions/03-salas-sse.md) resolve somente esse escopo, sem definir transporte/contratos de partidas. Isso não autoriza decisões autônomas de grande impacto: siga a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões), consultando o usuário e obtendo aprovação explícita antes de implementar essas escolhas. Detalhes locais de baixo impacto seguem a mesma política.
 
 A implementação inicial da issue 01 usou SQLite sem aprovação e essa escolha
 foi rejeitada. Nas issues [19](../issues/19-substituir-sqlite.md) e

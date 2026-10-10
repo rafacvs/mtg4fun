@@ -95,5 +95,5 @@ func run() error {
 	if command == "create-user" {
 		return createUser(users, *login, *name, *password)
 	}
-	return serve(users, *addr, *webDir)
+	return serve(users, db, *addr, *webDir)
 }

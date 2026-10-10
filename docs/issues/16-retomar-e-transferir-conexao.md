@@ -22,3 +22,10 @@
 - Toda nova ação compartilhada deve validar permissão, filtrar informação privada e preservar estado/log após reinício. Não deixar segurança ou persistência para uma etapa posterior.
 - Seguir a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões): decisões de grande impacto exigem consulta e aprovação explícita do usuário antes de implementar; documentar a escolha não substitui aprovação.
 - Estes tickets compõem uma única primeira versão; entregas intermediárias não são declaração de que o produto completo já está pronto.
+
+## Decisão relacionada
+
+A [decisão SSE para salas](../decisions/03-salas-sse.md) registra a aprovação e
+a auditoria de impacto. Seu escopo é listar/criar/entrar e atualizar participantes;
+transporte e contratos de partida, prontidão e controle de conexão permanecem
+fora dessa escolha. Os critérios desta issue permanecem vigentes.

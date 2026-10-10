@@ -1,0 +1,60 @@
+.rooms {
+  margin-top: 28px;
+  border-top: 1px solid #405344;
+  padding-top: 20px;
+}
+
+.rooms h2,
+.room-card h3 {
+  margin: 0 0 12px;
+}
+
+.rooms > button {
+  margin-top: 8px;
+}
+
+.room-connection {
+  color: #c9dacc;
+  font-size: 13px;
+}
+
+.room-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.room-card {
+  background: #12251e;
+  border: 1px solid #405344;
+  border-radius: 10px;
+  padding: 18px;
+  overflow-wrap: anywhere;
+}
+
+.room-card p {
+  margin: 8px 0;
+}
+
+.room-card ul {
+  padding-left: 20px;
+  margin: 12px 0;
+}
+
+.room-card li {
+  margin: 6px 0;
+}
+
+.room-card li span {
+  color: #c9dacc;
+  font-size: 13px;
+}
+
+.room-vacancies,
+.room-member {
+  color: #dfbd79;
+}
+
+.room-card button {
+  margin-top: 10px;
+}
