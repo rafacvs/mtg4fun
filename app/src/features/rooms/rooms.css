@@ -58,3 +58,29 @@
 .room-card button {
   margin-top: 10px;
 }
+
+.room-preparation,
+.match-board {
+  border-top: 1px solid #405344;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.room-preparation select,
+.room-preparation button {
+  margin: 8px 8px 0 0;
+}
+
+.match-players {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.match-players article {
+  border: 1px solid #405344;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.match-players h4 { margin: 0; }

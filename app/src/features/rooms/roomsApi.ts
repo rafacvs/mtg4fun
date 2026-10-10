@@ -3,15 +3,22 @@ export type Room = {
   title: string;
   creatorId: number;
   status: string;
-  participants: { id: number; name: string }[];
+  participants: { id: number; name: string; ready: boolean }[];
   vacancies: number;
 };
 
-async function change(path: string): Promise<void> {
+export type Match = {
+  roomId: number;
+  initialLife: number;
+  turnOrder: { userId: number; name: string; roll: number }[];
+  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number }[];
+};
+
+async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
   const response = await fetch(path, {
-    method: 'POST',
+    method,
     headers: { 'Content-Type': 'application/json' },
-    body: '{}',
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     const data = await response.json();
@@ -44,4 +51,12 @@ export const roomsApi = {
   subscribe,
   create: () => change('/api/rooms'),
   join: (id: number) => change(`/api/rooms/${id}/participants`),
+  ready: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/ready`, 'PUT', { deckId }),
+  start: (id: number) => change(`/api/rooms/${id}/start`),
+  match: async (id: number): Promise<Match> => {
+    const response = await fetch(`/api/rooms/${id}/match`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
+    return data.match;
+  },
 };
