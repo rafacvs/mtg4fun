@@ -12,6 +12,7 @@ export function useDecks() {
     return () => { active = false; };
   }, []);
   async function upload(file: File) {
+    if (loading || busy) return;
     setBusy(true); setError('');
     try { const deck = await deckApi.upload(file); setDecks(current => [deck, ...current]); setSelected(deck.id); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Não foi possível importar o deck.'); }

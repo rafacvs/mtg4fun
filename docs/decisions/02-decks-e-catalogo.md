@@ -49,10 +49,12 @@ permite escolher e consultar decks salvos.
   MySQL real isolado, incluindo importação, bibliotecas de contas distintas,
   exclusão, reinício, catálogo atualizado/removido e rollback de gravação parcial.
 - `npm run typecheck --prefix app` e `npm run build --prefix app`: passaram.
-- `npm test --prefix app -- --workers=3`: 12 cenários passaram em desktop,
+- `npm test --prefix app -- --workers=3`: 15 cenários passaram em desktop,
   celular vertical e horizontal; os 3 cenários de hot reload foram omitidos
   porque são exclusivos do ambiente Docker dev. Fluxos de decks incluem
   escolha do arquivo, upload, listagem/seleção após recarga, exclusão e erros PT-BR.
+  A regressão de listagem inicial atrasada foi reproduzida antes da correção:
+  upload aguarda a conclusão da listagem para impedir perda visual do deck salvo.
 - Fixtures incluem `.cod` com escapes, quantidades repetidas e seção `side`,
   categorias de `main`, cartas divididas, fichas, nomes duplicados no catálogo e
   trecho do dataset oficial Magic-Token (versão de origem 20260925).

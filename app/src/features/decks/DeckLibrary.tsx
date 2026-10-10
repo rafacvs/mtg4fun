@@ -7,7 +7,7 @@ export function DeckLibrary() {
   const [file, setFile] = useState<File | null>(null);
   const chosen = library.decks.find(deck => deck.id === library.selected);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (file) await library.upload(file);
+    event.preventDefault(); if (file && !library.loading && !library.busy) await library.upload(file);
   }
   return <section className="deck-library" aria-labelledby="decks-title">
     <h2 id="decks-title">Meus decks</h2>
@@ -17,7 +17,7 @@ export function DeckLibrary() {
       <button type="button" className="secondary" disabled={library.busy} onClick={() => fileInput.current?.click()}>Selecionar arquivo</button>
       <span className="deck-filename">{file?.name ?? 'Nenhum arquivo selecionado'}</span>
       <input hidden ref={fileInput} id="deck-file" type="file" accept=".cod" disabled={library.busy} onChange={event => setFile(event.target.files?.[0] ?? null)} />
-      <button type="submit" disabled={!file || library.busy}>{library.busy ? 'Salvando…' : 'Importar deck'}</button>
+      <button type="submit" disabled={!file || library.loading || library.busy}>{library.busy ? 'Salvando…' : 'Importar deck'}</button>
     </form>
     {library.error && <p role="alert" className="error">{library.error}</p>}
     {library.loading ? <p role="status">Carregando decks…</p> : library.decks.length === 0 ? <p>Nenhum deck salvo. Importe seu primeiro arquivo.</p> : <>
