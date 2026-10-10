@@ -10,6 +10,13 @@ Estas especificações consolidam o esboço inicial e as decisões da conversa d
 
 As três especificações formam uma única primeira versão, incluindo jogo completo no celular desde o início.
 
+## Fluxo de desenvolvimento
+
+Siga o [AGENTS.md](../../AGENTS.md) e o [README](../../README.md): uma branch por
+tarefa, conventional commits e PR para revisão do usuário. Jamais faça commits
+na `master`. Ao concluir, publique a branch e deixe o PR aberto, sem merge
+local, merge do PR ou auto-merge; a integração é responsabilidade do usuário.
+
 ## Objetivo e direção
 
 Criar uma aplicação web própria para jogar Magic online entre amigos que conhecem o jogo, reduzindo as dificuldades da interface do Cockatrice. O resultado esperado é código organizado e mantível e partidas efetivamente jogáveis.

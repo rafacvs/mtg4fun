@@ -1,0 +1,10 @@
+/api/bin/
+/api/data/
+/app/node_modules/
+/app/dist/
+/app/playwright-report/
+/app/test-results/
+.env
+*.db
+*.db-shm
+*.db-wal

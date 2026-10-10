@@ -1,0 +1,39 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #edf4ec;
+  background: #12251e;
+  font-synthesis: none;
+  line-height: 1.6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 280px;
+  background: radial-gradient(ellipse at 85% 10%, #29463a 0, transparent 55%), #12251e;
+}
+
+h1 {
+  font-size: clamp(25px, 4vw, 33px);
+  line-height: 1.22;
+  letter-spacing: -.7px;
+  margin: 0 0 18px;
+  overflow-wrap: anywhere;
+}
+
+p {
+  color: #b9ccbf;
+  margin: 0 0 22px;
+}
+
+strong {
+  color: #edf4ec;
+}
+
+:focus-visible {
+  outline: 3px solid #e9cf92;
+  outline-offset: 3px;
+}
