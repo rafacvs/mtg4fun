@@ -3,8 +3,9 @@ import { useCardInspection } from './useCardInspection';
 import { useDecks } from './useDecks';
 import './decks.css';
 
-export function DeckLibrary() {
-  const library = useDecks();
+type Props = { library: ReturnType<typeof useDecks> };
+
+export function DeckLibrary({ library }: Props) {
   const inspection = useCardInspection();
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);

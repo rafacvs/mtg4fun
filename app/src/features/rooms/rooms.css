@@ -58,3 +58,53 @@
 .room-card button {
   margin-top: 10px;
 }
+
+.room-preparation,
+.match-board {
+  border-top: 1px solid #405344;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.room-preparation select,
+.room-preparation button {
+  margin: 8px 8px 0 0;
+}
+
+.match-players {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.match-players article {
+  border: 1px solid #405344;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.match-players h4 { margin: 0; }
+
+.zones {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.zone {
+  align-items: center;
+  background: #0b1712;
+  border: 1px solid #405344;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 4px 7px;
+}
+
+.zone span { font-size: 12px; }
+
+@media (orientation: landscape) and (max-width: 700px) {
+  .match-players { grid-template-columns: repeat(2, minmax(230px, 1fr)); }
+  .zones { grid-template-columns: repeat(6, minmax(76px, 1fr)); overflow-x: auto; }
+}

@@ -45,3 +45,27 @@ CREATE TABLE IF NOT EXISTS room_events (
     FOREIGN KEY (room_id) REFERENCES rooms(id),
     FOREIGN KEY (actor_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS game_settings (
+    setting_key VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+    setting_value INT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO game_settings(setting_key, setting_value) VALUES ('initial_life', 40);
+
+CREATE TABLE IF NOT EXISTS matches (
+    room_id BIGINT PRIMARY KEY,
+    snapshot JSON NOT NULL,
+    FOREIGN KEY (room_id) REFERENCES rooms(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS match_events (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    room_id BIGINT NOT NULL,
+    actor_id BIGINT NOT NULL,
+    action VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    payload JSON NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    FOREIGN KEY (room_id) REFERENCES matches(room_id),
+    FOREIGN KEY (actor_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

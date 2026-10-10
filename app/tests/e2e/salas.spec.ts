@@ -45,3 +45,23 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
     await expect(page.getByLabel('Login', { exact: true })).toBeVisible();
   } finally { await viewer.close(); }
 });
+
+test('prepara e inicia uma mesa com um participante', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Login', { exact: true }).fill('amigo');
+  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
+  await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
+  await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
+  const room = page.getByRole('article').filter({ has: page.getByText('Em preparação', { exact: true }) });
+  await room.getByLabel('Deck para a partida').selectOption({ label: 'Amigos & mágicas' });
+  await room.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
+  await expect(room.getByText('Pronto', { exact: false })).toBeVisible();
+  await room.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
+  const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
+  await expect(board).toBeVisible();
+  await expect(board.getByText('Vida: 40', { exact: true })).toBeVisible();
+  await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
+  await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Campo');
+});
