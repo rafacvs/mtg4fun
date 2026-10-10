@@ -17,6 +17,7 @@ import (
 	"mtg4fun/internal/catalog"
 	"mtg4fun/internal/decks"
 	"mtg4fun/internal/httpserver"
+	"mtg4fun/internal/rooms"
 )
 
 func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, addr, webDir string) error {
@@ -37,6 +38,9 @@ func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, addr, webDir
 	deckHandler := decks.New(db, cards).Handler(users)
 	api.Handle("/api/decks", deckHandler)
 	api.Handle("/api/decks/", deckHandler)
+	roomHandler := rooms.New(db, users).Handler()
+	api.Handle("/api/rooms", roomHandler)
+	api.Handle("/api/rooms/", roomHandler)
 	api.Handle("/api/", users.Handler(secure == "true"))
 	server := &http.Server{
 		Handler:           httpserver.NewHandler(api, webDir, secure == "true"),

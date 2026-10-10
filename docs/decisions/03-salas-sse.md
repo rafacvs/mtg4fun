@@ -1,0 +1,155 @@
+# Salas: HTTP, SSE e persistência
+
+Issue: [03: Criar e entrar em salas](../issues/03-criar-e-entrar-em-salas.md).
+
+## Proposta e aprovação explícita
+
+A implementação existente tinha somente autenticação HTTP, sem transporte em
+realtime. Foram apresentadas ao usuário as alternativas WebSocket, SSE e polling
+HTTP. A recomendação foi SSE para distribuir atualizações de salas do servidor
+para os navegadores, com ações por HTTP e sem nova dependência de transporte.
+WebSocket permite comunicação bidirecional, mas essa capacidade não é necessária
+para listar/criar/entrar; polling HTTP acrescenta requisições periódicas por cliente.
+
+Na conversa de implementação paralela das issues 02 e 03, o usuário aprovou:
+**“card 3 - sim. Registr mudanças de decisao nas docs se Websocket ou outra solução era prevista e alteramos, para termos os registro. Veja se alguma outra issue/spec foi impactada por essa decisão de SSE”**.
+
+A proposta aprovada inclui cookie existente, SSE com reconexão/snapshot completo,
+rotas abaixo, criador ocupando a primeira vaga, título gerado `Sala #ID`, entrada
+repetida idempotente e configuração de streaming no proxy. Essa autorização
+é específica para salas; não aprova transporte ou contrato de partida.
+
+WebSocket era uma alternativa aberta nas specs, junto de mecanismos equivalentes;
+não era um requisito obrigatório nem uma implementação substituída. SSE resolve
+essa escolha apenas no escopo desta entrega.
+
+## Contrato público e operação
+
+- `GET /api/rooms`: `{ "rooms": [...] }` para usuários autenticados.
+- `POST /api/rooms`: JSON `{}`; 201 com `{ "room": ... }`. O criador já participa.
+- `POST /api/rooms/{id}/participants`: JSON `{}`; 200 com `{ "room": ... }`.
+  Já participar retorna a mesma sala; 409 para sala cheia/iniciada, 404 para
+  sala inexistente e 400 para identificador/corpo inválido.
+- `GET /api/rooms/events`: stream `text/event-stream`, eventos `rooms` com
+  `{ "rooms": [...] }`. Envia a visão completa inicial e após mudanças, permitindo
+  reconexão sem replay de mensagens antigas. A lista contém somente identidade
+  pública dos participantes; nenhum deck, credencial ou estado privado de jogo.
+- Sala contém `id`, `title`, `creatorId`, `status`, `participants` (`id`, `name`)
+  e `vacancies`. Estado inicial `preparing`, capacidade seis. A participação
+  permanece após saída/logout/reinício; esta issue não cria ação de sair de sala.
+- Rotas exigem a sessão existente. Erros JSON seguem o contrato de acesso em PT-BR,
+  sem cache; ações HTTP conservam a proteção de origem existente.
+- Stream revalida sessão e consulta snapshots MySQL a cada segundo, enviando
+  apenas alterações; heartbeat mantém o proxy ativo. Revogação/expiração emite
+  `session-expired` e encerra. Falha de armazenamento emite `sync-error` e encerra,
+  para que o cliente reconecte e obtenha estado confirmado.
+- Nginx desativa buffering na rota de eventos. O servidor renova o prazo de escrita
+  do stream por envio, preservando timeouts das demais rotas. Nenhum broker,
+  dependência nova ou arquivo de dados é necessário.
+
+Snapshots JSON de preparação e entradas de log ficam no MySQL aprovado. Cada
+criação/entrada nova salva snapshot e log numa transação antes de confirmar.
+Entrada bloqueia a linha da sala (`FOR UPDATE`), serializando disputa pela última
+vaga. A leitura da lista usa um único SELECT consistente. Repetir a entrada não
+altera participantes nem gera nova entrada de log. Salas têm linhas/snapshots
+independentes; nenhuma memória de conexão determina sua existência.
+
+## Auditoria de impacto nas especificações e issues
+
+Todos os arquivos em `docs/specs/` e `docs/issues/` foram conferidos. Referências
+explícitas a WebSocket/realtime abertas aparecem no índice de specs e na spec
+03; ambas passam a apontar para esta decisão, limitando SSE a salas.
+
+- [Issue 05: preparação/início](../issues/05-preparar-e-iniciar-partida.md): poderá
+  ampliar snapshot/status das salas e suas atualizações, mas não recebe aqui
+  contrato de prontidão/início nem escolha de transporte de estado privado.
+- [Issue 16: retomada/controle](../issues/16-retomar-e-transferir-conexao.md):
+  EventSource reconecta a lista; não implementa controle exclusivo da conexão,
+  invalidação de ações HTTP antigas ou retomada da partida.
+- Issues 08, 09, 11, 14, 15 e 17 exigem sincronização/persistência genérica sem
+  transporte obrigatório. Seus requisitos permanecem vigentes; SSE de salas
+  não entrega manipulação de cartas, log privado, turnos, votação ou snapshots
+  de partida. Qualquer decisão de grande impacto nesses contratos continua
+  exigindo consulta/aprovação explícita conforme AGENTS.md.
+
+## Validação
+
+- `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram com
+  MySQL real isolado. A API cobre criação, persistência/reinício, concorrência
+  na última vaga, repetição idempotente, isolamento, sessão, SSE/reconexão,
+  revogação, corpos inválidos e rollback quando o log não pode ser salvo.
+- `go -C api test ./tests/integration -run TestRoomEventsStayOpenAcrossIdlePeriod -count=1`: passou; stream ocioso permanece utilizável após 16 segundos,
+  além do timeout normal de escrita HTTP.
+- `npm run typecheck --prefix app`, `npm run build --prefix app` e
+  `npm test --prefix app -- --workers=3`: passaram; 12 cenários de navegador
+  em desktop/celular vertical/horizontal, com mouse/toque. Três cenários de
+  hot reload foram omitidos por serem exclusivos de Docker dev. Capturas
+  conferidas e ausência de overflow horizontal verificada no navegador.
+- Após a extração de tratamento autenticado apontada na revisão, `go vet` e
+  os três testes dirigidos de criação, concorrência e SSE passaram novamente.
+- Após separar transporte SSE no cliente em `e4cc885`, typecheck/build e os
+  três cenários de salas em desktop/celular vertical/horizontal passaram.
+- `python3 infra/tests/docker_smoke.py --mode prod`: passou com exit 0 em
+  projeto, portas e volume isolados. Builds Go/React de produção, Nginx com
+  SSE, nove cenários de acesso e três de salas com mouse/toque passaram.
+  A lista pública das três salas, incluindo todos os participantes/vagas,
+  foi comparada antes/depois de recriar API, frontend e MySQL com o mesmo
+  volume e permaneceu idêntica. Conta, sessão e logout também foram verificados.
+  O ambiente isolado foi removido ao terminar; serviços/volumes do usuário
+  permaneceram intactos. Rodadas anteriores interrompidas para atualizar o
+  teste não contam como validação concluída.
+- Links locais e `git diff --check` conferidos.
+
+Code-review da skill, em subagentes independentes, de `96aeacd` até `d1969be`:
+Standards sem violações e uma observação heurística sobre duplicação de sessão;
+Spec sem achados. A extração em `db2d5e4` recebeu revisão complementar de ambos:
+Standards 0 achados; Spec 0 achados. Revisões estáticas, sem executar testes.
+
+A coordenação realizou revisão independente complementar até `e4cc885`, em
+worktrees próprias: Standards sem violações documentais pendentes, com uma
+observação heurística opcional sobre repetição do envio de heartbeat; Spec
+sem achados. A separação de transporte no cliente corrigiu a observação de
+organização dessa revisão. Esse resultado é da coordenação, distinto dos
+subagentes originais acima; as revisões foram estáticas.
+
+A aprovação de transporte acima é do usuário; testes e revisões não a substituem.
+
+## Integração dos PRs 5 e 6
+
+Após o merge do PR 5 na `master`, o usuário pediu a análise dos conflitos do
+PR 6 e autorizou: **“faça essa correção de conflitos em uma worktree e commite
+no PR #6 com push para ver se os conflitos resolveram”**. Esta autorização
+abrange atualizar a branch do PR 6 e publicar a resolução; o PR permanece
+aberto para revisão, sem integração na `master`.
+
+A resolução preserva as duas entregas: handlers HTTP de decks e salas, tabelas
+de biblioteca e salas/log, ambos os componentes na tela autenticada e fixtures
+com o segundo participante e os caminhos do catálogo de teste. O catálogo
+versionado em memória mantém a aprovação posterior registrada na
+[decisão de decks](02-decks-e-catalogo.md#catálogo-versionado-em-memória).
+Não há mudança de contrato, transporte ou requisito de produto.
+
+O cenário de navegador de salas agora importa um deck, acompanha criação e
+entrada de outro participante e verifica deck e participação após recarga.
+Seus seletores de artigos da primeira página ficam restritos à região Salas,
+para não contar o artigo de detalhes do deck.
+
+Validação da resolução de conflitos em 2026-10-10 (distinta dos resultados
+históricos acima):
+
+- `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram, com MySQL
+  isolado e as suítes de acesso, decks e salas na mesma versão da API.
+- `npm ci --prefix app` e `npm run build --prefix app`: passaram, incluindo
+  typecheck. `npm test --prefix app -- --workers=3`: 18 cenários passaram em
+  desktop, celular vertical e horizontal; três cenários de hot reload foram
+  omitidos porque exigem Docker dev. O fluxo combinado de deck/sala passou
+  nas três orientações.
+- Links locais dos documentos alterados e `git diff --cached --check`: passaram.
+- `python3 infra/tests/docker_smoke.py --mode prod`: passou em projeto, portas
+  e volume isolados. Os nove cenários de acesso e três fluxos combinados de
+  decks/salas passaram com o catálogo versionado e Nginx/SSE. Salas,
+  participantes/vagas e sessão permaneceram iguais após recriação de API,
+  frontend e MySQL com o mesmo volume; logout/reautenticação também passaram.
+  A inicialização do volume novo foi lenta e a API reiniciou após a primeira
+  espera pelo banco; o teste concluiu e removeu seu ambiente isolado.
+  Não foi repetido o smoke Docker dev nesta resolução.

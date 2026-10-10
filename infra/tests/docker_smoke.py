@@ -106,6 +106,7 @@ def verify(mode):
             require(request(), 401)
             require(request(path="/preparacao"), 200)
             create("amigo", "Amigo da mesa", "senha-do-navegador")
+            create("segundo", "Segundo amigo", "senha-do-navegador")
             create("convidado", "Convidado Docker", "senha-exclusiva-do-teste")
             executable = "mtg4fun"
             duplicate = subprocess.run([*command, "exec", "-T", "api", executable, "create-user", "--name", "convidado", "--password", "outra-senha"],
@@ -120,10 +121,16 @@ def verify(mode):
             browser_env = {**env, "E2E_BASE_URL": url}
             subprocess.run(["npm", "test", "--prefix", "app", "--", "acesso.spec.ts", "--workers=3"],
                            cwd=ROOT, env=browser_env, check=True)
+            subprocess.run(["npm", "test", "--prefix", "app", "--", "salas.spec.ts", "--workers=1"],
+                           cwd=ROOT, env=browser_env, check=True)
             if mode == "dev":
                 browser_env["E2E_HOT_RELOAD_ROOT"] = staging
                 subprocess.run(["npm", "test", "--prefix", "app", "--", "hot-reload.spec.ts", "--project=desktop", "--workers=1"],
                                cwd=ROOT, env=browser_env, check=True)
+            rooms_before = request(path="/api/rooms")
+            require(rooms_before, 200)
+            if len(json.loads(rooms_before[1])["rooms"]) != 3:
+                raise AssertionError("Os três fluxos de navegador devem preservar suas salas")
             print(f"{mode}: recriando todos os serviços e reutilizando o volume...", flush=True)
             compose("down")
             compose("up", "--detach", "api", "app")
@@ -132,6 +139,10 @@ def verify(mode):
             require(after_restart, 200)
             if after_restart[1] != first[1]:
                 raise AssertionError("Sessão/identidade não sobreviveu à recriação")
+            rooms_after = request(path="/api/rooms")
+            require(rooms_after, 200)
+            if rooms_after[1] != rooms_before[1]:
+                raise AssertionError("Salas/participação não sobreviveram à recriação API/MySQL")
             require(request("DELETE"), 204)
             require(request(), 401)
             require(request("POST", data=credentials), 200)

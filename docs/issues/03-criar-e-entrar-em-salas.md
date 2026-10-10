@@ -4,15 +4,15 @@
 
 **Blocked by:** 01: Criar contas e acessar a aplicação.
 
-**Status:** ready-for-agent
+**Status:** implementado; PR aguardando revisão
 
-- [ ] Listar e criar salas; qualquer usuário autenticado entra em sala com vaga sem aprovação extra.
-- [ ] Limite de seis participantes é aplicado pelo servidor, inclusive quando entradas concorrem pela última vaga.
-- [ ] Participantes e vagas atualizam nos clientes conectados sem recarregar a página.
-- [ ] Várias salas coexistem sem compartilhar participantes ou alterações indevidamente.
-- [ ] Salas e participação são persistentes; conexão temporária não define a existência da sala.
-- [ ] Telas e erros em PT-BR funcionam com mouse e toque.
-- [ ] Testes com múltiplos clientes cobrem limite, entrada concorrente, isolamento e chamadas não autenticadas.
+- [x] Listar e criar salas; qualquer usuário autenticado entra em sala com vaga sem aprovação extra.
+- [x] Limite de seis participantes é aplicado pelo servidor, inclusive quando entradas concorrem pela última vaga.
+- [x] Participantes e vagas atualizam nos clientes conectados sem recarregar a página.
+- [x] Várias salas coexistem sem compartilhar participantes ou alterações indevidamente.
+- [x] Salas e participação são persistentes; conexão temporária não define a existência da sala.
+- [x] Telas e erros em PT-BR funcionam com mouse e toque.
+- [x] Testes com múltiplos clientes cobrem limite, entrada concorrente, isolamento e chamadas não autenticadas.
 
 ## Regras de execução
 
@@ -21,3 +21,10 @@
 - Toda nova ação compartilhada deve validar permissão, filtrar informação privada e preservar estado/log após reinício. Não deixar segurança ou persistência para uma etapa posterior.
 - Seguir a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões): decisões de grande impacto exigem consulta e aprovação explícita do usuário antes de implementar; documentar a escolha não substitui aprovação.
 - Estes tickets compõem uma única primeira versão; entregas intermediárias não são declaração de que o produto completo já está pronto.
+
+## Decisão relacionada
+
+A [decisão SSE para salas](../decisions/03-salas-sse.md) registra a aprovação e
+a auditoria de impacto. Seu escopo é listar/criar/entrar e atualizar participantes;
+transporte e contratos de partida, prontidão e controle de conexão permanecem
+fora dessa escolha. Os critérios desta issue permanecem vigentes.
