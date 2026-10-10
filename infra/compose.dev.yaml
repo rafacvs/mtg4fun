@@ -8,6 +8,7 @@ services:
       - go-modules:/go/pkg/mod
       - go-build:/root/.cache/go-build
       - api-bin:/src/api/bin
+      - image-cache:/src/api/data/images
 
   app:
     build:
@@ -23,3 +24,4 @@ volumes:
   go-build:
   api-bin:
   node-modules:
+  image-cache:

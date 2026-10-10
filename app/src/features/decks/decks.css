@@ -5,6 +5,11 @@
 .deck-library article, .deck-library li { overflow-wrap: anywhere; }
 .deck-library ul { padding-left: 22px; }
 .deck-library form { margin-bottom: 20px; }
+.card-link { display: inline; min-height: auto; margin: 0; padding: 0; color: #e9cf92; background: none; border: 0; border-radius: 0; font: inherit; text-align: left; text-decoration: underline; }
+.card-inspection { margin-top: 20px; padding: 16px; border: 1px solid #627360; border-radius: 8px; background: #0d1c17; }
+.card-inspection h3 { margin: 12px 0 8px; }
+.card-text { white-space: pre-wrap; }
+.card-inspection img { display: block; width: min(100%, 480px); max-height: 70vh; object-fit: contain; border-radius: 8px; }
 
 .deck-filename { display: block; margin: 8px 0 16px; overflow-wrap: anywhere; color: #b9ccbf; }
 .deck-library input[hidden] { display: none; }

@@ -42,6 +42,7 @@ func run() error {
 	passwordStdin := flags.Bool("password-stdin", false, "ler senha de stdin")
 	addr := flags.String("addr", env("ADDR", ":8080"), "endereço HTTP")
 	webDir := flags.String("web", env("WEB_DIR", ""), "arquivos do cliente (opcional; vazio executa somente a API)")
+	imageCache := flags.String("image-cache", env("IMAGE_CACHE", "data/images"), "cache compartilhado de imagens")
 	if err := flags.Parse(os.Args[2:]); err != nil {
 		return err
 	}
@@ -105,5 +106,5 @@ func run() error {
 	if command == "create-user" {
 		return createUser(users, *login, *name, *password)
 	}
-	return serve(users, db, cardCatalog, *addr, *webDir)
+	return serve(users, db, cardCatalog, *imageCache, *addr, *webDir)
 }

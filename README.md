@@ -219,8 +219,13 @@ produção, reconstrua a imagem da API.
 Decks guardam apenas nomes e quantidades e são resolvidos contra o catálogo atual
 a cada listagem. Atualizações não exigem novo upload. Cartas removidas de um
 dataset permanecem nos decks, identificadas como indisponíveis. O navegador não
-configura nem baixa datasets. Imagens/cache e preparação da partida ainda são
-entregas posteriores.
+configura nem baixa datasets. Ao consultar uma carta, mostra seu texto e pede uma
+imagem ampliada à API. A API baixa sob demanda do Scryfall conforme os
+identificadores Cockatrice e guarda um cache compartilhado persistente entre
+usuários e reinícios; falha de imagem não impede a leitura do texto. Não há
+download antecipado das imagens. Detalhes e autorização: [decisão de
+imagens](docs/decisions/04-imagens-compartilhadas.md). A preparação da partida
+ainda é uma entrega posterior.
 
 A API autenticada oferece `GET /api/decks` (biblioteca com cartas/quantidades),
 `POST /api/decks` (multipart, campo `file`, retorno `deck`) e

@@ -19,12 +19,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && groupadd --gid 10001 mtg4fun && useradd --uid 10001 --gid 10001 --no-create-home mtg4fun
 COPY --from=api-build /mtg4fun /usr/local/bin/mtg4fun
 COPY api/catalog/ /usr/local/share/mtg4fun/catalog/
-USER 10001:10001
+COPY infra/api-entrypoint.sh /usr/local/bin/api-entrypoint
+RUN chmod 0755 /usr/local/bin/api-entrypoint
 ENV ADDR=:8080 \
     CATALOG_CARDS=/usr/local/share/mtg4fun/catalog/cards.xml \
-    CATALOG_TOKENS=/usr/local/share/mtg4fun/catalog/tokens.xml
+    CATALOG_TOKENS=/usr/local/share/mtg4fun/catalog/tokens.xml \
+    IMAGE_CACHE=/var/lib/mtg4fun/images
 EXPOSE 8080
-ENTRYPOINT ["mtg4fun"]
+ENTRYPOINT ["api-entrypoint", "mtg4fun"]
 CMD ["serve"]
 
 FROM node:22-bookworm-slim AS frontend-dependencies
