@@ -17,6 +17,7 @@ async function request(path: string, options?: RequestInit) {
 }
 
 export const deckApi = {
+	imageURL: (name: string): string => `/api/cards/image?name=${encodeURIComponent(name)}`,
   list: async (): Promise<Deck[]> => (await request('/api/decks')).decks,
   upload: async (file: File): Promise<Deck> => {
     const body = new FormData();

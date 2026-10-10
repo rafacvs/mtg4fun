@@ -1,14 +1,13 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { type DeckCard } from './deckApi';
+import { useCardInspection } from './useCardInspection';
 import { useDecks } from './useDecks';
 import './decks.css';
 
 export function DeckLibrary() {
   const library = useDecks();
+  const inspection = useCardInspection();
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [card, setCard] = useState<DeckCard | null>(null);
-  const [imageFailed, setImageFailed] = useState(false);
   const chosen = library.decks.find(deck => deck.id === library.selected);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,16 +32,16 @@ export function DeckLibrary() {
       </select>
       {chosen && <article>
         <h3>{chosen.name}</h3>
-        <ul>{chosen.cards.map(deckCard => <li key={deckCard.name}>{deckCard.quantity} × <button type="button" className="card-link" aria-label={`Consultar ${deckCard.name}`} onClick={() => { setCard(deckCard); setImageFailed(false); }}>{deckCard.name}</button>{!deckCard.available && <strong> — indisponível no catálogo atual</strong>}</li>)}</ul>
-        <button className="secondary" disabled={library.busy} onClick={() => { setCard(null); void library.remove(chosen.id); }}>Excluir deck</button>
+        <ul>{chosen.cards.map(deckCard => <li key={deckCard.name}>{deckCard.quantity} × <button type="button" className="card-link" aria-label={`Consultar ${deckCard.name}`} onClick={() => inspection.inspect(deckCard)}>{deckCard.name}</button>{!deckCard.available && <strong> — indisponível no catálogo atual</strong>}</li>)}</ul>
+        <button className="secondary" disabled={library.busy} onClick={() => { inspection.close(); void library.remove(chosen.id); }}>Excluir deck</button>
       </article>}
     </>}
-    {card && <article className="card-inspection" role="dialog" aria-label={`Consulta de ${card.name}`}>
-      <button type="button" className="secondary" onClick={() => setCard(null)}>Fechar consulta</button>
-      <h3>{card.name}</h3>
-      <p className="card-text">{card.text || 'O catálogo não informa texto para esta carta.'}</p>
-      {!imageFailed && <img src={`/api/cards/image?name=${encodeURIComponent(card.name)}`} alt={`Imagem ampliada de ${card.name}`} onError={() => setImageFailed(true)} />}
-      {imageFailed && <p role="status">A imagem não está disponível agora. O texto da carta continua acessível.</p>}
+    {inspection.card && <article className="card-inspection" role="dialog" aria-label={`Consulta de ${inspection.card.name}`}>
+      <button type="button" className="secondary" onClick={inspection.close}>Fechar consulta</button>
+      <h3>{inspection.card.name}</h3>
+      <p className="card-text">{inspection.card.text || 'O catálogo não informa texto para esta carta.'}</p>
+      {!inspection.imageFailed && <img src={inspection.imageURL} alt={`Imagem ampliada de ${inspection.card.name}`} onError={inspection.reportImageFailure} />}
+      {inspection.imageFailed && <p role="status">A imagem não está disponível agora. O texto da carta continua acessível.</p>}
     </article>}
   </section>;
 }
