@@ -10,9 +10,12 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Salas', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
+  const uploadedDeckId = await page.getByLabel('Escolher deck salvo').inputValue();
+  await page.getByRole('link', { name: 'Salas', exact: true }).click();
   const rooms = page.getByRole('region', { name: 'Salas', exact: true });
   const viewer = await browser.newContext({ baseURL, viewport: testInfo.project.use.viewport, isMobile: testInfo.project.use.isMobile, hasTouch: testInfo.project.use.hasTouch });
   try {
@@ -37,10 +40,11 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
     await page.screenshot({ path: testInfo.outputPath('salas.png'), fullPage: true });
     await page.reload();
     await expect(rooms.getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) }).getByText('Você participa desta sala.')).toBeVisible();
-    await page.getByLabel('Escolher deck salvo').selectOption({ label: 'Amigos & mágicas (7 cartas)' });
+    await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
+    await page.getByLabel('Escolher deck salvo').selectOption(uploadedDeckId);
     await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
-    await expect(page.getByText('Nenhum deck salvo. Importe seu primeiro arquivo.')).toBeVisible();
+    await expect(page.getByLabel('Escolher deck salvo').locator(`option[value="${uploadedDeckId}"]`)).toHaveCount(0);
     await page.getByRole('button', { name: 'Sair', exact: true }).click();
     await expect(page.getByLabel('Login', { exact: true })).toBeVisible();
   } finally { await viewer.close(); }
@@ -51,8 +55,10 @@ test('prepara e inicia uma mesa com um participante', async ({ page }) => {
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
+  await page.getByRole('link', { name: 'Salas', exact: true }).click();
   await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
   const room = page.getByRole('article').filter({ has: page.getByText('Em preparação', { exact: true }) });
   await room.getByLabel('Deck para a partida').selectOption({ label: 'Amigos & mágicas' });
@@ -64,4 +70,21 @@ test('prepara e inicia uma mesa com um participante', async ({ page }) => {
   await expect(board.getByText('Vida: 40', { exact: true })).toBeVisible();
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Campo');
+});
+
+test('navega entre lobby e biblioteca com teclado, histórico e recarga', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Login', { exact: true }).fill('amigo');
+  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
+  const decksLink = page.getByRole('link', { name: 'Meus decks', exact: true });
+  await decksLink.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#\/decks$/);
+  await expect(page.getByRole('heading', { name: 'Seus decks, em um só lugar.' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Meus decks', exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
 });

@@ -7,6 +7,7 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }) => {
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Meus decks' })).toBeVisible();
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Selecionar arquivo', exact: true }).click();
@@ -24,6 +25,7 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }) => {
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'inválido.cod', mimeType: 'application/xml', buffer: Buffer.from('not XML') });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Arquivo .cod inválido');
+  await expect(page.getByRole('button', { name: 'Importar deck', exact: true })).toBeVisible();
 });
 
 test('aguarda a listagem inicial antes de importar', async ({ page }) => {
@@ -39,6 +41,7 @@ test('aguarda a listagem inicial antes de importar', async ({ page }) => {
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
   await expect(page.getByText('Carregando decks…')).toBeVisible();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
   try {
@@ -64,6 +67,7 @@ test('consulta texto e imagem da carta e explica imagem indisponível', async ({
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await page.getByRole('button', { name: 'Consultar Island', exact: true }).click();
