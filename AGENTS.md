@@ -72,6 +72,27 @@
 - Entregue comportamento completo com segurança e persistência pertinentes.
   Prefira testes observáveis do contrato público e fluxos reais de navegador;
   não deixe essas garantias para uma etapa posterior.
+- Ao testar um comportamento, exercite a fronteira que o usuário ou outra
+  integração realmente usa. Não considere suficiente uma asserção sobre
+  detalhes internos, uma resposta fabricada pelo próprio teste ou uma
+  simulação que substitui justamente o componente sob verificação.
+  **Tautological tests are considered harmful.** Eles criam confiança falsa,
+  ocultam que o contrato público não foi exercitado e não substituem teste de
+  unidade, integração ou navegador apropriado.
+- Use testes unitários para lógica determinística e decisões locais; use
+  integração para HTTP/executável, banco, persistência, permissões e cache; e
+  use navegador para interação e renderização. Todo requisito observável deve
+  ter ao menos uma dessas fronteiras que poderia falhar se a implementação
+  estivesse desconectada do requisito. Consulte [a estratégia de testes](docs/testing.md)
+  para escolher a combinação mínima.
+- Para uma dependência HTTP externa, o teste com fonte controlada deve verificar
+  a forma da requisição de saída relevante (método, URL, cabeçalhos,
+  redirecionamentos e limites) e suas respostas de sucesso/falha. Um mock pode
+  cobrir uma falha específica da interface, mas não pode ser a única evidência
+  de que o fluxo completo funciona. Antes de entregar uma integração nova,
+  execute e registre uma verificação manual ou opt-in contra o provedor real;
+  ela não entra na suíte determinística nem torna a disponibilidade externa um
+  requisito do CI.
 - Artefatos gerados ficam dentro do projeto correspondente (`api/bin/`,
   `api/data/`, `app/dist/` e relatórios do frontend), ignorados pelo Git.
 - Execute Go a partir de `api/` ou com `go -C api`. Execute Docker pela raiz
