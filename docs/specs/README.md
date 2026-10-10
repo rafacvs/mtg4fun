@@ -39,7 +39,14 @@ Preferir menos componentes, camadas, dependências e código, desde que os compo
 
 Banco específico, bibliotecas, estrutura interna de módulos, mecanismo exato de realtime, formato de mensagens, contratos detalhados da API, algoritmo de hash de senha e intervalos de atualização do catálogo não foram fixados por estas specs. Isso não autoriza decisões autônomas de grande impacto: siga a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões), consultando o usuário e obtendo aprovação explícita antes de implementar essas escolhas. Detalhes locais de baixo impacto seguem a mesma política.
 
-A implementação da issue 01 usa SQLite, mas essa escolha foi feita sem aprovação e rejeitada pelo usuário. A [issue 19](../issues/19-substituir-sqlite.md) acompanha a substituição, sem banco substituto aprovado. A [issue 20](../issues/20-docker-dev-e-producao.md) acompanha a separação dos modos Docker dev (hot reload) e produção (build); a divisão final de serviços permanece pendente de aprovação.
+A implementação inicial da issue 01 usou SQLite sem aprovação e essa escolha
+foi rejeitada. Nas issues [19](../issues/19-substituir-sqlite.md) e
+[20](../issues/20-docker-dev-e-producao.md), o usuário aprovou MySQL 26.7.0,
+serviços separados de API e frontend, dev com Air/Vite, produção com Go
+compilado/Nginx e configuração por ambiente preparada para banco externo.
+O MySQL começa vazio, preservando o armazenamento SQLite antigo. O
+[registro da aprovação e implementação](../decisions/19-20-mysql-e-docker.md)
+acompanha o estado e a validação da entrega.
 
 As fronteiras de teste descritas são propostas da síntese original, quando ainda não havia código/testes existentes para reutilizar. O registro de acesso documenta as verificações da implementação posterior. Testar comportamento público do servidor e fluxos reais no navegador, evitando testes que espelhem estruturas internas.
 

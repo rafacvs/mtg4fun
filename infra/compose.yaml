@@ -1,16 +1,54 @@
 name: mtg4fun
 
 services:
-  app:
+  mysql:
+    image: mysql:26.7.0
+    profiles: [local-db]
+    environment:
+      MYSQL_DATABASE: "${DB_NAME:-mtg4fun}"
+      MYSQL_USER: "${DB_USER:-mtg4fun}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:?Defina DB_PASSWORD no .env}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-}"
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3307}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u "$$MYSQL_USER" "$$MYSQL_DATABASE" -e "SELECT 1" >/dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  api:
     build:
       context: ..
       dockerfile: infra/Dockerfile
+      target: api-production
+    environment:
+      ADDR: ":8080"
+      DB_HOST: "${DB_HOST:-mysql}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_NAME: "${DB_NAME:-mtg4fun}"
+      DB_USER: "${DB_USER:-mtg4fun}"
+      DB_PASSWORD: "${DB_PASSWORD:?Defina DB_PASSWORD no .env}"
+      DB_TLS: "${DB_TLS:-false}"
+      DB_TLS_CA: "${DB_TLS_CA:-}"
+      DB_CONNECT_TIMEOUT: "${DB_CONNECT_TIMEOUT:-120s}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      target: frontend-production
     ports:
       - "${BIND_ADDR:-127.0.0.1}:${PORT:-8080}:8080"
-    environment:
-      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
-    volumes:
-      - data:/data
+    depends_on:
+      - api
     restart: unless-stopped
+
 volumes:
-  data:
+  mysql-data:

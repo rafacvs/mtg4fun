@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -17,6 +18,8 @@ import (
 )
 
 var executable string
+var mysqlEnvironment map[string]string
+var databaseNumber int
 
 func TestMain(m *testing.M) {
 	directory, err := os.MkdirTemp("", "mtg4fun-cli-tests-")
@@ -31,7 +34,21 @@ func TestMain(m *testing.M) {
 		os.RemoveAll(directory)
 		os.Exit(1)
 	}
+	output, err = exec.Command("python3", "../../../scripts/test-mysql.py").CombinedOutput()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "MySQL: %v; %s\n", err, output)
+		os.RemoveAll(directory)
+		os.Exit(1)
+	}
+	if err := json.Unmarshal(output, &mysqlEnvironment); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	code := m.Run()
+	if output, err := exec.Command("docker", "rm", "-f", "-v", mysqlEnvironment["container"]).CombinedOutput(); err != nil {
+		fmt.Fprintf(os.Stderr, "cleanup: %v; %s\n", err, output)
+		code = 1
+	}
 	os.RemoveAll(directory)
 	os.Exit(code)
 }
@@ -48,7 +65,11 @@ type environment struct {
 func newEnvironment(t *testing.T) *environment {
 	t.Helper()
 	directory := t.TempDir()
-	e := &environment{t: t, db: filepath.Join(directory, "contas com espaços.db"), web: filepath.Join(directory, "web")}
+	databaseNumber++
+	e := &environment{t: t, db: "access_" + strconv.Itoa(databaseNumber), web: filepath.Join(directory, "web")}
+	e.sql("CREATE DATABASE " + e.db)
+	e.sql("CREATE USER '" + e.db + "'@'%' IDENTIFIED BY '" + mysqlEnvironment["DB_PASSWORD"] + "'; GRANT ALL ON " + e.db + ".* TO '" + e.db + "'@'%'")
+	t.Cleanup(func() { e.sql("DROP DATABASE " + e.db + "; DROP USER '" + e.db + "'@'%'") })
 	if err := os.Mkdir(e.web, 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -59,9 +80,44 @@ func newEnvironment(t *testing.T) *environment {
 	return e
 }
 
+func (e *environment) command(args ...string) *exec.Cmd {
+	command := exec.Command(executable, args...)
+	for _, value := range os.Environ() {
+		if !strings.HasPrefix(value, "DB_") && !strings.HasPrefix(value, "COOKIE_SECURE=") {
+			command.Env = append(command.Env, value)
+		}
+	}
+	for key, value := range mysqlEnvironment {
+		if strings.HasPrefix(key, "DB_") {
+			command.Env = append(command.Env, key+"="+value)
+		}
+	}
+	command.Env = append(command.Env, "DB_NAME="+e.db, "DB_USER="+e.db)
+	return command
+}
+
+func (e *environment) sql(statement string) []byte {
+	e.t.Helper()
+	output, err := exec.Command("docker", "exec", "--env", "MYSQL_PWD="+mysqlEnvironment["DB_PASSWORD"], mysqlEnvironment["container"], "mysql", "-u", "root", "--batch", "--skip-column-names", "-e", statement).CombinedOutput()
+	if err != nil {
+		e.t.Fatalf("preparar/auditar banco: %v; %s", err, output)
+	}
+	return output
+}
+
+func (e *environment) disconnectDatabaseConnections() {
+	e.t.Helper()
+	// MySQL caches database grants per connection. Reconnect after changing
+	// permissions so the failure scenario exercises the new grants.
+	statements := e.sql("SELECT CONCAT('KILL ', ID, ';') FROM information_schema.PROCESSLIST WHERE USER = '" + e.db + "'")
+	if len(bytes.TrimSpace(statements)) != 0 {
+		e.sql(string(statements))
+	}
+}
+
 func (e *environment) create(login, name, password string) (string, error) {
 	e.t.Helper()
-	command := exec.Command(executable, "create-user", "--db", e.db, "--login", login, "--name", name, "--password-stdin")
+	command := e.command("create-user", "--login", login, "--name", name, "--password-stdin")
 	command.Stdin = strings.NewReader(password)
 	output, err := command.CombinedOutput()
 	return string(output), err
@@ -76,8 +132,8 @@ func (e *environment) mustCreate(login, name, password string) {
 
 func (e *environment) start(secure bool) {
 	e.t.Helper()
-	e.process = exec.Command(executable, "serve", "--db", e.db, "--addr", "127.0.0.1:0", "--web", e.web)
-	e.process.Env = append(os.Environ(), fmt.Sprintf("COOKIE_SECURE=%t", secure))
+	e.process = e.command("serve", "--addr", "127.0.0.1:0", "--web", e.web)
+	e.process.Env = append(e.process.Env, fmt.Sprintf("COOKIE_SECURE=%t", secure))
 	logFile, err := os.CreateTemp(e.t.TempDir(), "server-*.log")
 	if err != nil {
 		e.t.Fatal(err)

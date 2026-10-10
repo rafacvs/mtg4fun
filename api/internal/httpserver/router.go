@@ -7,6 +7,9 @@ import "net/http"
 func NewHandler(api http.Handler, webDir string, secure bool) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/api/", api)
+	if webDir == "" {
+		return protect(mux, secure)
+	}
 	files := http.FileServer(http.Dir(webDir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {

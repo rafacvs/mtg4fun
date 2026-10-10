@@ -2,22 +2,19 @@
 
 **What to build:** Oferecer modos Docker de desenvolvimento com hot reload e produção com build, cada um iniciado por um comando Compose a partir da raiz.
 
-**Blocked by:** Aprovação explícita da arquitetura de serviços e alinhamento com a escolha de banco da issue 19.
+**Blocked by:** Nenhum; aprovação explícita registrada.
 
-**Status:** needs-user-decision
+**Status:** in-progress
 
-## Contexto e decisões pendentes
+## Contexto e aprovação
 
-O Compose atual tem um único serviço `app`, cujo executável Go serve a API e
-o React compilado. O Dockerfile já compila ambos dentro da imagem, mas não
-há modo dev em containers. O Vite local oferece hot reload fora do Docker;
-o backend exige `app/dist/index.html` para iniciar.
-
-O usuário prefere API e frontend em serviços separados, mas a divisão final
-não foi aprovada. Antes de implementar, apresentar a proposta dos serviços
-por modo, a abordagem de recarga do backend e os comandos de inicialização,
-com seus impactos. Obter aprovação explícita das decisões de grande impacto;
-não tratar este ticket como autorização para escolher a arquitetura.
+A proposta e a autorização do usuário estão no
+[registro MySQL/Docker](../decisions/19-20-mysql-e-docker.md).
+MySQL 26.7.0 substitui SQLite; contas são recriadas em banco vazio,
+preservando arquivos e volumes antigos. API e frontend ficam separados:
+Air/Vite no desenvolvimento, Go compilado/Nginx em produção. Configuração
+por ambiente prepara uma conexão externa futura, sem acessar produção.
+A implementação e suas verificações estão em andamento.
 
 ## Critérios de aceite
 

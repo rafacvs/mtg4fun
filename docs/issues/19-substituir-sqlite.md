@@ -2,21 +2,19 @@
 
 **What to build:** Corrigir a escolha de persistência da primeira entrega, substituindo SQLite por um banco definido e aprovado explicitamente pelo usuário.
 
-**Blocked by:** Aprovação explícita do banco substituto e do tratamento dos dados existentes.
+**Blocked by:** Nenhum; aprovação explícita registrada.
 
-**Status:** needs-user-decision
+**Status:** in-progress
 
-## Contexto e decisões pendentes
+## Contexto e aprovação
 
-A issue 01 foi implementada com SQLite sem consulta prévia. O usuário rejeitou
-essa escolha como inviável para o projeto. Não há banco substituto aprovado;
-este ticket não autoriza o agente a escolher um por conta própria.
-
-Antes de implementar, analisar alternativas à luz das specs de persistência,
-operação Docker e evolução de salas/partidas. Apresentar os impactos e obter
-aprovação do banco, das dependências relevantes e do tratamento dos dados
-existentes. Confirmar se há contas/sessões a preservar e definir migração ou
-recriação com o usuário; não presumir descarte nem compatibilidade automática.
+A proposta e a autorização do usuário estão no
+[registro MySQL/Docker](../decisions/19-20-mysql-e-docker.md).
+MySQL 26.7.0 substitui SQLite; contas são recriadas em banco vazio,
+preservando arquivos e volumes antigos. API e frontend ficam separados:
+Air/Vite no desenvolvimento, Go compilado/Nginx em produção. Configuração
+por ambiente prepara uma conexão externa futura, sem acessar produção.
+A implementação e suas verificações estão em andamento.
 
 ## Critérios de aceite
 

@@ -3,14 +3,83 @@ package integration_test
 import (
 	"bytes"
 	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestAPIStartsWithoutFrontendBuild(t *testing.T) {
+	e := newEnvironment(t)
+	e.web = ""
+	e.start(false)
+	requireStatus(t, e.request("GET", "/api/session", "", nil, nil), 401)
+	requireStatus(t, e.request("GET", "/", "", nil, nil), 404)
+}
+
+func TestFailedSessionWritesDoNotConfirmLoginOrLogout(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
+	e.start(false)
+	loggedIn := e.login("rafa", "senha-segura-de-teste")
+	requireStatus(t, loggedIn, 200)
+	cookie := sessionCookie(t, loggedIn)
+	e.sql("REVOKE INSERT, DELETE ON " + e.db + ".* FROM '" + e.db + "'@'%'")
+	e.disconnectDatabaseConnections()
+	failed := e.login("rafa", "senha-segura-de-teste")
+	requireStatus(t, failed, 500)
+	if len(failed.cookies) != 0 {
+		t.Fatal("login não persistido recebeu cookie")
+	}
+	failed = e.request("DELETE", "/api/session", "", cookie, nil)
+	requireStatus(t, failed, 500)
+	if len(failed.cookies) != 0 {
+		t.Fatal("logout não persistido limpou cookie")
+	}
+	requireUser(t, e.request("GET", "/api/session", "", cookie, nil), "rafa", "Rafa")
+	output, err := e.create("amigo", "Amigo", "senha-segura-de-teste")
+	if err == nil || strings.Contains(output, "Conta criada.") {
+		t.Fatalf("gravação negada confirmou conta: %v; %s", err, output)
+	}
+	e.sql("GRANT INSERT, DELETE ON " + e.db + ".* TO '" + e.db + "'@'%'")
+	e.disconnectDatabaseConnections()
+	requireStatus(t, e.request("DELETE", "/api/session", "", cookie, nil), 204)
+	requireStatus(t, e.request("GET", "/api/session", "", cookie, nil), 401)
+	requireStatus(t, e.login("amigo", "senha-segura-de-teste"), 401)
+}
+
+func TestDifferentLoginCaseCreatesDistinctAccounts(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-primeira-conta")
+	e.mustCreate("Rafa", "Outra conta", "senha-segunda-conta")
+	e.start(false)
+	requireUser(t, e.login("rafa", "senha-primeira-conta"), "rafa", "Rafa")
+	requireUser(t, e.login("Rafa", "senha-segunda-conta"), "Rafa", "Outra conta")
+	requireStatus(t, e.login("RAFA", "senha-primeira-conta"), 401)
+}
+
+func TestUnavailableDatabaseFailsWithoutLeakingItsPassword(t *testing.T) {
+	e := newEnvironment(t)
+	command := e.command("create-user", "--name", "amigo", "--password", "senha-segura")
+	command.Env = append(command.Env, "DB_HOST=127.0.0.1", "DB_PORT=1", "DB_CONNECT_TIMEOUT=1s")
+	output, err := command.CombinedOutput()
+	if err == nil || strings.Contains(string(output), "Conta criada.") {
+		t.Fatalf("banco indisponível confirmou conta: %v; %s", err, output)
+	}
+	if bytes.Contains(output, []byte(mysqlEnvironment["DB_PASSWORD"])) {
+		t.Fatal("erro expôs senha do banco")
+	}
+}
+
+func TestTLSRejectsUntrustedDatabaseCertificate(t *testing.T) {
+	e := newEnvironment(t)
+	command := e.command("create-user", "--name", "amigo", "--password", "senha-segura")
+	command.Env = append(command.Env, "DB_TLS=true", "DB_CONNECT_TIMEOUT=1s")
+	output, err := command.CombinedOutput()
+	if err == nil || !bytes.Contains(output, []byte("certificate")) {
+		t.Fatalf("certificado sem confiança não foi recusado: %v; %s", err, output)
+	}
+}
 
 func TestAccountCreatedByCommandCanAccessPrivateResource(t *testing.T) {
 	e := newEnvironment(t)
@@ -33,9 +102,9 @@ func TestAccountCreatedWithPasswordArgumentCanLogIn(t *testing.T) {
 	} {
 		t.Run(example.label, func(t *testing.T) {
 			e := newEnvironment(t)
-			args := append([]string{"create-user", "--db", e.db}, example.args...)
+			args := append([]string{"create-user"}, example.args...)
 			args = append(args, "--password", example.password)
-			output, err := exec.Command(executable, args...).CombinedOutput()
+			output, err := e.command(args...).CombinedOutput()
 			if err != nil || !strings.Contains(string(output), "Conta criada.") {
 				t.Fatalf("criar conta com argumentos: %v; %s", err, output)
 			}
@@ -53,8 +122,8 @@ func TestPasswordArgumentIsRequiredAndCannotBeCombinedWithStdin(t *testing.T) {
 		{"--password", "", "--password-stdin"},
 	} {
 		e := newEnvironment(t)
-		commandArgs := append([]string{"create-user", "--db", e.db, "--name", "rafa"}, args...)
-		if output, err := exec.Command(executable, commandArgs...).CombinedOutput(); err == nil {
+		commandArgs := append([]string{"create-user", "--name", "rafa"}, args...)
+		if output, err := e.command(commandArgs...).CombinedOutput(); err == nil {
 			t.Fatalf("senha ausente ou ambígua aceita: %v; %s", args, output)
 		}
 	}
@@ -69,6 +138,7 @@ func TestInvalidCredentialsAndUnauthenticatedRequestsAreRejected(t *testing.T) {
 	for _, credentials := range []struct{ login, password string }{
 		{"rafa", "senha-incorreta"}, {"desconhecido", "senha-segura-de-teste"},
 		{"rafa' OR 1=1 --", "senha-segura-de-teste"}, {"Rafa", "senha-segura-de-teste"},
+		{"rafa ", "senha-segura-de-teste"}, {"rafa\t", "senha-segura-de-teste"},
 	} {
 		t.Run(credentials.login, func(t *testing.T) {
 			r := e.login(credentials.login, credentials.password)
@@ -97,28 +167,13 @@ func TestAccountsAndSessionsSurviveServerRestart(t *testing.T) {
 	requireUser(t, e.request("GET", "/api/session", "", cookie, nil), "rafa", "Rafa")
 	requireUser(t, e.login("rafa", "senha-duravel-de-teste"), "rafa", "Rafa")
 	e.stop()
-	// Audit the durable artifacts without relying on the schema or SQL queries.
-	files, err := filepath.Glob(e.db + "*")
-	if err != nil || len(files) == 0 {
-		t.Fatalf("arquivos duráveis ausentes: %v", err)
+	// Audit secrets separately from the public behavior assertions above.
+	data := e.sql("SELECT password_hash FROM " + e.db + ".users; SELECT token_hash FROM " + e.db + ".sessions")
+	if bytes.Contains(data, []byte("senha-duravel-de-teste")) || bytes.Contains(data, []byte(cookie.Value)) {
+		t.Fatal("credencial em texto puro no armazenamento")
 	}
-	hashPattern := regexp.MustCompile(`\$2[aby]\$12\$[./A-Za-z0-9]{53}`)
-	foundHash := false
-	for _, file := range files {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if bytes.Contains(data, []byte("senha-duravel-de-teste")) {
-			t.Fatal("senha em texto puro no armazenamento")
-		}
-		if bytes.Contains(data, []byte(cookie.Value)) {
-			t.Fatal("token de sessão em texto puro no armazenamento")
-		}
-		foundHash = foundHash || hashPattern.Match(data)
-	}
-	if !foundHash {
-		t.Fatal("hash bcrypt custo 12 ausente no armazenamento")
+	if !regexp.MustCompile(`\$2[aby]\$12\$[./A-Za-z0-9]{53}`).Match(data) {
+		t.Fatal("hash bcrypt custo 12 ausente")
 	}
 }
 
