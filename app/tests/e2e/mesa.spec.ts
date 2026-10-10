@@ -1,7 +1,10 @@
 import { test, expect } from './fixtures';
 import type { BrowserContext, Locator } from '@playwright/test';
 
+const cardImage = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64');
+
 test('observa seis mesas mantendo mão, ações e privacidade com sincronização real', async ({ browser, baseURL }, testInfo) => {
+  test.setTimeout(60_000);
   const contexts: BrowserContext[] = [];
   const activate = async (button: Locator) => testInfo.project.use.hasTouch ? button.tap() : button.click();
   try {
@@ -26,6 +29,8 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     expect((await contexts[0].request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
     const page = await contexts[0].newPage();
     const other = await contexts[1].newPage();
+    await page.route('**/api/cards/image?*', route => route.fulfill({ status: 200, contentType: 'image/jpeg', body: cardImage }));
+    await other.route('**/api/cards/image?*', route => route.fulfill({ status: 200, contentType: 'image/jpeg', body: cardImage }));
     if (testInfo.project.name === 'celular') {
       await page.setViewportSize({ width: 844, height: 390 });
       await other.setViewportSize({ width: 844, height: 390 });
@@ -34,26 +39,72 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await other.goto(`/#/salas/${roomId}`);
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
-    await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(1);
+    const drawn = hand.getByRole('button', { name: 'Island', exact: true });
+    await expect(drawn).toHaveCount(1);
+    await expect(drawn.locator('img')).toBeVisible();
+    await activate(drawn);
+    const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
+    await expect(preview.getByRole('img', { name: 'Imagem ampliada de Island' })).toBeVisible();
+    await activate(preview.getByRole('button', { name: 'Fechar', exact: true }));
+    await expect(preview).toHaveCount(0);
     for (const name of ['Segundo amigo', 'Amigo 3', 'Amigo 4', 'Amigo 5', 'Amigo 6']) {
       await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: new RegExp(name) }));
       await expect(page.getByRole('article', { name: `Mesa de ${name}`, exact: true })).toBeVisible();
-      await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+      await expect(drawn).toBeVisible();
     }
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
-    await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(2);
+    await expect(drawn).toHaveCount(2);
     await expect(page.getByRole('article', { name: 'Mesa de Amigo 6', exact: true })).toBeVisible();
     await expect(other.getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
-    await activate(hand.getByRole('button', { name: 'Island', exact: true }).first());
-    await activate(page.getByRole('button', { name: 'Mover para Campo', exact: true }));
-    await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(1);
+    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
+    const ownTable = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+    const field = ownTable.getByRole('region', { name: 'Campo', exact: true });
+    const library = ownTable.getByRole('region', { name: 'Grimório', exact: true });
+    const graveyard = ownTable.getByRole('region', { name: 'Cemitério', exact: true });
+    const exile = ownTable.getByRole('region', { name: 'Exílio', exact: true });
+    const command = ownTable.getByRole('region', { name: 'Comando', exact: true });
+    const fieldBox = await field.boundingBox();
+    const libraryBox = await library.boundingBox();
+    const graveyardBox = await graveyard.boundingBox();
+    const exileBox = await exile.boundingBox();
+    const commandBox = await command.boundingBox();
+    expect(libraryBox!.x).toBeGreaterThan(fieldBox!.x + fieldBox!.width * 0.45);
+    expect(graveyardBox!.y).toBeGreaterThan(libraryBox!.y + libraryBox!.height * 0.5);
+    expect(exileBox!.y).toBeGreaterThan(graveyardBox!.y + graveyardBox!.height * 0.5);
+    expect(commandBox!.y).toBeGreaterThan(exileBox!.y + exileBox!.height * 0.5);
+    for (const slot of [graveyardBox, exileBox, commandBox]) expect(slot!.height / slot!.width).toBeGreaterThan(1.2);
+    for (const slot of [graveyardBox, exileBox, commandBox]) expect(slot!.height / slot!.width).toBeLessThan(1.6);
+    await expect(library.locator('.library-stack span')).toHaveCount(3);
+    await expect(library).not.toContainText('Island');
+    await expect(command).toContainText('Comandante');
+    await drawn.first().dragTo(field, { steps: 8 });
+    await expect(field.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+    await expect(drawn).toHaveCount(1);
     await activate(other.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
     const observed = other.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
-    await expect(observed.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
-    await activate(observed.getByRole('button', { name: 'Island', exact: true }));
-    await expect(other.getByText('· Carta do oponente', { exact: false })).toBeVisible();
-    await expect(other.getByRole('button', { name: 'Mover para Cemitério', exact: true })).toHaveCount(0);
+    const publicCard = observed.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });
+    await expect(publicCard).toBeVisible();
+    await activate(publicCard);
+    await expect(other.getByRole('dialog', { name: 'Imagem de Island' })).toBeVisible();
+    await other.keyboard.press('Escape');
+    await publicCard.dragTo(observed.getByRole('region', { name: 'Cemitério', exact: true }), { steps: 8 });
+    await expect(publicCard).toBeVisible();
+    await expect(observed.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button')).toHaveCount(0);
     await expect(other.getByRole('region', { name: 'Mão', exact: true }).getByRole('button')).toHaveCount(0);
+    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo 6/ }));
+    const hiddenCard = drawn;
+    const start = await hiddenCard.boundingBox();
+    await page.mouse.move(start!.x + start!.width / 2, start!.y + start!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(start!.x + start!.width / 2, start!.y - 40, { steps: 6 });
+    const column = page.getByRole('complementary', { name: 'Suas zonas' });
+    await expect(column).toBeVisible();
+    const drop = await column.getByRole('region', { name: 'Cemitério', exact: true }).boundingBox();
+    await page.mouse.move(drop!.x + drop!.width / 2, drop!.y + drop!.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
+    await expect(ownTable.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+    await expect(drawn).toHaveCount(0);
     if (testInfo.project.name === 'desktop') {
       await activate(page.getByRole('button', { name: 'Ver todas as mesas' }));
       await expect(page.getByRole('article', { name: /^Mesa de/ })).toHaveCount(6);

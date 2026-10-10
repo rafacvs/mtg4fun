@@ -54,12 +54,12 @@ A mesa desenha campo, grimório, cemitério, exílio e comando de cada jogador,
 com mão própria e ações na faixa inferior. Desktop permite visão conjunta e
 ampliação; celular horizontal usa foco e miniaturas à direita. Vertical cobre
 somente a partida com orientação para girar, preservando polling e estado.
-Foco é local e não altera permissões ou mão própria. Cartas são representadas
-por nome; arraste/posicionamento e seleção múltipla continuam nas issues 08/09.
+Foco é local e não altera permissões ou mão própria. Posicionamento livre no
+campo e seleção múltipla continuam nas issues 08 e 09.
 
 O antigo botão genérico de retorno ao grimório omitia `libraryPlacement` e
-era recusado pela API. Agora topo e fundo são controles explícitos válidos.
-Falha de ação preserva a mesa e seleção, com mensagem para tentar novamente.
+era recusado pela API. Topo e fundo continuam escolhas explícitas da ação.
+Falha de ação preserva a mesa, com mensagem para tentar novamente.
 Uma ação em andamento bloqueia novos envios locais; leituras anteriores à
 ação não substituem a confirmação mais recente. Polling volta a tentar após
 falhas de leitura.
@@ -68,3 +68,21 @@ Se as duas tentativas automáticas perderem a confirmação, a intenção fica
 pendente no cliente: novos comandos ficam bloqueados e **Tentar novamente**
 reenvia o mesmo UUID e conteúdo. Assim, tentar recuperar uma confirmação não
 gera outra compra. Uma recarga consulta novamente o estado confirmado.
+
+## Correção visual pedida na revisão
+
+Depois da mesa jogável, o usuário pediu explicitamente, na revisão da issue 06,
+que o grimório ficasse ao lado do campo com o desenho de uma pilha de cartas;
+que cemitério e exílio tivessem o tamanho de uma carta, logo abaixo do
+grimório; que o comando tivesse um espaço de carta com moldura de comandante;
+que as cartas mostrassem imagem e o clique abrisse essa imagem ampliada; e
+que mover carta fosse por arraste.
+
+A coluna da própria mesa recebe o arraste. Soltar na pilha vai ao topo e
+soltar em **Fundo** vai ao fundo. Com a mesa própria oculta pelo foco em outro
+jogador, essa coluna aparece só enquanto o ponteiro está pressionado. Carta de
+oponente abre a imagem e não se move. Cemitério, exílio e comando mostram a
+carta do topo — a última do array, porque o movimento acrescenta no fim — e a
+quantidade. Abrir o restante da pilha não faz parte desta correção: nenhuma
+issue posterior define essa consulta. A imagem usa `GET /api/cards/image?name=`.
+A partida não envia texto de catálogo, então o popup mostra a imagem e o nome.
