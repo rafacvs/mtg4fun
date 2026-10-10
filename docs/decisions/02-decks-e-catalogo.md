@@ -63,3 +63,23 @@ permite escolher e consultar decks salvos.
 Estas verificações cobrem a entrega intermediária de biblioteca/catalogação;
 não declaram preparação, imagens ou jogo completo implementados. Não foram
 executados testes operacionais Docker nesta issue, pois a infraestrutura não mudou.
+
+## Revisão da implementação
+
+A skill `code-review` revisou `96aeacd...68562dc` em duas worktrees independentes,
+com leitura estática e sem nova execução de testes pelos revisores:
+
+- Standards: apontou formatação pouco legível em transições de estado/calls HTTP
+  TypeScript e uma possível duplicação da conversão de falhas de sessão em HTTP.
+  A formatação foi expandida; `typecheck` e build passaram depois do ajuste,
+  produzindo os mesmos artefatos de JavaScript/CSS. A extração de autenticação HTTP
+  permanece uma sugestão opcional de manutenção, sem falha de segurança ou
+  alteração do contrato. Preservou-se o módulo de autenticação compartilhado
+  durante a implementação paralela de salas; o agente coordenador confirmou que
+  esta heurística não exige refactor adicional nesta entrega.
+- Spec: 0 achados; biblioteca, catálogo e testes correspondem à issue e à proposta
+  aprovada. Preparação e imagens continuam no escopo das issues 05 e 04.
+
+Os resultados dos testes acima pertencem ao implementador e não são atribuídos
+à revisão estática. Uma revisão independente do PR pelo agente coordenador e a
+revisão do usuário permanecem etapas separadas; nenhum merge está autorizado.

@@ -1,13 +1,15 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useDecks } from './useDecks';
 import './decks.css';
+
 export function DeckLibrary() {
   const library = useDecks();
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const chosen = library.decks.find(deck => deck.id === library.selected);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (file && !library.loading && !library.busy) await library.upload(file);
+    event.preventDefault();
+    if (file && !library.loading && !library.busy) await library.upload(file);
   }
   return <section className="deck-library" aria-labelledby="decks-title">
     <h2 id="decks-title">Meus decks</h2>
