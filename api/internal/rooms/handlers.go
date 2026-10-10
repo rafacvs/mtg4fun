@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -22,12 +23,70 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/ready", s.readyParticipant)
 	mux.HandleFunc("POST /api/rooms/{id}/start", s.startMatch)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
+	mux.HandleFunc("POST /api/rooms/{id}/match/actions", s.applyMatchAction)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := s.requireUser(w, r); !ok {
 			return
 		}
 		mux.ServeHTTP(w, r)
 	})
+}
+
+var intentIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
+
+func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
+	if strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
+		httpserver.WriteError(w, 415, "Envie JSON.")
+		return matchAction{}, false
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+	decoder.DisallowUnknownFields()
+	var input matchAction
+	if err := decoder.Decode(&input); err != nil || decoder.Decode(&struct{}{}) != io.EOF {
+		httpserver.WriteError(w, 400, "Ação inválida.")
+		return matchAction{}, false
+	}
+	if !intentIDPattern.MatchString(input.IntentID) {
+		httpserver.WriteError(w, 400, "intentId inválido.")
+		return matchAction{}, false
+	}
+	if input.Kind == "roll" && input.Sides >= 2 && input.Sides <= 100 && input.Direction == "" {
+		return input, true
+	}
+	if input.Kind == "coin" && input.Sides == 0 && input.Direction == "" {
+		return input, true
+	}
+	if input.Kind == "turn" && input.Sides == 0 && (input.Direction == "next" || input.Direction == "previous") {
+		return input, true
+	}
+	httpserver.WriteError(w, 400, "Ação inválida.")
+	return matchAction{}, false
+}
+
+func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
+	id, ok := roomID(w, r)
+	if !ok {
+		return
+	}
+	input, ok := actionInput(w, r)
+	if !ok {
+		return
+	}
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	match, err := s.action(r.Context(), id, user, input)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		httpserver.WriteError(w, 404, "Partida não encontrada.")
+	case errors.Is(err, errNotParticipant):
+		httpserver.WriteError(w, 403, err.Error())
+	case err != nil:
+		httpserver.InternalError(w, err)
+	default:
+		httpserver.WriteJSON(w, 200, map[string]Match{"match": match})
+	}
 }
 
 func roomID(w http.ResponseWriter, r *http.Request) (int64, bool) {

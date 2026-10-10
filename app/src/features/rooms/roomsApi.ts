@@ -11,7 +11,9 @@ export type Match = {
   roomId: number;
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
+  currentTurn: { userId: number; name: string; roll: number };
   players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number }[];
+  events: { actor: string; kind: string; result: string }[];
 };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
@@ -24,6 +26,13 @@ async function change(path: string, method = 'POST', body: unknown = {}): Promis
     const data = await response.json();
     throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
   }
+}
+
+async function matchAction(id: number, body: unknown): Promise<Match> {
+  const response = await fetch(`/api/rooms/${id}/match/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
+  return data.match;
 }
 
 type Updates = {
@@ -59,4 +68,7 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
     return data.match;
   },
+  roll: (id: number, sides: number) => matchAction(id, { intentId: crypto.randomUUID(), kind: 'roll', sides }),
+  coin: (id: number) => matchAction(id, { intentId: crypto.randomUUID(), kind: 'coin' }),
+  turn: (id: number, direction: 'next' | 'previous') => matchAction(id, { intentId: crypto.randomUUID(), kind: 'turn', direction }),
 };

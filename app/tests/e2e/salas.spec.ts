@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import type { Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -50,7 +50,7 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
   } finally { await viewer.close(); }
 });
 
-test('prepara e inicia uma mesa com um participante', async ({ page }) => {
+async function startSoloMatch(page: Page) {
   await page.goto('/');
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
@@ -63,13 +63,30 @@ test('prepara e inicia uma mesa com um participante', async ({ page }) => {
   const room = page.getByRole('article').filter({ has: page.getByText('Em preparação', { exact: true }) });
   await room.getByLabel('Deck para a partida').selectOption({ label: 'Amigos & mágicas' });
   await room.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
-  await expect(room.getByText('Pronto', { exact: false })).toBeVisible();
   await room.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
   await expect(board).toBeVisible();
+  return { room, board };
+}
+
+test('prepara e inicia uma mesa com um participante', async ({ page }) => {
+  const { room, board } = await startSoloMatch(page);
+  await expect(room.getByText('Pronto', { exact: false })).toBeVisible();
   await expect(board.getByText('Vida: 40', { exact: true })).toBeVisible();
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Campo');
+});
+
+test('rola dado, joga moeda e corrige o turno pela mesa', async ({ page }) => {
+  const { board } = await startSoloMatch(page);
+  await board.getByLabel('Faces do dado').fill('20');
+  await board.getByRole('button', { name: 'Rolar dado', exact: true }).click();
+  await expect(board.getByRole('region', { name: 'Registro da partida' })).toContainText(/D20: [1-9]|D20: 1[0-9]|D20: 20/);
+  await board.getByRole('button', { name: 'Jogar moeda', exact: true }).click();
+  await expect(board.getByRole('region', { name: 'Registro da partida' })).toContainText(/Cara|Coroa/);
+  await board.getByRole('button', { name: 'Corrigir turno', exact: true }).click();
+  await expect(board.getByText('Turno atual:', { exact: false })).toBeVisible();
+  await expect(board.getByRole('region', { name: 'Registro da partida' })).toContainText('Corrigiu para turno de');
 });
 
 test('navega entre lobby e biblioteca com teclado, histórico e recarga', async ({ page }) => {

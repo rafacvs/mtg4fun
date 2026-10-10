@@ -80,13 +80,21 @@ type matchState struct {
 	RoomID      int64         `json:"roomId"`
 	InitialLife int           `json:"initialLife"`
 	TurnOrder   []Turn        `json:"turnOrder"`
+	TurnIndex   int           `json:"turnIndex"`
 	Players     []playerState `json:"players"`
 }
 type Match struct {
 	RoomID      int64         `json:"roomId"`
 	InitialLife int           `json:"initialLife"`
 	TurnOrder   []Turn        `json:"turnOrder"`
+	CurrentTurn Turn          `json:"currentTurn"`
 	Players     []MatchPlayer `json:"players"`
+	Events      []MatchEvent  `json:"events"`
+}
+type MatchEvent struct {
+	Actor  string `json:"actor"`
+	Kind   string `json:"kind"`
+	Result string `json:"result"`
 }
 type MatchPlayer struct {
 	UserID           int64  `json:"userId"`
@@ -105,7 +113,11 @@ func (m matchState) view() Match {
 	for i, v := range m.Players {
 		p[i] = MatchPlayer{v.UserID, v.Name, v.Life, len(v.Library), len(v.Hand), len(v.Battlefield), len(v.Graveyard), len(v.Exile), len(v.Command)}
 	}
-	return Match{m.RoomID, m.InitialLife, m.TurnOrder, p}
+	current := Turn{}
+	if len(m.TurnOrder) > 0 {
+		current = m.TurnOrder[m.TurnIndex%len(m.TurnOrder)]
+	}
+	return Match{RoomID: m.RoomID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, Players: p, Events: []MatchEvent{}}
 }
 
 type Service struct {
@@ -404,7 +416,34 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = tx.Commit(); e != nil {
 		return Match{}, e
 	}
-	return m.view(), nil
+	view := m.view()
+	view.Events, e = s.eventsForMatch(ctx, id)
+	return view, e
+}
+
+func (s *Service) eventsForMatch(ctx context.Context, id int64) ([]MatchEvent, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT u.name, e.action, e.payload FROM match_events e JOIN users u ON u.id=e.actor_id WHERE e.room_id=? AND e.action IN ('roll','coin','turn') ORDER BY e.id`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	events := []MatchEvent{}
+	for rows.Next() {
+		var event MatchEvent
+		var payload struct {
+			Result string `json:"result"`
+		}
+		var raw []byte
+		if err := rows.Scan(&event.Actor, &event.Kind, &raw); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, err
+		}
+		event.Result = payload.Result
+		events = append(events, event)
+	}
+	return events, rows.Err()
 }
 func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, error) {
 	var b []byte
@@ -416,5 +455,7 @@ func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = json.Unmarshal(b, &m); e != nil {
 		return Match{}, e
 	}
-	return m.view(), nil
+	view := m.view()
+	view.Events, e = s.eventsForMatch(ctx, id)
+	return view, e
 }
