@@ -63,6 +63,7 @@ type environment struct {
 	logs    string
 	cards   string
 	tokens  string
+	rolls   string
 }
 
 func newEnvironment(t *testing.T) *environment {
@@ -96,6 +97,9 @@ func (e *environment) command(args ...string) *exec.Cmd {
 		}
 	}
 	command.Env = append(command.Env, "DB_NAME="+e.db, "DB_USER="+e.db)
+	if e.rolls != "" {
+		command.Env = append(command.Env, "MTG4FUN_TEST_D20="+e.rolls)
+	}
 	return command
 }
 

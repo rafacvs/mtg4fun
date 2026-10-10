@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { useDecks } from '../decks/useDecks';
-import { roomsApi, type Match } from './roomsApi';
+import { MatchBoard } from './MatchBoard';
 import { useRooms } from './useRooms';
 import './rooms.css';
 
@@ -39,7 +39,6 @@ export function RoomsList({ userId, decks }: Props) {
     </div>
   </section>;
 }
-
 type PreparationProps = { roomId: number; creatorId: number; userId: number; ready: boolean; decks: { id: number; name: string }[]; loading: boolean; busy: boolean; onReady: (id: number, deckId: number) => Promise<void>; onStart: (id: number) => Promise<void> };
 function Preparation({ roomId, creatorId, userId, ready, decks, loading, busy, onReady, onStart }: PreparationProps) {
   const [deckId, setDeckId] = useState('');
@@ -52,17 +51,4 @@ function Preparation({ roomId, creatorId, userId, ready, decks, loading, busy, o
     <button disabled={busy || ready || !deckId} onClick={() => void onReady(roomId, Number(deckId))}>{ready ? 'Deck confirmado' : 'Confirmar deck'}</button>
     {creatorId === userId && <button className="secondary" disabled={busy} onClick={() => void onStart(roomId)}>Iniciar partida</button>}
   </div>;
-}
-
-function MatchBoard({ roomId }: { roomId: number }) {
-  const [match, setMatch] = useState<Match | null>(null);
-  const [error, setError] = useState('');
-  useEffect(() => { let active = true; roomsApi.match(roomId).then(value => { if (active) setMatch(value); }).catch(reason => { if (active) setError(reason.message); }); return () => { active = false; }; }, [roomId]);
-  if (error) return <p role="alert" className="error">{error}</p>;
-  if (!match) return <p role="status">Carregando mesa…</p>;
-  return <section className="match-board" aria-label="Mesa da partida">
-    <p>Vida inicial: {match.initialLife}</p>
-    <p>Ordem de turno: {match.turnOrder.map(turn => `${turn.name} (D20: ${turn.roll})`).join(', ')}</p>
-    <div className="match-players">{match.players.map(player => <article key={player.userId}><h4>{player.name}</h4><p>Vida: {player.life}</p><p>Grimório: {player.libraryCount} cartas · Mão: {player.handCount}</p><p>Campo: {player.battlefieldCount} · Cemitério: {player.graveyardCount} · Exílio: {player.exileCount} · Comando: {player.commandCount}</p></article>)}</div>
-  </section>;
 }

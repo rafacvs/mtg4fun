@@ -10,6 +10,9 @@ import (
 	"fmt"
 	"math/big"
 	"mtg4fun/internal/auth"
+	"os"
+	"strconv"
+	"strings"
 )
 
 const capacity = 6
@@ -112,7 +115,25 @@ type Service struct {
 }
 
 func New(db *sql.DB, users *auth.Service) *Service {
-	return &Service{db: db, users: users, roll: rollD20}
+	return &Service{db: db, users: users, roll: configuredRoller()}
+}
+func configuredRoller() func() (int, error) {
+	values := strings.Split(os.Getenv("MTG4FUN_TEST_D20"), ",")
+	if len(values) == 1 && values[0] == "" {
+		return rollD20
+	}
+	next := 0
+	return func() (int, error) {
+		if next >= len(values) {
+			return 0, errors.New("rolagens de teste insuficientes")
+		}
+		value, err := strconv.Atoi(values[next])
+		next++
+		if err != nil || value < 1 || value > 20 {
+			return 0, errors.New("rolagem de teste inválida")
+		}
+		return value, nil
+	}
 }
 func rollD20() (int, error) {
 	n, e := cryptorand.Int(cryptorand.Reader, big.NewInt(20))
@@ -353,6 +374,9 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 		cards, e := deckCards(ctx, tx, p.DeckID, p.ID)
 		if e != nil {
 			return Match{}, e
+		}
+		if len(cards) == 0 {
+			return Match{}, errDeckNotFound
 		}
 		if e = shuffle(cards); e != nil {
 			return Match{}, e

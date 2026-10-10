@@ -106,7 +106,7 @@ func (s *Service) startMatch(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Sala não encontrada.")
 	case errors.Is(err, errNotCreator):
 		httpserver.WriteError(w, 403, err.Error())
-	case errors.Is(err, errNotReady), errors.Is(err, errRoomStarted):
+	case errors.Is(err, errNotReady), errors.Is(err, errRoomStarted), errors.Is(err, errDeckNotFound):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)

@@ -62,5 +62,6 @@ test('prepara e inicia uma mesa com um participante', async ({ page }) => {
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
   await expect(board).toBeVisible();
   await expect(board.getByText('Vida: 40', { exact: true })).toBeVisible();
-  await expect(board.getByText('Grimório: 7 cartas · Mão: 0', { exact: true })).toBeVisible();
+  await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
+  await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Campo');
 });
