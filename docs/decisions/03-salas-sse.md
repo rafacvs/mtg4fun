@@ -78,8 +78,7 @@ explícitas a WebSocket/realtime abertas aparecem no índice de specs e na spec
   MySQL real isolado. A API cobre criação, persistência/reinício, concorrência
   na última vaga, repetição idempotente, isolamento, sessão, SSE/reconexão,
   revogação, corpos inválidos e rollback quando o log não pode ser salvo.
-- `go -C api test ./tests/integration -run TestRoomEventsStayOpenAcrossIdlePeriod
-  -count=1`: passou; stream ocioso permanece utilizável após 16 segundos,
+- `go -C api test ./tests/integration -run TestRoomEventsStayOpenAcrossIdlePeriod -count=1`: passou; stream ocioso permanece utilizável após 16 segundos,
   além do timeout normal de escrita HTTP.
 - `npm run typecheck --prefix app`, `npm run build --prefix app` e
   `npm test --prefix app -- --workers=3`: passaram; 12 cenários de navegador
@@ -88,6 +87,17 @@ explícitas a WebSocket/realtime abertas aparecem no índice de specs e na spec
   conferidas e ausência de overflow horizontal verificada no navegador.
 - Após a extração de tratamento autenticado apontada na revisão, `go vet` e
   os três testes dirigidos de criação, concorrência e SSE passaram novamente.
+- Após separar transporte SSE no cliente em `e4cc885`, typecheck/build e os
+  três cenários de salas em desktop/celular vertical/horizontal passaram.
+- `python3 infra/tests/docker_smoke.py --mode prod`: passou com exit 0 em
+  projeto, portas e volume isolados. Builds Go/React de produção, Nginx com
+  SSE, nove cenários de acesso e três de salas com mouse/toque passaram.
+  A lista pública das três salas, incluindo todos os participantes/vagas,
+  foi comparada antes/depois de recriar API, frontend e MySQL com o mesmo
+  volume e permaneceu idêntica. Conta, sessão e logout também foram verificados.
+  O ambiente isolado foi removido ao terminar; serviços/volumes do usuário
+  permaneceram intactos. Rodadas anteriores interrompidas para atualizar o
+  teste não contam como validação concluída.
 - Links locais e `git diff --check` conferidos.
 
 Code-review da skill, em subagentes independentes, de `96aeacd` até `d1969be`:
@@ -95,6 +105,11 @@ Standards sem violações e uma observação heurística sobre duplicação de s
 Spec sem achados. A extração em `db2d5e4` recebeu revisão complementar de ambos:
 Standards 0 achados; Spec 0 achados. Revisões estáticas, sem executar testes.
 
+A coordenação realizou revisão independente complementar até `e4cc885`, em
+worktrees próprias: Standards sem violações documentais pendentes, com uma
+observação heurística opcional sobre repetição do envio de heartbeat; Spec
+sem achados. A separação de transporte no cliente corrigiu a observação de
+organização dessa revisão. Esse resultado é da coordenação, distinto dos
+subagentes originais acima; as revisões foram estáticas.
+
 A aprovação de transporte acima é do usuário; testes e revisões não a substituem.
-A operação Docker de produção é verificada separadamente e seu resultado será
-registrado no PR após conclusão.

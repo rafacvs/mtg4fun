@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Criar contas e acessar a aplicação.
 
-**Status:** implementado; aguardando revisão do PR
+**Status:** implementado; PR aguardando revisão
 
 - [x] Listar e criar salas; qualquer usuário autenticado entra em sala com vaga sem aprovação extra.
 - [x] Limite de seis participantes é aplicado pelo servidor, inclusive quando entradas concorrem pela última vaga.
