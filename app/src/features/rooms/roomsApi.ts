@@ -9,10 +9,13 @@ export type Room = {
 
 export type Match = {
   roomId: number;
+  viewerId: number;
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
-  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number }[];
+  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[] }[];
+  log: { actorName: string; kind: string; from?: string; to?: string; count?: number }[];
 };
+export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
   const response = await fetch(path, {
@@ -24,6 +27,13 @@ async function change(path: string, method = 'POST', body: unknown = {}): Promis
     const data = await response.json();
     throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
   }
+}
+
+async function matchChange(path: string, body: unknown): Promise<Match> {
+  const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
+  return data.match;
 }
 
 type Updates = {
@@ -59,4 +69,6 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
     return data.match;
   },
+  draw: (id: number, count: number) => matchChange(`/api/rooms/${id}/match/actions`, { intentId: crypto.randomUUID(), kind: 'draw', count }),
+  move: (id: number, cardIds: string[], to: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId: crypto.randomUUID(), kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),
 };

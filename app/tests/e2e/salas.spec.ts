@@ -70,6 +70,12 @@ test('prepara e inicia uma mesa com um participante', async ({ page }) => {
   await expect(board.getByText('Vida: 40', { exact: true })).toBeVisible();
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Campo');
+  await board.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
+  const drawn = board.getByRole('button', { name: 'Island', exact: true }).first();
+  await expect(drawn).toBeVisible();
+  await drawn.click();
+  await board.getByRole('button', { name: 'Topo do grimório', exact: true }).click();
+  await expect(board.getByText('Amigo da mesa moveu 1 carta(s) de Mão para Grimório.')).toBeVisible();
 });
 
 test('navega entre lobby e biblioteca com teclado, histórico e recarga', async ({ page }) => {

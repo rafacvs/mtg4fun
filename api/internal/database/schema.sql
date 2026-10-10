@@ -69,3 +69,12 @@ CREATE TABLE IF NOT EXISTS match_events (
     FOREIGN KEY (room_id) REFERENCES matches(room_id),
     FOREIGN KEY (actor_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS match_intents (
+    room_id BIGINT NOT NULL,
+    actor_id BIGINT NOT NULL,
+    intent_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    PRIMARY KEY (room_id, actor_id, intent_id),
+    FOREIGN KEY (room_id) REFERENCES matches(room_id),
+    FOREIGN KEY (actor_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
