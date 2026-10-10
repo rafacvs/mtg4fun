@@ -3,6 +3,7 @@ package integration_test
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -147,6 +148,71 @@ func TestDeckRejectsInvalidFilesAndFailedWrites(t *testing.T) {
 		t.Fatalf("catálogo inválido aceito: %s", output)
 	}
 	requireStatus(t, e.uploadDeck(cookie, nested), 201)
+}
+
+func TestBundledCatalogResolvesPlayedDecks(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
+	output, err := e.command("import-catalog", "--cards", "../../catalog/cards.xml", "--tokens", "../../catalog/tokens.xml").CombinedOutput()
+	if err != nil {
+		t.Fatalf("catálogo do repositório: %v; %s", err, output)
+	}
+	e.start(false)
+	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
+	paths, err := filepath.Glob("testdata/decks/*.cod")
+	if err != nil || len(paths) == 0 {
+		t.Fatalf("decks de referência ausentes: %v", err)
+	}
+	for _, path := range paths {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var file struct {
+			Zones []struct {
+				Name  string `xml:"name,attr"`
+				Cards []struct {
+					Number int64 `xml:"number,attr"`
+				} `xml:"card"`
+			} `xml:"zone"`
+		}
+		if err := xml.Unmarshal(contents, &file); err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		var expected int64
+		for _, zone := range file.Zones {
+			if zone.Name == "main" {
+				for _, card := range zone.Cards {
+					expected += card.Number
+				}
+			}
+		}
+		result := e.uploadDeck(cookie, contents)
+		if result.status != 201 {
+			t.Fatalf("%s: status %d; %s", path, result.status, result.body)
+		}
+		var payload struct {
+			Deck struct {
+				Cards []struct {
+					Quantity  int64 `json:"quantity"`
+					Available bool  `json:"available"`
+				} `json:"cards"`
+			} `json:"deck"`
+		}
+		if err := json.Unmarshal(result.body, &payload); err != nil {
+			t.Fatal(err)
+		}
+		var total int64
+		for _, card := range payload.Deck.Cards {
+			if !card.Available {
+				t.Fatalf("%s: carta indisponível; %s", path, result.body)
+			}
+			total += card.Quantity
+		}
+		if total != expected {
+			t.Fatalf("%s: %d cartas importadas, esperado %d", path, total, expected)
+		}
+	}
 }
 
 func TestOfficialCockatriceDatasetsResolveCardsAndTokens(t *testing.T) {

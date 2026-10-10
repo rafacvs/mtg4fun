@@ -200,21 +200,36 @@ em computador e celular. O arquivo deve ter até 2 MiB; usa-se somente a seção
 `main` (incluindo categorias). Sideboard e outras seções são ignorados. As cartas
 precisam existir no catálogo compartilhado. Não há edição ou exportação de decks.
 
-O administrador importa `cards.xml` produzido pelo Oracle/Cockatrice e `tokens.xml`
-do [Magic-Token](https://github.com/Cockatrice/Magic-Token), no formato
-`cockatrice_carddatabase`. No Docker, copie os arquivos para o container e importe:
+O repositório inclui o catálogo em `api/catalog/`: `cards.xml` gerado pelo Oracle
+do Cockatrice a partir do MTGJSON AllPrintings e `tokens.xml` do
+[Magic-Token](https://github.com/Cockatrice/Magic-Token), no formato
+`cockatrice_carddatabase`. O banco começa sem catálogo; importe-o uma vez em cada
+ambiente. Em desenvolvimento com Docker:
 
 ```bash
-docker compose cp cards.xml api:/tmp/cards.xml
-docker compose cp tokens.xml api:/tmp/tokens.xml
+docker compose exec api mtg4fun import-catalog
+```
+
+Localmente, com `DB_*` configurado:
+
+```bash
+go -C api run ./cmd/mtg4fun import-catalog
+```
+
+A imagem de produção não contém os arquivos; copie-os para o container e informe
+os caminhos:
+
+```bash
+docker compose cp api/catalog/cards.xml api:/tmp/cards.xml
+docker compose cp api/catalog/tokens.xml api:/tmp/tokens.xml
 docker compose exec api mtg4fun import-catalog --cards /tmp/cards.xml --tokens /tmp/tokens.xml
 ```
 
-Localmente, com `DB_*` configurado, execute:
-
-```bash
-go -C api run ./cmd/mtg4fun import-catalog --cards /caminho/cards.xml --tokens /caminho/tokens.xml
-```
+A importação completa leva de segundos a alguns minutos, conforme o disco do
+MySQL. O usuário do banco precisa poder criar, renomear e excluir tabelas no seu
+banco. Para atualizar o catálogo, execute o Oracle do Cockatrice, substitua os dois
+arquivos em `api/catalog/` pelos gerados (`~/.local/share/Cockatrice/Cockatrice/`
+no Linux) e importe novamente.
 
 A importação substitui o catálogo atomicamente no MySQL; decks e catálogo
 persistem após reinício. Atualizações não exigem novo upload. Cartas removidas de
