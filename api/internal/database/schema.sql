@@ -12,3 +12,26 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id),
     INDEX sessions_expiry (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS catalog_cards (
+    name VARBINARY(1024) PRIMARY KEY,
+    text MEDIUMTEXT NOT NULL,
+    is_token BOOLEAN NOT NULL,
+    card_xml MEDIUMTEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS decks (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    name TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS deck_cards (
+    deck_id BIGINT NOT NULL,
+    position INT NOT NULL,
+    name VARBINARY(1024) NOT NULL,
+    quantity BIGINT NOT NULL,
+    PRIMARY KEY (deck_id, position),
+    FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

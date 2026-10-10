@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Excerpt: Cockatrice/Magic-Token tokens.xml, sourceVersion 20260925.
+https://raw.githubusercontent.com/Cockatrice/Magic-Token/master/tokens.xml -->
+<cockatrice_carddatabase version="4"><cards><card>
+            <name>Bird Soldier Token</name>
+            <text>Flying</text>
+            <prop>
+                <colors>W</colors>
+                <type>Token Creature — Bird Soldier</type>
+                <maintype>Creature</maintype>
+                <cmc>0</cmc>
+                <pt>1/1</pt>
+            </prop>
+            <set picURL="https://cards.scryfall.io/large/front/b/7/b7b55dcf-ae63-4b84-8d39-80b5a6de3c1a.jpg?1561757893" uuid="b7b55dcf-ae63-4b84-8d39-80b5a6de3c1a" num="1">ARB</set>
+            <reverse-related count="x">Flurry of Wings</reverse-related>
+            <token>1</token>
+            <tablerow>2</tablerow>
+        </card>
+        </cards></cockatrice_carddatabase>

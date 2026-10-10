@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -13,10 +14,11 @@ import (
 	"time"
 
 	"mtg4fun/internal/auth"
+	"mtg4fun/internal/decks"
 	"mtg4fun/internal/httpserver"
 )
 
-func serve(users *auth.Service, addr, webDir string) error {
+func serve(users *auth.Service, db *sql.DB, addr, webDir string) error {
 	secure := env("COOKIE_SECURE", "false")
 	if secure != "true" && secure != "false" {
 		return errors.New("COOKIE_SECURE deve ser true ou false")
@@ -30,8 +32,13 @@ func serve(users *auth.Service, addr, webDir string) error {
 	if err != nil {
 		return err
 	}
+	api := http.NewServeMux()
+	deckHandler := decks.New(db).Handler(users)
+	api.Handle("/api/decks", deckHandler)
+	api.Handle("/api/decks/", deckHandler)
+	api.Handle("/api/", users.Handler(secure == "true"))
 	server := &http.Server{
-		Handler:           httpserver.NewHandler(users.Handler(secure == "true"), webDir, secure == "true"),
+		Handler:           httpserver.NewHandler(api, webDir, secure == "true"),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,

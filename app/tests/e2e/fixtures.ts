@@ -21,6 +21,7 @@ export const test = base.extend<{}, { appURL: string }>({
       const environment = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DB_'))), ...Object.fromEntries(Object.entries(database).filter(([key]) => key.startsWith('DB_'))), COOKIE_SECURE: 'false' };
       execFileSync('go', ['build', '-o', executable, './cmd/mtg4fun'], { cwd: join(root, 'api') });
       execFileSync(executable, ['create-user', '--login', 'amigo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador'], { env: environment });
+      execFileSync(executable, ['import-catalog', '--cards', join(root, 'api/tests/integration/testdata/cards.xml'), '--tokens', join(root, 'api/tests/integration/testdata/tokens.xml')], { env: environment });
       server = spawn(executable, ['serve', '--addr', '127.0.0.1:0', '--web', join(root, 'app/dist')], { env: environment, stdio: ['ignore', 'ignore', 'pipe'] });
       const address = await new Promise<string>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Servidor não iniciou')), 10_000);

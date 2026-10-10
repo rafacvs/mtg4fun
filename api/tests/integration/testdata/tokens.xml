@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cockatrice_carddatabase version="4"><cards><card><name>Soldier Token</name><text></text><token>1</token><set picURL="https://example.invalid/soldier.png">TST</set><prop><type>Token Creature — Soldier</type><pt>1/1</pt><colors>W</colors></prop></card><card><name>Island</name><text>Duplicate must keep first.</text><set uuid="extra-printing">OTHER</set><token>1</token></card></cards></cockatrice_carddatabase>

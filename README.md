@@ -12,7 +12,9 @@ as [issues](docs/issues/) dividem sua implementação.
 
 A implementação atual permite criar contas pelo executável e entrar e sair
 pelo navegador, com persistência de contas e sessões. Não há cadastro público.
-Salas, decks e partidas ainda não estão implementados.
+A biblioteca pessoal importa, consulta e exclui decks .cod, resolvidos pelo
+catálogo Cockatrice compartilhado no servidor. Salas e partidas ainda não
+estão implementadas nesta branch.
 
 ## Executar com Docker
 
@@ -190,3 +192,37 @@ Use `--mode dev` ou `--mode prod` para verificar somente um modo.
 | `scripts/` | Ferramentas de desenvolvimento. |
 
 As instruções para agentes estão no [AGENTS.md](AGENTS.md).
+
+## Decks e catálogo Cockatrice
+
+A biblioteca pessoal permite importar, escolher, consultar e excluir decks `.cod`
+em computador e celular. O arquivo deve ter até 2 MiB; usa-se somente a seção
+`main` (incluindo categorias). Sideboard e outras seções são ignorados. As cartas
+precisam existir no catálogo compartilhado. Não há edição ou exportação de decks.
+
+O administrador importa `cards.xml` produzido pelo Oracle/Cockatrice e `tokens.xml`
+do [Magic-Token](https://github.com/Cockatrice/Magic-Token), no formato
+`cockatrice_carddatabase`. No Docker, copie os arquivos para o container e importe:
+
+```bash
+docker compose cp cards.xml api:/tmp/cards.xml
+docker compose cp tokens.xml api:/tmp/tokens.xml
+docker compose exec api mtg4fun import-catalog --cards /tmp/cards.xml --tokens /tmp/tokens.xml
+```
+
+Localmente, com `DB_*` configurado, execute:
+
+```bash
+go -C api run ./cmd/mtg4fun import-catalog --cards /caminho/cards.xml --tokens /caminho/tokens.xml
+```
+
+A importação substitui o catálogo atomicamente no MySQL; decks e catálogo
+persistem após reinício. Atualizações não exigem novo upload. Cartas removidas de
+um dataset permanecem identificadas nos decks como indisponíveis. O navegador
+não configura nem baixa datasets. Imagens/cache e preparação da partida ainda
+são entregas posteriores.
+
+A API autenticada oferece `GET /api/decks` (biblioteca com cartas/quantidades),
+`POST /api/decks` (multipart, campo `file`, retorno `deck`) e
+`DELETE /api/decks/{id}`. Bibliotecas de outras contas não são expostas.
+Detalhes: [decisão de decks/catálogo](docs/decisions/02-decks-e-catalogo.md).

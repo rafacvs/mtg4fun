@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
 	"mtg4fun/internal/auth"
+	"mtg4fun/internal/catalog"
 	"mtg4fun/internal/database"
 )
 
@@ -26,13 +29,15 @@ func env(key, fallback string) string {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("uso: mtg4fun serve | create-user --name USUARIO --password SENHA")
+		return errors.New("uso: mtg4fun serve | create-user --name USUARIO --password SENHA | import-catalog --cards cards.xml --tokens tokens.xml")
 	}
 	command := os.Args[1]
-	if command != "serve" && command != "create-user" {
+	if command != "serve" && command != "create-user" && command != "import-catalog" {
 		return errors.New("comando desconhecido")
 	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
+	cards := flags.String("cards", "", "cards.xml Cockatrice")
+	tokens := flags.String("tokens", "", "tokens.xml Cockatrice")
 	login := flags.String("login", "", "login da conta")
 	name := flags.String("name", "", "nome da pessoa")
 	password := flags.String("password", "", "senha da conta")
@@ -88,6 +93,16 @@ func run() error {
 		return err
 	}
 	defer db.Close()
+	if command == "import-catalog" {
+		if *cards == "" || *tokens == "" {
+			return errors.New("use --cards e --tokens com XML Cockatrice")
+		}
+		if err := catalog.Import(context.Background(), db, *cards, *tokens); err != nil {
+			return err
+		}
+		fmt.Println("Catálogo importado.")
+		return nil
+	}
 	users, err := auth.New(db)
 	if err != nil {
 		return err
@@ -95,5 +110,5 @@ func run() error {
 	if command == "create-user" {
 		return createUser(users, *login, *name, *password)
 	}
-	return serve(users, *addr, *webDir)
+	return serve(users, db, *addr, *webDir)
 }
