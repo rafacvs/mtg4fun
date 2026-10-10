@@ -5,7 +5,7 @@ import { CardsZone, PlayerTable, zoneNames } from './PlayerTable';
 import './match.css';
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, draw, move } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -26,7 +26,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         {focusId !== null && <button className="secondary show-all" onClick={() => setFocusId(null)}>Ver todas as mesas</button>}
         <span className="turn-order">Ordem: {match.turnOrder.map(turn => turn.name).join(' → ')}</span>
       </div>
-      {error && <p role="alert" className="error">{error}</p>}
+      {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry().then(confirmed => { if (confirmed) setSelectedId(null); })}>Tentar novamente</button>}</p>}
       <div className="table-stage">
         <div className={`match-players ${focusId !== null ? 'has-focus' : ''}`}>{match.players.map(player =>
           <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} selected={selected?.id} onSelect={select} onFocus={() => setFocusId(player.userId)} />
@@ -41,15 +41,15 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <CardsZone zone="hand" count={own.handCount} cards={own.hand} selected={selected?.id} onSelect={select} />
         <section className="match-actions" aria-label="Ações da partida">
           <div className="draw-controls"><label>Comprar <input aria-label="Quantidade para comprar" type="number" min="1" value={count} onChange={event => setCount(Number(event.target.value))} /></label>
-            <button disabled={busy || !Number.isInteger(count) || count < 1} onClick={() => void draw(count)}>Comprar cartas</button>
+            <button disabled={busy || unconfirmed || !Number.isInteger(count) || count < 1} onClick={() => void draw(count)}>Comprar cartas</button>
             <button className="secondary" onClick={() => setShowLog(!showLog)} aria-expanded={showLog}>Registro da partida</button>
           </div>
           {selected && <div className="selection-actions">
             <p role="status">Selecionada: <strong>{selected.name}</strong>{!canMove && ' · Carta do oponente'}</p>
             {canMove && <div className="move-actions" aria-label="Mover carta selecionada">
-              {Object.entries(zoneNames).filter(([zone]) => zone !== selected.zone && zone !== 'library').map(([zone, label]) => <button disabled={busy} key={zone} onClick={() => void sendMove(zone)}>Mover para {label}</button>)}
-              <button disabled={busy} onClick={() => void sendMove('library', 'top')}>Mover para Grimório (topo)</button>
-              <button disabled={busy} onClick={() => void sendMove('library', 'bottom')}>Fundo do grimório</button>
+              {Object.entries(zoneNames).filter(([zone]) => zone !== selected.zone && zone !== 'library').map(([zone, label]) => <button disabled={busy || unconfirmed} key={zone} onClick={() => void sendMove(zone)}>Mover para {label}</button>)}
+              <button disabled={busy || unconfirmed} onClick={() => void sendMove('library', 'top')}>Mover para Grimório (topo)</button>
+              <button disabled={busy || unconfirmed} onClick={() => void sendMove('library', 'bottom')}>Fundo do grimório</button>
             </div>}
             <button className="text-button" disabled={busy} onClick={() => setSelectedId(null)}>Limpar seleção</button>
           </div>}

@@ -74,6 +74,13 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
   await expect(board).toBeVisible();
   const roomURL = page.url();
+  const matchPath = `/api/rooms/${roomURL.split('/').at(-1)}/match`;
+  const ownHand = async (): Promise<{ id: string }[]> => {
+    const response = await page.request.get(matchPath);
+    expect(response.ok()).toBe(true);
+    const { match } = await response.json();
+    return match.players.find((player: { userId: number }) => player.userId === match.viewerId).hand || [];
+  };
   if (testInfo.project.name === 'celular') {
     await expect(page.getByText('Gire o celular para jogar')).toBeVisible();
     await expect(board.getByRole('button', { name: 'Comprar cartas', exact: true })).toBeHidden();
@@ -87,8 +94,24 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
   await expect(board.getByRole('alert')).toContainText('Não há cartas suficientes');
   await board.getByLabel('Quantidade para comprar').fill('1');
+  let lostResponses = 0;
+  await page.route('**/match/actions', async route => {
+    if (lostResponses < 2) {
+      lostResponses += 1;
+      const persisted = await route.fetch();
+      expect(persisted.status()).toBe(200);
+      await route.abort('failed');
+    } else await route.continue();
+  });
   await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await expect(board.getByRole('alert')).toContainText('Não foi possível confirmar');
+  await expect(board.getByRole('button', { name: 'Comprar cartas', exact: true })).toBeDisabled();
+  await activate(board.getByRole('button', { name: 'Tentar novamente', exact: true }));
+  await page.unroute('**/match/actions');
   await expect(board.getByRole('alert')).toHaveCount(0);
+  expect(await ownHand()).toHaveLength(1);
+  const confirmed = await (await page.request.get(matchPath)).json();
+  expect(confirmed.match.log.filter((entry: { kind: string }) => entry.kind === 'draw')).toHaveLength(1);
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
   let source = hand;
   for (const destination of ['Campo', 'Cemitério', 'Exílio', 'Comando', 'Mão']) {
@@ -99,14 +122,19 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
     await expect(source.getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
     source = target;
   }
+  const returnedId = (await ownHand())[0].id;
   await activate(hand.getByRole('button', { name: 'Island', exact: true }));
   await activate(board.getByRole('button', { name: 'Mover para Grimório (topo)', exact: true }));
   await expect(hand.getByRole('button')).toHaveCount(0);
   await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await expect(hand.getByRole('button')).toHaveCount(1);
+  expect((await ownHand())[0].id).toBe(returnedId);
   await activate(hand.getByRole('button', { name: 'Island', exact: true }));
   await activate(board.getByRole('button', { name: 'Fundo do grimório', exact: true }));
   await expect(hand.getByRole('button')).toHaveCount(0);
   await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await expect(hand.getByRole('button')).toHaveCount(1);
+  expect((await ownHand())[0].id).not.toBe(returnedId);
   await activate(hand.getByRole('button', { name: 'Island', exact: true }));
   await activate(board.getByRole('button', { name: 'Mover para Campo', exact: true }));
   await page.reload();
@@ -119,6 +147,14 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(board).toHaveCount(0);
   await page.goto(roomURL);
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
+  await board.getByLabel('Quantidade para comprar').fill('3');
+  await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await expect(hand.getByRole('button')).toHaveCount(3);
+  expect((await ownHand()).map(card => card.id)).not.toContain(returnedId);
+  await board.getByLabel('Quantidade para comprar').fill('1');
+  await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await expect(hand.getByRole('button')).toHaveCount(4);
+  expect((await ownHand()).at(-1)?.id).toBe(returnedId);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('mesa.png'), fullPage: true });
 });

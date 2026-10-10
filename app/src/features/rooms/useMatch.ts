@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { roomsApi, type Match } from './roomsApi';
+import { roomsApi, UnconfirmedActionError, type Match } from './roomsApi';
 
 export function useMatch(roomId: number) {
   const [match, setMatch] = useState<Match | null>(null);
   const [error, setError] = useState('');
   const [syncError, setSyncError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const pending = useRef<(() => Promise<Match>) | null>(null);
   const acting = useRef(false);
   const revision = useRef(0);
   const mounted = useRef(false);
@@ -30,18 +32,20 @@ export function useMatch(roomId: number) {
     return () => { active = false; mounted.current = false; window.clearInterval(polling); };
   }, [roomId]);
 
-  async function act(operation: () => Promise<Match>) {
-    if (acting.current) return false;
+  async function act(operation: () => Promise<Match>, retrying = false) {
+    if (acting.current || pending.current && !retrying) return false;
     acting.current = true;
     revision.current += 1;
     setBusy(true);
     setError('');
     try {
       const confirmed = await operation();
-      if (mounted.current) { setMatch(confirmed); setSyncError(''); }
+      pending.current = null;
+      if (mounted.current) { setMatch(confirmed); setSyncError(''); setUnconfirmed(false); }
       return true;
     } catch (reason) {
-      if (mounted.current) setError((reason as Error).message);
+      pending.current = reason instanceof UnconfirmedActionError ? operation : null;
+      if (mounted.current) { setError((reason as Error).message); setUnconfirmed(pending.current !== null); }
       return false;
     } finally {
       acting.current = false;
@@ -49,8 +53,15 @@ export function useMatch(roomId: number) {
     }
   }
   return {
-    match, error: error || syncError, busy,
-    draw: (count: number) => act(() => roomsApi.draw(roomId, count)),
-    move: (ids: string[], to: string, placement?: 'top' | 'bottom') => act(() => roomsApi.move(roomId, ids, to, placement)),
+    match, error: error || syncError, busy, unconfirmed,
+    retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
+    draw: (count: number) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.draw(roomId, count, intentId));
+    },
+    move: (ids: string[], to: string, placement?: 'top' | 'bottom') => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.move(roomId, ids, to, intentId, placement));
+    },
   };
 }

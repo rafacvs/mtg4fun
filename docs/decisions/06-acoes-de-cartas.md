@@ -63,3 +63,8 @@ Falha de ação preserva a mesa e seleção, com mensagem para tentar novamente.
 Uma ação em andamento bloqueia novos envios locais; leituras anteriores à
 ação não substituem a confirmação mais recente. Polling volta a tentar após
 falhas de leitura.
+
+Se as duas tentativas automáticas perderem a confirmação, a intenção fica
+pendente no cliente: novos comandos ficam bloqueados e **Tentar novamente**
+reenvia o mesmo UUID e conteúdo. Assim, tentar recuperar uma confirmação não
+gera outra compra. Uma recarga consulta novamente o estado confirmado.

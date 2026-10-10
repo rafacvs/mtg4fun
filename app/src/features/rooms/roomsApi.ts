@@ -30,6 +30,7 @@ async function change(path: string, method = 'POST', body: unknown = {}): Promis
 }
 
 class MatchActionResponseError extends Error {}
+export class UnconfirmedActionError extends Error {}
 async function matchChange(path: string, body: unknown): Promise<Match> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -38,7 +39,8 @@ async function matchChange(path: string, body: unknown): Promise<Match> {
       if (!response.ok) throw new MatchActionResponseError(data.error || 'Não foi possível concluir. Tente novamente.');
       return data.match;
     } catch (reason) {
-      if (attempt === 1 || reason instanceof MatchActionResponseError) throw reason;
+      if (reason instanceof MatchActionResponseError) throw reason;
+      if (attempt === 1) throw new UnconfirmedActionError('Não foi possível confirmar a ação. Tente novamente para recuperar a confirmação.');
     }
   }
   throw new Error('Não foi possível concluir. Tente novamente.');
@@ -77,6 +79,6 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
     return data.match;
   },
-  draw: (id: number, count: number) => matchChange(`/api/rooms/${id}/match/actions`, { intentId: crypto.randomUUID(), kind: 'draw', count }),
-  move: (id: number, cardIds: string[], to: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId: crypto.randomUUID(), kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),
+  draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
+  move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),
 };
