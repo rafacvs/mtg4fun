@@ -4,25 +4,28 @@ Issue: [01: Criar contas e acessar](../issues/01-criar-contas-e-acessar.md).
 
 ## Estado das decisões e pendências
 
-Este documento descreve a implementação existente e suas verificações
-históricas. A presença de uma escolha aqui não comprova aprovação do usuário.
-SQLite foi escolhido sem consulta prévia e rejeitado como inviável para o
-projeto. Sua substituição está na [issue 19](../issues/19-substituir-sqlite.md);
-o banco substituto e o tratamento dos dados existentes aguardam aprovação.
+O contrato HTTP, bcrypt, cookies e revogação abaixo continuam vigentes.
+As issues [19](../issues/19-substituir-sqlite.md) e
+[20](../issues/20-docker-dev-e-producao.md) substituem a persistência e a operação
+Docker por MySQL 26.7.0 e API/frontend separados. A aprovação explícita, o
+tratamento dos dados antigos, a configuração e a validação atual estão no
+[registro MySQL/Docker](19-20-mysql-e-docker.md).
 
-O Docker atual executa somente backend e frontend compilado em um serviço.
-O requisito de modos distintos, dev com hot reload e produção com build,
-está na [issue 20](../issues/20-docker-dev-e-producao.md). A divisão final de
-serviços ainda precisa de aprovação.
+Os trechos de implementação e validação abaixo são **históricos**, anteriores
+à substituição. Os comandos atuais estão no [README](../../README.md).
+O comando `create-user` continua aceitando `--password`; a configuração
+`--db`/`DB_PATH` foi substituída pelas variáveis `DB_*`. A API pode iniciar sem
+frontend compilado e mantém o modo opcional `--web` para testes/uso local.
+Os testes passam a usar MySQL real; os modos Docker usam Air/Vite (dev) ou
+Go compilado/Nginx (produção), com volume MySQL persistente.
 
 As demais escolhas técnicas abaixo descrevem o que existe; não recebem
 aprovação retroativa por esta atualização. Novas decisões de grande impacto
 seguem a [política do AGENTS.md](../../AGENTS.md#requisitos-e-decisões).
 Resultados históricos de testes e revisões são preservados como registros
-da entrega anterior; não foram reexecutados nesta atualização documental e
-não encerram as pendências acima.
+da entrega anterior; pertencem às entregas anteriores e não representam a validação MySQL/Docker.
 
-## Implementação existente
+## Implementação histórica
 
 Um executável Go serve HTTP e os arquivos compilados do React/TypeScript com
 Vite. SQLite (`database/sql` + `github.com/mattn/go-sqlite3`, com CGO) mantém

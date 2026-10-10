@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mattn/go-sqlite3"
+	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,8 +34,8 @@ func (s *Service) CreateUser(login, name, password string) error {
 		return err
 	}
 	_, err = s.db.Exec("INSERT INTO users(login, name, password_hash) VALUES (?, ?, ?)", login, name, string(hash))
-	var sqliteErr sqlite3.Error
-	if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
 		return errors.New("login já existe")
 	}
 	return err

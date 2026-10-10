@@ -29,9 +29,12 @@
   Não atribua aprovação ao usuário sem evidência. Testes aprovam comportamentos
   observados, não escolhas de arquitetura.
 - SQLite foi rejeitado pelo usuário e deve ser substituído conforme a issue 19.
-  Não o adote como decisão aprovada para funcionalidades futuras. Os modos
-  Docker dev e produção estão pendentes na issue 20; banco substituto e divisão
-  final de serviços precisam de aprovação antes da implementação.
+  Não o adote como decisão aprovada para funcionalidades futuras. O usuário
+  aprovou MySQL 26.7.0 e serviços separados de API/frontend, dev com Air/Vite e
+  produção com Go compilado/Nginx nas issues 19 e 20. O banco novo começa vazio,
+  preservando arquivos e volumes SQLite antigos. Consulte o estado e o contexto
+  da autorização em `docs/decisions/19-20-mysql-e-docker.md`; novas decisões de
+  grande impacto continuam exigindo aprovação explícita.
 
 ## Escopo da documentação
 

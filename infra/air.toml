@@ -1,0 +1,23 @@
+root = "/src/api"
+tmp_dir = "bin"
+env_files = []
+
+[build]
+cmd = "go build -o ./bin/mtg4fun ./cmd/mtg4fun"
+entrypoint = ["./bin/mtg4fun", "serve"]
+include_ext = ["go", "sql"]
+include_file = ["go.mod", "go.sum"]
+exclude_dir = ["bin", "data", "tests"]
+exclude_regex = ["_test\\.go"]
+delay = 300
+stop_on_error = true
+send_interrupt = true
+kill_delay = "10s"
+rerun = true
+rerun_delay = 1000
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = false

@@ -1,0 +1,25 @@
+services:
+  api:
+    build:
+      target: api-development
+    volumes:
+      - ../api:/src/api
+      - ../infra/air.toml:/etc/air.toml:ro
+      - go-modules:/go/pkg/mod
+      - go-build:/root/.cache/go-build
+      - api-bin:/src/api/bin
+
+  frontend:
+    build:
+      target: frontend-development
+    environment:
+      API_PROXY_TARGET: http://api:8080
+    volumes:
+      - ../app:/src/app
+      - node-modules:/src/app/node_modules
+
+volumes:
+  go-modules:
+  go-build:
+  api-bin:
+  node-modules:
