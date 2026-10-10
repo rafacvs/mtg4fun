@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cockatrice_deck version="1">
+  <deckname>Amigos &amp; mágicas</deckname>
+  <comments>Exportação Cockatrice: quantidades, escapes e seção side.</comments>
+  <zone name="main">
+    <card number="2" name="Island"/>
+    <card number="1" name="Fire // Ice"/>
+    <card number="3" name="Island"/>
+    <card number="1" name="Urza's Saga"/>
+  </zone>
+  <zone name="side"><card number="2" name="Carta fora do catálogo"/></zone>
+</cockatrice_deck>

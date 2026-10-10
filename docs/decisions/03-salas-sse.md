@@ -113,3 +113,43 @@ organização dessa revisão. Esse resultado é da coordenação, distinto dos
 subagentes originais acima; as revisões foram estáticas.
 
 A aprovação de transporte acima é do usuário; testes e revisões não a substituem.
+
+## Integração dos PRs 5 e 6
+
+Após o merge do PR 5 na `master`, o usuário pediu a análise dos conflitos do
+PR 6 e autorizou: **“faça essa correção de conflitos em uma worktree e commite
+no PR #6 com push para ver se os conflitos resolveram”**. Esta autorização
+abrange atualizar a branch do PR 6 e publicar a resolução; o PR permanece
+aberto para revisão, sem integração na `master`.
+
+A resolução preserva as duas entregas: handlers HTTP de decks e salas, tabelas
+de biblioteca e salas/log, ambos os componentes na tela autenticada e fixtures
+com o segundo participante e os caminhos do catálogo de teste. O catálogo
+versionado em memória mantém a aprovação posterior registrada na
+[decisão de decks](02-decks-e-catalogo.md#catálogo-versionado-em-memória).
+Não há mudança de contrato, transporte ou requisito de produto.
+
+O cenário de navegador de salas agora importa um deck, acompanha criação e
+entrada de outro participante e verifica deck e participação após recarga.
+Seus seletores de artigos da primeira página ficam restritos à região Salas,
+para não contar o artigo de detalhes do deck.
+
+Validação da resolução de conflitos em 2026-10-10 (distinta dos resultados
+históricos acima):
+
+- `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram, com MySQL
+  isolado e as suítes de acesso, decks e salas na mesma versão da API.
+- `npm ci --prefix app` e `npm run build --prefix app`: passaram, incluindo
+  typecheck. `npm test --prefix app -- --workers=3`: 18 cenários passaram em
+  desktop, celular vertical e horizontal; três cenários de hot reload foram
+  omitidos porque exigem Docker dev. O fluxo combinado de deck/sala passou
+  nas três orientações.
+- Links locais dos documentos alterados e `git diff --cached --check`: passaram.
+- `python3 infra/tests/docker_smoke.py --mode prod`: passou em projeto, portas
+  e volume isolados. Os nove cenários de acesso e três fluxos combinados de
+  decks/salas passaram com o catálogo versionado e Nginx/SSE. Salas,
+  participantes/vagas e sessão permaneceram iguais após recriação de API,
+  frontend e MySQL com o mesmo volume; logout/reautenticação também passaram.
+  A inicialização do volume novo foi lenta e a API reiniciou após a primeira
+  espera pelo banco; o teste concluiu e removeu seu ambiente isolado.
+  Não foi repetido o smoke Docker dev nesta resolução.

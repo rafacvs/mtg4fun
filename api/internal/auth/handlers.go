@@ -18,7 +18,7 @@ func cookie(secure bool, token string, expires time.Time, maxAge int) *http.Cook
 	return &http.Cookie{Name: cookieName, Value: token, Path: "/", HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode, Expires: expires, MaxAge: maxAge}
 }
 
-// CurrentUser resolves the authenticated account without exposing credentials.
+// CurrentUser validates the session token against durable authenticated access.
 func (s *Service) CurrentUser(r *http.Request) (User, string, error) {
 	c, err := r.Cookie(cookieName)
 	if err != nil {

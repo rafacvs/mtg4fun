@@ -61,13 +61,15 @@ type environment struct {
 	done    chan error
 	url     string
 	logs    string
+	cards   string
+	tokens  string
 }
 
 func newEnvironment(t *testing.T) *environment {
 	t.Helper()
 	directory := t.TempDir()
 	databaseNumber++
-	e := &environment{t: t, db: "access_" + strconv.Itoa(databaseNumber), web: filepath.Join(directory, "web")}
+	e := &environment{t: t, db: "access_" + strconv.Itoa(databaseNumber), web: filepath.Join(directory, "web"), cards: "testdata/cards.xml", tokens: "testdata/tokens.xml"}
 	e.sql("CREATE DATABASE " + e.db)
 	e.sql("CREATE USER '" + e.db + "'@'%' IDENTIFIED BY '" + mysqlEnvironment["DB_PASSWORD"] + "'; GRANT ALL ON " + e.db + ".* TO '" + e.db + "'@'%'")
 	t.Cleanup(func() { e.sql("DROP DATABASE " + e.db + "; DROP USER '" + e.db + "'@'%'") })
@@ -133,7 +135,7 @@ func (e *environment) mustCreate(login, name, password string) {
 
 func (e *environment) start(secure bool) {
 	e.t.Helper()
-	e.process = e.command("serve", "--addr", "127.0.0.1:0", "--web", e.web)
+	e.process = e.command("serve", "--addr", "127.0.0.1:0", "--web", e.web, "--cards", e.cards, "--tokens", e.tokens)
 	e.process.Env = append(e.process.Env, fmt.Sprintf("COOKIE_SECURE=%t", secure))
 	logFile, err := os.CreateTemp(e.t.TempDir(), "server-*.log")
 	if err != nil {

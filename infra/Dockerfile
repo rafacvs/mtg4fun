@@ -18,8 +18,11 @@ FROM debian:bookworm-slim AS api-production
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 mtg4fun && useradd --uid 10001 --gid 10001 --no-create-home mtg4fun
 COPY --from=api-build /mtg4fun /usr/local/bin/mtg4fun
+COPY api/catalog/ /usr/local/share/mtg4fun/catalog/
 USER 10001:10001
-ENV ADDR=:8080
+ENV ADDR=:8080 \
+    CATALOG_CARDS=/usr/local/share/mtg4fun/catalog/cards.xml \
+    CATALOG_TOKENS=/usr/local/share/mtg4fun/catalog/tokens.xml
 EXPOSE 8080
 ENTRYPOINT ["mtg4fun"]
 CMD ["serve"]
