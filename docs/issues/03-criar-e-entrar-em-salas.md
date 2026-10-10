@@ -4,15 +4,15 @@
 
 **Blocked by:** 01: Criar contas e acessar a aplicação.
 
-**Status:** ready-for-agent
+**Status:** implementado; aguardando revisão do PR
 
-- [ ] Listar e criar salas; qualquer usuário autenticado entra em sala com vaga sem aprovação extra.
-- [ ] Limite de seis participantes é aplicado pelo servidor, inclusive quando entradas concorrem pela última vaga.
-- [ ] Participantes e vagas atualizam nos clientes conectados sem recarregar a página.
-- [ ] Várias salas coexistem sem compartilhar participantes ou alterações indevidamente.
-- [ ] Salas e participação são persistentes; conexão temporária não define a existência da sala.
-- [ ] Telas e erros em PT-BR funcionam com mouse e toque.
-- [ ] Testes com múltiplos clientes cobrem limite, entrada concorrente, isolamento e chamadas não autenticadas.
+- [x] Listar e criar salas; qualquer usuário autenticado entra em sala com vaga sem aprovação extra.
+- [x] Limite de seis participantes é aplicado pelo servidor, inclusive quando entradas concorrem pela última vaga.
+- [x] Participantes e vagas atualizam nos clientes conectados sem recarregar a página.
+- [x] Várias salas coexistem sem compartilhar participantes ou alterações indevidamente.
+- [x] Salas e participação são persistentes; conexão temporária não define a existência da sala.
+- [x] Telas e erros em PT-BR funcionam com mouse e toque.
+- [x] Testes com múltiplos clientes cobrem limite, entrada concorrente, isolamento e chamadas não autenticadas.
 
 ## Regras de execução
 

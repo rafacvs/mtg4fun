@@ -74,5 +74,27 @@ explícitas a WebSocket/realtime abertas aparecem no índice de specs e na spec
 
 ## Validação
 
-Os resultados efetivamente executados serão registrados na entrega/PR. A
-aprovação de transporte acima é do usuário; testes não substituem essa aprovação.
+- `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram com
+  MySQL real isolado. A API cobre criação, persistência/reinício, concorrência
+  na última vaga, repetição idempotente, isolamento, sessão, SSE/reconexão,
+  revogação, corpos inválidos e rollback quando o log não pode ser salvo.
+- `go -C api test ./tests/integration -run TestRoomEventsStayOpenAcrossIdlePeriod
+  -count=1`: passou; stream ocioso permanece utilizável após 16 segundos,
+  além do timeout normal de escrita HTTP.
+- `npm run typecheck --prefix app`, `npm run build --prefix app` e
+  `npm test --prefix app -- --workers=3`: passaram; 12 cenários de navegador
+  em desktop/celular vertical/horizontal, com mouse/toque. Três cenários de
+  hot reload foram omitidos por serem exclusivos de Docker dev. Capturas
+  conferidas e ausência de overflow horizontal verificada no navegador.
+- Após a extração de tratamento autenticado apontada na revisão, `go vet` e
+  os três testes dirigidos de criação, concorrência e SSE passaram novamente.
+- Links locais e `git diff --check` conferidos.
+
+Code-review da skill, em subagentes independentes, de `96aeacd` até `d1969be`:
+Standards sem violações e uma observação heurística sobre duplicação de sessão;
+Spec sem achados. A extração em `db2d5e4` recebeu revisão complementar de ambos:
+Standards 0 achados; Spec 0 achados. Revisões estáticas, sem executar testes.
+
+A aprovação de transporte acima é do usuário; testes e revisões não a substituem.
+A operação Docker de produção é verificada separadamente e seu resultado será
+registrado no PR após conclusão.
