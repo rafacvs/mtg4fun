@@ -21,8 +21,10 @@ func serve(users *auth.Service, addr, webDir string) error {
 	if secure != "true" && secure != "false" {
 		return errors.New("COOKIE_SECURE deve ser true ou false")
 	}
-	if _, err := os.Stat(webDir + "/index.html"); err != nil {
-		return fmt.Errorf("cliente indisponível: compile o frontend em app/ ou configure WEB_DIR: %w", err)
+	if webDir != "" {
+		if _, err := os.Stat(webDir + "/index.html"); err != nil {
+			return fmt.Errorf("cliente indisponível: compile o frontend em app/ ou configure WEB_DIR: %w", err)
+		}
 	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {

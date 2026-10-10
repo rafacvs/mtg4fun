@@ -1,19 +1,46 @@
 # Acesso: armazenamento, credenciais e contrato
 
-Issue: `docs/issues/01-criar-contas-e-acessar.md`.
+Issue: [01: Criar contas e acessar](../issues/01-criar-contas-e-acessar.md).
+
+## Estado das decisões e pendências
+
+O contrato HTTP, bcrypt, cookies e revogação abaixo continuam vigentes.
+As issues [19](../issues/19-substituir-sqlite.md) e
+[20](../issues/20-docker-dev-e-producao.md) substituem a persistência e a operação
+Docker por MySQL 26.7.0 e API/frontend separados. A aprovação explícita, o
+tratamento dos dados antigos, a configuração e a validação atual estão no
+[registro MySQL/Docker](19-20-mysql-e-docker.md).
+
+Os trechos de implementação e validação abaixo são **históricos**, anteriores
+à substituição. Os comandos atuais estão no [README](../../README.md).
+O comando `create-user` continua aceitando `--password`; a configuração
+`--db`/`DB_PATH` foi substituída pelas variáveis `DB_*`. A API pode iniciar sem
+frontend compilado e mantém o modo opcional `--web` para testes/uso local.
+Os testes passam a usar MySQL real; os modos Docker usam Air/Vite (dev) ou
+Go compilado/Nginx (produção), com volume MySQL persistente.
+
+As demais escolhas técnicas abaixo descrevem o que existe; não recebem
+aprovação retroativa por esta atualização. Novas decisões de grande impacto
+seguem a [política do AGENTS.md](../../AGENTS.md#requisitos-e-decisões).
+Resultados históricos de testes e revisões são preservados como registros
+da entrega anterior; pertencem às entregas anteriores e não representam a validação MySQL/Docker.
+
+## Implementação histórica
 
 Um executável Go serve HTTP e os arquivos compilados do React/TypeScript com
 Vite. SQLite (`database/sql` + `github.com/mattn/go-sqlite3`, com CGO) mantém
 contas e sessões em um volume Docker, sem um serviço de banco adicional.
 WAL, foreign keys, busy timeout e transações permitem criar contas pelo comando
-enquanto o servidor está ativo. Futuras tabelas podem usar o mesmo banco.
+enquanto o servidor está ativo. Esse banco não deve ser tratado como base
+aprovada para funcionalidades futuras.
 
 Bcrypt (`golang.org/x/crypto/bcrypt`) com custo 12 e salt aleatório guarda
 senhas; aceitamos de 8 a 72 bytes UTF-8, rejeitando entradas maiores sem
 truncamento. Login diferencia maiúsculas, tem 3–64 caracteres ASCII
 (letras, números, ponto, hífen e sublinhado). Nome tem até 100 caracteres.
-O comando recebe a senha por stdin, para não colocá-la nos argumentos ou
-histórico do shell. Contas duplicadas falham sem substituir a senha existente.
+O comando aceita a senha diretamente em `--password`. Com `--name USUARIO`,
+o mesmo valor é usado como login quando `--login` é omitido. `--password-stdin`
+continua disponível para compatibilidade com o comando anterior. Contas duplicadas falham sem substituir a senha existente.
 
 Sessões usam 32 bytes aleatórios; somente o SHA-256 do token fica no banco.
 Cookie `mtg4fun_session`, HttpOnly, SameSite=Strict, Path=/, com validade de
@@ -55,7 +82,7 @@ com reinício e fluxo de navegador. A implementação inicial precedeu essa
 confirmação; os testes seguintes reproduziram e corrigiram o conflito de
 registro de rotas do servidor e a saída de uma sessão já revogada no cliente.
 
-## Validação da entrega
+## Validação histórica da entrega
 
 - `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram.
 - `npm run build --prefix app` e `npm run typecheck --prefix app`: passaram.
@@ -67,29 +94,31 @@ registro de rotas do servidor e a saída de uma sessão já revogada no cliente.
   conta e sessão no volume. Projeto, porta e volume de teste isolados e
   removidos ao terminar.
 
-## Standards
+## Revisão histórica de padrões
 
 Nenhum achado na revisão desde `7dd2b1d`: sem violações documentadas ou smells
 concretos. A implementação mantém poucas camadas e dependências, documenta
 escolhas e contrato, testa comportamentos públicos e isola bancos e serviços
 de teste. Revisão por leitura em worktree própria.
 
-## Spec
+## Revisão histórica de escopo
 
-Nenhum achado: sem requisito ausente/parcial, desvio de escopo ou comportamento
-incorreto para a issue 01. Contas pelo executável, bcrypt, API privada, interface
-PT-BR responsiva, persistência, Docker, documentação e testes cobrem a entrega.
+A revisão anterior registrou ausência de achados de requisitos ou comportamento
+para a issue 01. Essa conclusão antecede as correções exigidas pelo usuário.
+A revisão considerou contas pelo executável, bcrypt, API privada, interface
+PT-BR responsiva, persistência, Docker, documentação e testes.
 Transferência de conexão permanece na issue 16. Revisão por leitura em worktree
 própria; verificação operacional Docker confirmada após a revisão.
 
-Total: Standards 0 achados; Spec 0 achados.
+Resultado histórico registrado: Standards 0 achados; Spec 0 achados.
+Não representa a situação atual de aprovação do banco ou do ambiente dev.
 
 ## Organização do código
 
 A organização aprovada separa `api/` (Go), `app/` (React/TypeScript) e `infra/`
 (Docker). Os módulos são agrupados por funcionalidade, com responsabilidades
 compartilhadas explícitas. O [mapa no README](../../README.md#organização-do-repositório)
-descreve os diretórios; o [AGENTS.md](../../AGENTS.md) registra as regras.
+resume os diretórios; o [AGENTS.md](../../AGENTS.md) registra as regras.
 
 O módulo `auth` recebe a conexão aberta por `database`; o esquema existente é
 embutido no executável a partir de `schema.sql`, sem mudança de tabelas ou
@@ -102,7 +131,7 @@ O desenvolvimento local do backend passa a usar `api/` como diretório de
 trabalho e `../app/dist` como cliente compilado. Docker mantém serviço `app`,
 volume `data` e os caminhos de armazenamento, usando o mesmo nome de projeto.
 
-## Validação da reorganização
+## Validação histórica da reorganização
 
 Os comandos de validação acima foram executados novamente com os novos caminhos:
 Go, build e tipos do cliente, os 9 cenários de navegador e o teste Docker passaram.
@@ -118,3 +147,17 @@ Spec: 0 achados na revisão da issue 01 e do plano de reorganização aprovado.
 As revisões desde `7dd2b1d` foram realizadas por leitura em worktrees separadas;
 a execução dos testes e a persistência do volume Docker foram verificadas no
 checkout da tarefa.
+
+## Simplificação do comando de contas
+
+O usuário solicitou explicitamente um único comando com nome e senha em
+argumentos, dispensando a leitura oculta no terminal. A opção `--password`
+atende essa solicitação; `--login` só é necessário para diferenciar o login
+do nome exibido. O Compose define `mtg4fun` como projeto padrão, preservando
+o volume existente e dispensando `-p` nos comandos do ambiente principal.
+
+Exemplo executado em `infra/`:
+
+```bash
+docker compose exec app mtg4fun create-user --name rafa --password 'senha123'
+```

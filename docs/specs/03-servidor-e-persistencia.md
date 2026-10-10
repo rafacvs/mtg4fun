@@ -26,6 +26,8 @@ Servidor Go como autoridade do estado compartilhado, clientes React/TypeScript r
 
 ## Decisões de implementação
 
+Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGENTS.md#requisitos-e-decisões). Expressões como “a definir na implementação” não autorizam decisões de grande impacto sem aprovação explícita do usuário.
+
 ### Arquitetura e responsabilidades
 
 - React/TypeScript renderiza cartas, zonas, campos, mão, seleção, foco e controles; envia intenções e representa o estado autorizado recebido.
@@ -70,7 +72,7 @@ Servidor Go como autoridade do estado compartilhado, clientes React/TypeScript r
 
 ## Decisões de teste
 
-Proposta: preferir uma fronteira principal, o contrato público do servidor, com múltiplos clientes e banco real de teste. Usar fluxos no navegador apenas para comportamentos de interação/renderização que essa fronteira não cobre. Não há módulos ou testes existentes para tomar como precedente.
+Proposta: preferir uma fronteira principal, o contrato público do servidor, com múltiplos clientes e banco real de teste. Usar fluxos no navegador apenas para comportamentos de interação/renderização que essa fronteira não cobre. Na elaboração original desta spec, ainda não existiam módulos ou testes para tomar como precedente.
 
 Critérios observáveis:
 

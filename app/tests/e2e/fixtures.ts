@@ -10,14 +10,18 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 export const test = base.extend<{}, { appURL: string }>({
   appURL: [async ({}, use) => {
+    if (process.env.E2E_BASE_URL) { await use(process.env.E2E_BASE_URL); return; }
     const directory = mkdtempSync(join(tmpdir(), 'mtg4fun-browser-'));
     let server: ChildProcess | undefined;
+    let container: string | undefined;
     try {
       const executable = join(directory, 'mtg4fun');
-      const database = join(directory, 'contas.db');
+      const database = JSON.parse(execFileSync('python3', [join(root, 'scripts/test-mysql.py')], { encoding: 'utf8', timeout: 420_000 })) as Record<string, string>;
+      container = database.container;
+      const environment = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DB_'))), ...Object.fromEntries(Object.entries(database).filter(([key]) => key.startsWith('DB_'))), COOKIE_SECURE: 'false' };
       execFileSync('go', ['build', '-o', executable, './cmd/mtg4fun'], { cwd: join(root, 'api') });
-      execFileSync(executable, ['create-user', '--db', database, '--login', 'amigo', '--name', 'Amigo da mesa', '--password-stdin'], { input: 'senha-do-navegador' });
-      server = spawn(executable, ['serve', '--db', database, '--addr', '127.0.0.1:0', '--web', join(root, 'app/dist')], { env: { ...process.env, COOKIE_SECURE: 'false' }, stdio: ['ignore', 'ignore', 'pipe'] });
+      execFileSync(executable, ['create-user', '--login', 'amigo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador'], { env: environment });
+      server = spawn(executable, ['serve', '--addr', '127.0.0.1:0', '--web', join(root, 'app/dist')], { env: environment, stdio: ['ignore', 'ignore', 'pipe'] });
       const address = await new Promise<string>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Servidor não iniciou')), 10_000);
         let output = '';
@@ -38,9 +42,10 @@ export const test = base.extend<{}, { appURL: string }>({
         await exited;
         clearTimeout(timeout);
       }
+      if (container) execFileSync('docker', ['rm', '-f', '-v', container]);
       rmSync(directory, { recursive: true, force: true });
     }
-  }, { scope: 'worker' }],
+  }, { scope: 'worker', timeout: 420_000 }],
   baseURL: async ({ appURL }, use) => { await use(appURL); },
 });
 

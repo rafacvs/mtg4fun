@@ -1,90 +1,151 @@
 #!/usr/bin/env python3
-"""Verify the shipped image, provisioning command and durable Docker volume."""
+"""Verify dev/prod contracts using isolated projects, ports, volumes and sources."""
+import argparse
 import http.cookiejar
 import json
 import os
 from pathlib import Path
+import secrets
+import shutil
 import socket
 import subprocess
+import tempfile
 import time
 import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
-PROJECT = f"mtg4fun-auth-test-{os.getpid()}"
-with socket.socket() as listener:
-    listener.bind(("127.0.0.1", 0))
-    PORT = listener.getsockname()[1]
-ENV = {**os.environ, "PORT": str(PORT), "BIND_ADDR": "127.0.0.1", "COOKIE_SECURE": "false"}
-URL = f"http://127.0.0.1:{PORT}"
-COOKIES = http.cookiejar.CookieJar()
-CLIENT = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(COOKIES))
 
 
-def compose(*args, input=None):
-    result = subprocess.run(
-        ["docker", "compose", "-f", str(ROOT / "infra/compose.yaml"), "-p", PROJECT, *args], cwd=ROOT, env=ENV,
-        input=input, text=True, capture_output=True,
-    )
-    if result.returncode:
-        raise RuntimeError(f"Docker Compose falhou: {result.stdout}\n{result.stderr}")
-    return result.stdout
+def free_port():
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        return listener.getsockname()[1]
 
 
-def request(method="GET", path="/api/session", data=None):
-    body = json.dumps(data).encode() if data is not None else None
-    headers = {"Content-Type": "application/json"} if body else {}
-    req = urllib.request.Request(URL + path, data=body, headers=headers, method=method)
-    try:
-        response = CLIENT.open(req, timeout=5)
-    except urllib.error.HTTPError as error:
-        response = error
-    with response:
-        return response.status, response.read()
+def verify(mode):
+    project = f"mtg4fun-{mode}-test-{secrets.token_hex(4)}"
+    port = free_port()
+    env = {**os.environ, "PORT": str(port), "MYSQL_PORT": str(free_port()),
+           "BIND_ADDR": "127.0.0.1", "COOKIE_SECURE": "false", "DB_TLS": "false", "DB_TLS_CA": "",
+           "DB_HOST": "mysql", "DB_PORT": "3306", "DB_NAME": "mtg4fun", "DB_USER": "mtg4fun",
+           "DB_PASSWORD": secrets.token_hex(20), "MYSQL_ROOT_PASSWORD": secrets.token_hex(20),
+           "DB_CONNECT_TIMEOUT": "300s"}
+    url = f"http://127.0.0.1:{port}"
+    cookies = http.cookiejar.CookieJar()
+    client = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookies))
+    with tempfile.TemporaryDirectory(prefix=f"mtg4fun-{mode}-") as staging:
+        files = [str(ROOT / "infra/compose.yaml")]
+        env_file = Path(staging) / ".env"
+        command = ["docker", "compose", "--env-file", str(env_file), "-p", project]
+        if mode == "dev":
+            # Never mutate the developer's files to verify reload.
+            sources = Path(staging)
+            for folder in ("api", "app"):
+                shutil.copytree(ROOT / folder, sources / folder,
+                                ignore=shutil.ignore_patterns("node_modules", "dist", "bin", "data", "test-results", "playwright-report"))
+            override = sources / "mounts.json"
+            override.write_text(json.dumps({"services": {
+                "api": {"volumes": [f"{sources / 'api'}:/src/api"]},
+                "app": {"volumes": [f"{sources / 'app'}:/src/app"]},
+            }}))
+            files += [str(ROOT / "infra/compose.dev.yaml"), str(override)]
+        # Use Compose's .env mode selection instead of CLI file/profile flags.
+        env_file.write_text(f"COMPOSE_FILE={os.pathsep.join(files)}\nCOMPOSE_PROFILES=local-db\n")
+        env.pop("COMPOSE_FILE", None)
+        env.pop("COMPOSE_PROFILES", None)
 
+        def compose(*args, check=True):
+            result = subprocess.run([*command, *args], cwd=ROOT, env=env, text=True, capture_output=True)
+            if check and result.returncode:
+                raise RuntimeError(f"Docker Compose falhou: {result.stdout}\n{result.stderr}")
+            return result.stdout
 
-def ready():
-    deadline = time.monotonic() + 30
-    while time.monotonic() < deadline:
+        def request(method="GET", path="/api/session", data=None):
+            body = json.dumps(data).encode() if data is not None else None
+            headers = {"Content-Type": "application/json", "Origin": url} if body else {"Origin": url}
+            req = urllib.request.Request(url + path, data=body, headers=headers, method=method)
+            try:
+                response = client.open(req, timeout=5)
+            except urllib.error.HTTPError as error:
+                response = error
+            with response:
+                return response.status, response.read()
+
+        def ready():
+            deadline = time.monotonic() + 900
+            while time.monotonic() < deadline:
+                try:
+                    if request(path="/")[0] == 200 and request()[0] in (200, 401):
+                        return
+                except (OSError, urllib.error.URLError):
+                    pass
+                time.sleep(0.5)
+            raise RuntimeError("Serviços Docker não ficaram prontos")
+
+        def require(actual, status):
+            if actual[0] != status:
+                raise AssertionError(f"HTTP {actual[0]}, esperado {status}: {actual[1]!r}")
+
+        def create(login, name, password, check=True):
+            executable = "mtg4fun"
+            return compose("exec", "-T", "api", executable, "create-user", "--login", login,
+                           "--name", name, "--password", password, check=check)
+
         try:
-            if request(path="/")[0] == 200:
-                return
-        except (OSError, urllib.error.URLError):
-            pass
-        time.sleep(0.1)
-    raise RuntimeError("Servidor Docker não ficou pronto")
+            print(f"{mode}: construindo e iniciando projeto isolado {project}...", flush=True)
+            compose("up", "--build", "--detach", "api")
+            running = set(compose("ps", "--services", "--status", "running").split())
+            if running != {"api", "mysql"}:
+                raise AssertionError(f"Subir api deve iniciar apenas api e mysql: {running}")
+            compose("up", "--build", "--detach", "api", "app")
+            ready()
+            version = compose("exec", "-T", "mysql", "mysql", "--version")
+            if "26.7.0" not in version:
+                raise AssertionError(f"Versão incorreta: {version}")
+            require(request(), 401)
+            require(request(path="/preparacao"), 200)
+            create("amigo", "Amigo da mesa", "senha-do-navegador")
+            create("convidado", "Convidado Docker", "senha-exclusiva-do-teste")
+            executable = "mtg4fun"
+            duplicate = subprocess.run([*command, "exec", "-T", "api", executable, "create-user", "--name", "convidado", "--password", "outra-senha"],
+                                       cwd=ROOT, env=env, capture_output=True, text=True)
+            if duplicate.returncode == 0 or "login já existe" not in duplicate.stderr:
+                raise AssertionError("Conta duplicada não foi rejeitada")
+            credentials = {"login": "convidado", "password": "senha-exclusiva-do-teste"}
+            require(request("POST", data={**credentials, "password": "senha-incorreta"}), 401)
+            require(request("POST", data=credentials), 200)
+            first = request()
+            require(first, 200)
+            browser_env = {**env, "E2E_BASE_URL": url}
+            subprocess.run(["npm", "test", "--prefix", "app", "--", "acesso.spec.ts", "--workers=3"],
+                           cwd=ROOT, env=browser_env, check=True)
+            if mode == "dev":
+                browser_env["E2E_HOT_RELOAD_ROOT"] = staging
+                subprocess.run(["npm", "test", "--prefix", "app", "--", "hot-reload.spec.ts", "--project=desktop", "--workers=1"],
+                               cwd=ROOT, env=browser_env, check=True)
+            print(f"{mode}: recriando todos os serviços e reutilizando o volume...", flush=True)
+            compose("down")
+            compose("up", "--detach", "api", "app")
+            ready()
+            after_restart = request()
+            require(after_restart, 200)
+            if after_restart[1] != first[1]:
+                raise AssertionError("Sessão/identidade não sobreviveu à recriação")
+            require(request("DELETE"), 204)
+            require(request(), 401)
+            require(request("POST", data=credentials), 200)
+            print(f"{mode}: navegador, API, conta, sessão, recriação e logout verificados.", flush=True)
+        except BaseException:
+            print(compose("logs", "--no-color", "--tail=60", check=False), flush=True)
+            raise
+        finally:
+            compose("down", "--volumes", "--rmi", "local")
 
 
-def require_status(actual, expected):
-    if actual[0] != expected:
-        raise AssertionError(f"HTTP {actual[0]}, esperado {expected}: {actual[1]!r}")
-
-
-try:
-    print("Construindo e iniciando Docker em ambiente isolado...", flush=True)
-    compose("up", "--build", "-d")
-    ready()
-    require_status(request(), 401)
-    compose("exec", "-T", "app", "mtg4fun", "create-user", "--login", "convidado",
-            "--name", "Convidado Docker", "--password-stdin", input="senha-exclusiva-do-teste")
-    credentials = {"login": "convidado", "password": "senha-exclusiva-do-teste"}
-    require_status(request("POST", data={**credentials, "password": "senha-incorreta"}), 401)
-    require_status(request("POST", data=credentials), 200)
-    first = request()
-    require_status(first, 200)
-    if json.loads(first[1])["user"]["name"] != "Convidado Docker":
-        raise AssertionError("Conta criada não foi autenticada")
-    print("Recriando o serviço sem remover o volume...", flush=True)
-    compose("down")
-    compose("up", "-d")
-    ready()
-    after_restart = request()
-    require_status(after_restart, 200)
-    if after_restart[1] != first[1]:
-        raise AssertionError("Identidade mudou após reinício")
-    require_status(request("DELETE"), 204)
-    require_status(request(), 401)
-    require_status(request("POST", data=credentials), 200)
-    print("Docker: criação de conta, autenticação, durabilidade e saída verificadas.", flush=True)
-finally:
-    compose("down", "-v", "--rmi", "local")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["dev", "prod", "all"], default="all")
+    mode = parser.parse_args().mode
+    for selected in (["prod", "dev"] if mode == "all" else [mode]):
+        verify(selected)

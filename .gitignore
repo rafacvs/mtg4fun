@@ -5,6 +5,8 @@
 /app/playwright-report/
 /app/test-results/
 .env
+.env.*
+!.env.example
 *.db
 *.db-shm
 *.db-wal

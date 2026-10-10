@@ -1,14 +1,14 @@
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY,
-    login TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL,
-    password_hash TEXT NOT NULL
-);
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    login VARBINARY(64) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(60) CHARACTER SET ascii COLLATE ascii_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sessions (
-    token_hash TEXT PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id),
-    expires_at INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
+    token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    expires_at BIGINT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    INDEX sessions_expiry (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
