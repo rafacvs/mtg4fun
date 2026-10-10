@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"mtg4fun/internal/auth"
 	"mtg4fun/internal/httpserver"
 )
 
@@ -19,13 +20,7 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("GET /api/rooms/events", s.events)
 	mux.HandleFunc("POST /api/rooms/{id}/participants", s.joinRoom)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _, err := s.users.CurrentUser(r)
-		if errors.Is(err, sql.ErrNoRows) {
-			httpserver.WriteError(w, 401, "Entre para continuar.")
-			return
-		}
-		if err != nil {
-			httpserver.InternalError(w, err)
+		if _, ok := s.requireUser(w, r); !ok {
 			return
 		}
 		mux.ServeHTTP(w, r)
@@ -64,13 +59,8 @@ func (s *Service) createRoom(w http.ResponseWriter, r *http.Request) {
 	if !emptyJSON(w, r) {
 		return
 	}
-	user, _, err := s.users.CurrentUser(r)
-	if errors.Is(err, sql.ErrNoRows) {
-		httpserver.WriteError(w, 401, "Entre para continuar.")
-		return
-	}
-	if err != nil {
-		httpserver.InternalError(w, err)
+	user, ok := s.requireUser(w, r)
+	if !ok {
 		return
 	}
 	room, err := s.create(r.Context(), user)
@@ -90,13 +80,8 @@ func (s *Service) joinRoom(w http.ResponseWriter, r *http.Request) {
 	if !emptyJSON(w, r) {
 		return
 	}
-	user, _, err := s.users.CurrentUser(r)
-	if errors.Is(err, sql.ErrNoRows) {
-		httpserver.WriteError(w, 401, "Entre para continuar.")
-		return
-	}
-	if err != nil {
-		httpserver.InternalError(w, err)
+	user, ok := s.requireUser(w, r)
+	if !ok {
 		return
 	}
 	room, err := s.join(r.Context(), id, user)
@@ -110,4 +95,19 @@ func (s *Service) joinRoom(w http.ResponseWriter, r *http.Request) {
 	default:
 		httpserver.WriteJSON(w, 200, map[string]Room{"room": room})
 	}
+}
+
+// Mutations recheck after parsing so a revoked session cannot use an earlier
+// successful lookup. The wrapper also protects reads and unknown room routes.
+func (s *Service) requireUser(w http.ResponseWriter, r *http.Request) (auth.User, bool) {
+	user, _, err := s.users.CurrentUser(r)
+	if errors.Is(err, sql.ErrNoRows) {
+		httpserver.WriteError(w, 401, "Entre para continuar.")
+		return auth.User{}, false
+	}
+	if err != nil {
+		httpserver.InternalError(w, err)
+		return auth.User{}, false
+	}
+	return user, true
 }
