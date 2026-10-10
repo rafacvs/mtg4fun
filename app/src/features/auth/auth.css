@@ -1,76 +1,30 @@
-form {
-  margin-top: 26px;
-}
+form { margin-top: 24px; }
+label { display: block; font-size: .87rem; font-weight: 650; margin: 13px 0 7px; }
+input, select { width: 100%; min-width: 0; min-height: 48px; padding: 11px 13px; border: 1px solid #687d69; border-radius: 10px; background: #122019; color: #f8f5ec; }
+button { min-height: 46px; padding: 10px 18px; border: 1px solid transparent; border-radius: 10px; background: #e6c481; color: #19231b; font-weight: 750; }
+button:hover:not(:disabled) { background: #f2d79f; }
+form > button { width: 100%; margin-top: 24px; }
+.secondary { background: transparent; border-color: #738674; color: #f3f1e9; }
+.secondary:hover:not(:disabled) { background: #304537; }
+.text-button { background: transparent; color: #e9c889; padding: 8px 10px; border: 0; text-decoration: underline; text-underline-offset: 4px; }
+.text-button:hover:not(:disabled) { background: #334334; }
+.invitation { font-size: .83rem; margin: 24px 0 0; }
+.error { background: #492e29; color: #ffd0c2; border: 1px solid #b07865; border-radius: 10px; padding: 12px; margin: 16px 0; }
+.notice { color: #d7e3d3; background: #243e30; padding: 18px; border-radius: 10px; margin-top: 24px; }
 
-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 15px 0 6px;
-}
+.authenticated { min-width: 0; }
+.app-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.app-heading p:last-child { margin: 0; }
+.account-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 5px 12px; color: #d1dccf; font-size: .85rem; }
+.account-actions .text-button { min-height: 40px; }
+.app-nav { display: flex; gap: 5px; margin-top: 27px; padding: 5px; border: 1px solid #405242; border-radius: 13px; background: #132118; }
+.app-nav a { flex: 1; min-height: 46px; display: grid; place-items: center; padding: 8px 12px; border-radius: 9px; color: #bdcbbd; font-weight: 720; text-decoration: none; white-space: nowrap; }
+.app-nav a:hover { background: #2b4030; color: #fff; }
+.app-nav a[aria-current=page] { background: #e6c481; color: #1a281d; }
+.lobby-hint { margin-top: 22px; padding: 14px 16px; border: 1px solid #596948; border-radius: 12px; background: #273527; color: #f2e8d1; }
 
-input {
-  width: 100%;
-  font: inherit;
-  padding: 11px 13px;
-  border: 1px solid #647966;
-  border-radius: 8px;
-  background: #12251e;
-  color: #fff;
-  min-height: 48px;
-}
-
-button {
-  width: 100%;
-  font: inherit;
-  font-weight: 700;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 12px;
-  min-height: 48px;
-  background: #dfbd79;
-  color: #192b21;
-  margin-top: 24px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #ecd29e;
-}
-
-button:disabled {
-  opacity: .65;
-  cursor: wait;
-}
-
-.secondary {
-  background: transparent;
-  border-color: #809182;
-  color: #e4ede3;
-}
-
-.secondary:hover {
-  background: #304a3b;
-}
-
-.invitation {
-  font-size: 13px;
-  margin: 24px 0 0;
-}
-
-.error {
-  background: #492e29;
-  color: #ffd0c2;
-  border: 1px solid #b07865;
-  border-radius: 8px;
-  padding: 12px;
-  margin: 16px 0 0;
-}
-
-.notice {
-  color: #c9dacc;
-  background: #243e30;
-  padding: 18px;
-  border-radius: 9px;
-  margin-top: 24px;
+@media (max-width: 560px) {
+  .app-header { display: block; }
+  .account-actions { justify-content: flex-start; margin-top: 15px; }
+  .app-nav { margin-top: 20px; }
 }
