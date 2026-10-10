@@ -54,15 +54,16 @@ func TestMain(m *testing.M) {
 }
 
 type environment struct {
-	t       *testing.T
-	db      string
-	web     string
-	process *exec.Cmd
-	done    chan error
-	url     string
-	logs    string
-	cards   string
-	tokens  string
+	t          *testing.T
+	db         string
+	web        string
+	process    *exec.Cmd
+	done       chan error
+	url        string
+	logs       string
+	cards      string
+	tokens     string
+	imageCache string
 }
 
 func newEnvironment(t *testing.T) *environment {
@@ -135,7 +136,11 @@ func (e *environment) mustCreate(login, name, password string) {
 
 func (e *environment) start(secure bool) {
 	e.t.Helper()
-	e.process = e.command("serve", "--addr", "127.0.0.1:0", "--web", e.web, "--cards", e.cards, "--tokens", e.tokens)
+	args := []string{"serve", "--addr", "127.0.0.1:0", "--web", e.web, "--cards", e.cards, "--tokens", e.tokens}
+	if e.imageCache != "" {
+		args = append(args, "--image-cache", e.imageCache)
+	}
+	e.process = e.command(args...)
 	e.process.Env = append(e.process.Env, fmt.Sprintf("COOKIE_SECURE=%t", secure))
 	logFile, err := os.CreateTemp(e.t.TempDir(), "server-*.log")
 	if err != nil {

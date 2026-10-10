@@ -11,8 +11,9 @@ import (
 )
 
 type Card struct {
-	Text  string
-	Token bool
+	Text     string
+	Token    bool
+	ImageURL string
 }
 
 type Catalog struct {
@@ -20,9 +21,15 @@ type Catalog struct {
 }
 
 type datasetCard struct {
-	Name  string `xml:"name"`
-	Text  string `xml:"text"`
-	Token string `xml:"token"`
+	Name  string       `xml:"name"`
+	Text  string       `xml:"text"`
+	Token string       `xml:"token"`
+	Sets  []datasetSet `xml:"set"`
+}
+
+type datasetSet struct {
+	UUID   string `xml:"uuid,attr"`
+	PicURL string `xml:"picURL,attr"`
 }
 
 // Load reads both datasets. Like Cockatrice, the first definition of a repeated name wins.
@@ -31,7 +38,7 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 	for _, path := range []string{cardsPath, tokensPath} {
 		if err := readDataset(path, func(card datasetCard) {
 			if _, ok := catalog.cards[card.Name]; !ok {
-				catalog.cards[card.Name] = Card{Text: card.Text, Token: card.Token == "1"}
+				catalog.cards[card.Name] = Card{Text: card.Text, Token: card.Token == "1", ImageURL: imageURL(card.Sets)}
 			}
 		}); err != nil {
 			return nil, fmt.Errorf("catálogo %s: %w", path, err)
@@ -41,6 +48,18 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 		return nil, errors.New("catálogo vazio")
 	}
 	return catalog, nil
+}
+
+func imageURL(sets []datasetSet) string {
+	for _, set := range sets {
+		if set.PicURL != "" {
+			return set.PicURL
+		}
+		if set.UUID != "" {
+			return "https://api.scryfall.com/cards/" + set.UUID + "?format=image&face=front"
+		}
+	}
+	return ""
 }
 
 func (c *Catalog) Lookup(name string) (Card, bool) {

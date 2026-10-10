@@ -41,6 +41,8 @@ services:
       DB_TLS_CA: "${DB_TLS_CA:-}"
       DB_CONNECT_TIMEOUT: "${DB_CONNECT_TIMEOUT:-120s}"
       COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+    volumes:
+      - image-cache:/var/lib/mtg4fun/images
     restart: unless-stopped
 
   app:
@@ -56,3 +58,4 @@ services:
 
 volumes:
   mysql-data:
+  image-cache:
