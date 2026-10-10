@@ -73,7 +73,7 @@ erro sem confirmar login ou logout.
 
 Operação: [README](../../README.md#executar-com-docker).
 
-## Validação em andamento
+## Validação concluída
 
 - `go -C api vet ./...` e `go -C api test ./... -count=1`: passaram.
 - `npm run typecheck --prefix app` e `npm run build --prefix app`: passaram.
@@ -81,8 +81,16 @@ Operação: [README](../../README.md#executar-com-docker).
   3 variantes do teste de hot reload foram omitidas por serem exclusivas de
   Docker dev. Desktop, celular vertical e horizontal foram exercitados.
 - Compose dev/prod e configuração sem banco local: `config --quiet` passou.
-- Links locais e sintaxe Python conferidos. Verificação Docker dos dois modos
-  em andamento; não é apresentada como concluída neste registro.
+- `python3 infra/tests/docker_smoke.py`: produção e desenvolvimento passaram
+  em projetos, portas e volumes isolados. Cada modo passou 9 cenários de
+  navegador, criação/duplicatas, login/logout e manutenção da conta e sessão
+  após recriação de todos os serviços, incluindo MySQL com volume persistente.
+  Desenvolvimento também passou o teste de hot reload de React sem trocar o
+  documento e de Go com sessão preservada. A cópia descartável do backend dev
+  recebeu a correção final de concorrência antes de executar esses cenários.
+- `python3 infra/tests/docker_smoke.py --mode prod`: repetição com o backend
+  final corrigido passou os mesmos cenários de navegador e durabilidade.
+- Links locais, sintaxe Python e `git diff --check` conferidos.
 
 Os testes do executável/navegador usam containers MySQL reais com diretório
 temporário em tmpfs para acelerar a preparação. A durabilidade após recriação
@@ -93,4 +101,10 @@ do banco é verificada separadamente em volumes Docker persistentes.
 Revisão de `b3d08b9` até `9ffd53f`, em worktrees independentes, com dois eixos
 da skill `code-review`: Standards, 0 achados; Spec, 0 achados. Ambos os
 revisores fizeram leitura estática, sem executar testes. A conclusão não
-substitui a verificação operacional Docker ainda em andamento.
+substitui os testes operacionais registrados acima.
+
+Revisão complementar de `9ffd53f` até `d85858b` (correção de concorrência),
+também em worktrees independentes: Standards, 0 achados; Spec, 0 achados.
+Os revisores fizeram leitura estática; a suíte Go e os testes Docker foram
+executados separadamente. As revisões verificam o código, sem substituir
+a aprovação explícita da arquitetura registrada no início deste documento.
