@@ -60,7 +60,7 @@ test('prepara e inicia uma mesa com um participante', async ({ page }) => {
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await page.getByRole('link', { name: 'Salas', exact: true }).click();
   await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
-  const room = page.getByRole('article').filter({ has: page.getByText('Em preparação', { exact: true }) });
+  const room = page.getByRole('article').filter({ has: page.getByText('Em preparação', { exact: true }) }).last();
   await room.getByLabel('Deck para a partida').selectOption({ label: 'Amigos & mágicas' });
   await room.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
   await expect(room.getByText('Pronto', { exact: false })).toBeVisible();

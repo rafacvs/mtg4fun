@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Card } from './roomsApi';
 import { useMatch } from './useMatch';
 
-const names: Record<string, string> = { hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando' };
+const names: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando' };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
   const { match, error, draw, move } = useMatch(roomId);

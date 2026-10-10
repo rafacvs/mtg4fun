@@ -29,11 +29,19 @@ async function change(path: string, method = 'POST', body: unknown = {}): Promis
   }
 }
 
+class MatchActionResponseError extends Error {}
 async function matchChange(path: string, body: unknown): Promise<Match> {
-  const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
-  return data.match;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await response.json();
+      if (!response.ok) throw new MatchActionResponseError(data.error || 'Não foi possível concluir. Tente novamente.');
+      return data.match;
+    } catch (reason) {
+      if (attempt === 1 || reason instanceof MatchActionResponseError) throw reason;
+    }
+  }
+  throw new Error('Não foi possível concluir. Tente novamente.');
 }
 
 type Updates = {

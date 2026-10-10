@@ -447,6 +447,9 @@ func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = json.Unmarshal(b, &m); e != nil {
 		return Match{}, e
 	}
+	if playerByID(&m, u.ID) == nil {
+		return Match{}, errNotParticipant
+	}
 	log, e := matchLog(ctx, s.db, id, m)
 	if e != nil {
 		return Match{}, e

@@ -95,6 +95,8 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, sql.ErrNoRows):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
+		httpserver.WriteError(w, 404, "Partida não encontrada.")
+	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 403, err.Error())
 	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards):
 		httpserver.WriteError(w, 409, err.Error())

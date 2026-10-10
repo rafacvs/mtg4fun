@@ -625,7 +625,63 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	e.start(false)
 	recovered := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
 	requireStatus(t, recovered, 200)
-	if !bytes.Contains(recovered.body, []byte(own.Hand[0].Name)) || !bytes.Contains(recovered.body, []byte(own.Hand[1].Name)) {
+	var restored struct {
+		Match struct {
+			Players []struct {
+				UserID       int64 `json:"userId"`
+				LibraryCount int   `json:"libraryCount"`
+				Hand         []struct {
+					ID string `json:"id"`
+				} `json:"hand"`
+				Battlefield []struct {
+					ID string `json:"id"`
+				} `json:"battlefield"`
+				Graveyard []struct {
+					ID string `json:"id"`
+				} `json:"graveyard"`
+				Exile []struct {
+					ID string `json:"id"`
+				} `json:"exile"`
+			} `json:"players"`
+			Log []struct {
+				Kind string `json:"kind"`
+			} `json:"log"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(recovered.body, &restored); err != nil {
+		t.Fatal(err)
+	}
+	var restoredAna struct {
+		LibraryCount int
+		Hand         []struct {
+			ID string `json:"id"`
+		}
+		Battlefield []struct {
+			ID string `json:"id"`
+		}
+		Graveyard []struct {
+			ID string `json:"id"`
+		}
+		Exile []struct {
+			ID string `json:"id"`
+		}
+	}
+	for _, player := range restored.Match.Players {
+		if player.UserID == mine.Match.Players[0].UserID {
+			restoredAna.LibraryCount, restoredAna.Hand, restoredAna.Battlefield, restoredAna.Graveyard, restoredAna.Exile = player.LibraryCount, player.Hand, player.Battlefield, player.Graveyard, player.Exile
+		}
+	}
+	contains := func(cards []struct {
+		ID string `json:"id"`
+	}, id string) bool {
+		for _, card := range cards {
+			if card.ID == id {
+				return true
+			}
+		}
+		return false
+	}
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 2+success {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
 	// A database permission failure after parsing cannot publish an acknowledged partial draw.
