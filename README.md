@@ -203,39 +203,23 @@ precisam existir no catálogo compartilhado. Não há edição ou exportação d
 O repositório inclui o catálogo em `api/catalog/`: `cards.xml` gerado pelo Oracle
 do Cockatrice a partir do MTGJSON AllPrintings e `tokens.xml` do
 [Magic-Token](https://github.com/Cockatrice/Magic-Token), no formato
-`cockatrice_carddatabase`. O banco começa sem catálogo; importe-o uma vez em cada
-ambiente. Em desenvolvimento com Docker:
+`cockatrice_carddatabase`. O servidor carrega os dois arquivos na memória ao
+iniciar; não há etapa de importação. A imagem de produção já contém os arquivos.
+Fora do Docker, `serve` procura `catalog/cards.xml` e `catalog/tokens.xml`
+relativos ao diretório atual (por exemplo, `go -C api run ./cmd/mtg4fun serve`);
+outros caminhos podem ser informados com `--cards`/`--tokens` ou
+`CATALOG_CARDS`/`CATALOG_TOKENS`. Catálogo ausente ou inválido impede o início.
 
-```bash
-docker compose exec api mtg4fun import-catalog
-```
-
-Localmente, com `DB_*` configurado:
-
-```bash
-go -C api run ./cmd/mtg4fun import-catalog
-```
-
-A imagem de produção não contém os arquivos; copie-os para o container e informe
-os caminhos:
-
-```bash
-docker compose cp api/catalog/cards.xml api:/tmp/cards.xml
-docker compose cp api/catalog/tokens.xml api:/tmp/tokens.xml
-docker compose exec api mtg4fun import-catalog --cards /tmp/cards.xml --tokens /tmp/tokens.xml
-```
-
-A importação completa leva de segundos a alguns minutos, conforme o disco do
-MySQL. O usuário do banco precisa poder criar, renomear e excluir tabelas no seu
-banco. Para atualizar o catálogo, execute o Oracle do Cockatrice, substitua os dois
+Para atualizar o catálogo, execute o Oracle do Cockatrice, substitua os dois
 arquivos em `api/catalog/` pelos gerados (`~/.local/share/Cockatrice/Cockatrice/`
-no Linux) e importe novamente.
+no Linux) e reinicie a API; em desenvolvimento, o Air reinicia sozinho. Em
+produção, reconstrua a imagem da API.
 
-A importação substitui o catálogo atomicamente no MySQL; decks e catálogo
-persistem após reinício. Atualizações não exigem novo upload. Cartas removidas de
-um dataset permanecem identificadas nos decks como indisponíveis. O navegador
-não configura nem baixa datasets. Imagens/cache e preparação da partida ainda
-são entregas posteriores.
+Decks guardam apenas nomes e quantidades e são resolvidos contra o catálogo atual
+a cada listagem. Atualizações não exigem novo upload. Cartas removidas de um
+dataset permanecem nos decks, identificadas como indisponíveis. O navegador não
+configura nem baixa datasets. Imagens/cache e preparação da partida ainda são
+entregas posteriores.
 
 A API autenticada oferece `GET /api/decks` (biblioteca com cartas/quantidades),
 `POST /api/decks` (multipart, campo `file`, retorno `deck`) e

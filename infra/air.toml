@@ -5,7 +5,7 @@ env_files = []
 [build]
 cmd = "go build -o ./bin/mtg4fun ./cmd/mtg4fun"
 entrypoint = ["./bin/mtg4fun", "serve"]
-include_ext = ["go", "sql"]
+include_ext = ["go", "sql", "xml"]
 include_file = ["go.mod", "go.sum"]
 exclude_dir = ["bin", "data", "tests"]
 exclude_regex = ["_test\\.go"]

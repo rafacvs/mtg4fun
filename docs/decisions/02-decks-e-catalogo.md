@@ -17,19 +17,18 @@ de composição dos decks.
 
 ## Implementação
 
-O administrador importa os dois datasets usando `import-catalog`; por padrão, os
-arquivos versionados em `api/catalog/` (ver [catálogo versionado](#catálogo-versionado-e-importação-em-lotes)),
-ou outros caminhos com `--cards ... --tokens ...`. Os arquivos de cartas são
-produzidos pelo Oracle do Cockatrice, cujo dataset é MTGJSON AllPrintings. Fichas
-seguem o XML oficial do projeto Magic-Token. As linhas são gravadas em lotes numa
-tabela temporária, que substitui o catálogo por `RENAME TABLE` atômico; o catálogo
-continua disponível após reinício. Falha de leitura ou gravação preserva a versão
-anterior. Nenhuma operação HTTP de usuário permite alterar o catálogo.
+O estado atual substitui a importação por CLI descrita acima; ver
+[catálogo versionado em memória](#catálogo-versionado-em-memória). O servidor
+carrega na inicialização os arquivos versionados em `api/catalog/` (ou caminhos
+de `--cards`/`--tokens`, `CATALOG_CARDS`/`CATALOG_TOKENS`). Os arquivos de cartas
+são produzidos pelo Oracle do Cockatrice, cujo dataset é MTGJSON AllPrintings.
+Fichas seguem o XML oficial do projeto Magic-Token. Catálogo ausente ou inválido
+impede o início. Nenhuma operação HTTP de usuário permite alterar o catálogo.
 
-Nomes, textos, marcador de ficha e metadados XML (incluindo propriedades, edições,
-identificadores, relações e múltiplas faces) são preservados. Como no parser
-Cockatrice, nomes repetidos mantêm a primeira definição e agregam edições.
-O servidor não baixa imagens nesta entrega; cache de imagens pertence à [issue 04](../issues/04-consultar-cartas-e-imagens.md).
+O catálogo em memória guarda nome, texto e marcador de ficha. Como no parser
+Cockatrice, nomes repetidos mantêm a primeira definição. Edições, propriedades e
+demais metadados permanecem nos XML e podem ser carregados quando houver uso, como
+na [issue 04](../issues/04-consultar-cartas-e-imagens.md), dona do cache de imagens.
 
 O deck guarda nome, nomes das cartas e quantidades, vinculados ao titular.
 `main` inclui suas categorias/subzonas; outras seções de nível superior, incluindo
@@ -45,7 +44,7 @@ alteram o catálogo e usuários só listam/excluem a própria biblioteca. Prepar
 de partidas reutilizando a biblioteca pertence à [issue 05](../issues/05-preparar-e-iniciar-partida.md); a interface atual
 permite escolher e consultar decks salvos.
 
-## Catálogo versionado e importação em lotes
+## Catálogo versionado em memória
 
 Na revisão do PR, o usuário enviou `deck_hydra.cod`, usado no Cockatrice, e o
 upload falhou em `Tranquil Thicket`. A investigação mostrou que todos os nomes do
@@ -62,21 +61,25 @@ do Cockatrice 3.1.1 foi compilado e executado fora do repositório, e seus arqui
 foram versionados em `api/catalog/`: MTGJSON `5.3.0+20261008` (35.580 cartas) e
 Magic-Token (1.035 fichas). Não há código de download; a atualização é manual.
 
-Importar o catálogo real revelou uma segunda falha: a transação única excedia a
-capacidade padrão do redo log do MySQL (100 MiB), e a pausa do InnoDB ultrapassava
-o timeout de leitura de 10 s da conexão, desfazendo a importação. A importação
-passou a gravar lotes confirmados numa tabela temporária, trocada por `RENAME
-TABLE`, e o comando `import-catalog` usa timeout de 5 minutos; as requisições
-HTTP mantêm os limites anteriores.
+Importar o catálogo real no MySQL revelou uma segunda falha: a transação única
+excedia a capacidade padrão do redo log (100 MiB), e a pausa do InnoDB ultrapassava
+o timeout de leitura de 10 s da conexão, desfazendo a importação. Uma correção
+intermediária gravou em lotes e levou cerca de 5 minutos no disco btrfs desta
+máquina. A etapa manual de importação foi a causa original da falha, então o
+usuário aprovou explicitamente, após comparar tabela e memória: **“faça essa
+correção para ler direto da memoria”**. A tabela `catalog_cards` e o comando
+`import-catalog` foram removidos; atualizar o catálogo é substituir os arquivos e
+reiniciar a API. A imagem de produção inclui os arquivos.
 
-Verificação: no ambiente Docker dev da worktree, cujo MySQL está em btrfs lento,
-a importação antiga falhou por timeout; a nova concluiu em cerca de 5 minutos com
-36.613 entradas, e o upload de `deck_hydra.cod` retornou 74 entradas/100 cartas,
-todas disponíveis. `go -C api vet ./...` e `go -C api test ./... -count=1`
-passaram. O teste de integração novo importa `api/catalog/` e envia cada deck de
-`api/tests/integration/testdata/decks/`; com MySQL em tmpfs, ele também passa com
-a importação antiga, portanto cobre a resolução dos decks, não o timeout em disco
-lento.
+Verificação: o carregamento dos 36.613 registros leva cerca de 1 s e ocupa cerca
+de 9 MiB de heap Go. No ambiente Docker dev da worktree, a API reiniciou sem passo
+de importação e o upload de `deck_hydra.cod` retornou 74 entradas/100 cartas,
+todas disponíveis. `go -C api vet ./...`, `go -C api test ./... -count=1`,
+`npm run typecheck --prefix app`, `npm run build --prefix app` e
+`npm test --prefix app -- --workers=3` (15 cenários; hot reload omitido fora do
+Docker dev) passaram. O teste de integração novo carrega `api/catalog/` e envia
+cada deck de `api/tests/integration/testdata/decks/`; outro confirma que o servidor
+recusa iniciar com catálogo inválido.
 
 ## Validação da entrega original
 

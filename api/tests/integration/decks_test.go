@@ -11,15 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
-func (e *environment) importCatalog(cards string) {
-	e.t.Helper()
-	output, err := e.command("import-catalog", "--cards", cards, "--tokens", "testdata/tokens.xml").CombinedOutput()
-	if err != nil {
-		e.t.Fatalf("importar catálogo: %v; %s", err, output)
-	}
-}
 func (e *environment) uploadDeck(cookie *http.Cookie, contents []byte) response {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -32,7 +26,6 @@ func TestDeckImportIsolationAndPersistence(t *testing.T) {
 	e := newEnvironment(t)
 	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
 	e.mustCreate("amigo", "Amigo", "senha-segura-de-teste")
-	e.importCatalog("testdata/cards.xml")
 	e.start(false)
 	owner := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
 	other := sessionCookie(t, e.login("amigo", "senha-segura-de-teste"))
@@ -84,7 +77,9 @@ func TestDeckImportIsolationAndPersistence(t *testing.T) {
 	if err := os.WriteFile(dataset, []byte(updated), 0600); err != nil {
 		t.Fatal(err)
 	}
-	e.importCatalog(dataset)
+	e.stop()
+	e.cards = dataset
+	e.start(false)
 	changed := e.request("GET", "/api/decks", "", owner, nil)
 	requireStatus(t, changed, 200)
 	if !bytes.Contains(changed.body, []byte("Updated Island text.")) || !bytes.Contains(changed.body, []byte(`"name":"Fire // Ice","quantity":1,"text":"","token":false,"available":false`)) {
@@ -106,7 +101,6 @@ func TestDeckImportIsolationAndPersistence(t *testing.T) {
 func TestDeckRejectsInvalidFilesAndFailedWrites(t *testing.T) {
 	e := newEnvironment(t)
 	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
-	e.importCatalog("testdata/cards.xml")
 	e.start(false)
 	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
 	for _, contents := range []string{
@@ -143,20 +137,35 @@ func TestDeckRejectsInvalidFilesAndFailedWrites(t *testing.T) {
 	if !bytes.Contains(result.body, []byte(`"token":true`)) {
 		t.Fatalf("fichas não resolvidas: %s", result.body)
 	}
-	invalid := e.command("import-catalog", "--cards", "testdata/cockatrice-deck.cod", "--tokens", "testdata/tokens.xml")
-	if output, err := invalid.CombinedOutput(); err == nil {
-		t.Fatalf("catálogo inválido aceito: %s", output)
-	}
 	requireStatus(t, e.uploadDeck(cookie, nested), 201)
+}
+
+func TestServerRefusesInvalidCatalog(t *testing.T) {
+	e := newEnvironment(t)
+	invalid := e.command("serve", "--addr", "127.0.0.1:0", "--web", e.web, "--cards", "testdata/cockatrice-deck.cod", "--tokens", e.tokens)
+	var output bytes.Buffer
+	invalid.Stdout, invalid.Stderr = &output, &output
+	if err := invalid.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- invalid.Wait() }()
+	select {
+	case err := <-done:
+		if err == nil || !strings.Contains(output.String(), "esperado cockatrice_carddatabase") {
+			t.Fatalf("catálogo inválido aceito: %v; %s", err, output.String())
+		}
+	case <-time.After(10 * time.Second):
+		_ = invalid.Process.Kill()
+		<-done
+		t.Fatalf("servidor iniciou com catálogo inválido: %s", output.String())
+	}
 }
 
 func TestBundledCatalogResolvesPlayedDecks(t *testing.T) {
 	e := newEnvironment(t)
 	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
-	output, err := e.command("import-catalog", "--cards", "../../catalog/cards.xml", "--tokens", "../../catalog/tokens.xml").CombinedOutput()
-	if err != nil {
-		t.Fatalf("catálogo do repositório: %v; %s", err, output)
-	}
+	e.cards, e.tokens = "../../catalog/cards.xml", "../../catalog/tokens.xml"
 	e.start(false)
 	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
 	paths, err := filepath.Glob("testdata/decks/*.cod")
@@ -218,10 +227,7 @@ func TestBundledCatalogResolvesPlayedDecks(t *testing.T) {
 func TestOfficialCockatriceDatasetsResolveCardsAndTokens(t *testing.T) {
 	e := newEnvironment(t)
 	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
-	output, err := e.command("import-catalog", "--cards", "testdata/cards.xml", "--tokens", "testdata/magic-token-excerpt.xml").CombinedOutput()
-	if err != nil {
-		t.Fatalf("dataset oficial: %v; %s", err, output)
-	}
+	e.tokens = "testdata/magic-token-excerpt.xml"
 	e.start(false)
 	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
 	contents := []byte(`<cockatrice_deck version="1"><zone name="main"><card number="1" name="Bird Soldier Token"/><card number="1" name="Fire // Ice"/></zone></cockatrice_deck>`)

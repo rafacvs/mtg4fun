@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"mtg4fun/internal/auth"
 	"mtg4fun/internal/catalog"
@@ -30,15 +27,15 @@ func env(key, fallback string) string {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("uso: mtg4fun serve | create-user --name USUARIO --password SENHA | import-catalog [--cards cards.xml] [--tokens tokens.xml]")
+		return errors.New("uso: mtg4fun serve [--cards cards.xml] [--tokens tokens.xml] | create-user --name USUARIO --password SENHA")
 	}
 	command := os.Args[1]
-	if command != "serve" && command != "create-user" && command != "import-catalog" {
+	if command != "serve" && command != "create-user" {
 		return errors.New("comando desconhecido")
 	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
-	cards := flags.String("cards", "catalog/cards.xml", "cards.xml Cockatrice")
-	tokens := flags.String("tokens", "catalog/tokens.xml", "tokens.xml Cockatrice")
+	cards := flags.String("cards", env("CATALOG_CARDS", "catalog/cards.xml"), "cards.xml Cockatrice")
+	tokens := flags.String("tokens", env("CATALOG_TOKENS", "catalog/tokens.xml"), "tokens.xml Cockatrice")
 	login := flags.String("login", "", "login da conta")
 	name := flags.String("name", "", "nome da pessoa")
 	password := flags.String("password", "", "senha da conta")
@@ -85,30 +82,22 @@ func run() error {
 	if os.Getenv("DB_PATH") != "" {
 		return errors.New("DB_PATH não é mais suportado; configure MySQL com DB_HOST, DB_PORT, DB_NAME, DB_USER e DB_PASSWORD")
 	}
+	var cardCatalog *catalog.Catalog
+	if command == "serve" {
+		var err error
+		if cardCatalog, err = catalog.Load(*cards, *tokens); err != nil {
+			return err
+		}
+	}
 	config, timeout, err := database.ConfigFromEnvironment()
 	if err != nil {
 		return err
-	}
-	if command == "import-catalog" {
-		// Bulk writes may stall while InnoDB flushes; HTTP request limits do not apply.
-		config.ReadTimeout = 5 * time.Minute
-		config.WriteTimeout = 5 * time.Minute
 	}
 	db, err := database.Open(config, timeout)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	if command == "import-catalog" {
-		if *cards == "" || *tokens == "" {
-			return errors.New("use --cards e --tokens com XML Cockatrice")
-		}
-		if err := catalog.Import(context.Background(), db, *cards, *tokens); err != nil {
-			return err
-		}
-		fmt.Println("Catálogo importado.")
-		return nil
-	}
 	users, err := auth.New(db)
 	if err != nil {
 		return err
@@ -116,5 +105,5 @@ func run() error {
 	if command == "create-user" {
 		return createUser(users, *login, *name, *password)
 	}
-	return serve(users, db, *addr, *webDir)
+	return serve(users, db, cardCatalog, *addr, *webDir)
 }
