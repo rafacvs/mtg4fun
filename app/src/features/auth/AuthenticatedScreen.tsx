@@ -4,6 +4,12 @@ import type { User } from './sessionApi';
 import './auth.css';
 import { RoomsList } from '../rooms/RoomsList';
 import { useDecks } from '../decks/useDecks';
+import { RoomScreen } from '../rooms/RoomScreen';
+
+function currentScreen() {
+  const room = window.location.hash.match(/^#\/salas\/([1-9]\d*)$/);
+  return room ? Number(room[1]) : window.location.hash === '#/decks' ? 'decks' : 'salas';
+}
 
 type Props = {
   user: User;
@@ -14,10 +20,10 @@ type Props = {
 
 export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
   const decks = useDecks();
-  const [screen, setScreen] = useState<'salas' | 'decks'>(() => window.location.hash === '#/decks' ? 'decks' : 'salas');
+  const [screen, setScreen] = useState<string | number>(currentScreen);
 
   useEffect(() => {
-    const sync = () => setScreen(window.location.hash === '#/decks' ? 'decks' : 'salas');
+    const sync = () => setScreen(currentScreen());
     window.addEventListener('popstate', sync);
     window.addEventListener('hashchange', sync);
     return () => { window.removeEventListener('popstate', sync); window.removeEventListener('hashchange', sync); };
@@ -30,6 +36,11 @@ export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
     setScreen(next);
     window.scrollTo(0, 0);
   }
+
+  if (typeof screen === 'number') return <div className="room-screen">
+    <header className="room-header"><a href="/#/salas">Voltar ao lobby</a><h1 id="title">Sala {screen}</h1><span>{user.name}</span></header>
+    <RoomScreen key={screen} roomId={screen} userId={user.id} decks={decks} />
+  </div>;
 
   return <div className="authenticated">
     <header className="app-header">
@@ -46,7 +57,7 @@ export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
     </nav>
     {screen === 'salas' ? <>
       {decks.decks.length === 0 && !decks.loading && <div className="lobby-hint">Antes de confirmar sua entrada em uma partida, <a href="/#/decks" onClick={event => navigate(event, 'decks')}>importe um deck</a>.</div>}
-      <RoomsList userId={user.id} decks={decks} />
+      <RoomsList userId={user.id} />
     </> : <DeckLibrary library={decks} />}
     {error && <p role="alert" className="error">{error}</p>}
   </div>;

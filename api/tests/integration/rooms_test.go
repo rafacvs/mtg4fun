@@ -578,8 +578,8 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	if !bytes.Contains(otherView.body, []byte(own.Hand[0].Name)) || bytes.Contains(otherView.body, []byte(own.Hand[1].ID)) {
 		t.Fatalf("visão pública após movimento: %s", otherView.body)
 	}
-	// Conflicting moves are serialized by the locked match row: the card ends
-	// in exactly one public zone and one request is refused.
+	// Concurrent moves are serialized by the locked match row. Both may apply
+	// in sequence, but the card must end in exactly one public zone.
 	concurrent := make(chan response, 2)
 	for i, destination := range []string{"graveyard", "exile"} {
 		go func(i int, destination string) {
@@ -598,7 +598,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 			t.Fatalf("movimentos concorrentes: %d %s", result.status, result.body)
 		}
 	}
-	if success+conflict != 2 {
+	if success == 0 || success+conflict != 2 {
 		t.Fatalf("movimentos concorrentes: sucesso=%d conflito=%d", success, conflict)
 	}
 	concurrentView := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
@@ -620,7 +620,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 			t.Fatalf("carta concorrente duplicada/perdida: %s", concurrentView.body)
 		}
 	}
-	requireStatus(t, e.request("POST", actionPath, `{"intentId":"33333333-3333-4333-8333-333333333333","kind":"draw","count":1}`, outsider, nil), 403)
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"33333333-3333-4333-8333-333333333333","kind":"draw","count":1}`, outsider, nil), 404)
 	e.stop()
 	e.start(false)
 	recovered := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
@@ -681,7 +681,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		}
 		return false
 	}
-	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 2+success {
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 3+success {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
 	// A database permission failure after parsing cannot publish an acknowledged partial draw.
@@ -690,7 +690,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	requireStatus(t, e.request("POST", actionPath, `{"intentId":"44444444-4444-4444-8444-444444444444","kind":"draw","count":1}`, ana, nil), 500)
 	still := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
 	requireStatus(t, still, 200)
-	if bytes.Count(still.body, []byte(`"hand"`)) == 0 || bytes.Contains(still.body, []byte(`"handCount":2`)) {
+	if !bytes.Equal(still.body, recovered.body) {
 		t.Fatalf("falha parcial alterou estado: %s", still.body)
 	}
 }

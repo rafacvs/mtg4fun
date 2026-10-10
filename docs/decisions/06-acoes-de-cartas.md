@@ -14,8 +14,8 @@ O usuário aprovou explicitamente `POST /api/rooms/{id}/match/actions`, com
 `intentId` UUID obrigatório, ações discriminadas de compra e movimento,
 idempotência persistida por partida/jogador, visão filtrada em leituras e
 respostas, e polling HTTP a cada segundo enquanto a mesa está aberta. A
-aprovação não inclui rolagens, moedas ou avanço de turnos, que pertencem à
-issue 15.
+mesma aprovação contempla rolagens e alteração de turno na issue 15; esta
+implementação da issue 06 entrega somente compra e movimento de cartas.
 
 ## Implementação
 
@@ -35,3 +35,31 @@ cartas completas de zonas públicas. Grimórios continuam somente como
 contagem. O log informa ator, tipo, zonas e quantidade, sem nomes, IDs,
 imagens ou ordem de cartas privadas. O cliente consulta essa visão a cada
 segundo; não foi criado stream de partidas nem WebSocket.
+
+## Correção da experiência da mesa
+
+Ao revisar a entrega, o usuário relatou que conseguia comprar, mas não mover
+cartas, e explicitou que o lobby deve listar salas e permitir entrar numa
+tela própria da sala, com ID na URL e mesas/zonas conforme a spec de interface.
+Essa solicitação autoriza trazer à issue 06 a navegação e o layout de mesas
+descritos na [spec 02](../specs/02-mesa-e-interface.md). Não declara concluídas
+as demais entregas das issues 07–09.
+
+A URL `/#/salas/{id}` reutiliza a navegação por fragmento já existente para
+lobby/decks, sem nova biblioteca nem contrato HTTP. A sala exibe preparação
+antes do início e a mesa depois. Links diretos, recarga e histórico recuperam
+a mesma sala. O lobby mantém somente listagem, criação e entrada.
+
+A mesa desenha campo, grimório, cemitério, exílio e comando de cada jogador,
+com mão própria e ações na faixa inferior. Desktop permite visão conjunta e
+ampliação; celular horizontal usa foco e miniaturas à direita. Vertical cobre
+somente a partida com orientação para girar, preservando polling e estado.
+Foco é local e não altera permissões ou mão própria. Cartas são representadas
+por nome; arraste/posicionamento e seleção múltipla continuam nas issues 08/09.
+
+O antigo botão genérico de retorno ao grimório omitia `libraryPlacement` e
+era recusado pela API. Agora topo e fundo são controles explícitos válidos.
+Falha de ação preserva a mesa e seleção, com mensagem para tentar novamente.
+Uma ação em andamento bloqueia novos envios locais; leituras anteriores à
+ação não substituem a confirmação mais recente. Polling volta a tentar após
+falhas de leitura.

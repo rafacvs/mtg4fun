@@ -22,6 +22,9 @@ export const test = base.extend<{}, { appURL: string }>({
       execFileSync('go', ['build', '-o', executable, './cmd/mtg4fun'], { cwd: join(root, 'api') });
       execFileSync(executable, ['create-user', '--login', 'amigo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador'], { env: environment });
       execFileSync(executable, ['create-user', '--login', 'segundo', '--name', 'Segundo amigo', '--password', 'senha-do-navegador'], { env: environment });
+      for (let index = 3; index <= 6; index += 1) {
+        execFileSync(executable, ['create-user', '--login', `amigo${index}`, '--name', `Amigo ${index}`, '--password', 'senha-do-navegador'], { env: environment });
+      }
       server = spawn(executable, ['serve', '--addr', '127.0.0.1:0', '--web', join(root, 'app/dist'), '--cards', join(root, 'api/tests/integration/testdata/cards.xml'), '--tokens', join(root, 'api/tests/integration/testdata/tokens.xml')], { env: environment, stdio: ['ignore', 'ignore', 'pipe'] });
       const address = await new Promise<string>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Servidor não iniciou')), 10_000);

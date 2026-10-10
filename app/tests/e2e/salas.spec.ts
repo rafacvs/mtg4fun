@@ -33,6 +33,9 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
     const theirs = other.getByRole('article').filter({ has: other.getByRole('heading', { name: title, exact: true }) });
     await expect(theirs.getByText('5 vagas disponíveis')).toBeVisible();
     await activate(theirs.getByRole('button', { name: 'Entrar na sala', exact: true }));
+    await expect(other).toHaveURL(/#\/salas\/\d+$/);
+    await expect(other.getByRole('region', { name: 'Preparação da sala' })).toBeVisible();
+    await other.getByRole('link', { name: 'Voltar ao lobby' }).click();
     await expect(mine.getByText('Segundo amigo')).toBeVisible();
     await expect(mine.getByText('4 vagas disponíveis')).toBeVisible();
     await expect(theirs.getByText('Você participa desta sala.')).toBeVisible();
@@ -50,32 +53,74 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
   } finally { await viewer.close(); }
 });
 
-test('prepara e inicia uma mesa com um participante', async ({ page }) => {
+test('entra na URL da mesa, move por todas as zonas e recupera após erro e recarga', async ({ page }, testInfo) => {
+  const activate = async (button: Locator) => testInfo.project.use.hasTouch ? button.tap() : button.click();
   await page.goto('/');
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
-  await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
+  await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'movimentos.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Movimentos</deckname><zone name="main"><card number="5" name="Island"/></zone></cockatrice_deck>') });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await page.getByRole('link', { name: 'Salas', exact: true }).click();
   await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
   const room = page.getByRole('article').filter({ has: page.getByText('Em preparação', { exact: true }) }).last();
-  await room.getByLabel('Deck para a partida').selectOption({ label: 'Amigos & mágicas' });
-  await room.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
-  await expect(room.getByText('Pronto', { exact: false })).toBeVisible();
-  await room.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
+  await room.getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
+  await expect(page).toHaveURL(/#\/salas\/\d+$/);
+  await page.getByLabel('Deck para a partida').selectOption({ label: 'Movimentos' });
+  await page.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
+  await expect(page.getByText('Pronto', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
   await expect(board).toBeVisible();
+  const roomURL = page.url();
+  if (testInfo.project.name === 'celular') {
+    await expect(page.getByText('Gire o celular para jogar')).toBeVisible();
+    await expect(board.getByRole('button', { name: 'Comprar cartas', exact: true })).toBeHidden();
+    await page.setViewportSize({ width: 844, height: 390 });
+  }
   await expect(board.getByText('Vida: 40', { exact: true })).toBeVisible();
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Campo');
-  await board.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
-  const drawn = board.getByRole('button', { name: 'Island', exact: true }).first();
-  await expect(drawn).toBeVisible();
-  await drawn.click();
-  await board.getByRole('button', { name: 'Topo do grimório', exact: true }).click();
-  await expect(board.getByText('Amigo da mesa moveu 1 carta(s) de Mão para Grimório.')).toBeVisible();
+  const hand = board.getByRole('region', { name: 'Mão', exact: true });
+  await board.getByLabel('Quantidade para comprar').fill('1000');
+  await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await expect(board.getByRole('alert')).toContainText('Não há cartas suficientes');
+  await board.getByLabel('Quantidade para comprar').fill('1');
+  await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await expect(board.getByRole('alert')).toHaveCount(0);
+  await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+  let source = hand;
+  for (const destination of ['Campo', 'Cemitério', 'Exílio', 'Comando', 'Mão']) {
+    await activate(source.getByRole('button', { name: 'Island', exact: true }));
+    await activate(board.getByRole('button', { name: `Mover para ${destination}`, exact: true }));
+    const target = board.getByRole('region', { name: destination, exact: true });
+    await expect(target.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+    await expect(source.getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
+    source = target;
+  }
+  await activate(hand.getByRole('button', { name: 'Island', exact: true }));
+  await activate(board.getByRole('button', { name: 'Mover para Grimório (topo)', exact: true }));
+  await expect(hand.getByRole('button')).toHaveCount(0);
+  await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await activate(hand.getByRole('button', { name: 'Island', exact: true }));
+  await activate(board.getByRole('button', { name: 'Fundo do grimório', exact: true }));
+  await expect(hand.getByRole('button')).toHaveCount(0);
+  await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+  await activate(hand.getByRole('button', { name: 'Island', exact: true }));
+  await activate(board.getByRole('button', { name: 'Mover para Campo', exact: true }));
+  await page.reload();
+  await expect(page).toHaveURL(roomURL);
+  await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
+  await activate(board.getByRole('button', { name: 'Registro da partida', exact: true }));
+  await expect(board.getByText('Amigo da mesa moveu 1 carta(s) de Mão para Grimório.')).toHaveCount(2);
+  await activate(board.getByRole('button', { name: 'Fechar registro' }));
+  await page.getByRole('link', { name: 'Voltar ao lobby' }).click();
+  await expect(board).toHaveCount(0);
+  await page.goto(roomURL);
+  await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('mesa.png'), fullPage: true });
 });
 
 test('navega entre lobby e biblioteca com teclado, histórico e recarga', async ({ page }) => {
