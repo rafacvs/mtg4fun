@@ -65,10 +65,10 @@ export function LibraryConsultation({ cards, busy, onConsult, onMove, onReorder,
         <button type="button" disabled={busy || !selectedCards.length} onClick={() => move('hand')}>Enviar à mão</button>
         <button type="button" disabled={busy || !selectedCards.length} onClick={() => move('battlefield')}>Enviar ao campo</button>
         <button type="button" disabled={busy || !selectedCards.length} onClick={() => move('graveyard')}>Enviar ao cemitério</button>
-		<button type="button" disabled={busy || !selectedCards.length} onClick={() => move('exile')}>Enviar ao exílio</button>
+        <button type="button" disabled={busy || !selectedCards.length} onClick={() => move('exile')}>Enviar ao exílio</button>
         <button type="button" disabled={busy || !selectedCards.length} onClick={() => move('command')}>Mover comandante para comando</button>
-		<button type="button" disabled={busy || !selectedCards.length} onClick={() => move('library', 'top')}>Enviar ao topo</button>
-		<button type="button" disabled={busy || !selectedCards.length} onClick={() => move('library', 'bottom')}>Enviar ao fundo</button>
+        <button type="button" disabled={busy || !selectedCards.length} onClick={() => move('library', 'top')}>Enviar ao topo</button>
+        <button type="button" disabled={busy || !selectedCards.length} onClick={() => move('library', 'bottom')}>Enviar ao fundo</button>
         <button type="button" disabled={busy} onClick={() => onClose('top', false)}>Fechar no topo</button>
         <button type="button" disabled={busy} onClick={() => onClose('bottom', false)}>Fechar no fundo</button>
         <button type="button" disabled={busy} onClick={() => onClose('top', true)}>Fechar e embaralhar</button>

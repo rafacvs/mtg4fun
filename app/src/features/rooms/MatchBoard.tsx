@@ -109,9 +109,9 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
   if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
-	if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;
-	if (entry.kind === 'reorder') return `${entry.actorName} reorganizou uma consulta privada.`;
-	if (entry.kind === 'close') return `${entry.actorName} fechou a consulta do grimório.`;
-	if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;
+  if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;
+  if (entry.kind === 'reorder') return `${entry.actorName} reorganizou uma consulta privada.`;
+  if (entry.kind === 'close') return `${entry.actorName} fechou a consulta do grimório.`;
+  if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;
   return 'Partida iniciada.';
 }
