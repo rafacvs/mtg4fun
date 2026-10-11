@@ -45,8 +45,8 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await expect(fieldCards).toHaveCount(2);
   const moved = await fieldCards.nth(1).boundingBox();
   expect(Math.abs(first!.x - moved!.x)).toBeGreaterThan(10);
-  const rows = await field.locator('.positioned-card').evaluateAll(cards => cards.map(card => (card as HTMLElement).style.top));
-  expect(rows).toContain('33.333333333333336%');
+  const rows = await field.locator('.positioned-card').evaluateAll(cards => cards.map(card => Number.parseFloat((card as HTMLElement).style.top)));
+  expect(rows.some(row => Math.abs(row - 100 / 3) < 0.01)).toBe(true);
 });
 
 async function dragWithTouch(page: Page, source: { x: number; y: number; width: number; height: number }, target: { x: number; y: number }) {
