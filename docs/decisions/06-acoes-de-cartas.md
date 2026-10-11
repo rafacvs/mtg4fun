@@ -99,4 +99,5 @@ visível.
 
 Depois, o usuário pediu o comandante acima do grimório e o registro com fonte
 menor e altura máxima fixa, para os cartões de até seis jogadores aparecerem
-acima do registro.
+acima do registro. O registro fica no fundo da área disponível, separado dos
+participantes quando sobra espaço.

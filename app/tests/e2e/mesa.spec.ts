@@ -87,8 +87,10 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     const players = page.getByRole('navigation', { name: 'Foco da mesa' });
     await expect(players.getByRole('button')).toHaveCount(6);
     const playersBox = await players.boundingBox();
-    expect(logBox!.y).toBeGreaterThanOrEqual(playersBox!.y + playersBox!.height - 4);
+    expect(logBox!.y).toBeGreaterThan(playersBox!.y + playersBox!.height);
     expect(logBox!.height).toBeLessThanOrEqual(190);
+    const stageBox = await page.locator('.table-stage').boundingBox();
+    expect(Math.abs(logBox!.y + logBox!.height - (stageBox!.y + stageBox!.height))).toBeLessThan(20);
     for (const slot of [graveyardBox, exileBox, commandBox]) expect(slot!.height / slot!.width).toBeGreaterThan(1.2);
     for (const slot of [graveyardBox, exileBox, commandBox]) expect(slot!.height / slot!.width).toBeLessThan(1.6);
     await expect(library.locator('.library-stack span')).toHaveCount(3);
