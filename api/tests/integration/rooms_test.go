@@ -527,6 +527,42 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	}
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", roomID), "{}", ana, nil), 201)
 	actionPath := fmt.Sprintf("/api/rooms/%d/match/actions", roomID)
+	consult := e.request("POST", actionPath, `{"intentId":"10101010-1010-4010-8010-101010101010","kind":"consult","consultFrom":"top","count":2}`, ana, nil)
+	requireStatus(t, consult, 200)
+	var privateConsult struct {
+		Match struct {
+			Players []struct {
+				UserID    int64 `json:"userId"`
+				Consulted []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"consulted"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(consult.body, &privateConsult); err != nil {
+		t.Fatal(err)
+	}
+	var consulted []struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	for _, player := range privateConsult.Match.Players {
+		if player.UserID != 0 && len(player.Consulted) == 2 {
+			consulted = player.Consulted
+		}
+	}
+	if len(consulted) != 2 {
+		t.Fatalf("consulta privada ausente: %s", consult.body)
+	}
+	otherConsult := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", bia, nil)
+	requireStatus(t, otherConsult, 200)
+	if bytes.Contains(otherConsult.body, []byte(consulted[0].ID)) || bytes.Contains(otherConsult.body, []byte(consulted[0].Name)) {
+		t.Fatalf("consulta privada vazou: %s", otherConsult.body)
+	}
+	reorder := fmt.Sprintf(`{"intentId":"20202020-2020-4020-8020-202020202020","kind":"reorder","cardIds":[%q,%q]}`, consulted[1].ID, consulted[0].ID)
+	requireStatus(t, e.request("POST", actionPath, reorder, ana, nil), 200)
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"30303030-3030-4030-8030-303030303030","kind":"close","libraryPlacement":"top"}`, ana, nil), 200)
 	draw := `{"intentId":"11111111-1111-4111-8111-111111111111","kind":"draw","count":2}`
 	requireStatus(t, e.request("POST", actionPath, draw, ana, nil), 200)
 	// The same intent may be retried after a lost response without drawing again.
@@ -681,7 +717,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		}
 		return false
 	}
-	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 3+success {
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 6+success {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
 	// A database permission failure after parsing cannot publish an acknowledged partial draw.
