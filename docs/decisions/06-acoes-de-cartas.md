@@ -36,6 +36,21 @@ contagem. O log informa ator, tipo, zonas e quantidade, sem nomes, IDs,
 imagens ou ordem de cartas privadas. O cliente consulta essa visão a cada
 segundo; não foi criado stream de partidas nem WebSocket.
 
+## Posicionamento em fileiras (issue 08)
+
+O campo tem quatro fileiras invisíveis. A posição horizontal é guardada como
+um inteiro normalizado de 0 a 1000 e cada fileira como 0 a 3; assim, as duas
+medidas representam a mesma organização lógica em telas de qualquer largura
+ou altura. Na renderização, 0 e 1000 encostam respectivamente as bordas
+esquerda e direita da carta no campo, e as fileiras repartem sua altura em
+quatro posições. Esta é uma escolha local de apresentação, sem alterar a
+arquitetura nem o contrato de transporte aprovado.
+
+Cada reposicionamento recebe uma ordem de pilha monotônica persistida. Cartas
+na mesma coordenada e fileira podem se sobrepor, e a ordem é reproduzida para
+todos os participantes. A sobreposição não cria relação entre cartas: a ação
+seguinte sempre reposiciona somente a carta indicada.
+
 ## Correção da experiência da mesa
 
 Ao revisar a entrega, o usuário relatou que conseguia comprar, mas não mover

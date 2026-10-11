@@ -50,6 +50,9 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		LibraryPlacement string   `json:"libraryPlacement"`
 		Sides            int      `json:"sides"`
 		Direction        string   `json:"direction"`
+		CardID           string   `json:"cardId"`
+		PositionX        int      `json:"x"`
+		Row              int      `json:"row"`
 	}
 	if err := decoder.Decode(&raw); err != nil {
 		httpserver.WriteError(w, 400, "Ação inválida.")
@@ -63,30 +66,35 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		httpserver.WriteError(w, 400, "intentId inválido.")
 		return matchAction{}, false
 	}
-	input := matchAction{IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs, To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction}
+	input := matchAction{IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs, To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction, CardID: raw.CardID, PositionX: raw.PositionX, Row: raw.Row}
 	switch input.Kind {
 	case "draw":
-		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" {
+		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
 	case "move":
-		if len(input.CardIDs) == 0 || input.Count != 0 || input.To == "" || input.Sides != 0 || input.Direction != "" || (input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom") || (input.To != "library" && input.LibraryPlacement != "") {
+		if len(input.CardIDs) == 0 || input.Count != 0 || input.To == "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || (input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom") || (input.To != "library" && input.LibraryPlacement != "") {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
 	case "roll":
-		if input.Sides < 2 || input.Sides > 100 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" {
+		if input.Sides < 2 || input.Sides > 100 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
 	case "coin":
-		if input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" {
+		if input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
 	case "turn":
-		if input.Direction != "next" && input.Direction != "previous" || input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" {
+		if input.Direction != "next" && input.Direction != "previous" || input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "position":
+		if input.CardID == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.PositionX < 0 || input.PositionX > 1000 || input.Row < 0 || input.Row > 3 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
@@ -116,7 +124,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards):
+	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)

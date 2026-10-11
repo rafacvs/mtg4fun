@@ -16,6 +16,7 @@ var errNotParticipant = errors.New("Você não participa desta partida.")
 var errNotController = errors.New("Você só pode mover cartas sob seu controle.")
 var errCardNotFound = errors.New("Carta não encontrada nesta zona.")
 var errInsufficientCards = errors.New("Não há cartas suficientes no grimório.")
+var errInvalidPosition = errors.New("Posição inválida no campo.")
 
 type matchAction struct {
 	IntentID         string
@@ -26,6 +27,9 @@ type matchAction struct {
 	LibraryPlacement string
 	Sides            int
 	Direction        string
+	CardID           string
+	PositionX        int
+	Row              int
 }
 
 type actionLogPayload struct {
@@ -107,6 +111,11 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	destination := zone(p, input.To)
 	for i := range cards {
 		cards[i].Zone = input.To
+		if input.To == "battlefield" {
+			position := len(p.Battlefield) + i
+			cards[i].PositionX = (position % 4) * 250
+			cards[i].Row = (position / 4) % 4
+		}
 	}
 	if input.To == "library" && input.LibraryPlacement == "top" {
 		*destination = append(cards, *destination...)
@@ -114,6 +123,26 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 		*destination = append(*destination, cards...)
 	}
 	return actionLogPayload{Kind: "move", From: from, To: input.To, Count: len(cards)}, nil
+}
+
+func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
+	if input.PositionX < 0 || input.PositionX > 1000 || input.Row < 0 || input.Row > 3 {
+		return actionLogPayload{}, errInvalidPosition
+	}
+	for i := range p.Battlefield {
+		if p.Battlefield[i].ID != input.CardID {
+			continue
+		}
+		if p.Battlefield[i].ControllerID != p.UserID {
+			return actionLogPayload{}, errNotController
+		}
+		m.NextStackOrder++
+		p.Battlefield[i].PositionX = input.PositionX
+		p.Battlefield[i].Row = input.Row
+		p.Battlefield[i].StackOrder = m.NextStackOrder
+		return actionLogPayload{Kind: "position"}, nil
+	}
+	return actionLogPayload{}, errCardNotFound
 }
 
 func drawCards(p *playerState, count int) (actionLogPayload, error) {
@@ -208,6 +237,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = drawCards(p, input.Count)
 	case "move":
 		payload, err = moveCards(p, input)
+	case "position":
+		payload, err = positionCard(&m, p, input)
 	case "roll":
 		payload, err = rollDice(input.Sides)
 	case "coin":

@@ -16,7 +16,7 @@ export type Match = {
   players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[] }[];
   log: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
-export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string };
+export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
   const response = await fetch(path, {
@@ -82,6 +82,7 @@ export const roomsApi = {
   },
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
   move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),
+  position: (id: number, cardId: string, x: number, row: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'position', cardId, x, row }),
   roll: (id: number, sides: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'roll', sides }),
   coin: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'coin' }),
   turn: (id: number, direction: 'next' | 'previous', intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'turn', direction }),

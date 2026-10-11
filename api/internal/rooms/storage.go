@@ -64,6 +64,9 @@ type Card struct {
 	OwnerID      int64  `json:"ownerId"`
 	ControllerID int64  `json:"controllerId"`
 	Zone         string `json:"zone"`
+	PositionX    int    `json:"positionX"`
+	Row          int    `json:"row"`
+	StackOrder   int    `json:"stackOrder"`
 }
 type playerState struct {
 	UserID      int64  `json:"userId"`
@@ -77,11 +80,12 @@ type playerState struct {
 	Command     []Card `json:"command"`
 }
 type matchState struct {
-	RoomID      int64         `json:"roomId"`
-	InitialLife int           `json:"initialLife"`
-	TurnOrder   []Turn        `json:"turnOrder"`
-	TurnIndex   int           `json:"turnIndex"`
-	Players     []playerState `json:"players"`
+	RoomID         int64         `json:"roomId"`
+	InitialLife    int           `json:"initialLife"`
+	TurnOrder      []Turn        `json:"turnOrder"`
+	TurnIndex      int           `json:"turnIndex"`
+	NextStackOrder int           `json:"nextStackOrder"`
+	Players        []playerState `json:"players"`
 }
 type Match struct {
 	RoomID      int64         `json:"roomId"`
@@ -114,6 +118,9 @@ type VisibleCard struct {
 	OwnerID      int64  `json:"ownerId"`
 	ControllerID int64  `json:"controllerId"`
 	Zone         string `json:"zone"`
+	PositionX    int    `json:"positionX"`
+	Row          int    `json:"row"`
+	StackOrder   int    `json:"stackOrder"`
 }
 type MatchLog struct {
 	ActorName string `json:"actorName"`
@@ -127,7 +134,7 @@ type MatchLog struct {
 func visible(cards []Card) []VisibleCard {
 	out := make([]VisibleCard, len(cards))
 	for i, c := range cards {
-		out[i] = VisibleCard{c.ID, c.Name, c.OwnerID, c.ControllerID, c.Zone}
+		out[i] = VisibleCard{c.ID, c.Name, c.OwnerID, c.ControllerID, c.Zone, c.PositionX, c.Row, c.StackOrder}
 	}
 	return out
 }
@@ -362,7 +369,7 @@ func deckCards(ctx context.Context, tx *sql.Tx, deckID, userID int64) ([]Card, e
 			return nil, e
 		}
 		for c := int64(0); c < q; c++ {
-			cards = append(cards, Card{fmt.Sprintf("%d-%d-%d", userID, pos, c), n, userID, userID, "library"})
+			cards = append(cards, Card{ID: fmt.Sprintf("%d-%d-%d", userID, pos, c), Name: n, OwnerID: userID, ControllerID: userID, Zone: "library"})
 		}
 	}
 	return cards, rows.Err()

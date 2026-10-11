@@ -10,7 +10,7 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, roll, coin, turn, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -34,6 +34,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   async function dropCard(card: Card, x: number, y: number) {
     const zone = dropZoneAt(x, y);
     if (!zone || busy || unconfirmed || card.controllerId !== match?.viewerId) return;
+    if (zone === 'battlefield') {
+      const layout = battlefieldPositionAt(x, y);
+      if (!layout) return;
+      if (card.zone !== 'battlefield' && !await move([card.id], 'battlefield')) return;
+      await position(card.id, layout.x, layout.row);
+      return;
+    }
     if (zone === 'library') await move([card.id], 'library', 'top');
     else if (zone === 'library-bottom') await move([card.id], 'library', 'bottom');
     else if (zone !== card.zone) await move([card.id], zone);
@@ -90,6 +97,19 @@ function dropZoneAt(x: number, y: number) {
   for (const element of document.elementsFromPoint(x, y)) {
     const zone = element.closest('[data-drop-zone]')?.getAttribute('data-drop-zone');
     if (zone) return zone;
+  }
+  return null;
+}
+
+function battlefieldPositionAt(x: number, y: number) {
+  for (const element of document.elementsFromPoint(x, y)) {
+    const field = element.closest<HTMLElement>('[data-drop-zone="battlefield"]');
+    if (!field) continue;
+    const box = field.getBoundingClientRect();
+    return {
+      x: Math.round(Math.max(0, Math.min(1, (x - box.left) / box.width)) * 1000),
+      row: Math.round(Math.max(0, Math.min(1, (y - box.top) / box.height)) * 3),
+    };
   }
   return null;
 }

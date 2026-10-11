@@ -64,8 +64,8 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZonePr
   const cards = player.battlefield ?? [];
   return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined}>
     <header><span>Campo</span><strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong></header>
-    <div className="zone-cards">
-      {cards.map(card => <PlayingCard key={card.id} card={card} draggable={canDrag(card, viewerId)} {...gesture} />)}
+    <div className="zone-cards battlefield-cards">
+      {cards.map(card => <div key={card.id} className="positioned-card" style={{ left: `${card.positionX / 10}%`, top: `${card.row * 100 / 3}%`, transform: `translate(-${card.positionX / 10}%, -${card.row * 100 / 3}%)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} {...gesture} /></div>)}
       {cards.length === 0 && <span className="zone-placeholder">Campo</span>}
     </div>
   </section>;

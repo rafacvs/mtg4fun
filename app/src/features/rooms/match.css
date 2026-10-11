@@ -29,6 +29,8 @@
 .zone-battlefield { flex: 1; min-width: 0; min-height: 135px; display: flex; flex-direction: column; }
 .zone-cards { display: flex; gap: 6px; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; padding-top: 5px; }
 .zone-battlefield .zone-cards { flex: 1; }
+.battlefield-cards { position: relative; display: block; min-height: 0; overflow: visible; }
+.positioned-card { position: absolute; width: var(--card-width); aspect-ratio: 63 / 88; }
 .zone-placeholder { width: 100%; text-align: center; color: #8b9f89; padding: 12px 0; font-size: .72rem; }
 .zone-battlefield .zone-placeholder { padding: 30px 0; }
 .zone-library { border-style: solid; padding: 4px; }
