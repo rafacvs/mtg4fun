@@ -25,8 +25,8 @@ export function useRooms() {
   async function act(action: () => Promise<void>) {
     setBusy(true);
     setError('');
-    try { await action(); }
-    catch (error) { setError(error instanceof Error ? error.message : 'Não foi possível concluir. Tente novamente.'); }
+    try { await action(); return true; }
+    catch (error) { setError(error instanceof Error ? error.message : 'Não foi possível concluir. Tente novamente.'); return false; }
     finally { setBusy(false); }
   }
 

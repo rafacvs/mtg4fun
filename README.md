@@ -15,7 +15,17 @@ pelo navegador, com persistência de contas e sessões. Não há cadastro públi
 A biblioteca pessoal importa, consulta e exclui decks .cod, resolvidos pelo
 catálogo Cockatrice compartilhado no servidor. Usuários autenticados criam e
 entram em salas persistentes de até seis participantes, com atualizações em
-tempo real. Preparação e partidas ainda não estão implementadas.
+tempo real. O lobby lista salas; **Entrar na mesa** abre a URL da sala
+(`/#/salas/{id}`), com preparação dos decks e início pelo criador após todos
+confirmarem prontidão.
+
+A mesa permite comprar cartas e movê-las entre mão, campo, cemitério, exílio,
+comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
+numa carta e escolha o destino na faixa inferior. A mão própria permanece
+disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
+celular usa orientação horizontal e miniaturas à direita. A partida atualiza
+a cada segundo. Arraste/posicionamento, seleção múltipla e as demais ações das
+specs ainda têm entregas próprias pendentes.
 
 ## Executar com Docker
 
