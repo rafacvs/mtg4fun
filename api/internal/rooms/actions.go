@@ -274,7 +274,7 @@ func matchLog(ctx context.Context, q queryer, roomID int64, m matchState) ([]Mat
 		if p.Kind == "" {
 			p.Kind = action
 		}
-		log = append(log, MatchLog{ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result})
+		log = append(log, MatchLog{ActorID: actor, ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result})
 	}
 	return log, rows.Err()
 }

@@ -31,9 +31,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     const previousLength = knownLogEntries.current;
     knownLogEntries.current = match.log.length;
     if (previousLength === 0 || match.log.length <= previousLength) return;
-    const actor = match.players.find(player => player.name === match.log.at(-1)?.actorName);
-    if (!actor) return;
-    setActivePlayerId(actor.userId);
+    const actorId = match.log.at(-1)?.actorId;
+    if (!actorId) return;
+    setActivePlayerId(actorId);
     const timeout = window.setTimeout(() => setActivePlayerId(null), 3_000);
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
