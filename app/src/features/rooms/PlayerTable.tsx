@@ -53,10 +53,10 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
 
 export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps) {
   return <div className="zone-column">
+    <CardSlot zone="command" title="Comandante" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} />
     <CardSlot zone="graveyard" title="Cemitério" count={player.graveyardCount} card={topCard(player.graveyard)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <CardSlot zone="exile" title="Exílio" count={player.exileCount} card={topCard(player.exile)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
-    <CardSlot zone="command" title="Comandante" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
   </div>;
 }
 

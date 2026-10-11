@@ -96,3 +96,7 @@ Embaralhar, desvirar todas, dado, moeda, contadores e ficha aparecem
 desabilitados até as issues correspondentes. Desfazer compra, chat de
 conversa e conceder não entram: a spec não os inclui, e o registro já fica
 visível.
+
+Depois, o usuário pediu o comandante acima do grimório e o registro com fonte
+menor e altura máxima fixa, para os cartões de até seis jogadores aparecerem
+acima do registro.

@@ -127,13 +127,14 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
   await closeActions();
   async function dragCard(from: Locator, to: Locator) {
-    await to.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
+    await from.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
     const sourceBox = await from.boundingBox();
-    const targetBox = await to.boundingBox();
     expect(sourceBox, 'carta de origem visível').toBeTruthy();
-    expect(targetBox, 'zona de destino visível').toBeTruthy();
     await page.mouse.move(sourceBox!.x + sourceBox!.width / 2, sourceBox!.y + sourceBox!.height / 2);
     await page.mouse.down();
+    await to.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
+    const targetBox = await to.boundingBox();
+    expect(targetBox, 'zona de destino visível').toBeTruthy();
     await page.mouse.move(targetBox!.x + targetBox!.width / 2, targetBox!.y + targetBox!.height / 2, { steps: 12 });
     await page.mouse.up();
   }
