@@ -9,12 +9,14 @@ export type Room = {
 
 export type Match = {
   roomId: number;
+  viewerId: number;
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
-  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number }[];
-  events: { actor: string; kind: string; result: string }[];
+  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[] }[];
+  log: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
+export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
   const response = await fetch(path, {
@@ -28,11 +30,21 @@ async function change(path: string, method = 'POST', body: unknown = {}): Promis
   }
 }
 
-async function matchAction(id: number, body: unknown): Promise<Match> {
-  const response = await fetch(`/api/rooms/${id}/match/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
-  return data.match;
+class MatchActionResponseError extends Error {}
+export class UnconfirmedActionError extends Error {}
+async function matchChange(path: string, body: unknown): Promise<Match> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await response.json();
+      if (!response.ok) throw new MatchActionResponseError(data.error || 'Não foi possível concluir. Tente novamente.');
+      return data.match;
+    } catch (reason) {
+      if (reason instanceof MatchActionResponseError) throw reason;
+      if (attempt === 1) throw new UnconfirmedActionError('Não foi possível confirmar a ação. Tente novamente para recuperar a confirmação.');
+    }
+  }
+  throw new Error('Não foi possível concluir. Tente novamente.');
 }
 
 type Updates = {
@@ -68,7 +80,9 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
     return data.match;
   },
-  roll: (id: number, sides: number) => matchAction(id, { intentId: crypto.randomUUID(), kind: 'roll', sides }),
-  coin: (id: number) => matchAction(id, { intentId: crypto.randomUUID(), kind: 'coin' }),
-  turn: (id: number, direction: 'next' | 'previous') => matchAction(id, { intentId: crypto.randomUUID(), kind: 'turn', direction }),
+  draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
+  move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),
+  roll: (id: number, sides: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'roll', sides }),
+  coin: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'coin' }),
+  turn: (id: number, direction: 'next' | 'previous', intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'turn', direction }),
 };

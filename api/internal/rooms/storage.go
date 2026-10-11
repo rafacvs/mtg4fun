@@ -85,39 +85,65 @@ type matchState struct {
 }
 type Match struct {
 	RoomID      int64         `json:"roomId"`
+	ViewerID    int64         `json:"viewerId"`
 	InitialLife int           `json:"initialLife"`
 	TurnOrder   []Turn        `json:"turnOrder"`
 	CurrentTurn Turn          `json:"currentTurn"`
 	Players     []MatchPlayer `json:"players"`
-	Events      []MatchEvent  `json:"events"`
-}
-type MatchEvent struct {
-	Actor  string `json:"actor"`
-	Kind   string `json:"kind"`
-	Result string `json:"result"`
+	Log         []MatchLog    `json:"log"`
 }
 type MatchPlayer struct {
-	UserID           int64  `json:"userId"`
-	Name             string `json:"name"`
-	Life             int    `json:"life"`
-	LibraryCount     int    `json:"libraryCount"`
-	HandCount        int    `json:"handCount"`
-	BattlefieldCount int    `json:"battlefieldCount"`
-	GraveyardCount   int    `json:"graveyardCount"`
-	ExileCount       int    `json:"exileCount"`
-	CommandCount     int    `json:"commandCount"`
+	UserID           int64         `json:"userId"`
+	Name             string        `json:"name"`
+	Life             int           `json:"life"`
+	LibraryCount     int           `json:"libraryCount"`
+	HandCount        int           `json:"handCount"`
+	BattlefieldCount int           `json:"battlefieldCount"`
+	GraveyardCount   int           `json:"graveyardCount"`
+	ExileCount       int           `json:"exileCount"`
+	CommandCount     int           `json:"commandCount"`
+	Hand             []VisibleCard `json:"hand,omitempty"`
+	Battlefield      []VisibleCard `json:"battlefield,omitempty"`
+	Graveyard        []VisibleCard `json:"graveyard,omitempty"`
+	Exile            []VisibleCard `json:"exile,omitempty"`
+	Command          []VisibleCard `json:"command,omitempty"`
+}
+type VisibleCard struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	OwnerID      int64  `json:"ownerId"`
+	ControllerID int64  `json:"controllerId"`
+	Zone         string `json:"zone"`
+}
+type MatchLog struct {
+	ActorName string `json:"actorName"`
+	Kind      string `json:"kind"`
+	From      string `json:"from,omitempty"`
+	To        string `json:"to,omitempty"`
+	Count     int    `json:"count,omitempty"`
+	Result    string `json:"result,omitempty"`
 }
 
-func (m matchState) view() Match {
+func visible(cards []Card) []VisibleCard {
+	out := make([]VisibleCard, len(cards))
+	for i, c := range cards {
+		out[i] = VisibleCard{c.ID, c.Name, c.OwnerID, c.ControllerID, c.Zone}
+	}
+	return out
+}
+func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{v.UserID, v.Name, v.Life, len(v.Library), len(v.Hand), len(v.Battlefield), len(v.Graveyard), len(v.Exile), len(v.Command)}
+		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield), Graveyard: visible(v.Graveyard), Exile: visible(v.Exile), Command: visible(v.Command)}
+		if v.UserID == viewerID {
+			p[i].Hand = visible(v.Hand)
+		}
 	}
 	current := Turn{}
 	if len(m.TurnOrder) > 0 {
 		current = m.TurnOrder[m.TurnIndex%len(m.TurnOrder)]
 	}
-	return Match{RoomID: m.RoomID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, Players: p, Events: []MatchEvent{}}
+	return Match{RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, Players: p, Log: log}
 }
 
 type Service struct {
@@ -413,37 +439,14 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = save(ctx, tx, r, u.ID, "started"); e != nil {
 		return Match{}, e
 	}
+	log, e := matchLog(ctx, tx, id, m)
+	if e != nil {
+		return Match{}, e
+	}
 	if e = tx.Commit(); e != nil {
 		return Match{}, e
 	}
-	view := m.view()
-	view.Events, e = s.eventsForMatch(ctx, id)
-	return view, e
-}
-
-func (s *Service) eventsForMatch(ctx context.Context, id int64) ([]MatchEvent, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT u.name, e.action, e.payload FROM match_events e JOIN users u ON u.id=e.actor_id WHERE e.room_id=? AND e.action IN ('roll','coin','turn') ORDER BY e.id`, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	events := []MatchEvent{}
-	for rows.Next() {
-		var event MatchEvent
-		var payload struct {
-			Result string `json:"result"`
-		}
-		var raw []byte
-		if err := rows.Scan(&event.Actor, &event.Kind, &raw); err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, err
-		}
-		event.Result = payload.Result
-		events = append(events, event)
-	}
-	return events, rows.Err()
+	return m.view(u.ID, log), nil
 }
 func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, error) {
 	var b []byte
@@ -455,7 +458,12 @@ func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = json.Unmarshal(b, &m); e != nil {
 		return Match{}, e
 	}
-	view := m.view()
-	view.Events, e = s.eventsForMatch(ctx, id)
-	return view, e
+	if playerByID(&m, u.ID) == nil {
+		return Match{}, errNotParticipant
+	}
+	log, e := matchLog(ctx, s.db, id, m)
+	if e != nil {
+		return Match{}, e
+	}
+	return m.view(u.ID, log), nil
 }

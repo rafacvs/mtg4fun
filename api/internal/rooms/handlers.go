@@ -39,28 +39,62 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		httpserver.WriteError(w, 415, "Envie JSON.")
 		return matchAction{}, false
 	}
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 65536))
 	decoder.DisallowUnknownFields()
-	var input matchAction
-	if err := decoder.Decode(&input); err != nil || decoder.Decode(&struct{}{}) != io.EOF {
+	var raw struct {
+		IntentID         string   `json:"intentId"`
+		Kind             string   `json:"kind"`
+		Count            int      `json:"count"`
+		CardIDs          []string `json:"cardIds"`
+		To               string   `json:"to"`
+		LibraryPlacement string   `json:"libraryPlacement"`
+		Sides            int      `json:"sides"`
+		Direction        string   `json:"direction"`
+	}
+	if err := decoder.Decode(&raw); err != nil {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
 	}
-	if !intentIDPattern.MatchString(input.IntentID) {
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		httpserver.WriteError(w, 400, "Ação inválida.")
+		return matchAction{}, false
+	}
+	if !intentIDPattern.MatchString(raw.IntentID) {
 		httpserver.WriteError(w, 400, "intentId inválido.")
 		return matchAction{}, false
 	}
-	if input.Kind == "roll" && input.Sides >= 2 && input.Sides <= 100 && input.Direction == "" {
-		return input, true
+	input := matchAction{IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs, To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction}
+	switch input.Kind {
+	case "draw":
+		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "move":
+		if len(input.CardIDs) == 0 || input.Count != 0 || input.To == "" || input.Sides != 0 || input.Direction != "" || (input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom") || (input.To != "library" && input.LibraryPlacement != "") {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "roll":
+		if input.Sides < 2 || input.Sides > 100 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "coin":
+		if input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "turn":
+		if input.Direction != "next" && input.Direction != "previous" || input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	default:
+		httpserver.WriteError(w, 400, "Ação inválida.")
+		return matchAction{}, false
 	}
-	if input.Kind == "coin" && input.Sides == 0 && input.Direction == "" {
-		return input, true
-	}
-	if input.Kind == "turn" && input.Sides == 0 && (input.Direction == "next" || input.Direction == "previous") {
-		return input, true
-	}
-	httpserver.WriteError(w, 400, "Ação inválida.")
-	return matchAction{}, false
+	return input, true
 }
 
 func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +115,9 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, sql.ErrNoRows):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
-		httpserver.WriteError(w, 403, err.Error())
+		httpserver.WriteError(w, 404, "Partida não encontrada.")
+	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards):
+		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)
 	default:

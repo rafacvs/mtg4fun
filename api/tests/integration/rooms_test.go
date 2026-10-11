@@ -488,6 +488,213 @@ func TestStartReturnsControlledD20TiebreakOverHTTP(t *testing.T) {
 	}
 }
 
+func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
+	e := newEnvironment(t)
+	for _, account := range []string{"ana", "bia", "fora"} {
+		e.mustCreate(account, strings.Title(account), "senha-da-sala")
+	}
+	e.start(false)
+	ana, bia, outsider := sessionCookie(t, e.login("ana", "senha-da-sala")), sessionCookie(t, e.login("bia", "senha-da-sala")), sessionCookie(t, e.login("fora", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, second := e.uploadDeck(ana, deck), e.uploadDeck(bia, deck)
+	requireStatus(t, first, 201)
+	requireStatus(t, second, 201)
+	var uploaded struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(first.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	anaDeck := uploaded.Deck.ID
+	if err := json.Unmarshal(second.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	biaDeck := uploaded.Deck.ID
+	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	requireStatus(t, created, 201)
+	roomID := decodeRoom(t, created).ID
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", roomID), "{}", bia, nil), 200)
+	for _, ready := range []struct {
+		cookie *http.Cookie
+		deck   int64
+	}{{ana, anaDeck}, {bia, biaDeck}} {
+		requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", roomID), fmt.Sprintf(`{"deckId":%d}`, ready.deck), ready.cookie, nil), 200)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", roomID), "{}", ana, nil), 201)
+	actionPath := fmt.Sprintf("/api/rooms/%d/match/actions", roomID)
+	draw := `{"intentId":"11111111-1111-4111-8111-111111111111","kind":"draw","count":2}`
+	requireStatus(t, e.request("POST", actionPath, draw, ana, nil), 200)
+	// The same intent may be retried after a lost response without drawing again.
+	duplicate := e.request("POST", actionPath, draw, ana, nil)
+	requireStatus(t, duplicate, 200)
+	var mine struct {
+		Match struct {
+			Players []struct {
+				UserID       int64 `json:"userId"`
+				LibraryCount int   `json:"libraryCount"`
+				Hand         []struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				} `json:"hand"`
+			} `json:"players"`
+			Log []struct {
+				Kind  string `json:"kind"`
+				Count int    `json:"count"`
+			} `json:"log"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(duplicate.body, &mine); err != nil {
+		t.Fatal(err)
+	}
+	var own struct {
+		LibraryCount int `json:"libraryCount"`
+		Hand         []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"hand"`
+	}
+	for _, player := range mine.Match.Players {
+		if player.UserID != 0 && len(player.Hand) == 2 {
+			own.LibraryCount, own.Hand = player.LibraryCount, player.Hand
+		}
+	}
+	if own.LibraryCount != 5 || len(own.Hand) != 2 || own.Hand[0].Name == "" || len(mine.Match.Log) < 2 || mine.Match.Log[len(mine.Match.Log)-1].Kind != "draw" || mine.Match.Log[len(mine.Match.Log)-1].Count != 2 {
+		t.Fatalf("compra/idempotência: %s", duplicate.body)
+	}
+	otherView := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", bia, nil)
+	requireStatus(t, otherView, 200)
+	if bytes.Contains(otherView.body, []byte(own.Hand[0].Name)) || bytes.Contains(otherView.body, []byte(own.Hand[0].ID)) {
+		t.Fatalf("mão privada vazou: %s", otherView.body)
+	}
+	move := fmt.Sprintf(`{"intentId":"22222222-2222-4222-8222-222222222222","kind":"move","cardIds":[%q],"to":"battlefield"}`, own.Hand[0].ID)
+	requireStatus(t, e.request("POST", actionPath, move, ana, nil), 200)
+	otherView = e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", bia, nil)
+	requireStatus(t, otherView, 200)
+	if !bytes.Contains(otherView.body, []byte(own.Hand[0].Name)) || bytes.Contains(otherView.body, []byte(own.Hand[1].ID)) {
+		t.Fatalf("visão pública após movimento: %s", otherView.body)
+	}
+	// Concurrent moves are serialized by the locked match row. Both may apply
+	// in sequence, but the card must end in exactly one public zone.
+	concurrent := make(chan response, 2)
+	for i, destination := range []string{"graveyard", "exile"} {
+		go func(i int, destination string) {
+			body := fmt.Sprintf(`{"intentId":"55555555-5555-4555-8555-55555555555%d","kind":"move","cardIds":[%q],"to":%q}`, i, own.Hand[1].ID, destination)
+			concurrent <- e.request("POST", actionPath, body, ana, nil)
+		}(i, destination)
+	}
+	success, conflict := 0, 0
+	for range 2 {
+		switch result := <-concurrent; result.status {
+		case 200:
+			success++
+		case 409:
+			conflict++
+		default:
+			t.Fatalf("movimentos concorrentes: %d %s", result.status, result.body)
+		}
+	}
+	if success == 0 || success+conflict != 2 {
+		t.Fatalf("movimentos concorrentes: sucesso=%d conflito=%d", success, conflict)
+	}
+	concurrentView := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, concurrentView, 200)
+	var zones struct {
+		Match struct {
+			Players []struct {
+				UserID         int64 `json:"userId"`
+				GraveyardCount int   `json:"graveyardCount"`
+				ExileCount     int   `json:"exileCount"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(concurrentView.body, &zones); err != nil {
+		t.Fatal(err)
+	}
+	for _, player := range zones.Match.Players {
+		if player.UserID == mine.Match.Players[0].UserID && player.GraveyardCount+player.ExileCount != 1 {
+			t.Fatalf("carta concorrente duplicada/perdida: %s", concurrentView.body)
+		}
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"33333333-3333-4333-8333-333333333333","kind":"draw","count":1}`, outsider, nil), 404)
+	e.stop()
+	e.start(false)
+	recovered := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, recovered, 200)
+	var restored struct {
+		Match struct {
+			Players []struct {
+				UserID       int64 `json:"userId"`
+				LibraryCount int   `json:"libraryCount"`
+				Hand         []struct {
+					ID string `json:"id"`
+				} `json:"hand"`
+				Battlefield []struct {
+					ID string `json:"id"`
+				} `json:"battlefield"`
+				Graveyard []struct {
+					ID string `json:"id"`
+				} `json:"graveyard"`
+				Exile []struct {
+					ID string `json:"id"`
+				} `json:"exile"`
+			} `json:"players"`
+			Log []struct {
+				Kind string `json:"kind"`
+			} `json:"log"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(recovered.body, &restored); err != nil {
+		t.Fatal(err)
+	}
+	var restoredAna struct {
+		LibraryCount int
+		Hand         []struct {
+			ID string `json:"id"`
+		}
+		Battlefield []struct {
+			ID string `json:"id"`
+		}
+		Graveyard []struct {
+			ID string `json:"id"`
+		}
+		Exile []struct {
+			ID string `json:"id"`
+		}
+	}
+	for _, player := range restored.Match.Players {
+		if player.UserID == mine.Match.Players[0].UserID {
+			restoredAna.LibraryCount, restoredAna.Hand, restoredAna.Battlefield, restoredAna.Graveyard, restoredAna.Exile = player.LibraryCount, player.Hand, player.Battlefield, player.Graveyard, player.Exile
+		}
+	}
+	contains := func(cards []struct {
+		ID string `json:"id"`
+	}, id string) bool {
+		for _, card := range cards {
+			if card.ID == id {
+				return true
+			}
+		}
+		return false
+	}
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 3+success {
+		t.Fatalf("ações não recuperadas: %s", recovered.body)
+	}
+	// A database permission failure after parsing cannot publish an acknowledged partial draw.
+	e.sql("REVOKE INSERT ON " + e.db + ".* FROM '" + e.db + "'@'%'; GRANT INSERT ON " + e.db + ".rooms TO '" + e.db + "'@'%'")
+	e.disconnectDatabaseConnections()
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"44444444-4444-4444-8444-444444444444","kind":"draw","count":1}`, ana, nil), 500)
+	still := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, still, 200)
+	if !bytes.Equal(still.body, recovered.body) {
+		t.Fatalf("falha parcial alterou estado: %s", still.body)
+	}
+}
+
 func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 	e := newEnvironment(t)
 	e.mustCreate("ana", "Ana", "senha-da-sala")
@@ -530,11 +737,14 @@ func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 	requireStatus(t, rolled, 200)
 	repeated := e.request("POST", actions, intent, ana, nil)
 	requireStatus(t, repeated, 200)
+	if !bytes.Equal(rolled.body, repeated.body) {
+		t.Fatalf("reenvio mudou o resultado: %s vs %s", rolled.body, repeated.body)
+	}
 	coin := e.request("POST", actions, `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2d","kind":"coin"}`, bia, nil)
 	requireStatus(t, coin, 200)
 	turn := e.request("POST", actions, `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2e","kind":"turn","direction":"next"}`, bia, nil)
 	requireStatus(t, turn, 200)
-	requireStatus(t, e.request("POST", actions, `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2f","kind":"coin"}`, outsider, nil), 403)
+	requireStatus(t, e.request("POST", actions, `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2f","kind":"coin"}`, outsider, nil), 404)
 	var view struct {
 		Match struct {
 			TurnOrder []struct {
@@ -543,16 +753,31 @@ func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 			CurrentTurn struct {
 				Name string `json:"name"`
 			} `json:"currentTurn"`
-			Events []struct {
+			Log []struct {
 				Kind   string `json:"kind"`
 				Result string `json:"result"`
-			} `json:"events"`
+			} `json:"log"`
 		} `json:"match"`
 	}
 	if err := json.Unmarshal(turn.body, &view); err != nil {
 		t.Fatal(err)
 	}
-	if len(view.Match.Events) != 3 || len(view.Match.TurnOrder) != 2 || view.Match.Events[0].Kind != "roll" || !strings.HasPrefix(view.Match.Events[0].Result, "D20: ") || view.Match.Events[1].Result != "Cara" && view.Match.Events[1].Result != "Coroa" || !strings.HasPrefix(view.Match.Events[2].Result, "Avançou para turno de ") || view.Match.CurrentTurn.Name != view.Match.TurnOrder[1].Name {
+	var rollResult, coinResult, turnResult string
+	rolls, coins, turns := 0, 0, 0
+	for _, entry := range view.Match.Log {
+		switch entry.Kind {
+		case "roll":
+			rolls++
+			rollResult = entry.Result
+		case "coin":
+			coins++
+			coinResult = entry.Result
+		case "turn":
+			turns++
+			turnResult = entry.Result
+		}
+	}
+	if rolls != 1 || coins != 1 || turns != 1 || len(view.Match.TurnOrder) != 2 || !strings.HasPrefix(rollResult, "D20: ") || coinResult != "Cara" && coinResult != "Coroa" || turnResult != "avançou para o turno de "+view.Match.TurnOrder[1].Name || view.Match.CurrentTurn.Name != view.Match.TurnOrder[1].Name {
 		t.Fatalf("ações públicas: %s", turn.body)
 	}
 	e.stop()

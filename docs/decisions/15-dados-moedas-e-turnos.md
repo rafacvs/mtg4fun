@@ -21,8 +21,9 @@ mesma intenção do mesmo participante não gera uma nova aleatoriedade ou event
 
 O snapshot registra o índice do turno na ordem circular sorteada no início. Os
 participantes podem avançar ou corrigir o indicador, sem fases nem restrições
-às outras ações. Resultados de dado/moeda e alterações de turno ficam no log
-público filtrado, persistem após reinício e aparecem na interface PT-BR.
+às outras ações. Resultados de dado/moeda e alterações de turno entram no
+mesmo log público das compras e movimentos, persistem após reinício e aparecem
+na mesa. Os controles ficam no painel de ações da sala, junto da compra.
 
 O armazenamento `match_intents` usa chave primária por partida, participante e
 UUID. A tabela não contém conteúdo de cartas nem dados privados; a autorização
