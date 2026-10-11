@@ -47,6 +47,13 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await closeActions();
     const drawn = hand.getByRole('button', { name: 'Island', exact: true });
     await expect(drawn).toHaveCount(1);
+    if (testInfo.project.name === 'celular') {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.getByText('Gire o celular para jogar', { exact: true })).toBeVisible();
+      await expect(hand).toBeHidden();
+      await page.setViewportSize({ width: 844, height: 390 });
+      await expect(drawn).toBeVisible();
+    }
     await expect(drawn.locator('img')).toBeVisible();
     await activate(drawn);
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
@@ -59,6 +66,12 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await expect(drawn).toBeVisible();
     }
     await openActions();
+    await activate(other.getByRole('button', { name: 'Ações', exact: true }));
+    await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+    await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
+    const secondThumbnail = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Segundo amigo/ });
+    await expect(secondThumbnail.getByText('Atividade recente', { exact: true })).toBeVisible();
+    await expect(page.getByText('Observando:', { exact: false })).toContainText('Amigo 6');
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
     await closeActions();
     await expect(drawn).toHaveCount(2);
