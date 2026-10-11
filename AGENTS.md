@@ -128,7 +128,8 @@
 
 - Para tarefas paralelas, use uma worktree por tarefa. `scripts/worktree.sh`
   cria branches `work/<nome>`, checkouts em `../mtg4fun-worktrees/<nome>` e
-  uma cópia isolada do MySQL local. O banco principal deve estar em execução:
+  um banco novo no MySQL local já em execução. O servidor principal deve estar
+  no ar:
 
   ```bash
   ./scripts/worktree.sh create <nome> master
@@ -146,9 +147,10 @@
   recusa checkouts com alterações locais ou bloqueados; não use força para
   contornar essa proteção.
 - Instale dependências por checkout. Quando houver serviços locais, mantenha
-  portas, arquivos de ambiente, bancos e volumes independentes por worktree.
-  Use o `.env` gerado por `worktree.sh`: ele define projeto Compose e portas
-  distintos. Não o substitua pela cópia do `.env` principal. As worktrees
-  existentes podem ser preparadas com `scripts/worktree.sh isolate <nome>`.
+  portas e arquivos de ambiente independentes por worktree. O MySQL é o da
+  raiz; cada worktree usa o banco criado por `worktree.sh`. Use o `.env`
+  gerado por ele: ele define o projeto Compose, a porta HTTP e o banco.
+  Não o substitua pela cópia do `.env` principal. As worktrees existentes
+  podem ser preparadas com `scripts/worktree.sh isolate <nome>`.
   Configuração e histórico do Git são compartilhados entre worktrees; dados
   alterados depois da cópia do banco não são sincronizados.

@@ -1,0 +1,10 @@
+services:
+  api:
+    networks:
+      - default
+      - shared-db
+
+networks:
+  shared-db:
+    name: mtg4fun-db
+    external: true

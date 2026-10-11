@@ -204,14 +204,15 @@ cd ../mtg4fun-worktrees/nome-da-tarefa
 docker compose up -d api app
 ```
 
-O script copia a configuração do `.env` principal, define projeto e portas
-exclusivos e restaura um snapshot do banco principal no volume da worktree.
-O MySQL principal precisa estar em execução. Não substitua o `.env` gerado
-pelo `.env` principal: isso faria a worktree voltar ao volume compartilhado.
-Mudanças feitas depois na cópia não se sincronizam. `./scripts/worktree.sh
-isolate <nome>` prepara worktrees existentes; ao reabri-las, o script
-preserva o volume próprio. A API não publica porta própria no host.
-A primeira inicialização do MySQL pode levar alguns minutos; acompanhe os logs.
+O script copia a configuração do `.env` principal, define projeto e porta HTTP
+exclusivos e cria o banco `mtg4fun_<nome>` no MySQL que já está em execução.
+Não sobe outro servidor. O MySQL principal precisa estar no ar. Não substitua
+o `.env` gerado pelo `.env` principal: isso apontaria a worktree para o banco
+da raiz. Mudanças feitas depois na cópia não se sincronizam.
+`./scripts/worktree.sh isolate <nome>` prepara worktrees existentes; ao
+reabri-las, o script preserva o banco próprio. A API não publica porta própria
+no host. A API da worktree entra na rede `mtg4fun-db` e fala com o alias
+`mtg4fun-mysql`.
 
 ### Verificações
 

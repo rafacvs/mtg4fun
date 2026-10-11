@@ -10,8 +10,8 @@ Uso:
   scripts/worktree.sh remove <nome>
 
 Cria a branch work/<nome> em ../mtg4fun-worktrees/<nome> e copia o banco
-principal para um projeto Compose isolado. isolate prepara worktrees existentes.
-Ao reabrir uma worktree, o volume existente é preservado.
+principal para um banco novo no MySQL já em execução. isolate prepara worktrees
+existentes. Ao reabrir uma worktree, esse banco é preservado.
 HELP
 }
 
@@ -46,6 +46,9 @@ name=$2
 branch="work/$name"
 target="$worktree_root/$name"
 project="mtg4fun-${name,,}"
+database="mtg4fun_${name//-/_}"
+database="${database,,}"
+[[ ${#database} -le 64 ]] || fail "O nome produz um banco maior que 64 caracteres."
 
 compose_at() (
   cd "$1"
@@ -77,13 +80,10 @@ def available(port):
             return False
     return True
 
-ports = []
-for start in (8081, 3308):
-    port = start
-    while not available(port) or port in ports:
-        port += 1
-    ports.append(port)
-print(*ports)
+port = 8081
+while not available(port):
+    port += 1
+print(port)
 PY
 }
 
@@ -93,62 +93,108 @@ configure_environment() {
     [[ -f "$main_root/.env" ]] || fail "Configure primeiro $main_root/.env."
     source="$main_root/.env"
   fi
-  local current_project
+  local current_project current_database
   current_project=$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' "$source" | tail -n 1)
-  if [[ "$current_project" == "$project" ]]; then
+  current_database=$(sed -n 's/^DB_NAME=//p' "$source" | tail -n 1)
+  if [[ "$current_project" == "$project" && "$current_database" == "$database" ]]; then
     local actual
     actual=$(compose_at "$target" config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')
     [[ "$actual" == "$project" ]] || fail "Compose resolveu $actual, esperado $project. Verifique COMPOSE_PROJECT_NAME do shell."
     return
   fi
-  local port mysql_port temporary actual
-  read -r port mysql_port < <(choose_ports)
+  local port temporary actual
+  port=$(choose_ports)
   temporary=$(mktemp "$target/.env.XXXXXX")
   chmod 600 "$temporary"
-  awk -F= '!($1 == "COMPOSE_PROJECT_NAME" || $1 == "COMPOSE_FILE" || $1 == "COMPOSE_PROFILES" || $1 == "PORT" || $1 == "MYSQL_PORT" || $1 == "DB_HOST" || $1 == "DB_PORT")' "$source" > "$temporary"
+  awk -F= '!($1 == "COMPOSE_PROJECT_NAME" || $1 == "COMPOSE_FILE" || $1 == "COMPOSE_PROFILES" || $1 == "PORT" || $1 == "MYSQL_PORT" || $1 == "DB_HOST" || $1 == "DB_PORT" || $1 == "DB_NAME" || $1 == "DB_USER")' "$source" > "$temporary"
   {
     printf '\nCOMPOSE_PROJECT_NAME=%s\n' "$project"
-    printf 'COMPOSE_FILE=infra/compose.yaml:infra/compose.dev.yaml\n'
-    printf 'COMPOSE_PROFILES=local-db\n'
-    printf 'DB_HOST=mysql\nDB_PORT=3306\n'
-    printf 'PORT=%s\nMYSQL_PORT=%s\n' "$port" "$mysql_port"
+    printf 'COMPOSE_FILE=infra/compose.yaml:infra/compose.dev.yaml:infra/compose.worktree.yaml\n'
+    printf 'COMPOSE_PROFILES=\n'
+    printf 'DB_HOST=mtg4fun-mysql\nDB_PORT=3306\n'
+    printf 'DB_NAME=%s\nDB_USER=%s\n' "$database" "$database"
+    printf 'PORT=%s\n' "$port"
   } >> "$temporary"
   mv "$temporary" "$target/.env"
   actual=$(compose_at "$target" config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')
   [[ "$actual" == "$project" ]] || fail "Compose resolveu $actual, esperado $project. Verifique COMPOSE_PROJECT_NAME do shell."
-  printf 'Ambiente isolado: projeto %s, HTTP %s, MySQL %s\n' "$project" "$port" "$mysql_port"
+  printf 'Ambiente isolado: projeto %s, HTTP %s, banco %s\n' "$project" "$port" "$database"
 }
 
-seed_database() {
-  local volume="${project}_mysql-data"
-  if docker volume inspect "$volume" >/dev/null 2>&1; then
-    printf 'Volume existente preservado: %s\n' "$volume"
-    return
-  fi
+root_mysql() {
   local source_id
   source_id=$(compose_at "$main_root" ps -q mysql)
   [[ -n "$source_id" ]] || fail "O MySQL principal precisa estar em execução. Após iniciá-lo, repita com isolate $name."
+  if ! docker network inspect mtg4fun-db >/dev/null 2>&1; then
+    docker network create mtg4fun-db >/dev/null
+  fi
+  if ! docker inspect "$source_id" --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}} {{end}}' | grep -qw mtg4fun-db; then
+    docker network connect --alias mtg4fun-mysql mtg4fun-db "$source_id"
+  fi
+  printf '%s' "$source_id"
+}
+
+mysql_exec() {
+  local container=$1
+  shift
+  docker exec "$container" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u root "$@"' mysql "$@"
+}
+
+mysql_import() {
+  local container=$1
+  shift
+  docker exec -i "$container" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u root "$@"' mysql "$@"
+}
+
+seed_database() {
+  local source_id existing
+  source_id=$(root_mysql)
+  existing=$(mysql_exec "$source_id" -N -e "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = '${database}'")
+  existing=${existing//$'\n'/}
+  if [[ "$existing" == 1 ]]; then
+    printf 'Banco existente preservado: %s\n' "$database"
+    return
+  fi
+  local snapshot sql
+  snapshot=$(mktemp)
+  sql=$(mktemp)
+  chmod 600 "$snapshot" "$sql"
   if ! (
     set -euo pipefail
-    snapshot=$(mktemp)
-    trap 'rm -f "$snapshot"' EXIT
-    chmod 600 "$snapshot"
+    trap 'rm -f "$snapshot" "$sql"' EXIT
     docker exec "$source_id" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump --single-transaction --quick --set-gtid-purged=OFF --routines --triggers --events -u root "$MYSQL_DATABASE"' > "$snapshot"
     [[ -s "$snapshot" ]]
-    compose_at "$target" up -d mysql
-    destination_id=$(compose_at "$target" ps -q mysql)
-    ready=false
-    for _ in {1..600}; do
-      if docker exec "$destination_id" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u root -e "SELECT 1"' >/dev/null 2>&1; then ready=true; break; fi
-      sleep 1
-    done
-    [[ "$ready" == true ]]
-    docker exec -i "$destination_id" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u root "$MYSQL_DATABASE"' < "$snapshot"
+    python3 - "$main_root/.env" "$database" "$sql" <<'PY'
+from pathlib import Path
+import sys
+env_path, database, destination = sys.argv[1:]
+password = ""
+for line in Path(env_path).read_text().splitlines():
+    if line.startswith("DB_PASSWORD="):
+        password = line.split("=", 1)[1]
+        if len(password) >= 2 and password[0] == password[-1] and password[0] in "'\"":
+            password = password[1:-1]
+        break
+else:
+    raise SystemExit("DB_PASSWORD ausente no .env principal")
+if password == "":
+    raise SystemExit("DB_PASSWORD ausente no .env principal")
+literal = "'" + password.replace("\\", "\\\\").replace("'", "''") + "'"
+Path(destination).write_text(
+    f"CREATE DATABASE `{database}`;\n"
+    f"CREATE USER '{database}'@'%' IDENTIFIED BY {literal};\n"
+    f"GRANT ALL PRIVILEGES ON `{database}`.* TO '{database}'@'%';\n"
+)
+PY
+    mysql_import "$source_id" < "$sql"
+    mysql_import "$source_id" "$database" < "$snapshot"
   ); then
-    compose_at "$target" down --volumes >/dev/null 2>&1 || true
-    fail "Não foi possível copiar o banco para $project; o principal permanece intacto. Repita com isolate $name."
+    mysql_exec "$source_id" -e "DROP DATABASE IF EXISTS \`${database}\`; DROP USER IF EXISTS '${database}'@'%';" >/dev/null 2>&1 || true
+    rm -f "$snapshot" "$sql"
+    fail "Não foi possível copiar o banco para $database; o principal permanece intacto. Repita com isolate $name."
   fi
-  printf 'Snapshot do banco principal copiado para %s.\n' "$volume"
+  rm -f "$snapshot" "$sql"
+  printf 'Snapshot do banco principal copiado para %s.\n' "$database"
 }
 
 case "$action" in
@@ -174,6 +220,6 @@ case "$action" in
     ;;
   remove)
     git worktree remove "$target"
-    printf 'Checkout removido. Branch e volume preservados: %s, %s_mysql-data\n' "$branch" "$project"
+    printf 'Checkout removido. Branch e banco preservados: %s, %s\n' "$branch" "$database"
     ;;
 esac
