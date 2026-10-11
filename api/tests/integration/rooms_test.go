@@ -694,3 +694,97 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		t.Fatalf("falha parcial alterou estado: %s", still.body)
 	}
 }
+
+func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.mustCreate("bia", "Bia", "senha-da-sala")
+	e.mustCreate("fora", "Fora", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
+	outsider := sessionCookie(t, e.login("fora", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, second := e.uploadDeck(ana, deck), e.uploadDeck(bia, deck)
+	requireStatus(t, first, 201)
+	requireStatus(t, second, 201)
+	var upload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(first.body, &upload); err != nil {
+		t.Fatal(err)
+	}
+	anaDeck := upload.Deck.ID
+	if err := json.Unmarshal(second.body, &upload); err != nil {
+		t.Fatal(err)
+	}
+	biaDeck := upload.Deck.ID
+	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 200)
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, anaDeck), ana, nil), 200)
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, biaDeck), bia, nil), 200)
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 201)
+	actions := fmt.Sprintf("/api/rooms/%d/match/actions", id)
+	intent := `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2c","kind":"roll","sides":20}`
+	rolled := e.request("POST", actions, intent, ana, nil)
+	requireStatus(t, rolled, 200)
+	repeated := e.request("POST", actions, intent, ana, nil)
+	requireStatus(t, repeated, 200)
+	if !bytes.Equal(rolled.body, repeated.body) {
+		t.Fatalf("reenvio mudou o resultado: %s vs %s", rolled.body, repeated.body)
+	}
+	coin := e.request("POST", actions, `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2d","kind":"coin"}`, bia, nil)
+	requireStatus(t, coin, 200)
+	turn := e.request("POST", actions, `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2e","kind":"turn","direction":"next"}`, bia, nil)
+	requireStatus(t, turn, 200)
+	requireStatus(t, e.request("POST", actions, `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2f","kind":"coin"}`, outsider, nil), 404)
+	var view struct {
+		Match struct {
+			TurnOrder []struct {
+				Name string `json:"name"`
+			} `json:"turnOrder"`
+			CurrentTurn struct {
+				Name string `json:"name"`
+			} `json:"currentTurn"`
+			Log []struct {
+				Kind   string `json:"kind"`
+				Result string `json:"result"`
+			} `json:"log"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(turn.body, &view); err != nil {
+		t.Fatal(err)
+	}
+	var rollResult, coinResult, turnResult string
+	rolls, coins, turns := 0, 0, 0
+	for _, entry := range view.Match.Log {
+		switch entry.Kind {
+		case "roll":
+			rolls++
+			rollResult = entry.Result
+		case "coin":
+			coins++
+			coinResult = entry.Result
+		case "turn":
+			turns++
+			turnResult = entry.Result
+		}
+	}
+	if rolls != 1 || coins != 1 || turns != 1 || len(view.Match.TurnOrder) != 2 || !strings.HasPrefix(rollResult, "D20: ") || coinResult != "Cara" && coinResult != "Coroa" || turnResult != "avançou para o turno de "+view.Match.TurnOrder[1].Name || view.Match.CurrentTurn.Name != view.Match.TurnOrder[1].Name {
+		t.Fatalf("ações públicas: %s", turn.body)
+	}
+	e.stop()
+	e.start(false)
+	recovered := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", ana, nil)
+	requireStatus(t, recovered, 200)
+	if !bytes.Contains(recovered.body, []byte(`"currentTurn":`)) || bytes.Count(recovered.body, []byte(`"kind":"roll"`)) != 1 || bytes.Count(recovered.body, []byte(`"kind":"coin"`)) != 1 || bytes.Count(recovered.body, []byte(`"kind":"turn"`)) != 1 {
+		t.Fatalf("ações não persistiram: %s", recovered.body)
+	}
+}

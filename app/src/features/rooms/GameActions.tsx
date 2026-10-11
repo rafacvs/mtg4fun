@@ -1,20 +1,27 @@
 import { useEffect, useRef } from 'react';
 
-const laterActions = ['Embaralhar grimório', 'Desvirar todas', 'Rolar dado', 'Jogar moeda', 'Contadores', 'Criar ficha'];
+const laterActions = ['Embaralhar grimório', 'Desvirar todas', 'Contadores', 'Criar ficha'];
 
 type Props = {
   open: boolean;
   count: number;
+  sides: number;
   busy: boolean;
   unconfirmed: boolean;
   onCount: (count: number) => void;
+  onSides: (sides: number) => void;
   onDraw: () => void;
+  onRoll: () => void;
+  onCoin: () => void;
+  onTurn: (direction: 'next' | 'previous') => void;
   onClose: () => void;
 };
 
-export function GameActions({ open, count, busy, unconfirmed, onCount, onDraw, onClose }: Props) {
+export function GameActions({ open, count, sides, busy, unconfirmed, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onClose }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
-  const canDraw = !busy && !unconfirmed && Number.isInteger(count) && count >= 1;
+  const canAct = !busy && !unconfirmed;
+  const canDraw = canAct && Number.isInteger(count) && count >= 1;
+  const canRoll = canAct && Number.isInteger(sides) && sides >= 2 && sides <= 100;
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +46,19 @@ export function GameActions({ open, count, busy, unconfirmed, onCount, onDraw, o
         </div>
         <button type="button" disabled={!canDraw} onClick={onDraw}>Comprar cartas</button>
       </div>
+      <div className="draw-row">
+        <span>Rolar dado</span>
+        <div className="draw-stepper">
+          <button type="button" className="secondary" aria-label="Diminuir faces" disabled={sides <= 2} onClick={() => onSides(sides - 1)}>−</button>
+          <input aria-label="Faces do dado" type="number" min="2" max="100" value={sides} onChange={event => onSides(Number(event.target.value))} />
+          <button type="button" className="secondary" aria-label="Aumentar faces" disabled={sides >= 100} onClick={() => onSides(sides + 1)}>+</button>
+        </div>
+        <button type="button" disabled={!canRoll} onClick={onRoll}>Rolar dado</button>
+      </div>
       <div className="actions-grid">
+        <button type="button" disabled={!canAct} onClick={onCoin}>Jogar moeda</button>
+        <button type="button" disabled={!canAct} onClick={() => onTurn('next')}>Avançar turno</button>
+        <button type="button" disabled={!canAct} onClick={() => onTurn('previous')}>Corrigir turno</button>
         {laterActions.map(action => <button type="button" key={action} disabled>{action}</button>)}
       </div>
     </div>;

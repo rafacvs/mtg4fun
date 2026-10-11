@@ -80,6 +80,7 @@ type matchState struct {
 	RoomID      int64         `json:"roomId"`
 	InitialLife int           `json:"initialLife"`
 	TurnOrder   []Turn        `json:"turnOrder"`
+	TurnIndex   int           `json:"turnIndex"`
 	Players     []playerState `json:"players"`
 }
 type Match struct {
@@ -87,6 +88,7 @@ type Match struct {
 	ViewerID    int64         `json:"viewerId"`
 	InitialLife int           `json:"initialLife"`
 	TurnOrder   []Turn        `json:"turnOrder"`
+	CurrentTurn Turn          `json:"currentTurn"`
 	Players     []MatchPlayer `json:"players"`
 	Log         []MatchLog    `json:"log"`
 }
@@ -119,6 +121,7 @@ type MatchLog struct {
 	From      string `json:"from,omitempty"`
 	To        string `json:"to,omitempty"`
 	Count     int    `json:"count,omitempty"`
+	Result    string `json:"result,omitempty"`
 }
 
 func visible(cards []Card) []VisibleCard {
@@ -136,7 +139,11 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 			p[i].Hand = visible(v.Hand)
 		}
 	}
-	return Match{RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, Players: p, Log: log}
+	current := Turn{}
+	if len(m.TurnOrder) > 0 {
+		current = m.TurnOrder[m.TurnIndex%len(m.TurnOrder)]
+	}
+	return Match{RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, Players: p, Log: log}
 }
 
 type Service struct {
@@ -432,10 +439,14 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = save(ctx, tx, r, u.ID, "started"); e != nil {
 		return Match{}, e
 	}
+	log, e := matchLog(ctx, tx, id, m)
+	if e != nil {
+		return Match{}, e
+	}
 	if e = tx.Commit(); e != nil {
 		return Match{}, e
 	}
-	return m.view(u.ID, nil), nil
+	return m.view(u.ID, log), nil
 }
 func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, error) {
 	var b []byte

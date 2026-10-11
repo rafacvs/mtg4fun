@@ -63,5 +63,17 @@ export function useMatch(roomId: number) {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.move(roomId, ids, to, intentId, placement));
     },
+    roll: (sides: number) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.roll(roomId, sides, intentId));
+    },
+    coin: () => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.coin(roomId, intentId));
+    },
+    turn: (direction: 'next' | 'previous') => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.turn(roomId, direction, intentId));
+    },
   };
 }

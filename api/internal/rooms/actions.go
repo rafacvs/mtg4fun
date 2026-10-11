@@ -2,9 +2,12 @@ package rooms
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/big"
 
 	"mtg4fun/internal/auth"
 )
@@ -21,13 +24,16 @@ type matchAction struct {
 	CardIDs          []string
 	To               string
 	LibraryPlacement string
+	Sides            int
+	Direction        string
 }
 
 type actionLogPayload struct {
-	Kind  string `json:"kind"`
-	From  string `json:"from,omitempty"`
-	To    string `json:"to,omitempty"`
-	Count int    `json:"count,omitempty"`
+	Kind   string `json:"kind"`
+	From   string `json:"from,omitempty"`
+	To     string `json:"to,omitempty"`
+	Count  int    `json:"count,omitempty"`
+	Result string `json:"result,omitempty"`
 }
 
 func playerByID(m *matchState, id int64) *playerState {
@@ -123,6 +129,46 @@ func drawCards(p *playerState, count int) (actionLogPayload, error) {
 	return actionLogPayload{Kind: "draw", From: "library", To: "hand", Count: count}, nil
 }
 
+func randomResult(sides int) (int, error) {
+	value, err := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(sides)))
+	if err != nil {
+		return 0, err
+	}
+	return int(value.Int64()) + 1, nil
+}
+
+func rollDice(sides int) (actionLogPayload, error) {
+	value, err := randomResult(sides)
+	if err != nil {
+		return actionLogPayload{}, err
+	}
+	return actionLogPayload{Kind: "roll", Result: fmt.Sprintf("D%d: %d", sides, value)}, nil
+}
+
+func flipCoin() (actionLogPayload, error) {
+	value, err := randomResult(2)
+	if err != nil {
+		return actionLogPayload{}, err
+	}
+	result := "Coroa"
+	if value == 1 {
+		result = "Cara"
+	}
+	return actionLogPayload{Kind: "coin", Result: result}, nil
+}
+
+func changeTurn(m *matchState, direction string) (actionLogPayload, error) {
+	if len(m.TurnOrder) == 0 {
+		return actionLogPayload{}, errCardNotFound
+	}
+	if direction == "next" {
+		m.TurnIndex = (m.TurnIndex + 1) % len(m.TurnOrder)
+		return actionLogPayload{Kind: "turn", Result: "avançou para o turno de " + m.TurnOrder[m.TurnIndex].Name}, nil
+	}
+	m.TurnIndex = (m.TurnIndex + len(m.TurnOrder) - 1) % len(m.TurnOrder)
+	return actionLogPayload{Kind: "turn", Result: "corrigiu para o turno de " + m.TurnOrder[m.TurnIndex].Name}, nil
+}
+
 func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input matchAction) (Match, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -162,6 +208,12 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = drawCards(p, input.Count)
 	case "move":
 		payload, err = moveCards(p, input)
+	case "roll":
+		payload, err = rollDice(input.Sides)
+	case "coin":
+		payload, err = flipCoin()
+	case "turn":
+		payload, err = changeTurn(&m, input.Direction)
 	default:
 		return Match{}, errCardNotFound
 	}
@@ -222,7 +274,7 @@ func matchLog(ctx context.Context, q queryer, roomID int64, m matchState) ([]Mat
 		if p.Kind == "" {
 			p.Kind = action
 		}
-		log = append(log, MatchLog{ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count})
+		log = append(log, MatchLog{ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result})
 	}
 	return log, rows.Err()
 }

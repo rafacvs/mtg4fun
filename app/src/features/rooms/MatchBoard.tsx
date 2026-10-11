@@ -10,8 +10,9 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, roll, coin, turn, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
+  const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [preview, setPreview] = useState<Card | null>(null);
@@ -47,7 +48,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     <div className="match-content">
       <div className="table-toolbar"><span>Observando: <strong>{focused.name}</strong></span>
         {focusId !== null && <button className="secondary show-all" onClick={() => setFocusId(null)}>Ver todas as mesas</button>}
-        <span className="turn-order">Ordem: {match.turnOrder.map(turn => turn.name).join(' → ')}</span>
+        <span>Turno atual: <strong>{match.currentTurn.name}</strong></span>
+        <span className="turn-order">Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
       </div>
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       <div className="table-stage">
@@ -79,7 +81,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <img src={deckApi.imageURL(drag.card.name)} alt="" />
       </div>}
     </div>
-    <GameActions open={actionsOpen} count={count} busy={busy} unconfirmed={unconfirmed} onCount={setCount} onDraw={() => void draw(count)} onClose={closeActions} />
+    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
     <CardPreview card={preview} onClose={closePreview} />
   </section>;
 }
@@ -92,8 +94,11 @@ function dropZoneAt(x: number, y: number) {
   return null;
 }
 
-function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number }) {
+function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
+  if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
+  if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
+  if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
   return 'Partida iniciada.';
 }

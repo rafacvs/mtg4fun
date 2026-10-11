@@ -174,6 +174,16 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await buy('1');
   await expect(hand.getByRole('button')).toHaveCount(4);
   expect((await ownHand()).at(-1)?.id).toBe(returnedId);
+  const log = board.getByRole('region', { name: 'Registro da partida', exact: true });
+  await board.getByLabel('Faces do dado').fill('6');
+  await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
+  await expect(log).toContainText(/Amigo da mesa rolou D6: /);
+  await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
+  await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);
+  await activate(board.getByRole('button', { name: 'Avançar turno', exact: true }));
+  await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa.');
+  await activate(board.getByRole('button', { name: 'Corrigir turno', exact: true }));
+  await expect(log).toContainText('Amigo da mesa corrigiu para o turno de Amigo da mesa.');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('mesa.png'), fullPage: true });
 });
