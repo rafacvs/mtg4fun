@@ -20,6 +20,7 @@ export const test = base.extend<{}, { appURL: string }>({
       container = database.container;
       const environment = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DB_'))), ...Object.fromEntries(Object.entries(database).filter(([key]) => key.startsWith('DB_'))), COOKIE_SECURE: 'false' };
       execFileSync('go', ['build', '-o', executable, './cmd/mtg4fun'], { cwd: join(root, 'api') });
+      execFileSync(executable, ['migrate', 'up'], { env: environment });
       execFileSync(executable, ['create-user', '--login', 'amigo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador'], { env: environment });
       execFileSync(executable, ['create-user', '--login', 'segundo', '--name', 'Segundo amigo', '--password', 'senha-do-navegador'], { env: environment });
       for (let index = 3; index <= 6; index += 1) {

@@ -1,11 +1,16 @@
 FROM golang:1.26-bookworm AS api-dependencies
 WORKDIR /src/api
 COPY api/go.mod api/go.sum ./
-RUN go mod download
+# The post-quantum ClientHello exceeds the Docker bridge MTU and the handshake times out.
+RUN GODEBUG=tlsmlkem=0 go mod download
 
 FROM api-dependencies AS api-development
-RUN go install github.com/air-verse/air@v1.67.4
+RUN GODEBUG=tlsmlkem=0 go install github.com/air-verse/air@v1.67.4 \
+    || (sleep 5 && GODEBUG=tlsmlkem=0 go install github.com/air-verse/air@v1.67.4) \
+    || (sleep 5 && GODEBUG=tlsmlkem=0 go install github.com/air-verse/air@v1.67.4)
 COPY infra/air.toml /etc/air.toml
+COPY infra/dev-api-entrypoint.sh /usr/local/bin/mtg4fun-dev
+RUN chmod 0755 /usr/local/bin/mtg4fun-dev
 ENV PATH="/src/api/bin:${PATH}"
 ENTRYPOINT ["air", "-c", "/etc/air.toml"]
 

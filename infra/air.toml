@@ -4,7 +4,7 @@ env_files = []
 
 [build]
 cmd = "go build -o ./bin/mtg4fun ./cmd/mtg4fun"
-entrypoint = ["./bin/mtg4fun", "serve"]
+entrypoint = ["/usr/local/bin/mtg4fun-dev"]
 include_ext = ["go", "sql", "xml"]
 include_file = ["go.mod", "go.sum"]
 exclude_dir = ["bin", "data", "tests"]
@@ -13,7 +13,7 @@ delay = 300
 stop_on_error = true
 send_interrupt = true
 kill_delay = "10s"
-rerun = true
+rerun = false
 rerun_delay = 1000
 
 [log]

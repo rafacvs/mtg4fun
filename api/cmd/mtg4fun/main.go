@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"mtg4fun/internal/auth"
 	"mtg4fun/internal/catalog"
@@ -27,11 +30,17 @@ func env(key, fallback string) string {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("uso: mtg4fun serve [--cards cards.xml] [--tokens tokens.xml] | create-user --name USUARIO --password SENHA")
+		return errors.New("uso: mtg4fun serve | create-user --name USUARIO --password SENHA | migrate up|status")
 	}
 	command := os.Args[1]
-	if command != "serve" && command != "create-user" {
+	if command != "serve" && command != "create-user" && command != "migrate" {
 		return errors.New("comando desconhecido")
+	}
+	if command == "migrate" {
+		if len(os.Args) != 3 || (os.Args[2] != "up" && os.Args[2] != "status") {
+			return errors.New("uso: mtg4fun migrate up|status")
+		}
+		return migrate(os.Args[2])
 	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	cards := flags.String("cards", env("CATALOG_CARDS", "catalog/cards.xml"), "cards.xml Cockatrice")
@@ -99,6 +108,9 @@ func run() error {
 		return err
 	}
 	defer db.Close()
+	if err := database.RequireCurrent(context.Background(), db); err != nil {
+		return err
+	}
 	users, err := auth.New(db)
 	if err != nil {
 		return err
@@ -107,4 +119,33 @@ func run() error {
 		return createUser(users, *login, *name, *password)
 	}
 	return serve(users, db, cardCatalog, *imageCache, *addr, *webDir)
+}
+
+func migrate(action string) error {
+	config, timeout, err := database.ConfigFromEnvironment()
+	if err != nil {
+		return err
+	}
+	// The first DDL can sit longer than a normal request before MySQL replies.
+	config.ReadTimeout = 2 * time.Minute
+	config.WriteTimeout = 2 * time.Minute
+	db, err := database.Open(config, timeout)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	ctx := context.Background()
+	if action == "up" {
+		if err := database.MigrateUp(ctx, db); err != nil {
+			return err
+		}
+	}
+	statuses, err := database.MigrationStatus(ctx, db)
+	if err != nil {
+		return err
+	}
+	for _, status := range statuses {
+		fmt.Println(database.MigrationLabel(status))
+	}
+	return nil
 }

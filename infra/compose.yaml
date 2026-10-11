@@ -13,18 +13,23 @@ services:
       - "127.0.0.1:${MYSQL_PORT:-3307}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      default: {}
+      shared-db:
+        aliases:
+          - mtg4fun-mysql
     healthcheck:
       test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u "$$MYSQL_USER" "$$MYSQL_DATABASE" -e "SELECT 1" >/dev/null']
       interval: 5s
       timeout: 5s
       retries: 30
-      start_period: 30s
+      start_period: 10m
     restart: unless-stopped
 
   api:
     depends_on:
       mysql:
-        condition: service_started
+        condition: service_healthy
         required: false
     build:
       context: ..
@@ -59,3 +64,7 @@ services:
 volumes:
   mysql-data:
   image-cache:
+
+networks:
+  shared-db:
+    name: mtg4fun-db

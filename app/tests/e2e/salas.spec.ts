@@ -64,6 +64,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'movimentos.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Movimentos</deckname><zone name="main"><card number="5" name="Island"/></zone></cockatrice_deck>') });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await page.getByRole('link', { name: 'Salas', exact: true }).click();
+  await expect(page.getByText('Salas atualizadas em tempo real.', { exact: true })).toBeVisible();
   const knownRooms = new Set(await page.getByRole('article').locator('h3').allTextContents());
   await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
   await expect.poll(async () => (await page.getByRole('article').locator('h3').allTextContents()).some(title => !knownRooms.has(title))).toBe(true);
