@@ -62,6 +62,10 @@ docker compose up -d api app
 O primeiro `up` constrói as imagens automaticamente. Para subir somente o
 backend e o banco, use `docker compose up -d api`; para subir a aplicação
 completa, também pode usar `docker compose up -d app`.
+Em desenvolvimento, o Air aplica migrations pendentes antes de iniciar a API.
+Se uma migration falhar, consulte `docker compose logs api`; corrija-a e salve
+o arquivo para que o Air tente novamente. Consulte o estado com
+`docker compose exec api mtg4fun migrate status`.
 
 Abra http://localhost:8080. Vite atualiza React/TypeScript no navegador; Air
 recompila e reinicia a API ao alterar Go, SQL ou dependências. A API inicia
@@ -78,16 +82,32 @@ No `.env`, troque a seleção de arquivos para:
 COMPOSE_FILE=infra/compose.yaml
 ```
 
-Depois use os mesmos nomes de serviços:
+Em um banco novo, aplique as migrations antes de iniciar a API:
 
 ```bash
+docker compose run --build --rm api migrate up
 docker compose up --build -d api app
 ```
 
+Em atualizações com dados, faça backup e siga esta sequência:
+
+```bash
+docker compose stop app api
+docker compose build api app
+docker compose run --rm api migrate up
+docker compose up -d api app
+```
+
+A API recusa iniciar se a versão do banco não corresponder às migrations
+embutidas. Consulte o histórico com `docker compose run --rm api migrate status`.
+O [registro da decisão](docs/decisions/21-migrations-e-worktrees.md) descreve
+a adoção do esquema existente.
+
 O Docker compila Go e React. A API executa como usuário sem privilégios; Nginx
 serve o cliente compilado e encaminha `/api`, preservando o host da origem.
-Não há código montado nem Vite/Air neste modo. O MySQL continua sendo local;
-este comando não conecta o banco de produção externo.
+Não há código montado nem Vite/Air neste modo. Com `local-db`, o MySQL é local;
+a conexão externa só ocorre se `COMPOSE_PROFILES` e `DB_*` forem configurados
+para ela.
 
 ### Criar conta em qualquer modo
 
@@ -123,7 +143,17 @@ O volume SQLite antigo `mtg4fun_data`, quando existente, e os arquivos antigos
 não são migrados nem excluídos. Contas antigas devem ser recriadas no MySQL,
 conforme a [decisão aprovada](docs/decisions/19-20-mysql-e-docker.md).
 
-Após alterações de código para produção, repita `docker compose up --build -d api app`.
+Após alterações de código sem migrations, repita `docker compose up --build -d api app`.
+Para um backup lógico do MySQL local, com arquivo protegido fora do repositório:
+
+```bash
+umask 077
+mkdir -p "$HOME/mtg4fun-backups"
+docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump --single-transaction --quick --set-gtid-purged=OFF --routines --triggers --events -u root "$MYSQL_DATABASE"' > "$HOME/mtg4fun-backups/backup-$(date -u +%Y%m%dT%H%M%SZ).sql"
+```
+
+Confirme que o arquivo não está vazio e teste sua restauração em um banco
+descartável antes de alterar o banco original. Guarde o backup em local seguro.
 Para atualizar imagens base, execute `docker compose build --pull` e depois
 `docker compose up -d api app`; para baixar novamente a imagem de banco fixada,
 use `docker compose pull mysql`. Alterar senhas no `.env` não altera
@@ -139,6 +169,7 @@ O Go lê variáveis de ambiente; o Compose lê o `.env` e fornece essas variáve
 | --- | --- | --- |
 | `COMPOSE_FILE` | `infra/compose.yaml:infra/compose.dev.yaml` | Modo dev; use somente `infra/compose.yaml` para produção. |
 | `COMPOSE_PROFILES` | `local-db` | Habilita MySQL local; vazio para banco externo. |
+| `COMPOSE_PROJECT_NAME` | `mtg4fun` | Nome do projeto e prefixo dos volumes; cada worktree usa um nome próprio. |
 | `DB_HOST` / `DB_PORT` | `mysql` / `3306` | Endereço acessado pela API. |
 | `DB_NAME` / `DB_USER` | `mtg4fun` / `mtg4fun` | Banco e usuário da aplicação. |
 | `DB_PASSWORD` | obrigatório | Senha da aplicação. |
@@ -158,19 +189,28 @@ local. `docker compose up -d api app` sobe então somente API e frontend.
 A dependência local da API é opcional para permitir esse modo externo.
 Nenhuma conexão externa foi configurada ou executada nesta entrega.
 Se precisar de CA própria, monte o PEM como somente leitura em um override
-Compose e indique seu caminho em `DB_TLS_CA`. A API cria as tabelas ausentes;
-o usuário do banco precisa de permissões de criação e leitura/escrita nesse
-banco. Ela não cria o banco externo nem importa dados SQLite.
+Compose e indique seu caminho em `DB_TLS_CA`. Crie o banco externo e execute
+`migrate up` com uma conta que possa alterar o esquema. A API em execução só
+precisa de leitura e escrita nos dados; se usar uma conta separada para ela,
+forneça as credenciais de migration por um arquivo de ambiente próprio ao
+executar o comando. A API não cria o banco externo.
 O contrato antigo `--db`/`DB_PATH` foi removido; use as variáveis `DB_*`.
 
-Para outro checkout/ambiente, use portas e projeto distintos:
+Para criar uma worktree com uma cópia isolada dos dados locais:
 
 ```bash
-PORT=8081 MYSQL_PORT=3308 docker compose -p mtg4fun-outro up -d api app
+./scripts/worktree.sh create nome-da-tarefa master
+cd ../mtg4fun-worktrees/nome-da-tarefa
+docker compose up -d api app
 ```
 
-Preserve `-p` e o `.env` ao operar esse ambiente, para
-reutilizar os volumes corretos. A API não publica porta própria no host.
+O script copia a configuração do `.env` principal, define projeto e portas
+exclusivos e restaura um snapshot do banco principal no volume da worktree.
+O MySQL principal precisa estar em execução. Não substitua o `.env` gerado
+pelo `.env` principal: isso faria a worktree voltar ao volume compartilhado.
+Mudanças feitas depois na cópia não se sincronizam. `./scripts/worktree.sh
+isolate <nome>` prepara worktrees existentes; ao reabri-las, o script
+preserva o volume próprio. A API não publica porta própria no host.
 A primeira inicialização do MySQL pode levar alguns minutos; acompanhe os logs.
 
 ### Verificações

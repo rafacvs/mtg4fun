@@ -74,12 +74,21 @@ def verify(mode):
 
         def ready():
             deadline = time.monotonic() + 900
+            api_down_since = None
             while time.monotonic() < deadline:
                 try:
-                    if request(path="/")[0] == 200 and request()[0] in (200, 401):
+                    home, session = request(path="/")[0], request()[0]
+                    if home == 200 and session in (200, 401):
                         return
+                    if home == 200 and session == 502:
+                        if api_down_since is None:
+                            api_down_since = time.monotonic()
+                        elif time.monotonic() - api_down_since > 180:
+                            raise RuntimeError("A API encerrou e o frontend ficou respondendo 502")
+                    else:
+                        api_down_since = None
                 except (OSError, urllib.error.URLError):
-                    pass
+                    api_down_since = None
                 time.sleep(0.5)
             raise RuntimeError("Serviços Docker não ficaram prontos")
 
@@ -94,6 +103,8 @@ def verify(mode):
 
         try:
             print(f"{mode}: construindo e iniciando projeto isolado {project}...", flush=True)
+            if mode == "prod":
+                compose("run", "--build", "--rm", "api", "migrate", "up")
             compose("up", "--build", "--detach", "api")
             running = set(compose("ps", "--services", "--status", "running").split())
             if running != {"api", "mysql"}:
@@ -129,8 +140,10 @@ def verify(mode):
                                cwd=ROOT, env=browser_env, check=True)
             rooms_before = request(path="/api/rooms")
             require(rooms_before, 200)
-            if len(json.loads(rooms_before[1])["rooms"]) != 3:
-                raise AssertionError("Os três fluxos de navegador devem preservar suas salas")
+            # Two room-creating browser flows run on each of the three viewports.
+            created = json.loads(rooms_before[1])["rooms"]
+            if len(created) != 6:
+                raise AssertionError(f"As salas criadas no navegador não foram preservadas: {len(created)}")
             print(f"{mode}: recriando todos os serviços e reutilizando o volume...", flush=True)
             compose("down")
             compose("up", "--detach", "api", "app")
@@ -152,6 +165,7 @@ def verify(mode):
             raise
         finally:
             compose("down", "--volumes", "--rmi", "local")
+            subprocess.run(["docker", "run", "--rm", "-v", f"{staging}:/work", "golang:1.26-bookworm", "chmod", "-R", "a+rwX", "/work"], check=False, capture_output=True)
 
 
 if __name__ == "__main__":

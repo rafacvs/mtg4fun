@@ -75,6 +75,9 @@ func newEnvironment(t *testing.T) *environment {
 	e.sql("CREATE DATABASE " + e.db)
 	e.sql("CREATE USER '" + e.db + "'@'%' IDENTIFIED BY '" + mysqlEnvironment["DB_PASSWORD"] + "'; GRANT ALL ON " + e.db + ".* TO '" + e.db + "'@'%'")
 	t.Cleanup(func() { e.sql("DROP DATABASE " + e.db + "; DROP USER '" + e.db + "'@'%'") })
+	if output, err := e.command("migrate", "up").CombinedOutput(); err != nil {
+		t.Fatalf("aplicar migrations: %v; %s", err, output)
+	}
 	if err := os.Mkdir(e.web, 0700); err != nil {
 		t.Fatal(err)
 	}

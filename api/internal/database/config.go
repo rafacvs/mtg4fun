@@ -37,6 +37,7 @@ func ConfigFromEnvironment() (*mysql.Config, time.Duration, error) {
 	config.User = value("DB_USER", "mtg4fun")
 	config.Passwd = os.Getenv("DB_PASSWORD")
 	config.DBName = value("DB_NAME", "mtg4fun")
+	config.ParseTime = true
 	if config.Passwd == "" {
 		return nil, 0, errors.New("DB_PASSWORD é obrigatório")
 	}

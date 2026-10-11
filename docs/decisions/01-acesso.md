@@ -125,6 +125,8 @@ embutido no executável a partir de `schema.sql`, sem mudança de tabelas ou
 migração de dados. `httpserver` recebe o handler de autenticação, aplica
 proteções compartilhadas e serve o frontend compilado. No cliente, as telas,
 o estado de autenticação, o contrato HTTP e os estilos têm arquivos próprios.
+Essa descrição é histórica; o esquema atual é aplicado por migrations
+versionadas, conforme [a decisão posterior](21-migrations-e-worktrees.md).
 
 Os endpoints e suas mensagens, cookies, hash de senhas e transações permanecem iguais.
 O desenvolvimento local do backend passa a usar `api/` como diretório de

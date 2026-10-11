@@ -127,7 +127,8 @@
 ## Worktrees e ambientes independentes
 
 - Para tarefas paralelas, use uma worktree por tarefa. `scripts/worktree.sh`
-  cria branches `work/<nome>` e checkouts em `../mtg4fun-worktrees/<nome>`:
+  cria branches `work/<nome>`, checkouts em `../mtg4fun-worktrees/<nome>` e
+  uma cópia isolada do MySQL local. O banco principal deve estar em execução:
 
   ```bash
   ./scripts/worktree.sh create <nome> master
@@ -146,5 +147,8 @@
   contornar essa proteção.
 - Instale dependências por checkout. Quando houver serviços locais, mantenha
   portas, arquivos de ambiente, bancos e volumes independentes por worktree.
-  Use projetos Compose e portas distintos em cada ambiente; configuração e
-  histórico do Git são compartilhados entre worktrees.
+  Use o `.env` gerado por `worktree.sh`: ele define projeto Compose e portas
+  distintos. Não o substitua pela cópia do `.env` principal. As worktrees
+  existentes podem ser preparadas com `scripts/worktree.sh isolate <nome>`.
+  Configuração e histórico do Git são compartilhados entre worktrees; dados
+  alterados depois da cópia do banco não são sincronizados.

@@ -25,7 +25,8 @@ test('React atualiza no navegador e Go reinicia preservando a sessão', async ({
     await page.getByLabel('Login', { exact: true }).fill('amigo');
     await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
     await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Boas-vindas, Amigo da mesa.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Lobby', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sair', exact: true })).toBeVisible();
     writeFileSync(goFile, goSource.replace('Origem não permitida.', 'Recarga Go confirmada.'));
     await expect.poll(async () => {
       try {
@@ -34,7 +35,8 @@ test('React atualiza no navegador e Go reinicia preservando a sessão', async ({
       } catch { return 'API reiniciando'; }
     }, { timeout: 60_000 }).toBe('Recarga Go confirmada.');
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Boas-vindas, Amigo da mesa.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Lobby', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sair', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Sair', exact: true }).click();
     await expect(page.getByLabel('Login', { exact: true })).toBeVisible();
   } finally {
