@@ -38,7 +38,13 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await page.goto(`/#/salas/${roomId}`);
     await other.goto(`/#/salas/${roomId}`);
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
+    const openActions = async () => {
+      if (!(await page.getByRole('dialog', { name: 'Ações do jogo' }).isVisible())) await activate(page.getByRole('button', { name: 'Ações', exact: true }));
+    };
+    const closeActions = () => activate(page.getByRole('button', { name: 'Fechar ações', exact: true }));
+    await openActions();
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
+    await closeActions();
     const drawn = hand.getByRole('button', { name: 'Island', exact: true });
     await expect(drawn).toHaveCount(1);
     await expect(drawn.locator('img')).toBeVisible();
@@ -52,7 +58,9 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await expect(page.getByRole('article', { name: `Mesa de ${name}`, exact: true })).toBeVisible();
       await expect(drawn).toBeVisible();
     }
+    await openActions();
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
+    await closeActions();
     await expect(drawn).toHaveCount(2);
     await expect(page.getByRole('article', { name: 'Mesa de Amigo 6', exact: true })).toBeVisible();
     await expect(other.getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
@@ -68,7 +76,11 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     const graveyardBox = await graveyard.boundingBox();
     const exileBox = await exile.boundingBox();
     const commandBox = await command.boundingBox();
-    expect(libraryBox!.x).toBeGreaterThan(fieldBox!.x + fieldBox!.width * 0.45);
+    expect(fieldBox!.x).toBeGreaterThan(libraryBox!.x + libraryBox!.width - 4);
+    const logBox = await page.getByRole('region', { name: 'Registro da partida', exact: true }).boundingBox();
+    const handBox = await hand.boundingBox();
+    expect(logBox!.x).toBeGreaterThan(fieldBox!.x + fieldBox!.width * 0.45);
+    expect(handBox!.x + handBox!.width).toBeLessThanOrEqual(logBox!.x + 12);
     expect(graveyardBox!.y).toBeGreaterThan(libraryBox!.y + libraryBox!.height * 0.5);
     expect(exileBox!.y).toBeGreaterThan(graveyardBox!.y + graveyardBox!.height * 0.5);
     expect(commandBox!.y).toBeGreaterThan(exileBox!.y + exileBox!.height * 0.5);

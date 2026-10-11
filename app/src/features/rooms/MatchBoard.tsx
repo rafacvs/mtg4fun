@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card } from './roomsApi';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
+import { GameActions } from './GameActions';
 import { deckApi } from '../decks/deckApi';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
@@ -12,10 +13,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const { match, error, busy, unconfirmed, draw, move, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [focusId, setFocusId] = useState<number | null>(null);
-  const [showLog, setShowLog] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [preview, setPreview] = useState<Card | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const logRef = useRef<HTMLOListElement>(null);
   const closePreview = useCallback(() => setPreview(null), []);
+  const closeActions = useCallback(() => setActionsOpen(false), []);
+  useEffect(() => {
+    const list = logRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [match?.log.length]);
   const gesture: CardGesture = {
     onInspect: card => { if (!drag) setPreview(card); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
@@ -44,34 +51,35 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       </div>
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       <div className="table-stage">
-        <div className={`match-players ${focusId !== null ? 'has-focus' : ''}`}>{match.players.map(player =>
-          <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} />
-        )}</div>
-        <nav className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
-          <button key={player.userId} className="secondary" aria-pressed={player.userId === focused.userId} onClick={() => setFocusId(player.userId)}>
-            <strong>{player.name}</strong><span>{player.userId === match.viewerId ? 'Sua mesa · ' : ''}Vida {player.life}</span><span>Campo {player.battlefieldCount} · Mão {player.handCount}</span>
-          </button>
-        )}</nav>
+        <div className="table-main">
+          <div className={`match-players ${focusId !== null ? 'has-focus' : ''}`}>{match.players.map(player =>
+            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} />
+          )}</div>
+          <section className="own-dock" aria-label="Sua mão e ações">
+            <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+            <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => setActionsOpen(true)}>Ações</button>
+          </section>
+        </div>
+        <aside className="side-rail">
+          <nav className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
+            <button key={player.userId} className="secondary" aria-pressed={player.userId === focused.userId} onClick={() => setFocusId(player.userId)}>
+              <strong>{player.name}</strong><span>{player.userId === match.viewerId ? 'Sua mesa · ' : ''}Vida {player.life}</span><span>Campo {player.battlefieldCount} · Mão {player.handCount}</span>
+            </button>
+          )}</nav>
+          <section className="match-log" aria-label="Registro da partida">
+            <h2>Registro</h2>
+            <ol ref={logRef}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}</li>)}</ol>
+          </section>
+        </aside>
         {drag && ownHidden && <aside className="drag-own-column" aria-label="Suas zonas">
           <ZoneColumn player={own} viewerId={match.viewerId} droppable hoverZone={drag.zone} gesture={gesture} />
         </aside>}
       </div>
-      <section className="own-dock" aria-label="Sua mão e ações">
-        <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
-        <section className="match-actions" aria-label="Ações da partida">
-          <div className="draw-controls"><label>Comprar <input aria-label="Quantidade para comprar" type="number" min="1" value={count} onChange={event => setCount(Number(event.target.value))} /></label>
-            <button disabled={busy || unconfirmed || !Number.isInteger(count) || count < 1} onClick={() => void draw(count)}>Comprar cartas</button>
-            <button className="secondary" onClick={() => setShowLog(!showLog)} aria-expanded={showLog}>Registro da partida</button>
-          </div>
-        </section>
-      </section>
-      {showLog && <section className="match-log" aria-label="Registro da partida"><header><h2>Registro</h2><button className="secondary" onClick={() => setShowLog(false)}>Fechar registro</button></header>
-        <ol>{match.log.map((entry, index) => <li key={index}>{describe(entry)}</li>)}</ol>
-      </section>}
       {drag && <div className="drag-ghost" style={{ left: drag.x, top: drag.y }} aria-hidden="true">
         <img src={deckApi.imageURL(drag.card.name)} alt="" />
       </div>}
     </div>
+    <GameActions open={actionsOpen} count={count} busy={busy} unconfirmed={unconfirmed} onCount={setCount} onDraw={() => void draw(count)} onClose={closeActions} />
     <CardPreview card={preview} onClose={closePreview} />
   </section>;
 }

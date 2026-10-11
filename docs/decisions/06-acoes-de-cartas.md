@@ -86,3 +86,13 @@ carta do topo — a última do array, porque o movimento acrescenta no fim — e
 quantidade. Abrir o restante da pilha não faz parte desta correção: nenhuma
 issue posterior define essa consulta. A imagem usa `GET /api/cards/image?name=`.
 A partida não envia texto de catálogo, então o popup mostra a imagem e o nome.
+
+Na revisão seguinte, o usuário pediu a coluna de zonas à esquerda do campo,
+a mão terminando alinhada com essa área, e o registro fixo à direita, abaixo
+das miniaturas, como uma lista com rolagem. Também pediu um botão de ações,
+flutuante no celular, abrindo um painel no formato da referência visual:
+compra com quantidade no topo e as demais jogadas em grade. Comprar funciona.
+Embaralhar, desvirar todas, dado, moeda, contadores e ficha aparecem
+desabilitados até as issues correspondentes. Desfazer compra, chat de
+conversa e conceder não entram: a spec não os inclui, e o registro já fica
+visível.
