@@ -1,6 +1,7 @@
 import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
 
-test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independentemente', async ({ page }) => {
+test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independentemente', async ({ page }, testInfo) => {
   test.setTimeout(45_000);
   const api = page.context().request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
@@ -32,12 +33,29 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   expect(Math.abs(first!.x - second!.x)).toBeLessThan(3);
   expect(Math.abs(first!.y - second!.y)).toBeLessThan(3);
 
-  await page.mouse.move(second!.x + second!.width / 2, second!.y + second!.height / 2);
-  await page.mouse.down();
   const fieldBox = await field.boundingBox();
-  await page.mouse.move(fieldBox!.x + 8, fieldBox!.y + fieldBox!.height / 2, { steps: 8 });
-  await page.mouse.up();
+  const target = { x: fieldBox!.x + 8, y: fieldBox!.y + fieldBox!.height / 3 };
+  if (testInfo.project.use.hasTouch) await dragWithTouch(page, second!, target);
+  else {
+    await page.mouse.move(second!.x + second!.width / 2, second!.y + second!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(target.x, target.y, { steps: 8 });
+    await page.mouse.up();
+  }
   await expect(fieldCards).toHaveCount(2);
   const moved = await fieldCards.nth(1).boundingBox();
   expect(Math.abs(first!.x - moved!.x)).toBeGreaterThan(10);
+  const rows = await field.locator('.positioned-card').evaluateAll(cards => cards.map(card => (card as HTMLElement).style.top));
+  expect(rows).toContain('33.333333333333336%');
 });
+
+async function dragWithTouch(page: Page, source: { x: number; y: number; width: number; height: number }, target: { x: number; y: number }) {
+  const session = await page.context().newCDPSession(page);
+  const start = { x: source.x + source.width / 2, y: source.y + source.height / 2, id: 1 };
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+  for (let step = 1; step <= 8; step += 1) {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (target.x - start.x) * step / 8, y: start.y + (target.y - start.y) * step / 8, id: 1 }] });
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await session.detach();
+}

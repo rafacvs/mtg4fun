@@ -117,6 +117,7 @@ function battlefieldPositionAt(x: number, y: number) {
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
+  if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
   if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
