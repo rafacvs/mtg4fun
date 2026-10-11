@@ -30,6 +30,8 @@ test('localiza e separa o comandante no comando sem revelar a consulta', async (
     await own.locator('.consult-cards label', { hasText: 'Fire // Ice' }).getByRole('checkbox').check();
     await activate(own.getByRole('button', { name: 'Mover comandante para comando' }));
     await expect(own.getByRole('region', { name: 'Comando', exact: true }).getByRole('button', { name: 'Fire // Ice', exact: true })).toBeVisible();
+	await activate(own.getByRole('button', { name: 'Fechar e embaralhar' }));
+	await expect(own.getByRole('button', { name: 'Consultar todo o grimório' })).toBeVisible();
     await activate(opponent.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
     const observed = opponent.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     await expect(observed.getByRole('region', { name: 'Comando', exact: true }).getByRole('button', { name: 'Fire // Ice', exact: true })).toBeVisible();

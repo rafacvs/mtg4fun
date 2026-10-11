@@ -60,7 +60,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           )}</div>
           <section className="own-dock" aria-label="Sua mão e ações">
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
-            <LibraryConsultation cards={own.consulted ?? []} busy={busy || unconfirmed} onConsult={(from, amount) => void consult(from, amount)} onMove={(ids, to, placement) => void move(ids, to, placement)} onReorder={ids => void reorder(ids)} onClose={(placement, shouldShuffle) => void closeConsultation(placement, shouldShuffle)} />
+            <LibraryConsultation
+              cards={own.consulted ?? []}
+              busy={busy || unconfirmed}
+              onConsult={(from, amount) => void consult(from, amount)}
+              onMove={(ids, to, placement) => void move(ids, to, placement)}
+              onReorder={ids => void reorder(ids)}
+              onClose={(placement, shouldShuffle) => void closeConsultation(placement, shouldShuffle)}
+            />
             <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => setActionsOpen(true)}>Ações</button>
           </section>
         </div>
