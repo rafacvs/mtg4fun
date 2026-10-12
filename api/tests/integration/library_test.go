@@ -14,6 +14,7 @@ type libraryCard struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Revealed bool   `json:"revealed"`
+	FaceDown bool   `json:"faceDown"`
 }
 
 type libraryPlayer struct {
@@ -138,6 +139,27 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	publicTop := libraryPlayers(t, action(owner, `"kind":"reveal","count":3`))[0]
 	if len(publicTop.Revealed) != 3 {
 		t.Fatal("revelação do topo ausente")
+	}
+	hiddenID := publicTop.Revealed[0].ID
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"reveal_cards","revealed":false,"cardIds":[%q]`, hiddenID)), 200)
+	seenHidden := libraryPlayers(t, read(opponent))[0]
+	for _, card := range append(seenHidden.Revealed, seenHidden.ExposedCards...) {
+		if card.ID == hiddenID {
+			t.Fatalf("ocultar manteve a carta da zona revelada: %+v", seenHidden)
+		}
+	}
+	if len(seenHidden.Revealed) != 2 {
+		t.Fatalf("revelação do topo incompleta após ocultar: %+v", seenHidden.Revealed)
+	}
+	held := libraryPlayers(t, read(owner))[0]
+	var concealed *libraryCard
+	for i := range held.Consulted {
+		if held.Consulted[i].ID == hiddenID {
+			concealed = &held.Consulted[i]
+		}
+	}
+	if concealed == nil || concealed.Revealed || concealed.FaceDown {
+		t.Fatalf("ocultar não preservou a consulta privada: %+v", held)
 	}
 	requireStatus(t, action(owner, `"kind":"reorder","cardIds":`+string(encoded)), 200)
 	requireStatus(t, action(owner, `"kind":"close","libraryPlacement":"bottom"`), 200)

@@ -80,9 +80,36 @@ func changeCardState(p *playerState, input matchAction) (actionLogPayload, error
 			}
 		}
 	}
+	if input.Kind == "reveal_cards" && !input.Revealed {
+		concealRevealedZone(p, ids)
+	}
 	result := ""
 	if input.Kind == "reveal_cards" && input.Revealed {
 		result = strings.Join(names, ", ")
 	}
 	return actionLogPayload{Kind: input.Kind, Count: len(cards), Result: result}, nil
+}
+
+// A top reveal lives in a public zone until the player returns it. Hiding moves
+// that card into the private consultation instead of leaving the name visible.
+func concealRevealedZone(p *playerState, ids []string) {
+	hidden := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		hidden[id] = true
+	}
+	kept := make([]Card, 0, len(p.Revealed))
+	for _, card := range p.Revealed {
+		if !hidden[card.ID] {
+			kept = append(kept, card)
+			continue
+		}
+		card.Zone = "consulted"
+		card.Revealed = false
+		p.Consulted = append(p.Consulted, card)
+	}
+	if len(kept) == 0 {
+		p.Revealed = nil
+	} else {
+		p.Revealed = kept
+	}
 }
