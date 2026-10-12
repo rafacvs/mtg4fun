@@ -67,19 +67,21 @@ type Card struct {
 	PositionX    int    `json:"positionX"`
 	Row          int    `json:"row"`
 	StackOrder   int    `json:"stackOrder"`
+	Revealed     bool   `json:"revealed,omitempty"`
 }
 type playerState struct {
-	UserID      int64  `json:"userId"`
-	Name        string `json:"name"`
-	Life        int    `json:"life"`
-	Library     []Card `json:"library"`
-	Hand        []Card `json:"hand"`
-	Battlefield []Card `json:"battlefield"`
-	Graveyard   []Card `json:"graveyard"`
-	Exile       []Card `json:"exile"`
-	Command     []Card `json:"command"`
-	Consulted   []Card `json:"consulted,omitempty"`
-	Revealed    []Card `json:"revealed,omitempty"`
+	UserID           int64  `json:"userId"`
+	Name             string `json:"name"`
+	Life             int    `json:"life"`
+	Library          []Card `json:"library"`
+	Hand             []Card `json:"hand"`
+	Battlefield      []Card `json:"battlefield"`
+	Graveyard        []Card `json:"graveyard"`
+	Exile            []Card `json:"exile"`
+	Command          []Card `json:"command"`
+	Consulted        []Card `json:"consulted,omitempty"`
+	Revealed         []Card `json:"revealed,omitempty"`
+	ConsultationFrom string `json:"consultationFrom,omitempty"`
 }
 type matchState struct {
 	RoomID         int64         `json:"roomId"`
@@ -115,6 +117,7 @@ type MatchPlayer struct {
 	Command          []VisibleCard `json:"command,omitempty"`
 	Consulted        []VisibleCard `json:"consulted,omitempty"`
 	Revealed         []VisibleCard `json:"revealed,omitempty"`
+	ConsultationFrom string        `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
 	ID           string `json:"id"`
@@ -125,6 +128,7 @@ type VisibleCard struct {
 	PositionX    int    `json:"positionX"`
 	Row          int    `json:"row"`
 	StackOrder   int    `json:"stackOrder"`
+	Revealed     bool   `json:"revealed,omitempty"`
 }
 type MatchLog struct {
 	ActorID   int64  `json:"actorId"`
@@ -139,7 +143,7 @@ type MatchLog struct {
 func visible(cards []Card) []VisibleCard {
 	out := make([]VisibleCard, len(cards))
 	for i, c := range cards {
-		out[i] = VisibleCard{c.ID, c.Name, c.OwnerID, c.ControllerID, c.Zone, c.PositionX, c.Row, c.StackOrder}
+		out[i] = VisibleCard{c.ID, c.Name, c.OwnerID, c.ControllerID, c.Zone, c.PositionX, c.Row, c.StackOrder, c.Revealed}
 	}
 	return out
 }
@@ -147,9 +151,15 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
 		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield), Graveyard: visible(v.Graveyard), Exile: visible(v.Exile), Command: visible(v.Command), Revealed: visible(v.Revealed)}
+		for _, card := range v.Consulted {
+			if card.Revealed {
+				p[i].Revealed = append(p[i].Revealed, visible([]Card{card})[0])
+			}
+		}
 		if v.UserID == viewerID {
 			p[i].Hand = visible(v.Hand)
 			p[i].Consulted = visible(v.Consulted)
+			p[i].ConsultationFrom = v.ConsultationFrom
 		}
 	}
 	current := Turn{}
