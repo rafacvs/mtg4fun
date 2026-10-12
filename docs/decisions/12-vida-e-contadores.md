@@ -21,10 +21,11 @@ não interpreta o que a cor significa, nem derrota, custo ou regra de Magic.
 - **Marcadores** do jogador abre uma tela só. Cada cor — vermelho, amarelo,
   verde, azul e roxo — é o primeiro elemento da linha, seguido de −, da
   quantidade e de +. Não há Definir nem outra tela por cor.
-- Na carta, **Poder e resistência** são dois campos na mesma linha, separados
-  por /, e aceitam inteiros negativos, como `-1/+4`. Não há botões. **Marcador**
-  usa as mesmas linhas de cor. O modificador aparece na carta quando não é
-  zero. Não existe o nome “+1/+1”.
+- Na carta, poder e resistência aparecem no diálogo aberto pelo clique:
+  dois campos na mesma linha, separados por /, aceitam inteiros negativos,
+  como `-1/+4`, e só gravam ao confirmar. **Marcador** continua numa tela
+  seguinte, com as mesmas linhas de cor. O modificador aparece na carta
+  quando não é zero. Não existe o nome “+1/+1”.
 
 O menu Ações volta a ser só a grade de intenções. Cada intenção que pede
 valor abre uma tela. Voltar fica no cabeçalho, à esquerda do título, na mesma

@@ -47,12 +47,12 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await press('Fechar ações');
     await press('Island');
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
-    await activate(preview.getByRole('button', { name: 'Poder e resistência', exact: true }));
     await preview.getByLabel('Poder').fill('-1');
     const toughnessAmount = preview.getByLabel('Resistência');
     await toughnessAmount.fill('4');
     await page.waitForTimeout(1_300);
     await expect(toughnessAmount).toBeFocused();
+    await activate(preview.getByRole('button', { name: 'Confirmar', exact: true }));
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+4', { exact: true })).toBeVisible();
     const otherPage = await observer.newPage();
     await otherPage.goto(`/#/salas/${room.id}`);

@@ -4,7 +4,7 @@ import { MarkerRows, PowerToughnessAdjust, type CounterOperation } from './Count
 import { CardStats } from './CounterValues';
 import type { Card, MarkerColor } from './roomsApi';
 
-type Step = 'view' | 'power' | 'markers';
+type Step = 'view' | 'markers';
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
 export function CardPreview({ card, editable, disabled, onCounter, onClose }: { card: Card | null; editable: boolean; disabled: boolean; onCounter: CardCounter; onClose: () => void }) {
@@ -29,7 +29,7 @@ export function CardPreview({ card, editable, disabled, onCounter, onClose }: { 
   }, [opened]);
 
   if (!card) return null;
-  const title = step === 'power' ? 'Poder e resistência' : step === 'markers' ? 'Marcador' : card.name;
+  const title = step === 'markers' ? 'Marcador' : card.name;
   const back = () => setStep('view');
   return <div className="card-preview-backdrop" onClick={onClose}>
     <div className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${card.name}`} onClick={event => event.stopPropagation()}>
@@ -43,12 +43,9 @@ export function CardPreview({ card, editable, disabled, onCounter, onClose }: { 
           ? <p role="status">A imagem não está disponível agora.</p>
           : <img src={deckApi.imageURL(card.name)} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
         <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
-        {editable && <div className="actions-grid">
-          <button type="button" disabled={disabled} onClick={() => setStep('power')}>Poder e resistência</button>
-          <button type="button" disabled={disabled} onClick={() => setStep('markers')}>Marcador</button>
-        </div>}
+        {editable && <PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
+        {editable && <button type="button" disabled={disabled} onClick={() => setStep('markers')}>Marcador</button>}
       </>}
-      {step === 'power' && editable && <PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
       {step === 'markers' && editable && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
     </div>
   </div>;
