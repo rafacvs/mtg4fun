@@ -20,7 +20,7 @@ export function CounterControls({ open, match, busy, error, unconfirmed, onRetry
   }
   const selected = cards.get(target);
   const numericValue = Number(value);
-  const canChange = !busy && !unconfirmed && (target === 'player' || Boolean(selected)) && Boolean(name.trim()) && name.trim().length <= 80 && value.trim() !== '' && Number.isSafeInteger(numericValue);
+  const canChange = !busy && !unconfirmed && (target === 'player' || Boolean(selected)) && Boolean(name.trim()) && [...name.trim()].length <= 80 && value.trim() !== '' && Number.isSafeInteger(numericValue);
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
@@ -48,7 +48,7 @@ export function CounterControls({ open, match, busy, error, unconfirmed, onRetry
       {target === 'player' && <span>Vida: {own.life}</span>}
       <CounterValues counters={target === 'player' ? own.counters : selected?.counters} />
     </div>
-    <label>Nome do contador<input value={name} maxLength={80} onChange={event => setName(event.target.value)} list="counter-names" /></label>
+    <label>Nome do contador<input value={name} onChange={event => setName(event.target.value)} list="counter-names" /></label>
     <datalist id="counter-names">{(target === 'player' ? ['Vida', ...Object.keys(own.counters ?? {})] : Object.keys(selected?.counters ?? {})).map(counter => <option key={counter} value={counter} />)}</datalist>
     <label>Valor do contador<input type="number" step="1" value={value} onChange={event => setValue(event.target.value)} /></label>
     <p>Definir substitui o valor. Incrementar soma ou subtrai; use um número negativo para diminuir.</p>

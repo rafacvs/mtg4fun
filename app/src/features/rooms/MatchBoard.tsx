@@ -28,6 +28,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const knownLogEntries = useRef(0);
   const closePreview = useCallback(() => setPreview(null), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
+  const closeCounters = useCallback(() => setCountersOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
   useEffect(() => {
@@ -136,7 +137,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreview(card)}
       onDismiss={closeLibrary}
     />
-    <CounterControls open={countersOpen} match={match} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onChange={counter} onClose={() => setCountersOpen(false)} />
+    <CounterControls open={countersOpen} match={match} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onChange={counter} onClose={closeCounters} />
     <GameActions onCounters={() => { setActionsOpen(false); setLibraryOpen(false); setCountersOpen(true); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
     <CardPreview card={preview} onClose={closePreview} />
   </section>;

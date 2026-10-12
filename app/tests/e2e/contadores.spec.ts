@@ -14,9 +14,12 @@ test('vida e contadores de jogador e carta pelo painel com mouse ou toque', asyn
     expect((await observer.request.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
     const otherDeck = await observer.request.post('/api/decks', { multipart: { file: { name: 'outro.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Outro</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
     expect(otherDeck.status()).toBe(201);
+    const otherDeckID = (await otherDeck.json()).deck.id;
     expect((await observer.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
-    expect((await observer.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: (await otherDeck.json()).deck.id } })).ok()).toBe(true);
+    expect((await observer.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: otherDeckID } })).ok()).toBe(true);
     expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);
+    expect((await observer.request.delete(`/api/decks/${otherDeckID}`)).status()).toBe(204);
     expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);
     await page.goto(`/#/salas/${room.id}`);
     const press = async (name: string) => {
