@@ -29,8 +29,9 @@ specs ainda têm entregas próprias pendentes.
 
 O menu do grimório oferece comprar, embaralhar diretamente, olhar cartas do
 topo/fundo em privado, buscar no grimório inteiro e revelar cartas. Durante
-a consulta, selecione cartas para mover ou revelar e reordene por arraste ou
-setas. Devolva as restantes ao topo/fundo na ordem exibida, com ou sem
+a consulta, clique na linha para selecionar cartas para mover ou revelar,
+na imagem para ampliá-la e arraste pela alça à esquerda para reordenar.
+Devolva as restantes ao topo/fundo na ordem exibida, com ou sem
 embaralhamento explícito. Fechar o painel mantém a consulta em andamento para
 retomar, inclusive após recarregar a página. As cartas reveladas aparecem para
 todos até serem movidas ou devolvidas; as demais continuam privadas. Essas

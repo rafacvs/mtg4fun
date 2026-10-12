@@ -242,7 +242,7 @@ export function LibraryConsultation(props: Props) {
             )}
             {!searching && (
               <p className="library-order">
-                Ordem no grimório: primeira → última · Reordene arrastando ou pelas setas.
+                Ordem no grimório: primeira → última · Arraste pela alça à esquerda da imagem.
               </p>
             )}
             <LibraryCards

@@ -20,6 +20,11 @@ mecânicas ou interpretar texto de cartas, e que a devolução deve permitir top
 ou fundo respeitando a ordem definida pelo jogador. Exigiu copiar os dados de
 desenvolvimento sem alterar o banco original.
 
+No refinamento seguinte, o usuário rejeitou as setas visíveis e pediu uma alça
+de arraste à esquerda da imagem, seleção ao clicar na linha (sem ícone de +)
+e ampliação ao clicar na imagem (sem botão separado). Essa solicitação substitui
+esses detalhes da proposta inicial, mantendo as operações e contratos aprovados.
+
 Essa autorização é limitada à interface/operações do grimório descritas aqui.
 Não contempla as demais ações da issue 11, novas dependências, infraestrutura,
 motor de regras ou mudanças no mecanismo de autenticação/transporte.
@@ -30,9 +35,10 @@ motor de regras ou mudanças no mecanismo de autenticação/transporte.
   também fica disponível em Ações, sem exigir consulta prévia. Com uma consulta
   pendente, Ações oferece retomá-la para finalizar seu destino explicitamente.
 - Olhar topo/fundo configura quantidade; buscar abre o grimório inteiro com
-  filtro por nome e seleção restrita aos resultados. Imagens selecionam cartas;
-  Ampliar abre a consulta individual. Seleções são movidas na ordem exibida.
-- Setas e arraste reordenam a sequência persistida. A primeira carta exibida
+  filtro por nome e seleção restrita aos resultados. Clicar na linha seleciona;
+  clicar na imagem abre a consulta individual. Seleções são movidas na ordem exibida.
+- A alça à esquerda da imagem reordena por arraste com mouse ou toque; teclas
+  de direção na alça mantêm uma alternativa acessível. A primeira carta exibida
   é a primeira do bloco devolvido, tanto no topo quanto no fundo. Botões
   distintos devolvem com ou sem embaralhamento, sem opção implícita no fechamento.
 - O × e Escape recolhem o painel. Cartas e contexto continuam persistidos;

@@ -139,6 +139,11 @@
   flex-direction: column;
 }
 .library-card {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
   position: relative;
   border: 1px solid #405242;
   border-radius: 10px;
@@ -155,7 +160,35 @@
   box-shadow: 0 0 0 2px #f1cd83;
   background: #304331;
 }
-.library-select {
+.library-card.dragging {
+  opacity: 0.55;
+}
+.library-card.drag-target {
+  outline: 2px dashed #f1cd83;
+  outline-offset: 2px;
+}
+.library-card:focus-visible {
+  outline: 2px solid #f1cd83;
+  outline-offset: 2px;
+}
+.library-drag-handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-self: stretch;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #b6c3b7;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.library-drag-handle:active {
+  cursor: grabbing;
+}
+.library-image {
   position: relative;
   display: block;
   width: 100%;
@@ -167,7 +200,7 @@
   overflow: hidden;
   background: #203327;
 }
-.library-select img {
+.library-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -184,10 +217,10 @@
   font-size: 0.8rem;
   overflow-wrap: anywhere;
 }
-.library-check {
+.library-selected-mark {
   position: absolute;
   right: 5px;
-  top: 5px;
+  bottom: 5px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -197,12 +230,11 @@
   text-align: center;
   font-size: 16px;
 }
-.selected .library-check {
-  background: #e6c481;
-  color: #16291e;
-}
 .library-card-info {
   min-width: 0;
+}
+.library-strip .library-card-info {
+  grid-column: 2;
 }
 .library-card-info strong {
   display: block;
@@ -215,27 +247,15 @@
   font-size: 0.65rem;
   color: #d2c29b;
 }
-.library-card-controls {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.library-card-controls button {
-  min-height: 32px;
-  padding: 2px 7px;
-  font-size: 0.7rem;
-}
 .library-list .library-card {
-  display: flex;
+  grid-template-columns: 28px 48px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
-.library-list .library-select {
+.library-list .library-image {
   width: 48px;
-  flex: 0 0 48px;
 }
 .library-list .library-card-info {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -358,36 +378,25 @@
     gap: 4px;
   }
   .library-strip .library-card {
-    width: 176px;
-    flex-basis: 176px;
-    display: flex;
+    width: 200px;
+    flex-basis: 200px;
+    grid-template-columns: 28px 60px minmax(0, 1fr);
     align-items: center;
     gap: 5px;
   }
   .library-card {
     padding: 4px;
   }
-  .library-strip .library-select {
+  .library-strip .library-image {
     width: 60px;
-    flex: 0 0 60px;
     margin: 0;
   }
   .library-strip .library-card-info {
-    flex: 1;
-  }
-  .library-card-controls .text-button {
-    font-size: 0;
-  }
-  .library-card-controls .text-button::after {
-    content: '⤢';
-    font-size: 1rem;
+    grid-column: 3;
   }
   .library-card-info strong {
     font-size: 0.68rem;
     margin: 2px 0;
-  }
-  .library-card-controls button {
-    min-height: 28px;
   }
   .library-selection {
     padding: 4px 6px;
@@ -417,9 +426,11 @@
     min-height: 34px;
     padding: 5px 8px;
   }
-  .library-list .library-select {
+  .library-list .library-card {
+    grid-template-columns: 28px 34px minmax(0, 1fr);
+  }
+  .library-list .library-image {
     width: 34px;
-    flex-basis: 34px;
   }
   .library-menu button {
     padding: 8px 12px;
