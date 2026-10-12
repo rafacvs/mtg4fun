@@ -19,8 +19,8 @@ não interpreta o que a cor significa, nem derrota, custo ou regra de Magic.
   grande, − e +, e uma quantidade com Definir, Adicionar e Subtrair. Subtrair
   usa número positivo. Não há marcador ao lado.
 - **Marcadores** do jogador abre uma tela só. Cada cor — vermelho, amarelo,
-  verde, azul e roxo — é o primeiro elemento da linha, seguido da quantidade
-  e dos botões − e +. Não há Definir nem outra tela por cor.
+  verde, azul e roxo — é o primeiro elemento da linha, seguido de −, da
+  quantidade e de +. Não há Definir nem outra tela por cor.
 - Na carta, **Poder e resistência** são dois campos na mesma linha, separados
   por /, e aceitam inteiros negativos, como `-1/+4`. Não há botões. **Marcador**
   usa as mesmas linhas de cor. O modificador aparece na carta quando não é

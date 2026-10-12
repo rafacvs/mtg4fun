@@ -69,8 +69,8 @@ export function PowerToughnessAdjust({ power, toughness, disabled, onApply }: { 
 function MarkerRow({ name, color, value, disabled, onApply }: { name: string; color: MarkerColor; value: number; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
   return <div className="marker-row">
     <span className={`marker-dot marker-${color}`} aria-hidden="true" />
-    <strong className="marker-count">{value}</strong>
     <button type="button" className="secondary" aria-label={`Diminuir marcador ${name}`} disabled={disabled} onClick={() => void onApply(color, 'increment', -1)}>−</button>
+    <strong className="marker-count">{value}</strong>
     <button type="button" className="secondary" aria-label={`Aumentar marcador ${name}`} disabled={disabled} onClick={() => void onApply(color, 'increment', 1)}>+</button>
   </div>;
 }
