@@ -1,7 +1,7 @@
 import type { Card, Match } from './roomsApi';
 import { PlayingCard } from './PlayingCard';
 
-export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando' };
+export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando', consulted: 'consulta', revealed: 'cartas reveladas' };
 
 export type CardGesture = {
   onInspect: (card: Card) => void;

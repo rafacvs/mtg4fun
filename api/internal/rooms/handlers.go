@@ -105,6 +105,11 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
+	case "reveal":
+		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
 	case "close", "shuffle":
 		if input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")

@@ -18,6 +18,24 @@ func TestConsultationPreservesOrderWhenReorderedAndClosed(t *testing.T) {
 	}
 }
 
+func TestRevealShowsNamesToTheOtherPlayerInLibraryOrder(t *testing.T) {
+	owner := playerState{UserID: 1, Library: []Card{{ID: "a", Name: "Alpha", Zone: "library"}, {ID: "b", Name: "Beta", Zone: "library"}, {ID: "c", Name: "Gamma", Zone: "library"}}}
+	payload, err := revealCards(&owner, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if payload.Result != "Alpha, Beta" || len(owner.Library) != 1 || owner.Library[0].ID != "c" {
+		t.Fatalf("revelação: %+v %+v", payload, owner)
+	}
+	seen := matchState{Players: []playerState{owner, {UserID: 2}}}.view(2, nil)
+	if len(seen.Players[0].Revealed) != 2 || seen.Players[0].Revealed[0].Name != "Alpha" || seen.Players[0].Revealed[1].Name != "Beta" || seen.Players[0].LibraryCount != 1 {
+		t.Fatalf("o outro jogador não viu a ordem: %+v", seen.Players[0])
+	}
+	if len(seen.Players[0].Consulted) != 0 {
+		t.Fatal("consulta vazou na revelação")
+	}
+}
+
 func TestConsultationMovesSelectedCardWithoutDuplication(t *testing.T) {
 	p := &playerState{UserID: 1, Library: []Card{{ID: "commander", Name: "Comandante", ControllerID: 1, Zone: "library"}}}
 	if _, err := consultCards(p, matchAction{ConsultFrom: "all", Count: 1}); err != nil {

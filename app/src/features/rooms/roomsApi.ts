@@ -13,7 +13,7 @@ export type Match = {
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
-  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[] }[];
+  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[] }[];
   log: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
 export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string };
@@ -88,4 +88,5 @@ export const roomsApi = {
   consult: (id: number, consultFrom: 'all' | 'top' | 'bottom', count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'consult', consultFrom, count }),
   reorder: (id: number, cardIds: string[], intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reorder', cardIds }),
   closeConsultation: (id: number, placement: 'top' | 'bottom', shuffle: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: shuffle ? 'shuffle' : 'close', libraryPlacement: placement }),
+  reveal: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal', count }),
 };
