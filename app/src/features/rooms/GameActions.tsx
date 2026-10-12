@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 const laterActions = ['Desvirar todas', 'Criar ficha'];
 
@@ -18,10 +18,10 @@ type Props = {
   onShuffle: () => void;
   onLibrary: () => void;
   onClose: () => void;
-  onCounters: () => void;
+  playerCounters?: ReactNode;
 };
 
-export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onClose, onCounters }: Props) {
+export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onClose, playerCounters }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const canAct = !busy && !unconfirmed;
   const canDraw = canAct && Number.isInteger(count) && count >= 1;
@@ -59,6 +59,7 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
         </div>
         <button type="button" disabled={!canRoll} onClick={onRoll}>Rolar dado</button>
       </div>
+      {playerCounters}
       <div className="actions-grid">
         {consultationActive
           ? <button type="button" onClick={onLibrary}>Retomar consulta do grimório</button>
@@ -66,7 +67,6 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
         <button type="button" disabled={!canAct} onClick={onCoin}>Jogar moeda</button>
         <button type="button" disabled={!canAct} onClick={() => onTurn('next')}>Avançar turno</button>
         <button type="button" disabled={!canAct} onClick={() => onTurn('previous')}>Corrigir turno</button>
-        <button type="button" disabled={!canAct} onClick={onCounters}>Contadores</button>
         {laterActions.map(action => <button type="button" key={action} disabled>{action}</button>)}
       </div>
     </div>;

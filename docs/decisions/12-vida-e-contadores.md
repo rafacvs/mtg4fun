@@ -16,6 +16,21 @@ interpreta regras de Magic. Campos JSON opcionais no snapshot existente
 mantêm partidas antigas legíveis. Confirmar ou ajustar essa semântica
 continua com o usuário.
 
+## Aprovação explícita da interface
+
+Em 12 de outubro de 2026 o usuário aprovou a interface e o escopo dos nomes,
+depois de ver a tela em uso:
+
+- A vida fica no painel de ações, com − e + de 1 e, em “Outra quantidade”,
+  Definir, Adicionar e Subtrair. Subtrair usa um número positivo.
+- Contadores nomeados do jogador ficam numa lista separada nesse painel.
+  Contadores de carta ficam no diálogo aberto ao clicar na carta.
+- Um nome criado pelo jogador reaparece no seletor quando ele cria outro
+  contador na mesma partida, para reutilizar o texto exato. A lista é só
+  desse jogador e só dessa partida. Não entra num catálogo global, não
+  aparece para os outros jogadores e não continua numa partida seguinte.
+  O valor do contador em zona pública continua visível na mesa.
+
 ## Contrato e semântica
 
 `POST /api/rooms/{id}/match/actions` recebe `intentId` UUID e `kind: "counter"`,
@@ -42,5 +57,7 @@ evitando vazamento posterior quando a carta muda de visibilidade. Contadores
 de jogadores e a vida são públicos.
 
 O snapshot JSON recebe campos opcionais de contadores, compatíveis com
-partidas antigas, sem migration ou dependência nova. Interface e respostas
+partidas antigas, sem migration ou dependência nova. `counterNames` guarda,
+no jogador, os nomes que ele já usou naquela partida, exceto `Vida`, e a
+visão só inclui essa lista para o próprio jogador. Interface e respostas
 usam o estado confirmado e o polling já existente.

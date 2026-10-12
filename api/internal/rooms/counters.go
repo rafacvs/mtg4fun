@@ -38,6 +38,15 @@ func counterValue(current int64, input matchAction) (int64, error) {
 	return value, nil
 }
 
+func rememberCounterName(actor *playerState, name string) {
+	for _, existing := range actor.CounterNames {
+		if existing == name {
+			return
+		}
+	}
+	actor.CounterNames = append(actor.CounterNames, name)
+}
+
 func updateNamedCounter(counters *map[string]int64, input matchAction) (int64, error) {
 	value, err := counterValue((*counters)[input.CounterName], input)
 	if err != nil {
@@ -64,6 +73,9 @@ func changeCounter(m *matchState, actor *playerState, input matchAction) (action
 			}
 		} else {
 			value, err = updateNamedCounter(&actor.Counters, input)
+			if err == nil {
+				rememberCounterName(actor, input.CounterName)
+			}
 		}
 		return actionLogPayload{Kind: "counter", Result: fmt.Sprintf("%s = %d", input.CounterName, value)}, err
 	}
@@ -83,6 +95,9 @@ func changeCounter(m *matchState, actor *playerState, input matchAction) (action
 					return actionLogPayload{}, errCounterPermission
 				}
 				_, err := updateNamedCounter(&card.Counters, input)
+				if err == nil {
+					rememberCounterName(actor, input.CounterName)
+				}
 				return actionLogPayload{Kind: "counter", Result: "contador de carta alterado"}, err
 			}
 		}

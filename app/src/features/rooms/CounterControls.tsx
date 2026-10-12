@@ -1,57 +1,87 @@
-import { useEffect, useRef, useState } from 'react';
-import type { Card, CounterAction, Match } from './roomsApi';
-import { CounterValues } from './CounterValues';
-import { zoneNames } from './PlayerTable';
-import './counters.css';
+import { useState } from 'react';
+import type { CounterAction } from './roomsApi';
 
-type Props = { open: boolean; match: Match; busy: boolean; error: string; unconfirmed: boolean; onRetry: () => Promise<boolean>; onChange: (input: CounterAction) => Promise<boolean>; onClose: () => void };
+type Operation = 'set' | 'increment';
+type Apply = (operation: Operation, value: number) => Promise<boolean>;
 
-export function CounterControls({ open, match, busy, error, unconfirmed, onRetry, onChange, onClose }: Props) {
-  const [target, setTarget] = useState('player');
-  const [name, setName] = useState('Vida');
+function AmountFields({ label, disabled, onApply }: { label: string; disabled: boolean; onApply: Apply }) {
   const [value, setValue] = useState('1');
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const own = match.players.find(player => player.userId === match.viewerId)!;
-  const cards = new Map<string, Card>();
-  for (const player of match.players) {
-    for (const card of [...player.hand ?? [], ...player.battlefield ?? [], ...player.graveyard ?? [], ...player.exile ?? [], ...player.command ?? [], ...player.consulted ?? [], ...player.revealed ?? []]) {
-      if ((card.zone === 'battlefield' ? card.controllerId : card.ownerId) === match.viewerId) cards.set(card.id, card);
-    }
-  }
-  const selected = cards.get(target);
-  const numericValue = Number(value);
-  const canChange = !busy && !unconfirmed && (target === 'player' || Boolean(selected)) && Boolean(name.trim()) && [...name.trim()].length <= 80 && value.trim() !== '' && Number.isSafeInteger(numericValue);
-  useEffect(() => {
-    if (!open) return;
-    closeRef.current?.focus();
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  }, [open, onClose]);
-
-  if (!open) return null;
-  const change = (operation: 'set' | 'increment') => {
-    if (!canChange) return;
-    const input: CounterAction = target === 'player'
-      ? { target: 'player', playerId: match.viewerId, name: name.trim(), operation, value: numericValue }
-      : { target: 'card', cardId: target, name: name.trim(), operation, value: numericValue };
-    void onChange(input);
-  };
-  return <div className="actions-panel counter-panel" role="dialog" aria-label="Vida e contadores">
-    <header><h2>Vida e contadores</h2><button ref={closeRef} className="secondary" aria-label="Fechar contadores" onClick={onClose}>×</button></header>
-    {error && <p role="alert">{error}{unconfirmed && <button disabled={busy} onClick={() => void onRetry()}>Tentar novamente</button>}</p>}
-    <label>Alvo do contador<select value={target} onChange={event => setTarget(event.target.value)}>
-      <option value="player">Você · {own.name}</option>
-      {[...cards.values()].map((card, index) => <option key={card.id} value={card.id}>{card.name} · {zoneNames[card.zone]} · {index + 1}</option>)}
-    </select></label>
-    <div className="counter-current" aria-live="polite">
-      {target === 'player' && <span>Vida: {own.life}</span>}
-      <CounterValues counters={target === 'player' ? own.counters : selected?.counters} />
-    </div>
-    <label>Nome do contador<input value={name} onChange={event => setName(event.target.value)} list="counter-names" /></label>
-    <datalist id="counter-names">{(target === 'player' ? ['Vida', ...Object.keys(own.counters ?? {})] : Object.keys(selected?.counters ?? {})).map(counter => <option key={counter} value={counter} />)}</datalist>
-    <label>Valor do contador<input type="number" step="1" value={value} onChange={event => setValue(event.target.value)} /></label>
-    <p>Definir substitui o valor. Incrementar soma ou subtrai; use um número negativo para diminuir.</p>
-    <div className="actions-grid"><button disabled={!canChange} onClick={() => change('set')}>Definir</button><button disabled={!canChange} onClick={() => change('increment')}>Incrementar</button></div>
+  const numeric = Number(value);
+  const integer = value.trim() !== '' && Number.isSafeInteger(numeric);
+  const positive = integer && numeric > 0;
+  const apply = (operation: Operation, amount: number) => void onApply(operation, amount);
+  return <div className="draw-row">
+    <label>{label}<input aria-label={label} type="number" step="1" value={value} onChange={event => setValue(event.target.value)} /></label>
+    <button type="button" disabled={disabled || !integer} onClick={() => apply('set', numeric)}>Definir</button>
+    <button type="button" disabled={disabled || !positive} onClick={() => apply('increment', numeric)}>Adicionar</button>
+    <button type="button" disabled={disabled || !positive} onClick={() => apply('increment', -numeric)}>Subtrair</button>
   </div>;
+}
+
+function Stepper({ label, value, disabled, onStep }: { label: string; value: number; disabled: boolean; onStep: (delta: number) => void }) {
+  return <div className="draw-stepper">
+    <button type="button" className="secondary" aria-label={`Diminuir ${label}`} disabled={disabled} onClick={() => onStep(-1)}>−</button>
+    <strong className="life-value">{value}</strong>
+    <button type="button" className="secondary" aria-label={`Aumentar ${label}`} disabled={disabled} onClick={() => onStep(1)}>+</button>
+  </div>;
+}
+
+export function LifeControl({ life, playerId, disabled, onChange }: { life: number; playerId: number; disabled: boolean; onChange: (input: CounterAction) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false);
+  const apply: Apply = async (operation, value) => {
+    const ok = await onChange({ target: 'player', playerId, name: 'Vida', operation, value });
+    if (ok) setOpen(false);
+    return ok;
+  };
+  return <div className="counter-section">
+    <div className="draw-row">
+      <span>Vida</span>
+      <Stepper label="vida" value={life} disabled={disabled} onStep={delta => void apply('increment', delta)} />
+      <button type="button" aria-expanded={open} onClick={() => setOpen(value => !value)}>Outra quantidade</button>
+    </div>
+    {open && <AmountFields label="Quantidade de vida" disabled={disabled} onApply={apply} />}
+  </div>;
+}
+
+function CounterRow({ name, value, disabled, onApply }: { name: string; value: number; disabled: boolean; onApply: Apply }) {
+  const [open, setOpen] = useState(false);
+  const apply: Apply = async (operation, amount) => {
+    const ok = await onApply(operation, amount);
+    if (ok) setOpen(false);
+    return ok;
+  };
+  return <>
+    <div className="draw-row">
+      <span>{name}</span>
+      <Stepper label={name} value={value} disabled={disabled} onStep={delta => void apply('increment', delta)} />
+      <button type="button" aria-expanded={open} onClick={() => setOpen(current => !current)}>Outra quantidade</button>
+    </div>
+    {open && <AmountFields label="Valor do contador" disabled={disabled} onApply={apply} />}
+  </>;
+}
+
+export function NamedCounters({ title, counters, names, disabled, onChange }: { title: string; counters?: Record<string, number>; names: string[]; disabled: boolean; onChange: (name: string, operation: Operation, value: number) => Promise<boolean> }) {
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState('');
+  const [custom, setCustom] = useState('');
+  const name = (picked || custom).trim();
+  const valid = [...name].length > 0 && [...name].length <= 80;
+  const create: Apply = async (operation, value) => {
+    const ok = await onChange(name, operation, value);
+    if (ok) { setOpen(false); setPicked(''); setCustom(''); }
+    return ok;
+  };
+  return <section className="counter-section" aria-label={title}>
+    <h3>{title}</h3>
+    {Object.entries(counters ?? {}).map(([counter, value]) => <CounterRow key={counter} name={counter} value={value} disabled={disabled} onApply={(operation, amount) => onChange(counter, operation, amount)} />)}
+    {!open && <button type="button" disabled={disabled} onClick={() => setOpen(true)}>Novo contador</button>}
+    {open && <div className="counter-create">
+      {names.length > 0 && <label>Nome já usado<select value={picked} onChange={event => setPicked(event.target.value)}>
+        <option value="">Novo nome</option>
+        {names.map(item => <option key={item} value={item}>{item}</option>)}
+      </select></label>}
+      {picked === '' && <label>Nome do contador<input value={custom} maxLength={80} onChange={event => setCustom(event.target.value)} /></label>}
+      <AmountFields label="Valor do contador" disabled={disabled || !valid} onApply={create} />
+    </div>}
+  </section>;
 }

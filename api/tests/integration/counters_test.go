@@ -58,10 +58,13 @@ func TestNamedCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
 	if view.Players[0].Hand[0].Counters["Segredo contador"] != 4 {
 		t.Fatal("contador carta não definido")
 	}
+	if !hasCounterName(view, view.ViewerID, "Veneno") || !hasCounterName(view, view.ViewerID, "Segredo contador") {
+		t.Fatalf("nomes usados na partida: %+v", view.Players)
+	}
 	requireStatus(t, e.request("POST", path, private, cookies[1], nil), 409)
 	opponent := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil)
 	requireStatus(t, opponent, 200)
-	if bytes.Contains(opponent.body, []byte("Segredo contador")) || bytes.Contains(opponent.body, []byte(cardID)) {
+	if bytes.Contains(opponent.body, []byte("Segredo contador")) || bytes.Contains(opponent.body, []byte(cardID)) || bytes.Contains(opponent.body, []byte("counterNames")) {
 		t.Fatalf("contador privado vazou: %s", opponent.body)
 	}
 	move := fmt.Sprintf(`{"intentId":"30000000-0000-4000-8000-000000000002","kind":"move","cardIds":[%q],"to":"battlefield"}`, cardID)
@@ -94,6 +97,9 @@ func TestNamedCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
 	if view.Players[0].Counters["Veneno"] != 10 || view.Players[0].Battlefield[0].Counters["Segredo contador"] != 3 || view.Players[0].Life != 32 {
 		t.Fatalf("não restaurou: %+v", view.Players[0])
 	}
+	if !hasCounterName(view, view.ViewerID, "Veneno") || !hasCounterName(view, view.ViewerID, "Segredo contador") {
+		t.Fatal("nomes do jogador não sobreviveram ao reinício")
+	}
 	for _, entry := range view.Log {
 		if strings.Contains(entry.Result, "Segredo contador") {
 			t.Fatal("nome privado vazou no log histórico")
@@ -102,12 +108,28 @@ func TestNamedCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
 }
 
 type counterPlayer struct {
-	UserID      int64          `json:"userId"`
-	Life        int            `json:"life"`
-	Counters    map[string]int `json:"counters"`
-	Hand        []counterCard  `json:"hand"`
-	Battlefield []counterCard  `json:"battlefield"`
+	UserID       int64          `json:"userId"`
+	Life         int            `json:"life"`
+	Counters     map[string]int `json:"counters"`
+	CounterNames []string       `json:"counterNames"`
+	Hand         []counterCard  `json:"hand"`
+	Battlefield  []counterCard  `json:"battlefield"`
 }
+
+func hasCounterName(view counterView, userID int64, name string) bool {
+	for _, player := range view.Players {
+		if player.UserID != userID {
+			continue
+		}
+		for _, existing := range player.CounterNames {
+			if existing == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type counterView struct {
 	ViewerID int64           `json:"viewerId"`
 	Players  []counterPlayer `json:"players"`
@@ -243,12 +265,22 @@ func TestCountersRespectControllerAndHiddenMetadata(t *testing.T) {
 	if view.Players[0].Battlefield[0].Counters["Nome oculto"] != 5 {
 		t.Fatal("controlador não recebeu contador")
 	}
-	// An observer distinct from owner/controller must receive no hidden metadata.
+	// An observer distinct from owner/controller must not see the counter on the face-down card.
+	// The name stays in the suggestion list of the player who created it, only in this match.
 	e.sql(fmt.Sprintf("UPDATE "+e.db+".matches SET snapshot=JSON_SET(snapshot,'$.players[0].battlefield[0].controllerId',%d) WHERE room_id=%d", players[0], id))
 	observer := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil)
 	requireStatus(t, observer, 200)
-	if bytes.Contains(observer.body, []byte("Nome oculto")) {
-		t.Fatalf("metadado oculto vazou: %s", observer.body)
+	hidden := decodeCounters(t, observer)
+	if hidden.Players[0].Battlefield[0].Counters["Nome oculto"] != 0 {
+		t.Fatalf("contador de carta oculta vazou: %+v", hidden.Players[0].Battlefield[0])
+	}
+	if !hasCounterName(hidden, hidden.ViewerID, "Nome oculto") {
+		t.Fatal("quem criou o nome não o reencontrou na partida")
+	}
+	owner := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil)
+	requireStatus(t, owner, 200)
+	if bytes.Contains(owner.body, []byte("counterNames")) {
+		t.Fatalf("lista de nomes vazou para outro jogador: %s", owner.body)
 	}
 	decodeCounters(t, e.request("POST", path, fmt.Sprintf(`{"intentId":"50000000-0000-4000-8000-000000000004","kind":"move","cardIds":[%q],"to":"hand"}`, cardID), cookies[0], nil))
 	// Outside the battlefield only ownership authorizes the counter change.

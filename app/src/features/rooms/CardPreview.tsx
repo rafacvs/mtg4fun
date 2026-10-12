@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { deckApi } from '../decks/deckApi';
+import { NamedCounters } from './CounterControls';
+import { CounterValues } from './CounterValues';
 import type { Card } from './roomsApi';
 
-export function CardPreview({ card, onClose }: { card: Card | null; onClose: () => void }) {
+export function CardPreview({ card, editable, names, disabled, onCounter, onClose }: { card: Card | null; editable: boolean; names: string[]; disabled: boolean; onCounter: (name: string, operation: 'set' | 'increment', value: number) => Promise<boolean>; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -26,6 +28,9 @@ export function CardPreview({ card, onClose }: { card: Card | null; onClose: () 
       {failed
         ? <p role="status">A imagem não está disponível agora.</p>
         : <img src={deckApi.imageURL(card.name)} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
+      {editable
+        ? <NamedCounters title="Contadores" counters={card.counters} names={names} disabled={disabled} onChange={onCounter} />
+        : <CounterValues counters={card.counters} />}
     </div>
   </div>;
 }

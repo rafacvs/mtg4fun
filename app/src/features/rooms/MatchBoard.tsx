@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Card } from './roomsApi';
+import type { Card, Match } from './roomsApi';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
-import { CounterControls } from './CounterControls';
+import { LifeControl, NamedCounters } from './CounterControls';
 import { GameActions } from './GameActions';
 import { LibraryConsultation } from './LibraryConsultation';
 import { deckApi } from '../decks/deckApi';
@@ -17,18 +17,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [countersOpen, setCountersOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [notice, setNotice] = useState('');
-  const [preview, setPreview] = useState<Card | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const thumbnailsRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
-  const closePreview = useCallback(() => setPreview(null), []);
+  const closePreview = useCallback(() => setPreviewId(null), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
-  const closeCounters = useCallback(() => setCountersOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
   useEffect(() => {
@@ -49,7 +47,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const gesture: CardGesture = {
-    onInspect: card => { if (!drag) setPreview(card); },
+    onInspect: card => { if (!drag) setPreviewId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
     onDragCancel: () => setDrag(null),
@@ -75,6 +73,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
   const consultationActive = Boolean(own.consultationFrom || own.consulted?.length || own.revealed?.length);
+  const preview = previewId ? findCard(match, previewId) : null;
   return <section className={`match-board ${drag ? 'dragging' : ''}`} aria-label="Mesa da partida">
     <div className="rotate-device" role="status"><strong>Gire o celular para jogar</strong><p>A mesa funciona na horizontal. Sua partida continua conectada.</p><a href="/#/salas">Voltar ao lobby</a></div>
     <div className="match-content">
@@ -134,13 +133,28 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onMove={move}
       onReorder={reorder}
       onClose={closeConsultation}
-      onInspect={card => setPreview(card)}
+      onInspect={card => setPreviewId(card.id)}
       onDismiss={closeLibrary}
     />
-    <CounterControls open={countersOpen} match={match} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onChange={counter} onClose={closeCounters} />
-    <GameActions onCounters={() => { setActionsOpen(false); setLibraryOpen(false); setCountersOpen(true); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
-    <CardPreview card={preview} onClose={closePreview} />
+    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} playerCounters={<>
+      <LifeControl life={own.life} playerId={own.userId} disabled={busy || unconfirmed} onChange={counter} />
+      <NamedCounters title="Seus contadores" counters={own.counters} names={own.counterNames ?? []} disabled={busy || unconfirmed} onChange={(name, operation, value) => counter({ target: 'player', playerId: own.userId, name, operation, value })} />
+    </>} />
+    <CardPreview card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} names={own.counterNames ?? []} disabled={busy || unconfirmed} onCounter={(name, operation, value) => preview ? counter({ target: 'card', cardId: preview.id, name, operation, value }) : Promise.resolve(false)} onClose={closePreview} />
   </section>;
+}
+
+function findCard(match: Match, id: string) {
+  for (const player of match.players) {
+    for (const card of [...player.hand ?? [], ...player.battlefield ?? [], ...player.graveyard ?? [], ...player.exile ?? [], ...player.command ?? [], ...player.consulted ?? [], ...player.revealed ?? []]) {
+      if (card.id === id) return card;
+    }
+  }
+  return null;
+}
+
+function canEditCounter(card: Card, viewerId: number) {
+  return (card.zone === 'battlefield' ? card.controllerId : card.ownerId) === viewerId;
 }
 
 function dropZoneAt(x: number, y: number) {

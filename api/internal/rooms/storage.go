@@ -76,6 +76,7 @@ type playerState struct {
 	Name             string           `json:"name"`
 	Life             int              `json:"life"`
 	Counters         map[string]int64 `json:"counters,omitempty"`
+	CounterNames     []string         `json:"counterNames,omitempty"`
 	Library          []Card           `json:"library"`
 	Hand             []Card           `json:"hand"`
 	Battlefield      []Card           `json:"battlefield"`
@@ -108,6 +109,7 @@ type MatchPlayer struct {
 	Name             string           `json:"name"`
 	Life             int              `json:"life"`
 	Counters         map[string]int64 `json:"counters,omitempty"`
+	CounterNames     []string         `json:"counterNames,omitempty"`
 	LibraryCount     int              `json:"libraryCount"`
 	HandCount        int              `json:"handCount"`
 	BattlefieldCount int              `json:"battlefieldCount"`
@@ -169,6 +171,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 			p[i].Hand = visible(v.Hand, viewerID)
 			p[i].Consulted = visible(v.Consulted, viewerID)
 			p[i].ConsultationFrom = v.ConsultationFrom
+			p[i].CounterNames = v.CounterNames
 		}
 	}
 	current := Turn{}
