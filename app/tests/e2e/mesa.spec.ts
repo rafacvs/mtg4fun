@@ -3,6 +3,38 @@ import type { BrowserContext, Locator } from '@playwright/test';
 
 const cardImage = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64');
 
+async function intersectsVisibleFocusNav(target: Locator) {
+  if (await target.count() === 0) return false;
+  return target.evaluate(element => {
+    const nav = element.closest('nav');
+    if (!(nav instanceof HTMLElement)) return false;
+    const elementRect = element.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    const top = Math.max(navRect.top + nav.clientTop, 0);
+    const left = Math.max(navRect.left + nav.clientLeft, 0);
+    const right = Math.min(navRect.left + nav.clientLeft + nav.clientWidth, window.innerWidth);
+    const bottom = Math.min(navRect.top + nav.clientTop + nav.clientHeight, window.innerHeight);
+    if (right <= left || bottom <= top || elementRect.width <= 0 || elementRect.height <= 0) return false;
+    return elementRect.left < right && elementRect.right > left && elementRect.top < bottom && elementRect.bottom > top;
+  });
+}
+
+async function scrollThumbnailOutOfFocusNav(thumbnail: Locator) {
+  await thumbnail.evaluate(button => {
+    const nav = button.closest('nav');
+    if (!(nav instanceof HTMLElement)) return;
+    const navRect = nav.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const visibleTop = navRect.top + nav.clientTop;
+    const buttonTop = nav.scrollTop + (buttonRect.top - visibleTop);
+    const buttonBottom = buttonTop + buttonRect.height;
+    const maxScroll = Math.max(0, nav.scrollHeight - nav.clientHeight);
+    const belowButton = buttonBottom + 1;
+    const next = belowButton <= maxScroll ? belowButton : Math.max(0, buttonTop - nav.clientHeight - 1);
+    nav.scrollTop = Math.min(maxScroll, next);
+  });
+}
+
 test('indica a atividade do participante certo quando nomes se repetem', async ({ browser, baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Coberto uma vez contra a API real.');
   const contexts: BrowserContext[] = [];
@@ -84,7 +116,11 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await page.setViewportSize({ width: 390, height: 844 });
       await expect(page.getByText('Gire o celular para jogar', { exact: true })).toBeVisible();
       await expect(hand).toBeHidden();
+      await activate(other.getByRole('button', { name: 'Ações', exact: true }));
+      await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+      await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
       await page.setViewportSize({ width: 844, height: 390 });
+      await expect(page.getByRole('region', { name: 'Registro da partida', exact: true })).toContainText(/Segundo amigo rolou D20: \d+\./);
       await expect(drawn).toBeVisible();
     }
     await expect(drawn.locator('img')).toBeVisible();
@@ -99,11 +135,17 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await expect(drawn).toBeVisible();
     }
     await openActions();
+    const secondThumbnail = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Segundo amigo/ });
+    if (testInfo.project.name === 'celular') {
+      await scrollThumbnailOutOfFocusNav(secondThumbnail);
+      await expect.poll(() => intersectsVisibleFocusNav(secondThumbnail)).toBe(false);
+    }
     await activate(other.getByRole('button', { name: 'Ações', exact: true }));
     await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+    const recentActivity = secondThumbnail.getByText('Atividade recente', { exact: true });
+    if (testInfo.project.name === 'celular') await expect.poll(() => intersectsVisibleFocusNav(recentActivity)).toBe(true);
+    else await expect(recentActivity).toBeVisible();
     await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
-    const secondThumbnail = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Segundo amigo/ });
-    await expect(secondThumbnail.getByText('Atividade recente', { exact: true })).toBeVisible();
     await expect(page.getByText('Observando:', { exact: false })).toContainText('Amigo 6');
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
     await closeActions();
