@@ -19,13 +19,12 @@ não interpreta o que a cor significa, nem derrota, custo ou regra de Magic.
   grande, − e +, e uma quantidade com Definir, Adicionar e Subtrair. Subtrair
   usa número positivo. Não há marcador ao lado.
 - **Marcadores** do jogador abre uma tela só. Cada cor — vermelho, amarelo,
-  verde, azul e roxo — fica numa linha, com −, quantidade, + e Definir na
-  frente do círculo. Não abre outra tela por cor.
-- Na carta, **Poder e resistência** é uma linha: quantidade de poder, /,
-  quantidade de resistência, e um único Definir, Adicionar e Subtrair.
-  **Marcador** usa as mesmas linhas de cor, sem sair do diálogo. Na carta, o
-  modificador aparece como `+2/+2` ou `-1/+0` quando não é zero. Não existe o
-  nome “+1/+1”.
+  verde, azul e roxo — é o primeiro elemento da linha, seguido da quantidade
+  e dos botões − e +. Não há Definir nem outra tela por cor.
+- Na carta, **Poder e resistência** são dois campos na mesma linha, separados
+  por /, e aceitam inteiros negativos, como `-1/+4`. Não há botões. **Marcador**
+  usa as mesmas linhas de cor. O modificador aparece na carta quando não é
+  zero. Não existe o nome “+1/+1”.
 
 O menu Ações volta a ser só a grade de intenções. Cada intenção que pede
 valor abre uma tela. Voltar fica no cabeçalho, à esquerda do título, na mesma

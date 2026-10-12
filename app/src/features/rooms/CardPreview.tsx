@@ -48,7 +48,7 @@ export function CardPreview({ card, editable, disabled, onCounter, onClose }: { 
           <button type="button" disabled={disabled} onClick={() => setStep('markers')}>Marcador</button>
         </div>}
       </>}
-      {step === 'power' && editable && <PowerToughnessAdjust disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
+      {step === 'power' && editable && <PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
       {step === 'markers' && editable && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
     </div>
   </div>;

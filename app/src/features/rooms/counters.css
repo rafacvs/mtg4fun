@@ -3,11 +3,10 @@
 .pt-line { display: flex; align-items: center; gap: 8px; }
 .pt-line input { width: 4.5rem; min-height: 40px; text-align: center; }
 .pt-slash { font-size: 1.4rem; font-weight: 800; line-height: 1; }
-.pt-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .marker-rows { display: grid; gap: 8px; }
-.marker-row { display: flex; align-items: center; gap: 8px; }
-.marker-row input { width: 3.5rem; min-height: 40px; text-align: center; }
-.marker-row .marker-dot { flex: 0 0 auto; }
+.marker-row { display: grid; grid-template-columns: 28px 2rem 36px 36px; align-items: center; justify-content: start; gap: 8px; }
+.marker-row .marker-dot { width: 28px; height: 28px; display: block; }
+.marker-count { font-variant-numeric: tabular-nums; text-align: right; }
 .life-figure, .adjust-value { display: inline-block; min-width: 3rem; text-align: center; font-variant-numeric: tabular-nums; }
 .life-figure { font-size: 2.75rem; line-height: 1; }
 .adjust-value { font-size: 1.6rem; line-height: 1; }
