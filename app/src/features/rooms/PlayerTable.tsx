@@ -19,6 +19,7 @@ type ZoneProps = {
   droppable: boolean;
   hoverZone: string | null;
   gesture: CardGesture;
+  onLibrary?: () => void;
 };
 
 function topCard(cards?: Card[]) {
@@ -29,15 +30,16 @@ function canDrag(card: Card, viewerId: number) {
   return card.controllerId === viewerId;
 }
 
-export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture, onFocus }: { player: Player; focused: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void }) {
+export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture, onFocus, onLibrary }: { player: Player; focused: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onLibrary?: () => void }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''}`} aria-label={`Mesa de ${player.name}`}>
     <header className="player-heading"><h2>{player.name}{own && <small> · Você</small>}</h2><span>Vida: {player.life}</span><button className="secondary" onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`}>Ampliar</button></header>
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
-        <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} />
+        <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} />
         <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} />
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
+      {Boolean(player.revealed?.length) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><span>Reveladas · Todos veem</span><div>{player.revealed!.map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
 }
@@ -52,10 +54,10 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
   </section>;
 }
 
-export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps) {
+export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary }: ZoneProps) {
   return <div className="zone-column">
     <CardSlot zone="command" title="Comandante" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
-    <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} />
+    <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} />
     <CardSlot zone="graveyard" title="Cemitério" count={player.graveyardCount} card={topCard(player.graveyard)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <CardSlot zone="exile" title="Exílio" count={player.exileCount} card={topCard(player.exile)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
   </div>;
@@ -100,10 +102,10 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZonePr
   </section>;
 }
 
-function LibraryPile({ count, droppable, hoverZone }: { count: number; droppable: boolean; hoverZone: string | null }) {
+function LibraryPile({ count, droppable, hoverZone, onOpen }: { count: number; droppable: boolean; hoverZone: string | null; onOpen?: () => void }) {
   return <section className={`table-zone zone-library ${droppable && hoverZone === 'library' ? 'drop-hover' : ''}`} aria-label="Grimório" data-drop-zone={droppable ? 'library' : undefined}>
     <header><span>Grimório</span><strong aria-label={`${count} cartas`}>{count}</strong></header>
-    <div className="library-stack" role="img" aria-label="Pilha do grimório"><span /><span /><span /></div>
+    <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}><span /><span /><span />{onOpen && <button className="library-open" aria-label="Abrir ações do grimório" onClick={onOpen} />}</div>
     {droppable && <button type="button" className={`library-bottom ${hoverZone === 'library-bottom' ? 'drop-hover' : ''}`} data-drop-zone="library-bottom" aria-label="Fundo do grimório">Fundo</button>}
   </section>;
 }

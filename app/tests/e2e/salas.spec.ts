@@ -148,7 +148,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
     source = target;
   }
   const returnedId = (await ownHand())[0].id;
-  await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), board.getByRole('img', { name: 'Pilha do grimório' }));
+  await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), board.getByRole('button', { name: 'Abrir ações do grimório' }));
   await expect(hand.getByRole('button')).toHaveCount(0);
   await buy('1');
   await closeActions();

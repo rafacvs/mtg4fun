@@ -118,6 +118,7 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	destination := zone(p, input.To)
 	for i := range cards {
 		cards[i].Zone = input.To
+		cards[i].Revealed = false
 		if input.To == "battlefield" {
 			cards[i].PositionX = (len(p.Battlefield) + i) * 80
 			cards[i].Row = 0
@@ -186,15 +187,30 @@ func consultCards(p *playerState, input matchAction) (actionLogPayload, error) {
 		cards[i].Zone = "consulted"
 	}
 	p.Consulted = cards
+	p.ConsultationFrom = input.ConsultFrom
 	return actionLogPayload{Kind: "consult", Count: len(cards)}, nil
 }
 
 func reorderConsulted(p *playerState, ids []string) (actionLogPayload, error) {
-	if len(ids) != len(p.Consulted) {
+	// Older clients can leave both kinds of temporary cards open. Combine
+	// them without losing visibility so their displayed order can be saved.
+	if len(p.Consulted) > 0 && len(p.Revealed) > 0 && len(ids) == len(p.Consulted)+len(p.Revealed) {
+		for _, card := range p.Revealed {
+			card.Zone = "consulted"
+			card.Revealed = true
+			p.Consulted = append(p.Consulted, card)
+		}
+		p.Revealed = nil
+	}
+	cards := &p.Consulted
+	if len(*cards) == 0 {
+		cards = &p.Revealed
+	}
+	if len(ids) != len(*cards) {
 		return actionLogPayload{}, errCardNotFound
 	}
-	byID := make(map[string]Card, len(p.Consulted))
-	for _, card := range p.Consulted {
+	byID := make(map[string]Card, len(*cards))
+	for _, card := range *cards {
 		byID[card.ID] = card
 	}
 	reordered := make([]Card, 0, len(ids))
@@ -206,7 +222,7 @@ func reorderConsulted(p *playerState, ids []string) (actionLogPayload, error) {
 		delete(byID, id)
 		reordered = append(reordered, card)
 	}
-	p.Consulted = reordered
+	*cards = reordered
 	return actionLogPayload{Kind: "reorder", Count: len(ids)}, nil
 }
 
@@ -214,15 +230,19 @@ func closeConsultation(p *playerState, placement string, shuffleLibrary bool) (a
 	if placement != "top" && placement != "bottom" {
 		return actionLogPayload{}, errCardNotFound
 	}
-	for i := range p.Consulted {
-		p.Consulted[i].Zone = "library"
+	cards := append(p.Consulted, p.Revealed...)
+	for i := range cards {
+		cards[i].Zone = "library"
+		cards[i].Revealed = false
 	}
 	if placement == "top" {
-		p.Library = append(p.Consulted, p.Library...)
+		p.Library = append(cards, p.Library...)
 	} else {
-		p.Library = append(p.Library, p.Consulted...)
+		p.Library = append(p.Library, cards...)
 	}
 	p.Consulted = []Card{}
+	p.Revealed = []Card{}
+	p.ConsultationFrom = ""
 	if shuffleLibrary {
 		if err := shuffle(p.Library); err != nil {
 			return actionLogPayload{}, err
@@ -241,10 +261,37 @@ func revealCards(p *playerState, count int) (actionLogPayload, error) {
 	names := make([]string, len(cards))
 	for i := range cards {
 		cards[i].Zone = "revealed"
+		cards[i].Revealed = true
 		names[i] = cards[i].Name
 	}
 	p.Revealed = append(p.Revealed, cards...)
+	p.ConsultationFrom = "top"
 	return actionLogPayload{Kind: "reveal", Count: len(cards), Result: strings.Join(names, ", ")}, nil
+}
+
+func revealSelection(p *playerState, ids []string) (actionLogPayload, error) {
+	seen := make(map[string]bool, len(ids))
+	names := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if seen[id] {
+			return actionLogPayload{}, errCardNotFound
+		}
+		seen[id] = true
+		found := false
+		for i := range p.Consulted {
+			card := &p.Consulted[i]
+			if card.ID == id {
+				card.Revealed = true
+				names = append(names, card.Name)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return actionLogPayload{}, errCardNotFound
+		}
+	}
+	return actionLogPayload{Kind: "reveal", Count: len(ids), Result: strings.Join(names, ", ")}, nil
 }
 
 func drawCards(p *playerState, count int) (actionLogPayload, error) {
@@ -344,7 +391,11 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	case "consult":
 		payload, err = consultCards(p, input)
 	case "reveal":
-		payload, err = revealCards(p, input.Count)
+		if len(input.CardIDs) > 0 {
+			payload, err = revealSelection(p, input.CardIDs)
+		} else {
+			payload, err = revealCards(p, input.Count)
+		}
 	case "reorder":
 		payload, err = reorderConsulted(p, input.CardIDs)
 	case "close":

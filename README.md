@@ -24,8 +24,18 @@ comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
 numa carta e escolha o destino na faixa inferior. A mão própria permanece
 disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
 celular usa orientação horizontal e miniaturas à direita. A partida atualiza
-a cada segundo. Arraste/posicionamento, seleção múltipla e as demais ações das
+a cada segundo. A seleção múltipla no campo e as demais ações das
 specs ainda têm entregas próprias pendentes.
+
+O menu do grimório oferece comprar, embaralhar diretamente, olhar cartas do
+topo/fundo em privado, buscar no grimório inteiro e revelar cartas. Durante
+a consulta, clique na linha para selecionar cartas para mover ou revelar,
+na imagem para ampliá-la e arraste pela alça à esquerda para reordenar.
+Devolva as restantes ao topo/fundo na ordem exibida, com ou sem
+embaralhamento explícito. Fechar o painel mantém a consulta em andamento para
+retomar, inclusive após recarregar a página. As cartas reveladas aparecem para
+todos até serem movidas ou devolvidas; as demais continuam privadas. Essas
+operações são manuais, sem automatizar mecânicas de Magic.
 
 ## Executar com Docker
 

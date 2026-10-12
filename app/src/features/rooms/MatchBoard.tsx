@@ -11,12 +11,13 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, reorder, closeConsultation, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState<Card | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
@@ -26,6 +27,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const closePreview = useCallback(() => setPreview(null), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
+  const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
   useEffect(() => {
     const list = logRef.current;
     if (list) list.scrollTop = list.scrollHeight;
@@ -69,6 +71,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const own = match.players.find(player => player.userId === match.viewerId)!;
   const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
+  const consultationActive = Boolean(own.consultationFrom || own.consulted?.length || own.revealed?.length);
   return <section className={`match-board ${drag ? 'dragging' : ''}`} aria-label="Mesa da partida">
     <div className="rotate-device" role="status"><strong>Gire o celular para jogar</strong><p>A mesa funciona na horizontal. Sua partida continua conectada.</p><a href="/#/salas">Voltar ao lobby</a></div>
     <div className="match-content">
@@ -78,15 +81,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <span className="turn-order">Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
       </div>
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
+      {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
           <div className={`match-players ${focusId !== null ? 'has-focus' : ''}`}>{match.players.map(player =>
-            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} />
+            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} />
           )}</div>
           <section className="own-dock" aria-label="Sua mão e ações">
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             <div className="dock-toggles">
-              <button type="button" className="actions-toggle" aria-expanded={libraryOpen} onClick={() => { setLibraryOpen(true); setActionsOpen(false); }}>Grimório</button>
+              <button type="button" className="actions-toggle" aria-label="Grimório" aria-expanded={libraryOpen} onClick={openLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
               <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
             </div>
           </section>
@@ -114,16 +118,23 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       open={libraryOpen}
       cards={own.consulted ?? []}
       revealed={own.revealed ?? []}
-      busy={busy || unconfirmed}
-      onConsult={(from, amount) => void consult(from, amount)}
-      onReveal={amount => void reveal(amount)}
-      onMove={(ids, to, placement) => void move(ids, to, placement)}
-      onReorder={ids => void reorder(ids)}
-      onClose={(placement, shouldShuffle) => void closeConsultation(placement, shouldShuffle)}
+      consultationFrom={own.consultationFrom}
+      libraryCount={own.libraryCount}
+      busy={busy}
+      error={error}
+      unconfirmed={unconfirmed}
+      onRetry={retry}
+      onConsult={consult}
+      onReveal={reveal}
+      onRevealSelection={revealSelection}
+      onDraw={draw}
+      onMove={move}
+      onReorder={reorder}
+      onClose={closeConsultation}
       onInspect={card => setPreview(card)}
       onDismiss={closeLibrary}
     />
-    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
+    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
     <CardPreview card={preview} onClose={closePreview} />
   </section>;
 }
