@@ -23,6 +23,7 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/ready", s.readyParticipant)
 	mux.HandleFunc("POST /api/rooms/{id}/start", s.startMatch)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
+	mux.HandleFunc("GET /api/rooms/{id}/match/tokens", s.listTokens)
 	mux.HandleFunc("POST /api/rooms/{id}/match/actions", s.applyMatchAction)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := s.requireUser(w, r); !ok {
@@ -54,6 +55,11 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		PositionX        int      `json:"x"`
 		Row              int      `json:"row"`
 		ConsultFrom      string   `json:"consultFrom"`
+		TokenName        string   `json:"tokenName"`
+		CustomName       string   `json:"name"`
+		Description      string   `json:"description"`
+		Power            string   `json:"power"`
+		Toughness        string   `json:"toughness"`
 	}
 	if err := decoder.Decode(&raw); err != nil {
 		httpserver.WriteError(w, 400, "Ação inválida.")
@@ -67,8 +73,37 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		httpserver.WriteError(w, 400, "intentId inválido.")
 		return matchAction{}, false
 	}
-	input := matchAction{IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs, To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction, CardID: raw.CardID, PositionX: raw.PositionX, Row: raw.Row, ConsultFrom: raw.ConsultFrom}
+	input := matchAction{
+		IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs,
+		To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction,
+		CardID: raw.CardID, PositionX: raw.PositionX, Row: raw.Row, ConsultFrom: raw.ConsultFrom,
+		TokenName: raw.TokenName, CustomName: strings.TrimSpace(raw.CustomName),
+		Description: raw.Description, Power: raw.Power, Toughness: raw.Toughness,
+	}
+	if input.Kind != "create-token" && input.TokenName != "" {
+		httpserver.WriteError(w, 400, "Ação inválida.")
+		return matchAction{}, false
+	}
+	if input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") {
+		httpserver.WriteError(w, 400, "Ação inválida.")
+		return matchAction{}, false
+	}
 	switch input.Kind {
+	case "create-custom-token":
+		if !validCustomToken(input) || !creationFieldsOnly(input) || input.CardID != "" {
+			httpserver.WriteError(w, 400, "Ficha personalizada inválida.")
+			return matchAction{}, false
+		}
+	case "copy-card":
+		if input.CardID == "" || !creationFieldsOnly(input) {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "create-token":
+		if input.TokenName == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
 	case "draw":
 		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")

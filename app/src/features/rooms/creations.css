@@ -1,0 +1,13 @@
+.creation-backdrop { position: fixed; inset: 0; z-index: 70; background: #0009; display: grid; place-items: center; padding: 8px; }
+.creation-panel { background: #172130; color: #f3f5f8; padding: 16px; border-radius: 12px; width: min(720px, 100%); max-height: calc(100dvh - 16px); overflow: auto; }
+.creation-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.creation-panel label { display: grid; gap: 4px; margin: 10px 0; }
+.creation-panel textarea { min-height: 72px; resize: vertical; font: inherit; }
+.creation-panel input, .creation-panel textarea { width: 100%; box-sizing: border-box; }
+.creation-panel form { border-top: 1px solid #526175; margin-top: 16px; }
+.token-results { list-style: none; margin: 12px 0; padding: 0; max-height: 230px; overflow: auto; }
+.token-results li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #526175; }
+.token-results img { width: 72px; height: 101px; object-fit: contain; }
+.token-stats { display: flex; gap: 12px; }
+.token-stats label { flex: 1; }
+.instance-text { white-space: pre-wrap; }

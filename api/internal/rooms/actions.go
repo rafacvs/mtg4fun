@@ -32,6 +32,11 @@ type matchAction struct {
 	CardID           string
 	PositionX        int
 	Row              int
+	TokenName        string
+	CustomName       string
+	Description      string
+	Power            string
+	Toughness        string
 	ConsultFrom      string
 }
 
@@ -382,6 +387,12 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	}
 	var payload actionLogPayload
 	switch input.Kind {
+	case "create-custom-token":
+		payload, err = addCreatedCard(p, Card{Name: input.CustomName, Text: input.Description, Power: input.Power, Toughness: input.Toughness, InstanceKind: "custom-token"}, input.Kind)
+	case "copy-card":
+		payload, err = s.copyCard(&m, p, input.CardID)
+	case "create-token":
+		payload, err = s.createCatalogToken(p, input.TokenName)
 	case "draw":
 		payload, err = drawCards(p, input.Count)
 	case "move":

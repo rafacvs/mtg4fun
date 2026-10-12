@@ -7,13 +7,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 )
 
 type Card struct {
-	Text     string
-	Token    bool
-	ImageURL string
+	Text      string
+	Token     bool
+	ImageURL  string
+	Power     string
+	Toughness string
 }
 
 type Catalog struct {
@@ -25,6 +28,9 @@ type datasetCard struct {
 	Text  string       `xml:"text"`
 	Token string       `xml:"token"`
 	Sets  []datasetSet `xml:"set"`
+	Prop  struct {
+		PT string `xml:"pt"`
+	} `xml:"prop"`
 }
 
 type datasetSet struct {
@@ -38,7 +44,8 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 	for _, path := range []string{cardsPath, tokensPath} {
 		if err := readDataset(path, func(card datasetCard) {
 			if _, ok := catalog.cards[card.Name]; !ok {
-				catalog.cards[card.Name] = Card{Text: card.Text, Token: card.Token == "1", ImageURL: imageURL(card.Sets)}
+				power, toughness, _ := strings.Cut(card.Prop.PT, "/")
+				catalog.cards[card.Name] = Card{Text: card.Text, Token: card.Token == "1", ImageURL: imageURL(card.Sets), Power: power, Toughness: toughness}
 			}
 		}); err != nil {
 			return nil, fmt.Errorf("catálogo %s: %w", path, err)
@@ -123,4 +130,20 @@ func readDataset(path string, accept func(datasetCard)) error {
 		return errors.New("XML de catálogo vazio ou incompleto")
 	}
 	return nil
+}
+
+// Tokens returns an ordered, bounded view of the shared token catalogue.
+func (c *Catalog) Tokens(query string) []string {
+	names := []string{}
+	query = strings.ToLower(query)
+	for name, card := range c.cards {
+		if card.Token && strings.Contains(strings.ToLower(name), query) {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	if len(names) > 100 {
+		names = names[:100]
+	}
+	return names
 }

@@ -9,10 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"mtg4fun/internal/auth"
 	"os"
 	"strconv"
 	"strings"
+
+	"mtg4fun/internal/auth"
+	"mtg4fun/internal/catalog"
 )
 
 const capacity = 6
@@ -59,15 +61,22 @@ type Turn struct {
 	Roll   int    `json:"roll"`
 }
 type Card struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	OwnerID      int64  `json:"ownerId"`
-	ControllerID int64  `json:"controllerId"`
-	Zone         string `json:"zone"`
-	PositionX    int    `json:"positionX"`
-	Row          int    `json:"row"`
-	StackOrder   int    `json:"stackOrder"`
-	Revealed     bool   `json:"revealed,omitempty"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	OwnerID      int64    `json:"ownerId"`
+	ControllerID int64    `json:"controllerId"`
+	Zone         string   `json:"zone"`
+	PositionX    int      `json:"positionX"`
+	Row          int      `json:"row"`
+	StackOrder   int      `json:"stackOrder"`
+	Revealed     bool     `json:"revealed,omitempty"`
+	Text         string   `json:"text,omitempty"`
+	Power        string   `json:"power,omitempty"`
+	Toughness    string   `json:"toughness,omitempty"`
+	ImageName    string   `json:"imageName,omitempty"`
+	InstanceKind string   `json:"instanceKind,omitempty"`
+	Faces        []string `json:"faces,omitempty"`
+	FaceIndex    int      `json:"faceIndex,omitempty"`
 }
 type playerState struct {
 	UserID           int64  `json:"userId"`
@@ -120,15 +129,22 @@ type MatchPlayer struct {
 	ConsultationFrom string        `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	OwnerID      int64  `json:"ownerId"`
-	ControllerID int64  `json:"controllerId"`
-	Zone         string `json:"zone"`
-	PositionX    int    `json:"positionX"`
-	Row          int    `json:"row"`
-	StackOrder   int    `json:"stackOrder"`
-	Revealed     bool   `json:"revealed,omitempty"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	OwnerID      int64    `json:"ownerId"`
+	ControllerID int64    `json:"controllerId"`
+	Zone         string   `json:"zone"`
+	PositionX    int      `json:"positionX"`
+	Row          int      `json:"row"`
+	StackOrder   int      `json:"stackOrder"`
+	Revealed     bool     `json:"revealed,omitempty"`
+	Text         string   `json:"text,omitempty"`
+	Power        string   `json:"power,omitempty"`
+	Toughness    string   `json:"toughness,omitempty"`
+	ImageName    string   `json:"imageName,omitempty"`
+	InstanceKind string   `json:"instanceKind,omitempty"`
+	Faces        []string `json:"faces,omitempty"`
+	FaceIndex    int      `json:"faceIndex,omitempty"`
 }
 type MatchLog struct {
 	ActorID   int64  `json:"actorId"`
@@ -143,7 +159,12 @@ type MatchLog struct {
 func visible(cards []Card) []VisibleCard {
 	out := make([]VisibleCard, len(cards))
 	for i, c := range cards {
-		out[i] = VisibleCard{c.ID, c.Name, c.OwnerID, c.ControllerID, c.Zone, c.PositionX, c.Row, c.StackOrder, c.Revealed}
+		out[i] = VisibleCard{
+			ID: c.ID, Name: c.Name, OwnerID: c.OwnerID, ControllerID: c.ControllerID,
+			Zone: c.Zone, PositionX: c.PositionX, Row: c.Row, StackOrder: c.StackOrder,
+			Revealed: c.Revealed, Text: c.Text, Power: c.Power, Toughness: c.Toughness,
+			ImageName: c.ImageName, InstanceKind: c.InstanceKind, Faces: c.Faces, FaceIndex: c.FaceIndex,
+		}
 	}
 	return out
 }
@@ -170,13 +191,18 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 }
 
 type Service struct {
-	db    *sql.DB
-	users *auth.Service
-	roll  func() (int, error)
+	db      *sql.DB
+	users   *auth.Service
+	roll    func() (int, error)
+	catalog *catalog.Catalog
 }
 
-func New(db *sql.DB, users *auth.Service) *Service {
-	return &Service{db: db, users: users, roll: configuredRoller()}
+func New(db *sql.DB, users *auth.Service, cards ...*catalog.Catalog) *Service {
+	s := &Service{db: db, users: users, roll: configuredRoller()}
+	if len(cards) > 0 {
+		s.catalog = cards[0]
+	}
+	return s
 }
 func configuredRoller() func() (int, error) {
 	values := strings.Split(os.Getenv("MTG4FUN_TEST_D20"), ",")

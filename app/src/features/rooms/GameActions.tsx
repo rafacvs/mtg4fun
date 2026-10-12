@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const laterActions = ['Desvirar todas', 'Contadores', 'Criar ficha'];
+const laterActions = ['Desvirar todas', 'Contadores'];
 
 type Props = {
   open: boolean;
@@ -18,9 +18,10 @@ type Props = {
   onShuffle: () => void;
   onLibrary: () => void;
   onClose: () => void;
+  onCreate: () => void;
 };
 
-export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onClose }: Props) {
+export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onClose, onCreate }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const canAct = !busy && !unconfirmed;
   const canDraw = canAct && Number.isInteger(count) && count >= 1;
@@ -65,6 +66,7 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
         <button type="button" disabled={!canAct} onClick={onCoin}>Jogar moeda</button>
         <button type="button" disabled={!canAct} onClick={() => onTurn('next')}>Avançar turno</button>
         <button type="button" disabled={!canAct} onClick={() => onTurn('previous')}>Corrigir turno</button>
+        <button type="button" disabled={!canAct} onClick={onCreate}>Criar ficha</button>
         {laterActions.map(action => <button type="button" key={action} disabled>{action}</button>)}
       </div>
     </div>;

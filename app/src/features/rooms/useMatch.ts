@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { roomsApi, UnconfirmedActionError, type Match } from './roomsApi';
+import { roomsApi, UnconfirmedActionError, type Match, type CustomToken } from './roomsApi';
 
 export function useMatch(roomId: number) {
   const [match, setMatch] = useState<Match | null>(null);
@@ -55,6 +55,18 @@ export function useMatch(roomId: number) {
   return {
     match, error: error || syncError, busy, unconfirmed,
     retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
+    createToken: (name: string) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.createToken(roomId, name, intentId));
+    },
+    createCustomToken: (token: CustomToken) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.createCustomToken(roomId, token, intentId));
+    },
+    copyCard: (cardId: string) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.copyCard(roomId, cardId, intentId));
+    },
     draw: (count: number) => {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.draw(roomId, count, intentId));

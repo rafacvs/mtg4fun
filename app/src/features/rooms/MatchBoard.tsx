@@ -3,19 +3,21 @@ import type { Card } from './roomsApi';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { GameActions } from './GameActions';
+import { CreateInstances } from './CreateInstances';
+import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
-import { deckApi } from '../decks/deckApi';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry, createToken, createCustomToken, copyCard } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [creationOpen, setCreationOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState<Card | null>(null);
@@ -25,6 +27,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const thumbnailsRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
   const closePreview = useCallback(() => setPreview(null), []);
+  const closeCreation = useCallback(() => setCreationOpen(false), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
@@ -111,7 +114,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         </aside>}
       </div>
       {drag && <div className="drag-ghost" style={{ left: drag.x, top: drag.y }} aria-hidden="true">
-        <img src={deckApi.imageURL(drag.card.name)} alt="" />
+        <img src={cardImageURL(drag.card)} alt="" />
       </div>}
     </div>
     <LibraryConsultation
@@ -134,8 +137,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreview(card)}
       onDismiss={closeLibrary}
     />
-    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
-    <CardPreview card={preview} onClose={closePreview} />
+    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} />
+    <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
+    <CardPreview card={preview} onClose={closePreview} busy={busy || unconfirmed} onCopy={id => void copyCard(id)} />
   </section>;
 }
 
@@ -173,6 +177,8 @@ function battlefieldPositionAt(x: number, y: number) {
 }
 
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
+  if (entry.kind === 'create-token' || entry.kind === 'create-custom-token') return `${entry.actorName} criou a ficha ${entry.result}.`;
+  if (entry.kind === 'copy-card') return `${entry.actorName} criou uma cópia de ${entry.result}.`;
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;

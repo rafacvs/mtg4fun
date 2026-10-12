@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { deckApi } from '../decks/deckApi';
+import { cardImageURL } from './cardImage';
 import type { Card } from './roomsApi';
 
 const dragThreshold = 8;
@@ -22,6 +22,7 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
   handlers.current = { onInspect, onDragMove, onDragEnd, onDragCancel };
 
   useEffect(() => () => stopTracking.current?.(), []);
+  useEffect(() => setFailed(false), [card.imageName, card.faceIndex, card.name]);
 
   function pointerDown(event: React.PointerEvent<HTMLButtonElement>) {
     if (!draggable || event.pointerType === 'mouse' && event.button !== 0) return;
@@ -72,6 +73,6 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
   >
     {failed
       ? <span className="card-fallback">{card.name}</span>
-      : <img src={deckApi.imageURL(card.name)} alt="" draggable={false} onError={() => setFailed(true)} />}
+      : <img src={cardImageURL(card)} alt="" draggable={false} onError={() => setFailed(true)} />}
   </button>;
 }
