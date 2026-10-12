@@ -14,7 +14,7 @@ export type Match = {
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
   players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[] }[];
-  log: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
+  log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
 export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string };
 

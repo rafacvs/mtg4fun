@@ -60,6 +60,7 @@
 .player-thumbnails { display: flex; flex-direction: column; gap: 6px; flex: 0 1 auto; max-height: calc(100% - 188px); overflow: auto; }
 .player-thumbnails button { flex-shrink: 0; padding: 9px 7px; text-align: left; font-size: .75rem; }
 .player-thumbnails strong, .player-thumbnails span { display: block; }
+.player-thumbnails .activity-indicator { display: inline-block; margin-left: 6px; color: #f6e2b6; font-size: .62rem; font-weight: 700; }
 .player-thumbnails button[aria-pressed=true] { border-color: #e6c481; background: #334d35; }
 .has-focus .player-table:not(.focused-table) { display: none; }
 .own-dock { flex-shrink: 0; max-height: 34%; display: flex; align-items: flex-end; gap: 8px; overflow: auto; border-top: 1px solid #687452; background: #18251c; padding: 6px 12px; }

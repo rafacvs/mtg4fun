@@ -19,13 +19,29 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [preview, setPreview] = useState<Card | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
+  const thumbnailsRef = useRef<HTMLElement>(null);
+  const knownLogEntries = useRef(0);
   const closePreview = useCallback(() => setPreview(null), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   useEffect(() => {
     const list = logRef.current;
     if (list) list.scrollTop = list.scrollHeight;
+  }, [match?.log.length]);
+  useEffect(() => {
+    if (!match) return;
+    const previousLength = knownLogEntries.current;
+    knownLogEntries.current = match.log.length;
+    if (previousLength === 0 || match.log.length <= previousLength) return;
+    const actorId = match.log.at(-1)?.actorId;
+    if (!actorId) return;
+    const index = match.players.findIndex(player => player.userId === actorId);
+    thumbnailsRef.current?.querySelectorAll('button')?.[index]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    setActivePlayerId(actorId);
+    const timeout = window.setTimeout(() => setActivePlayerId(null), 3_000);
+    return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const gesture: CardGesture = {
     onInspect: card => { if (!drag) setPreview(card); },
@@ -69,9 +85,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           </section>
         </div>
         <aside className="side-rail">
-          <nav className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
+          <nav ref={thumbnailsRef} className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
             <button key={player.userId} className="secondary" aria-pressed={player.userId === focused.userId} onClick={() => setFocusId(player.userId)}>
-              <strong>{player.name}</strong><span>{player.userId === match.viewerId ? 'Sua mesa · ' : ''}Vida {player.life}</span><span>Campo {player.battlefieldCount} · Mão {player.handCount}</span>
+              <strong>{player.name}{player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}</strong><span>{player.userId === match.viewerId ? 'Sua mesa · ' : ''}Vida {player.life}</span><span>Campo {player.battlefieldCount} · Mão {player.handCount}</span>
             </button>
           )}</nav>
           <section className="match-log" aria-label="Registro da partida">

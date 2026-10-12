@@ -120,6 +120,7 @@ type VisibleCard struct {
 	Zone         string `json:"zone"`
 }
 type MatchLog struct {
+	ActorID   int64  `json:"actorId"`
 	ActorName string `json:"actorName"`
 	Kind      string `json:"kind"`
 	From      string `json:"from,omitempty"`

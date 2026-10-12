@@ -881,8 +881,9 @@ func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 				Name string `json:"name"`
 			} `json:"currentTurn"`
 			Log []struct {
-				Kind   string `json:"kind"`
-				Result string `json:"result"`
+				ActorID int64  `json:"actorId"`
+				Kind    string `json:"kind"`
+				Result  string `json:"result"`
 			} `json:"log"`
 		} `json:"match"`
 	}
@@ -890,21 +891,24 @@ func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	var rollResult, coinResult, turnResult string
+	var rollActorID, coinActorID int64
 	rolls, coins, turns := 0, 0, 0
 	for _, entry := range view.Match.Log {
 		switch entry.Kind {
 		case "roll":
 			rolls++
 			rollResult = entry.Result
+			rollActorID = entry.ActorID
 		case "coin":
 			coins++
 			coinResult = entry.Result
+			coinActorID = entry.ActorID
 		case "turn":
 			turns++
 			turnResult = entry.Result
 		}
 	}
-	if rolls != 1 || coins != 1 || turns != 1 || len(view.Match.TurnOrder) != 2 || !strings.HasPrefix(rollResult, "D20: ") || coinResult != "Cara" && coinResult != "Coroa" || turnResult != "avançou para o turno de "+view.Match.TurnOrder[1].Name || view.Match.CurrentTurn.Name != view.Match.TurnOrder[1].Name {
+	if rolls != 1 || coins != 1 || turns != 1 || rollActorID == 0 || coinActorID == 0 || rollActorID == coinActorID || len(view.Match.TurnOrder) != 2 || !strings.HasPrefix(rollResult, "D20: ") || coinResult != "Cara" && coinResult != "Coroa" || turnResult != "avançou para o turno de "+view.Match.TurnOrder[1].Name || view.Match.CurrentTurn.Name != view.Match.TurnOrder[1].Name {
 		t.Fatalf("ações públicas: %s", turn.body)
 	}
 	e.stop()

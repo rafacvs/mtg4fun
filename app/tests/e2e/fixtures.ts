@@ -22,6 +22,7 @@ export const test = base.extend<{}, { appURL: string }>({
       execFileSync('go', ['build', '-o', executable, './cmd/mtg4fun'], { cwd: join(root, 'api') });
       execFileSync(executable, ['migrate', 'up'], { env: environment });
       execFileSync(executable, ['create-user', '--login', 'amigo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador'], { env: environment });
+      execFileSync(executable, ['create-user', '--login', 'homonimo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador'], { env: environment });
       execFileSync(executable, ['create-user', '--login', 'segundo', '--name', 'Segundo amigo', '--password', 'senha-do-navegador'], { env: environment });
       for (let index = 3; index <= 6; index += 1) {
         execFileSync(executable, ['create-user', '--login', `amigo${index}`, '--name', `Amigo ${index}`, '--password', 'senha-do-navegador'], { env: environment });
