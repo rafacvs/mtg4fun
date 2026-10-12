@@ -32,6 +32,10 @@ type matchAction struct {
 	CardID           string
 	PositionX        int
 	Row              int
+	Tapped           bool
+	FaceDown         bool
+	Revealed         bool
+	FaceIndex        int
 	ConsultFrom      string
 }
 
@@ -118,7 +122,6 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	destination := zone(p, input.To)
 	for i := range cards {
 		cards[i].Zone = input.To
-		cards[i].Revealed = false
 		if input.To == "battlefield" {
 			cards[i].PositionX = (len(p.Battlefield) + i) * 80
 			cards[i].Row = 0
@@ -233,7 +236,6 @@ func closeConsultation(p *playerState, placement string, shuffleLibrary bool) (a
 	cards := append(p.Consulted, p.Revealed...)
 	for i := range cards {
 		cards[i].Zone = "library"
-		cards[i].Revealed = false
 	}
 	if placement == "top" {
 		p.Library = append(cards, p.Library...)
@@ -382,6 +384,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	}
 	var payload actionLogPayload
 	switch input.Kind {
+	case "set_tapped", "untap_all", "set_face", "set_face_down", "reveal_cards":
+		payload, err = changeCardState(p, input)
 	case "draw":
 		payload, err = drawCards(p, input.Count)
 	case "move":

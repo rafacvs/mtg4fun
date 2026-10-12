@@ -8,22 +8,27 @@ type Props = {
   card: Card;
   draggable: boolean;
   onInspect: (card: Card) => void;
+  onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd, onDragCancel }: Props) {
+export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd, onDragCancel, onToggleTapped }: Props) {
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
+  const clickTimer = useRef<number | null>(null);
+  const pointerType = useRef('mouse');
   const suppressClick = useRef(false);
   const stopTracking = useRef<(() => void) | null>(null);
   const handlers = useRef({ onInspect, onDragMove, onDragEnd, onDragCancel });
   handlers.current = { onInspect, onDragMove, onDragEnd, onDragCancel };
 
-  useEffect(() => () => stopTracking.current?.(), []);
+  useEffect(() => () => { stopTracking.current?.(); if (clickTimer.current) window.clearTimeout(clickTimer.current); }, []);
+  useEffect(() => setFailed(false), [card.name, card.faceIndex]);
 
   function pointerDown(event: React.PointerEvent<HTMLButtonElement>) {
+    pointerType.current = event.pointerType;
     if (!draggable || event.pointerType === 'mouse' && event.button !== 0) return;
     stopTracking.current?.();
     suppressClick.current = false;
@@ -62,16 +67,25 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
 
   return <button
     type="button"
-    className={`playing-card ${draggable ? 'can-drag' : ''}`}
-    aria-label={card.name}
+    className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''}`}
+    aria-label={card.name || 'Carta face para baixo'}
+    data-tapped={Boolean(card.tapped)}
+    data-face-down={Boolean(card.faceDown)}
     onPointerDown={pointerDown}
-    onClick={() => {
+    onDoubleClick={() => {
+      if (clickTimer.current) window.clearTimeout(clickTimer.current);
+      if (draggable && card.zone === 'battlefield') onToggleTapped?.(card);
+    }}
+    onClick={event => {
       if (suppressClick.current) { suppressClick.current = false; return; }
-      handlers.current.onInspect(card);
+      if (clickTimer.current) window.clearTimeout(clickTimer.current);
+      if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse' && event.detail > 0) {
+        if (event.detail === 1) clickTimer.current = window.setTimeout(() => handlers.current.onInspect(card), 350);
+      } else handlers.current.onInspect(card);
     }}
   >
-    {failed
+    {card.faceDown || !card.name ? <span className="card-back">Face para baixo{card.revealed && <small>Revelada</small>}</span> : failed
       ? <span className="card-fallback">{card.name}</span>
-      : <img src={deckApi.imageURL(card.name)} alt="" draggable={false} onError={() => setFailed(true)} />}
+      : <img src={deckApi.imageURL(card.faces?.[card.faceIndex ?? 0] || card.name)} alt="" draggable={false} onError={() => setFailed(true)} />}
   </button>;
 }

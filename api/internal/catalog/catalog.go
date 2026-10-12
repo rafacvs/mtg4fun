@@ -14,6 +14,7 @@ type Card struct {
 	Text     string
 	Token    bool
 	ImageURL string
+	Faces    []string
 }
 
 type Catalog struct {
@@ -21,10 +22,17 @@ type Catalog struct {
 }
 
 type datasetCard struct {
-	Name  string       `xml:"name"`
-	Text  string       `xml:"text"`
-	Token string       `xml:"token"`
-	Sets  []datasetSet `xml:"set"`
+	Name    string       `xml:"name"`
+	Text    string       `xml:"text"`
+	Token   string       `xml:"token"`
+	Sets    []datasetSet `xml:"set"`
+	Related []struct {
+		Name   string `xml:",chardata"`
+		Attach string `xml:"attach,attr"`
+	} `xml:"related"`
+	Prop struct {
+		Side string `xml:"side"`
+	} `xml:"prop"`
 }
 
 type datasetSet struct {
@@ -35,10 +43,16 @@ type datasetSet struct {
 // Load reads both datasets. Like Cockatrice, the first definition of a repeated name wins.
 func Load(cardsPath, tokensPath string) (*Catalog, error) {
 	catalog := &Catalog{cards: map[string]Card{}}
+	relations := map[string][]string{}
 	for _, path := range []string{cardsPath, tokensPath} {
 		if err := readDataset(path, func(card datasetCard) {
 			if _, ok := catalog.cards[card.Name]; !ok {
-				catalog.cards[card.Name] = Card{Text: card.Text, Token: card.Token == "1", ImageURL: imageURL(card.Sets)}
+				catalog.cards[card.Name] = Card{Text: card.Text, Token: card.Token == "1", ImageURL: imageURL(card.Sets, card.Prop.Side)}
+				for _, related := range card.Related {
+					if related.Attach == "transform" {
+						relations[card.Name] = append(relations[card.Name], strings.TrimSpace(related.Name))
+					}
+				}
 			}
 		}); err != nil {
 			return nil, fmt.Errorf("catálogo %s: %w", path, err)
@@ -47,16 +61,34 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 	if len(catalog.cards) == 0 {
 		return nil, errors.New("catálogo vazio")
 	}
+	for name, related := range relations {
+		card := catalog.cards[name]
+		card.Faces = []string{name}
+		seen := map[string]bool{name: true}
+		for _, face := range related {
+			if _, exists := catalog.cards[face]; exists && !seen[face] {
+				card.Faces = append(card.Faces, face)
+				seen[face] = true
+			}
+		}
+		if len(card.Faces) > 1 {
+			catalog.cards[name] = card
+		}
+	}
 	return catalog, nil
 }
 
-func imageURL(sets []datasetSet) string {
+func imageURL(sets []datasetSet, side string) string {
+	face := "front"
+	if side == "back" {
+		face = "back"
+	}
 	for _, set := range sets {
 		if set.PicURL != "" {
 			return set.PicURL
 		}
 		if set.UUID != "" {
-			return "https://api.scryfall.com/cards/" + set.UUID + "?format=image&face=front"
+			return "https://api.scryfall.com/cards/" + set.UUID + "?format=image&face=" + face
 		}
 	}
 	return ""

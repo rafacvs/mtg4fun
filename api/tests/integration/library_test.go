@@ -22,6 +22,7 @@ type libraryPlayer struct {
 	LibraryCount     int           `json:"libraryCount"`
 	Consulted        []libraryCard `json:"consulted"`
 	Revealed         []libraryCard `json:"revealed"`
+	ExposedCards     []libraryCard `json:"exposedCards"`
 	Hand             []libraryCard `json:"hand"`
 }
 
@@ -118,8 +119,8 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	if closed.LibraryCount != initial.LibraryCount || closed.ConsultationFrom != "" || len(closed.Revealed) != 0 || len(closed.Consulted) != 0 {
 		t.Fatalf("finalização: %+v", closed)
 	}
-	if len(libraryPlayers(t, read(opponent))[0].Revealed) != 0 {
-		t.Fatal("exposição não terminou")
+	if exposed := libraryPlayers(t, read(opponent))[0].ExposedCards; len(exposed) != 1 || exposed[0].ID != selectedID {
+		t.Fatal("devolver encerrou revelação sem ocultar explicitamente")
 	}
 	bottom := action(owner, `"kind":"consult","consultFrom":"bottom","count":3`)
 	requireStatus(t, bottom, 200)

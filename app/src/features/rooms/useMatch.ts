@@ -54,6 +54,10 @@ export function useMatch(roomId: number) {
   }
   return {
     match, error: error || syncError, busy, unconfirmed,
+    cardState: (fields: Record<string, unknown>) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.cardState(roomId, fields, intentId));
+    },
     retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
     draw: (count: number) => {
       const intentId = crypto.randomUUID();

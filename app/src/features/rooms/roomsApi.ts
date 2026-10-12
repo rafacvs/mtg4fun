@@ -13,10 +13,10 @@ export type Match = {
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
-  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
+  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
-export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean };
+export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
   const response = await fetch(path, {
@@ -70,6 +70,7 @@ function subscribe(updates: Updates): () => void {
 
 export const roomsApi = {
   subscribe,
+  cardState: (id: number, fields: Record<string, unknown>, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, ...fields }),
   create: () => change('/api/rooms'),
   join: (id: number) => change(`/api/rooms/${id}/participants`),
   ready: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/ready`, 'PUT', { deckId }),

@@ -34,8 +34,15 @@ na imagem para ampliá-la e arraste pela alça à esquerda para reordenar.
 Devolva as restantes ao topo/fundo na ordem exibida, com ou sem
 embaralhamento explícito. Fechar o painel mantém a consulta em andamento para
 retomar, inclusive após recarregar a página. As cartas reveladas aparecem para
-todos até serem movidas ou devolvidas; as demais continuam privadas. Essas
+todos até ocultar sua revelação explicitamente, inclusive após mover/devolver;
+as demais continuam privadas. Essas
 operações são manuais, sem automatizar mecânicas de Magic.
+
+Clique/toque na carta abre controles de virar/desvirar no campo, face para
+baixo/cima, escolha entre faces preservadas do catálogo e revelar/ocultar.
+Duplo clique no próprio campo vira/desvira; **Desvirar todas** fica no menu
+**Ações**. Escolher um lado da carta e colocá-la face para baixo são estados
+independentes. Movimentos preservam esses estados e a revelação.
 
 ## Executar com Docker
 
