@@ -29,9 +29,11 @@ os fluxos reais de navegador, já exigidos pelo [AGENTS](../../AGENTS.md) e pela
 ## Aprovação explícita da interface
 
 Em 12 de outubro de 2026 o usuário aprovou a apresentação, depois de ver a
-tela: a janela usa o mesmo painel das ações e do grimório e começa pela
-escolha entre ficha do catálogo e ficha personalizada. A cópia independente
-permanece no diálogo da carta. O contrato de criação não muda.
+tela: a janela acompanha o conteúdo, com a moldura das ações, e começa pela
+escolha entre ficha do catálogo e ficha personalizada. Voltar fica no
+cabeçalho, à esquerda do título, e a miniatura do catálogo abre o mesmo
+diálogo de imagem das cartas. A cópia independente permanece no diálogo da
+carta. O contrato de criação não muda.
 
 ## Implementação e validação
 

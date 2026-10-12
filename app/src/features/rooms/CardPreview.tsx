@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { cardImageURL } from './cardImage';
-import type { Card } from './roomsApi';
 
-export function CardPreview({ card, onClose, onCopy, busy = false }: { card: Card | null; onClose: () => void; onCopy?: (id: string) => void; busy?: boolean }) {
+type PreviewSubject = {
+  id?: string;
+  name: string;
+  text?: string;
+  power?: string;
+  toughness?: string;
+  imageName?: string;
+  faces?: string[];
+  faceIndex?: number;
+  instanceKind?: string;
+};
+
+export function CardPreview({ card, onClose, onCopy, busy = false }: { card: PreviewSubject | null; onClose: () => void; onCopy?: (id: string) => void; busy?: boolean }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -17,6 +28,7 @@ export function CardPreview({ card, onClose, onCopy, busy = false }: { card: Car
   }, [card, onClose]);
 
   if (!card) return null;
+  const copyId = card.id;
   return <div className="card-preview-backdrop" onClick={onClose}>
     <div className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${card.name}`} onClick={event => event.stopPropagation()}>
       <header>
@@ -28,7 +40,7 @@ export function CardPreview({ card, onClose, onCopy, busy = false }: { card: Car
         : <img src={cardImageURL(card)} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
       {card.text && <p className="instance-text">{card.text}</p>}
       {(card.power || card.toughness) && <p>{card.power || '—'} / {card.toughness || '—'}</p>}
-      {onCopy && <button type="button" disabled={busy} onClick={() => onCopy(card.id)}>Criar cópia independente</button>}
+      {onCopy && copyId && <button type="button" disabled={busy} onClick={() => onCopy(copyId)}>Criar cópia independente</button>}
     </div>
   </div>;
 }
