@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
 import { PlayingCard } from './PlayingCard';
@@ -11,6 +11,10 @@ export type CardGesture = {
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
   onDragCancel: () => void;
+  selectedIds?: string[];
+  selectionMode?: boolean;
+  onSelect?: (card: Card) => void;
+  onSelectArea?: (cards: Card[]) => void;
 };
 
 type Player = Match['players'][number];
@@ -92,16 +96,40 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZonePr
     </header>
     <div className="battlefield-scroll">
       <div className="battlefield-zoom-space" style={{ '--mat-cols': Math.max(14, Math.ceil(maxX / 72) + 6), '--mat-rows': maxRow + 8, '--mat-zoom': zoom } as CSSProperties}>
-        <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} style={{ '--mat-cols': Math.max(14, Math.ceil(maxX / 72) + 6), '--mat-rows': maxRow + 8, '--mat-zoom': zoom } as CSSProperties}>
+        <BattlefieldCanvas cards={cards} zoom={zoom} gesture={gesture}>
           {cards.map(card => {
             const mates = cards.filter(other => other.row === card.row && other.positionX === card.positionX).sort((a, b) => a.stackOrder - b.stackOrder);
             const index = Math.max(0, mates.findIndex(other => other.id === card.id));
-            return <div key={card.id} className="positioned-card" data-pos-x={card.positionX} data-row={card.row} data-stack-size={mates.length} style={{ left: `calc(${card.positionX} * var(--card-width) / 72 + ${index * 14}px)`, top: `calc(${card.row} * (var(--card-width) * 88 / 63 + 3px) + ${index * 16}px)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} {...gesture} /></div>;
+            return <div key={card.id} className="positioned-card" data-pos-x={card.positionX} data-row={card.row} data-stack-size={mates.length} style={{ left: `calc(${card.positionX} * var(--card-width) / 72 + ${index * 14}px)`, top: `calc(${card.row} * (var(--card-width) * 88 / 63 + 3px) + ${index * 16}px)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} selected={gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
           })}
-        </div>
+        </BattlefieldCanvas>
       </div>
     </div>
   </section>;
+}
+
+function BattlefieldCanvas({ cards, zoom, gesture, children }: { cards: Card[]; zoom: number; gesture: CardGesture; children: ReactNode }) {
+  const [start, setStart] = useState<{ x: number; y: number } | null>(null);
+  const [end, setEnd] = useState<{ x: number; y: number } | null>(null);
+  const select = (origin: { x: number; y: number }, finish: { x: number; y: number }, cardWidth: number) => {
+    const left = Math.min(origin.x, finish.x), right = Math.max(origin.x, finish.x), top = Math.min(origin.y, finish.y), bottom = Math.max(origin.y, finish.y);
+    if (right - left < 4 && bottom - top < 4) return;
+    const pitch = cardWidth * 88 / 63 + 3;
+    gesture.onSelectArea?.(cards.filter(card => card.positionX * cardWidth / 72 + cardWidth >= left && card.positionX * cardWidth / 72 <= right && card.row * pitch + cardWidth * 88 / 63 >= top && card.row * pitch <= bottom));
+  };
+  return <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} onPointerDown={event => {
+    if (event.pointerType !== 'mouse' || (event.target as Element).closest('.playing-card')) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const cardWidth = Number.parseFloat(getComputedStyle(event.currentTarget).getPropertyValue('--card-width')) || 72;
+    const point = { x: (event.clientX - box.left) / zoom, y: (event.clientY - box.top) / zoom };
+    setStart(point); setEnd(point);
+    const move = (pointer: PointerEvent) => setEnd({ x: (pointer.clientX - box.left) / zoom, y: (pointer.clientY - box.top) / zoom });
+    const up = (pointer: PointerEvent) => { const finish = { x: (pointer.clientX - box.left) / zoom, y: (pointer.clientY - box.top) / zoom }; select(point, finish, cardWidth); setStart(null); setEnd(null); window.removeEventListener('pointermove', move); };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up, { once: true });
+  }}>
+    {children}
+    {start && end && <span className="selection-rectangle" style={{ left: Math.min(start.x, end.x), top: Math.min(start.y, end.y), width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) }} />}
+  </div>;
 }
 
 function LibraryPile({ count, droppable, hoverZone, onOpen }: { count: number; droppable: boolean; hoverZone: string | null; onOpen?: () => void }) {

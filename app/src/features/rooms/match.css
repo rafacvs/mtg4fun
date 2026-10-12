@@ -39,6 +39,9 @@
 .battlefield-zoom-space { width: calc(var(--mat-cols) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-rows) * (var(--card-width) * 88 / 63 + 3px) * var(--mat-zoom)); }
 .battlefield-canvas { position: relative; width: calc(var(--mat-cols) * var(--card-width)); height: calc(var(--mat-rows) * (var(--card-width) * 88 / 63 + 3px)); transform: scale(var(--mat-zoom)); transform-origin: 0 0; }
 .positioned-card { position: absolute; width: var(--card-width); aspect-ratio: 63 / 88; }
+.playing-card.is-selected { outline: 3px solid #f4cf72; outline-offset: 2px; box-shadow: 0 0 0 5px #5b431488; }
+.selection-rectangle { position: absolute; z-index: 20; pointer-events: none; border: 2px solid #f4cf72; background: #f4cf7222; }
+.selection-controls { display: flex; align-items: center; gap: 6px; }
 .zone-placeholder { width: 100%; text-align: center; color: #8b9f89; padding: 12px 0; font-size: .72rem; }
 .zone-battlefield .zone-placeholder { padding: 30px 0; }
 .zone-library { border-style: solid; padding: 4px; }

@@ -370,6 +370,105 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", outsider, nil), 409)
 }
 
+func TestCollectivePositionIsAtomicAndSurvivesRestart(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(ana, deck)
+	requireStatus(t, uploaded, 201)
+	var upload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &upload); err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	requireStatus(t, created, 201)
+	roomID := decodeRoom(t, created).ID
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", roomID), fmt.Sprintf(`{"deckId":%d}`, upload.Deck.ID), ana, nil), 200)
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", roomID), "{}", ana, nil), 201)
+	actionPath := fmt.Sprintf("/api/rooms/%d/match/actions", roomID)
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"40111111-1111-4111-8111-111111111111","kind":"draw","count":2}`, ana, nil), 200)
+	var drawn struct {
+		Match struct {
+			Players []struct {
+				Hand []struct {
+					ID string `json:"id"`
+				} `json:"hand"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	view := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, view, 200)
+	if err := json.Unmarshal(view.body, &drawn); err != nil || len(drawn.Match.Players) != 1 || len(drawn.Match.Players[0].Hand) != 2 {
+		t.Fatalf("mão para seleção: %v %s", err, view.body)
+	}
+	ids := []string{drawn.Match.Players[0].Hand[0].ID, drawn.Match.Players[0].Hand[1].ID}
+	requireStatus(t, e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40222222-2222-4222-8222-222222222222","kind":"move","cardIds":[%q,%q],"to":"battlefield"}`, ids[0], ids[1]), ana, nil), 200)
+	failed := e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40333333-3333-4333-8333-333333333333","kind":"position","cardIds":[%q,"missing"],"x":300,"row":3}`, ids[0]), ana, nil)
+	requireStatus(t, failed, 409)
+	view = e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, view, 200)
+	var unchanged struct {
+		Match struct {
+			Players []struct {
+				Battlefield []struct {
+					ID  string `json:"id"`
+					X   int    `json:"positionX"`
+					Row int    `json:"row"`
+				} `json:"battlefield"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(view.body, &unchanged); err != nil {
+		t.Fatal(err)
+	}
+	before := map[string][2]int{}
+	for _, card := range unchanged.Match.Players[0].Battlefield {
+		before[card.ID] = [2]int{card.X, card.Row}
+	}
+	if before[ids[0]] != [2]int{0, 0} || before[ids[1]] != [2]int{80, 0} {
+		t.Fatalf("posição coletiva inválida alterou cartas: %s", view.body)
+	}
+	requireStatus(t, e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40444444-4444-4444-8444-444444444444","kind":"position","cardIds":[%q,%q],"x":300,"row":3}`, ids[0], ids[1]), ana, nil), 200)
+	e.stop()
+	e.start(false)
+	view = e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, view, 200)
+	var restored struct {
+		Match struct {
+			Players []struct {
+				Battlefield []struct {
+					ID  string `json:"id"`
+					X   int    `json:"positionX"`
+					Row int    `json:"row"`
+				} `json:"battlefield"`
+			} `json:"players"`
+			Log []struct {
+				Kind  string `json:"kind"`
+				Count int    `json:"count"`
+			} `json:"log"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(view.body, &restored); err != nil {
+		t.Fatal(err)
+	}
+	positions := map[string][2]int{}
+	for _, card := range restored.Match.Players[0].Battlefield {
+		positions[card.ID] = [2]int{card.X, card.Row}
+	}
+	if positions[ids[0]] != [2]int{300, 3} || positions[ids[1]] != [2]int{380, 3} || len(restored.Match.Log) == 0 || restored.Match.Log[len(restored.Match.Log)-1].Kind != "position" || restored.Match.Log[len(restored.Match.Log)-1].Count != 2 {
+		t.Fatalf("posição coletiva persistida: %s", view.body)
+	}
+}
+
 func TestStartRollsBackWhenMatchLogCannotBeSaved(t *testing.T) {
 	e := newEnvironment(t)
 	e.mustCreate("ana", "Ana", "senha-da-sala")

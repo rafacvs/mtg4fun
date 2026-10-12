@@ -13,9 +13,12 @@ type Props = {
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
   onDragCancel: () => void;
+  selected?: boolean;
+  selectionMode?: boolean;
+  onSelect?: (card: Card) => void;
 };
 
-export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd, onDragCancel, onToggleTapped }: Props) {
+export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected, selectionMode, onSelect }: Props) {
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
   const clickTimer = useRef<number | null>(null);
@@ -68,7 +71,7 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
 
   return <button
     type="button"
-    className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''}`}
+    className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''} ${selected ? 'is-selected' : ''}`}
     aria-label={card.name || 'Carta face para baixo'}
     data-tapped={Boolean(card.tapped)}
     data-face-down={Boolean(card.faceDown)}
@@ -79,6 +82,7 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
     }}
     onClick={event => {
       if (suppressClick.current) { suppressClick.current = false; return; }
+      if (selectionMode && draggable) { onSelect?.(card); return; }
       if (clickTimer.current) window.clearTimeout(clickTimer.current);
       if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse' && event.detail > 0) {
         if (event.detail === 1) clickTimer.current = window.setTimeout(() => handlers.current.onInspect(card), 350);
