@@ -77,8 +77,8 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 - Escolher face de carta de múltiplas faces é independente de deixá-la virada para baixo.
 - Consultar imagem ampliada e texto da carta.
 - Criar fichas do catálogo ou personalizadas. Fichas personalizadas têm nome, descrição, poder/resistência opcionais e imagem padrão.
-- Criar cópias independentes; contadores nomeados com valor por carta e por jogador.
-- Vida é alterável pelas ações de contadores, independentemente do valor inicial configurado.
+- Criar cópias independentes. Vida, cinco marcadores de cor e modificadores de poder/resistência são valores manuais, conforme a [decisão da issue 12](../decisions/12-vida-e-contadores.md).
+- Vida é alterável durante a partida, independentemente do valor inicial configurado.
 - Rolar dados, incluindo D20, e moedas, com resultados sincronizados e registrados.
 - Não há desfazer genérico ou operação especial de desfazer compra. Jogador move a carta de volta; log mostra ambas as ações.
 - App não valida legalidade, custo, texto de carta, formato, tamanho de deck ou condição de vitória.

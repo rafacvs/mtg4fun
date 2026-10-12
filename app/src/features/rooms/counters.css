@@ -1,0 +1,37 @@
+.adjust-block { display: grid; gap: 10px; }
+.adjust-block .draw-row { margin-bottom: 0; }
+.card-toolbar { display: flex; align-items: center; gap: 8px; width: min(280px, 100%); margin: 12px auto 0; }
+.card-toolbar .pt-line { flex: 1; min-width: 0; }
+.card-toolbar .pt-line input { flex: 1; width: auto; min-width: 0; }
+.card-toolbar > button { flex: 0 0 auto; min-height: 40px; }
+.pt-line { display: flex; align-items: center; gap: 8px; }
+.pt-line input { width: 4.5rem; min-height: 40px; text-align: center; }
+.pt-slash { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+.marker-rows { display: grid; gap: 8px; }
+.marker-row { display: grid; grid-template-columns: 28px 36px 2rem 36px; align-items: center; justify-content: start; gap: 8px; }
+.marker-row .marker-dot { width: 28px; height: 28px; display: block; }
+.marker-count { font-variant-numeric: tabular-nums; text-align: right; }
+.life-figure, .adjust-value { display: inline-block; min-width: 3rem; text-align: center; font-variant-numeric: tabular-nums; }
+.life-figure { font-size: 2.75rem; line-height: 1; }
+.adjust-value { font-size: 1.6rem; line-height: 1; }
+.marker-dots { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.marker-dot { width: 46px; height: 46px; padding: 0; border: 2px solid #0006; border-radius: 50%; color: #fff; font-weight: 800; line-height: 1; }
+button.marker-dot { min-height: 46px; }
+.marker-red { background: #c23b3b; }
+.marker-yellow { background: #d4a017; color: #1a1404; }
+.marker-green { background: #3d8c4a; }
+.marker-blue { background: #3a6fbf; }
+.marker-purple { background: #7a4ea3; }
+.player-heading .marker-dot { width: 22px; height: 22px; border-width: 1px; font-size: .68rem; }
+.card-stats { position: absolute; left: 2px; right: 2px; bottom: 2px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; pointer-events: none; }
+.pt-modifier { padding: 0 3px; border-radius: 4px; background: #101915e6; color: #fff; font-size: .62rem; font-weight: 800; }
+.playing-card .marker-dots { gap: 2px; }
+.playing-card .marker-dot { width: 14px; height: 14px; border-width: 1px; font-size: .55rem; }
+.card-preview .adjust-pair, .card-preview .marker-dots, .card-preview .card-stats { margin-top: 12px; }
+.card-preview .card-stats { position: static; }
+.card-preview button.marker-dot { padding: 0; }
+@media (max-height: 550px) {
+  .life-figure { font-size: 2rem; }
+  .marker-dot { width: 40px; height: 40px; }
+  button.marker-dot { min-height: 40px; }
+}

@@ -97,7 +97,13 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   const hand = board.getByRole('region', { name: 'Mão', exact: true });
   const buy = async (amount: string) => {
     if (!(await board.getByRole('dialog', { name: 'Ações do jogo' }).isVisible())) await activate(board.getByRole('button', { name: 'Ações', exact: true }));
-    await board.getByLabel('Quantidade para comprar').fill(amount);
+    const quantity = board.getByLabel('Quantidade para comprar');
+    if (!(await quantity.isVisible())) {
+      const back = board.getByRole('button', { name: 'Voltar', exact: true });
+      if (await back.isVisible()) await activate(back);
+      await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+    }
+    await quantity.fill(amount);
     await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
   };
   const closeActions = async () => {
@@ -176,8 +182,11 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(hand.getByRole('button')).toHaveCount(4);
   expect((await ownHand()).at(-1)?.id).toBe(returnedId);
   const log = board.getByRole('region', { name: 'Registro da partida', exact: true });
+  await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
+  await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await board.getByLabel('Faces do dado').fill('6');
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
+  await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
   await expect(log).toContainText(/Amigo da mesa rolou D6: /);
   await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
   await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);

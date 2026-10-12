@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CatalogToken, CustomToken } from './roomsApi';
 import { cardImageURL } from './cardImage';
-import { CardPreview } from './CardPreview';
 import { useCatalogTokens } from './useCatalogTokens';
 import './library.css';
 import './creations.css';
@@ -77,13 +76,19 @@ export function CreateInstances({ open, roomId, busy, error, onCreateToken, onCr
         <label>Nome da ficha<input required maxLength={200} value={token.name} onChange={event => setToken({ ...token, name: event.target.value })} /></label>
         <label>Descrição da ficha<textarea maxLength={5000} value={token.description} onChange={event => setToken({ ...token, description: event.target.value })} /></label>
         <div className="token-stats">
-          <label>Poder da ficha<input maxLength={32} value={token.power} onChange={event => setToken({ ...token, power: event.target.value })} /></label>
-          <label>Resistência da ficha<input maxLength={32} value={token.toughness} onChange={event => setToken({ ...token, toughness: event.target.value })} /></label>
+          <label>Poder da ficha<input type="number" step="1" value={token.power} onChange={event => setToken({ ...token, power: event.target.value })} /></label>
+          <label>Resistência da ficha<input type="number" step="1" value={token.toughness} onChange={event => setToken({ ...token, toughness: event.target.value })} /></label>
         </div>
         <button type="submit" disabled={busy || !token.name.trim()}>Criar ficha personalizada</button>
       </form>}
     </div>
-    <CardPreview card={preview} onClose={() => setPreview(null)} />
+    {preview && <div className="card-preview-backdrop" onClick={() => setPreview(null)}>
+      <div className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${preview.name}`} onClick={event => event.stopPropagation()}>
+        <header><h2>{preview.name}</h2><button type="button" onClick={() => setPreview(null)}>Fechar</button></header>
+        <img src={cardImageURL({ name: preview.name, imageName: preview.imageName })} alt={`Imagem ampliada de ${preview.name}`} />
+        {(preview.power || preview.toughness) && <p>{preview.power || '—'} / {preview.toughness || '—'}</p>}
+      </div>
+    </div>}
   </>;
 }
 

@@ -60,6 +60,7 @@ test('indica a atividade do participante certo quando nomes se repetem', async (
     await expect(thumbnails).toHaveCount(2);
     await other.getByRole('button', { name: 'Ações', exact: true }).click();
     await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
+    await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
     await expect(thumbnails.nth(1).getByText('Atividade recente', { exact: true })).toBeVisible();
     await expect(thumbnails.nth(0).getByText('Atividade recente', { exact: true })).toHaveCount(0);
     await expect(thumbnails.nth(0)).toHaveAttribute('aria-pressed', 'true');
@@ -109,6 +110,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     const closeActions = () => activate(page.getByRole('button', { name: 'Fechar ações', exact: true }));
     await openActions();
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
+    await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
     await closeActions();
     const drawn = hand.getByRole('button', { name: 'Island', exact: true });
     await expect(drawn).toHaveCount(1);
@@ -117,6 +119,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await expect(page.getByText('Gire o celular para jogar', { exact: true })).toBeVisible();
       await expect(hand).toBeHidden();
       await activate(other.getByRole('button', { name: 'Ações', exact: true }));
+      await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
       await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
       await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
       await page.setViewportSize({ width: 844, height: 390 });
@@ -142,11 +145,13 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     }
     await activate(other.getByRole('button', { name: 'Ações', exact: true }));
     await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+    await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
     const recentActivity = secondThumbnail.getByText('Atividade recente', { exact: true });
     if (testInfo.project.name === 'celular') await expect.poll(() => intersectsVisibleFocusNav(recentActivity)).toBe(true);
     else await expect(recentActivity).toBeVisible();
     await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
     await expect(page.getByText('Observando:', { exact: false })).toContainText('Amigo 6');
+    await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
     await closeActions();
     await expect(drawn).toHaveCount(2);

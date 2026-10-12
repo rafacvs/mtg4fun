@@ -53,9 +53,11 @@ motor de regras ou mudanças no mecanismo de autenticação/transporte.
   consulta. Não remove as cartas da sequência consultada. As cartas reveladas
   aparecem na mesa de todos; cartas privadas e contexto da consulta continuam
   filtrados pelo servidor.
-- A exposição atual termina ao mover/devolver essas cartas ou finalizar a
+- Na entrega original, a exposição terminava ao mover/devolver essas cartas ou finalizar a
   consulta. Fechar o painel mantém a exposição e permite retomada. O log
   conserva os nomes explicitamente revelados como informação já publicada.
+  A duração foi posteriormente substituída pela aprovação explícita da
+  [issue 11](11-estados-e-revelacoes.md): permanece até ocultar explicitamente.
   A ferramenta não determina por quanto tempo um efeito de Magic exige
   exposição: os jogadores resolvem isso manualmente.
 - O snapshot recebe campos opcionais `revealed` nas cartas e
@@ -67,7 +69,9 @@ motor de regras ou mudanças no mecanismo de autenticação/transporte.
   oferece uma consulta com busca sem afirmar que as cartas vieram do topo/fundo.
 - Os corpos existentes de revelar por quantidade, reordenar, fechar e
   embaralhar continuam aceitos. Fechar/embaralhar devolvem também as cartas
-  temporárias reveladas, encerrando a exposição sem perda ou duplicação.
+  temporárias reveladas sem perda ou duplicação. Na entrega original isso
+  encerrava a exposição; a duração aprovada na issue 11 a preserva até ocultar
+  explicitamente.
 
 ## Isolamento dos dados
 

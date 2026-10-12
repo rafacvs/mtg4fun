@@ -20,6 +20,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await page.getByRole('button', { name: 'Ações', exact: true }).click();
   await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
+  await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await page.getByRole('button', { name: 'Fechar ações', exact: true }).click();
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   await expect(cards).toHaveCount(2);

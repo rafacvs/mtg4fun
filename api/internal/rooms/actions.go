@@ -37,7 +37,17 @@ type matchAction struct {
 	Description      string
 	Power            string
 	Toughness        string
+	Tapped           bool
+	FaceDown         bool
+	Revealed         bool
+	FaceIndex        int
 	ConsultFrom      string
+	Target           string
+	PlayerID         int64
+	Subject          string
+	Color            string
+	Operation        string
+	Value            int64
 }
 
 type actionLogPayload struct {
@@ -123,7 +133,6 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	destination := zone(p, input.To)
 	for i := range cards {
 		cards[i].Zone = input.To
-		cards[i].Revealed = false
 		if input.To == "battlefield" {
 			cards[i].PositionX = (len(p.Battlefield) + i) * 80
 			cards[i].Row = 0
@@ -238,7 +247,6 @@ func closeConsultation(p *playerState, placement string, shuffleLibrary bool) (a
 	cards := append(p.Consulted, p.Revealed...)
 	for i := range cards {
 		cards[i].Zone = "library"
-		cards[i].Revealed = false
 	}
 	if placement == "top" {
 		p.Library = append(cards, p.Library...)
@@ -388,11 +396,17 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	var payload actionLogPayload
 	switch input.Kind {
 	case "create-custom-token":
-		payload, err = addCreatedCard(p, Card{Name: input.CustomName, Text: input.Description, Power: input.Power, Toughness: input.Toughness, InstanceKind: "custom-token"}, input.Kind)
+		power, _ := modifierFromText(input.Power)
+		toughness, _ := modifierFromText(input.Toughness)
+		payload, err = addCreatedCard(p, Card{Name: input.CustomName, Text: input.Description, Power: power, Toughness: toughness, InstanceKind: "custom-token"}, input.Kind)
 	case "copy-card":
 		payload, err = s.copyCard(&m, p, input.CardID)
 	case "create-token":
 		payload, err = s.createCatalogToken(p, input.TokenName)
+	case "counter":
+		payload, err = changeCounter(&m, p, input)
+	case "set_tapped", "untap_all", "set_face", "set_face_down", "reveal_cards":
+		payload, err = changeCardState(p, input)
 	case "draw":
 		payload, err = drawCards(p, input.Count)
 	case "move":

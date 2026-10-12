@@ -34,7 +34,7 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await click(dialog.getByRole('button', { name: /Ficha personalizada/ }));
   await dialog.getByLabel('Nome da ficha').fill('Dragão amigo');
   await dialog.getByLabel('Descrição da ficha').fill('Voa sobre a mesa.');
-  await dialog.getByLabel('Poder da ficha').fill('*');
+  await dialog.getByLabel('Poder da ficha').fill('-1');
   await dialog.getByLabel('Resistência da ficha').fill('4');
   await click(dialog.getByRole('button', { name: 'Criar ficha personalizada' }));
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(1);
@@ -42,7 +42,8 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await click(page.locator('.playing-card[aria-label="Dragão amigo"]'));
   const preview = page.getByRole('dialog', { name: 'Imagem de Dragão amigo' });
   await expect(preview.getByText('Voa sobre a mesa.')).toBeVisible();
-  await expect(preview.getByText('* / 4')).toBeVisible();
+  await expect(preview.getByLabel('Poder')).toHaveValue('-1');
+  await expect(preview.getByLabel('Resistência')).toHaveValue('4');
   await expect(preview.locator('img')).toHaveAttribute('src', '/token-default.svg');
   await click(preview.getByRole('button', { name: 'Criar cópia independente' }));
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(2);
@@ -51,6 +52,7 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(2);
   await click(page.locator('.playing-card[aria-label="Dragão amigo"]').last());
   await expect(page.getByRole('dialog').getByText('Voa sobre a mesa.')).toBeVisible();
-  await expect(page.getByRole('dialog').getByText('* / 4')).toBeVisible();
+  await expect(page.getByRole('dialog').getByLabel('Poder')).toHaveValue('-1');
+  await expect(page.getByRole('dialog').getByLabel('Resistência')).toHaveValue('4');
   await expect(page.getByRole('region', { name: 'Registro da partida' })).toContainText('criou uma cópia de Dragão amigo');
 });

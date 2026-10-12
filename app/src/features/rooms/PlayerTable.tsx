@@ -1,11 +1,13 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { Card, Match } from './roomsApi';
+import { MarkerReadout } from './CounterValues';
 import { PlayingCard } from './PlayingCard';
 
 export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando', consulted: 'consulta', revealed: 'cartas reveladas' };
 
 export type CardGesture = {
   onInspect: (card: Card) => void;
+  onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
   onDragCancel: () => void;
@@ -32,14 +34,14 @@ function canDrag(card: Card, viewerId: number) {
 
 export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture, onFocus, onLibrary }: { player: Player; focused: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onLibrary?: () => void }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''}`} aria-label={`Mesa de ${player.name}`}>
-    <header className="player-heading"><h2>{player.name}{own && <small> · Você</small>}</h2><span>Vida: {player.life}</span><button className="secondary" onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`}>Ampliar</button></header>
+    <header className="player-heading"><h2>{player.name}{own && <small> · Você</small>}</h2><span>Vida: {player.life}</span><MarkerReadout markers={player.markers} /><button className="secondary" onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`}>Ampliar</button></header>
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
         <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} />
         <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} />
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
-      {Boolean(player.revealed?.length) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><span>Reveladas · Todos veem</span><div>{player.revealed!.map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
+      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><span>Reveladas · Todos veem</span><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
 }

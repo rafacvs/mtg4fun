@@ -125,7 +125,7 @@ function CardImage({ card, onInspect }: { card: Card; onInspect: (card: Card) =>
         <span className="library-card-fallback">{card.name}</span>
       ) : (
         <img
-          src={deckApi.imageURL(card.name)}
+          src={deckApi.imageURL(card.faces?.[card.faceIndex ?? 0] || card.name)}
           alt=""
           draggable={false}
           onError={() => setFailed(true)}

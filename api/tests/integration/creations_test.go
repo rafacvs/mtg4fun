@@ -17,8 +17,8 @@ type creationCard struct {
 	ID           string `json:"id"`
 	Name         string `json:"name"`
 	Text         string `json:"text"`
-	Power        string `json:"power"`
-	Toughness    string `json:"toughness"`
+	Power        int64  `json:"power"`
+	Toughness    int64  `json:"toughness"`
 	ImageName    string `json:"imageName"`
 	InstanceKind string `json:"instanceKind"`
 	OwnerID      int64  `json:"ownerId"`
@@ -84,7 +84,11 @@ func TestCatalogTokenCreationIsPublicAndDurable(t *testing.T) {
 	result := e.request("GET", path+"/tokens?q=soldier", "", cookies[0], nil)
 	requireStatus(t, result, 200)
 	var payload struct {
-		Tokens []creationCard `json:"tokens"`
+		Tokens []struct {
+			Name      string `json:"name"`
+			Power     string `json:"power"`
+			Toughness string `json:"toughness"`
+		} `json:"tokens"`
 	}
 	if err := json.Unmarshal(result.body, &payload); err != nil {
 		t.Fatal(err)
@@ -99,7 +103,7 @@ func TestCatalogTokenCreationIsPublicAndDurable(t *testing.T) {
 		t.Fatalf("criação: %+v", first)
 	}
 	card := first.Battlefield[0]
-	if card.ID == "" || card.OwnerID != first.UserID || card.ControllerID != first.UserID || card.Zone != "battlefield" || card.ImageName != "Soldier Token" || card.InstanceKind != "token" || card.Power != "1" {
+	if card.ID == "" || card.OwnerID != first.UserID || card.ControllerID != first.UserID || card.Zone != "battlefield" || card.ImageName != "Soldier Token" || card.InstanceKind != "token" || card.Power != 1 {
 		t.Fatalf("ficha: %+v", card)
 	}
 	observer := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))[0]
@@ -126,8 +130,8 @@ func TestCustomTokensAndCopiesAreIndependentAndRecoverable(t *testing.T) {
 		number++
 		return e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":"%08x-0000-4000-8000-000000000000",%s}`, number, fields), cookie, nil)
 	}
-	source := creationPlayers(t, action(cookies[0], `"kind":"create-custom-token","name":"Dragão amigo","description":"Voa sobre a mesa.","power":"*","toughness":"4"`))[0].Battlefield[0]
-	if source.Name != "Dragão amigo" || source.Text != "Voa sobre a mesa." || source.Power != "*" || source.Toughness != "4" || source.ImageName != "" || source.InstanceKind != "custom-token" {
+	source := creationPlayers(t, action(cookies[0], `"kind":"create-custom-token","name":"Dragão amigo","description":"Voa sobre a mesa.","power":"-1","toughness":"4"`))[0].Battlefield[0]
+	if source.Name != "Dragão amigo" || source.Text != "Voa sobre a mesa." || source.Power != -1 || source.Toughness != 4 || source.ImageName != "" || source.InstanceKind != "custom-token" {
 		t.Fatalf("personalização: %+v", source)
 	}
 	copied := creationPlayers(t, action(cookies[1], fmt.Sprintf(`"kind":"copy-card","cardId":%q`, source.ID)))[1]
@@ -148,7 +152,7 @@ func TestCustomTokensAndCopiesAreIndependentAndRecoverable(t *testing.T) {
 	e.stop()
 	e.start(false)
 	restored := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))
-	if len(restored[0].Graveyard) != 1 || len(restored[1].Graveyard) != 1 || restored[1].Graveyard[0].ID != copy.ID || restored[1].Graveyard[0].Power != "*" {
+	if len(restored[0].Graveyard) != 1 || len(restored[1].Graveyard) != 1 || restored[1].Graveyard[0].ID != copy.ID || restored[1].Graveyard[0].Power != -1 {
 		t.Fatalf("persistência: %+v", restored)
 	}
 	// Private own cards can be copied without moving or exposing the original.
@@ -218,7 +222,10 @@ func TestTokenCatalogIsBoundedSortedAndUsesExistingImageCache(t *testing.T) {
 	read := e.request("GET", path+"/match/tokens?q=ficha", "", cookie, nil)
 	requireStatus(t, read, 200)
 	var tokens struct {
-		Tokens []creationCard `json:"tokens"`
+		Tokens []struct {
+			Name string `json:"name"`
+			Text string `json:"text"`
+		} `json:"tokens"`
 	}
 	if err := json.Unmarshal(read.body, &tokens); err != nil {
 		t.Fatal(err)
@@ -238,7 +245,7 @@ func TestTokenCatalogIsBoundedSortedAndUsesExistingImageCache(t *testing.T) {
 	if downloads.Load() != 1 {
 		t.Fatalf("cache não persistiu: %d", downloads.Load())
 	}
-	if card := creationPlayers(t, e.request("GET", path+"/match", "", cookie, nil))[0].Battlefield[0]; card.Text != "Texto compartilhado." || card.Power != "2" || card.Toughness != "3" {
+	if card := creationPlayers(t, e.request("GET", path+"/match", "", cookie, nil))[0].Battlefield[0]; card.Text != "Texto compartilhado." || card.Power != 2 || card.Toughness != 3 {
 		t.Fatalf("atributos persistidos: %+v", card)
 	}
 }

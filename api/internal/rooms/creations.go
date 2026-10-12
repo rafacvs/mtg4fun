@@ -3,8 +3,22 @@ package rooms
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"strconv"
+	"strings"
 	"unicode/utf8"
 )
+
+func modifierFromText(raw string) (int64, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, true
+	}
+	value, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || value < -maxCounterValue || value > maxCounterValue {
+		return 0, false
+	}
+	return value, true
+}
 
 func (s *Service) createCatalogToken(p *playerState, name string) (actionLogPayload, error) {
 	if s.catalog == nil {
@@ -14,9 +28,11 @@ func (s *Service) createCatalogToken(p *playerState, name string) (actionLogPayl
 	if !ok || !definition.Token {
 		return actionLogPayload{}, errCardNotFound
 	}
+	power, _ := modifierFromText(definition.Power)
+	toughness, _ := modifierFromText(definition.Toughness)
 	card := Card{
-		Name: name, Text: definition.Text, Power: definition.Power,
-		Toughness: definition.Toughness, ImageName: name, InstanceKind: "token",
+		Name: name, Text: definition.Text, Power: power,
+		Toughness: toughness, ImageName: name, InstanceKind: "token",
 	}
 	return addCreatedCard(p, card, "create-token")
 }
@@ -42,9 +58,10 @@ func creationFieldsOnly(input matchAction) bool {
 }
 
 func validCustomToken(input matchAction) bool {
+	_, powerOK := modifierFromText(input.Power)
+	_, toughnessOK := modifierFromText(input.Toughness)
 	return input.CustomName != "" && utf8.RuneCountInString(input.CustomName) <= 200 &&
-		utf8.RuneCountInString(input.Description) <= 5000 &&
-		utf8.RuneCountInString(input.Power) <= 32 && utf8.RuneCountInString(input.Toughness) <= 32
+		utf8.RuneCountInString(input.Description) <= 5000 && powerOK && toughnessOK
 }
 
 func (s *Service) copyCard(m *matchState, p *playerState, id string) (actionLogPayload, error) {
@@ -64,9 +81,10 @@ func (s *Service) copyCard(m *matchState, p *playerState, id string) (actionLogP
 				if source.InstanceKind == "" && source.ImageName == "" && s.catalog != nil {
 					if definition, ok := s.catalog.Lookup(source.Name); ok {
 						card.Text = definition.Text
-						card.Power = definition.Power
-						card.Toughness = definition.Toughness
 						card.ImageName = source.Name
+						if len(definition.Faces) > 1 {
+							card.Faces = append([]string(nil), definition.Faces...)
+						}
 					}
 				}
 				return addCreatedCard(p, card, "copy-card")
