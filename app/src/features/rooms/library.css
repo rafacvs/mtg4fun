@@ -218,6 +218,8 @@
   overflow-wrap: anywhere;
 }
 .library-selected-mark {
+  display: grid;
+  place-items: center;
   position: absolute;
   right: 5px;
   bottom: 5px;
@@ -259,6 +261,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  padding-right: 44px;
+}
+.library-list .library-selected-mark {
+  top: 50%;
+  right: 16px;
+  bottom: auto;
+  transform: translateY(-50%);
 }
 .library-list .library-card-info strong {
   flex: 1;

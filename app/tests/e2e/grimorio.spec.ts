@@ -338,6 +338,15 @@ test('revela apenas a seleção e finaliza cartas públicas sem expor a mão', a
     await activate(
       library.locator('.library-card strong').getByText('Fire // Ice', { exact: true }),
     );
+    const selectedRow = library.locator('.library-card.selected');
+    await expect(selectedRow).toBeVisible();
+    const rowBox = (await selectedRow.boundingBox())!;
+    const markBox = (await selectedRow.locator('.library-selected-mark').boundingBox())!;
+    expect(
+      Math.abs(markBox.y + markBox.height / 2 - (rowBox.y + rowBox.height / 2)),
+    ).toBeLessThanOrEqual(1);
+    expect(rowBox.x + rowBox.width - (markBox.x + markBox.width)).toBeGreaterThanOrEqual(16);
+    await own.screenshot({ path: info.outputPath('grimorio-selecao-centralizada.png') });
     await activate(library.getByRole('button', { name: 'Revelar seleção', exact: true }));
     await activate(
       opponent
