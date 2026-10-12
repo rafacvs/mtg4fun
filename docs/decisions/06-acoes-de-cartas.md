@@ -36,6 +36,17 @@ contagem. O log informa ator, tipo, zonas e quantidade, sem nomes, IDs,
 imagens ou ordem de cartas privadas. O cliente consulta essa visão a cada
 segundo; não foi criado stream de partidas nem WebSocket.
 
+## Posicionamento em fileiras (issue 08)
+
+O campo tem fileiras invisíveis sem quantidade fixa. A fileira é um inteiro
+a partir de 0 e a posição horizontal é um inteiro em pixels de referência
+(carta de 72 px). A tela desenha cada fileira com a altura da carta mais 3 px,
+e a mesa rola na horizontal e na vertical. O zoom é só da vista de quem olha.
+Soltar uma carta sobre outra forma uma pilha de no máximo 3, com as de cima
+deslocadas 14 px à direita e 16 px para baixo. A quarta carta fica ao lado,
+na mesma fileira. A ordem da pilha é persistida e reproduzida para todos. A
+ação seguinte reposiciona somente a carta indicada.
+
 ## Correção da experiência da mesa
 
 Ao revisar a entrega, o usuário relatou que conseguia comprar, mas não mover

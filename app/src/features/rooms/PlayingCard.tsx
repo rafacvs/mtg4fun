@@ -24,7 +24,7 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
   useEffect(() => () => stopTracking.current?.(), []);
 
   function pointerDown(event: React.PointerEvent<HTMLButtonElement>) {
-    if (!draggable || event.button !== 0) return;
+    if (!draggable || event.pointerType === 'mouse' && event.button !== 0) return;
     stopTracking.current?.();
     suppressClick.current = false;
     dragging.current = false;

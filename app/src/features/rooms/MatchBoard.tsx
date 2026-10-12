@@ -11,7 +11,7 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, roll, coin, turn, consult, reveal, reorder, closeConsultation, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, reorder, closeConsultation, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -53,6 +53,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   async function dropCard(card: Card, x: number, y: number) {
     const zone = dropZoneAt(x, y);
     if (!zone || busy || unconfirmed || card.controllerId !== match?.viewerId) return;
+    if (zone === 'battlefield') {
+      const layout = battlefieldPositionAt(x, y);
+      if (!layout) return;
+      if (card.zone !== 'battlefield' && !await move([card.id], 'battlefield')) return;
+      await position(card.id, layout.x, layout.row);
+      return;
+    }
     if (zone === 'library') await move([card.id], 'library', 'top');
     else if (zone === 'library-bottom') await move([card.id], 'library', 'bottom');
     else if (zone !== card.zone) await move([card.id], zone);
@@ -129,9 +136,35 @@ function dropZoneAt(x: number, y: number) {
   return null;
 }
 
+function battlefieldPositionAt(x: number, y: number) {
+  const elements = document.elementsFromPoint(x, y);
+  for (const element of elements) {
+    const stack = element.closest<HTMLElement>('[data-stack-size]');
+    if (!stack) continue;
+    const size = Number(stack.dataset.stackSize);
+    const anchorX = Number(stack.dataset.posX);
+    const row = Number(stack.dataset.row);
+    if (size < 3) return { x: anchorX, row };
+    return { x: anchorX + 86, row };
+  }
+  for (const element of elements) {
+    const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
+    if (!canvas) continue;
+    const zoom = Number(canvas.dataset.zoom || '1');
+    const box = canvas.getBoundingClientRect();
+    const cardWidth = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--card-width')) || 72;
+    const localX = (x - box.left) / zoom;
+    const localY = (y - box.top) / zoom;
+    const pitch = cardWidth * 88 / 63 + 3;
+    return { x: Math.max(0, Math.round(localX / cardWidth * 72)), row: Math.max(0, Math.floor(localY / pitch)) };
+  }
+  return null;
+}
+
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
+  if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
   if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;

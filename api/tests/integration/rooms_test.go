@@ -679,6 +679,39 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	}
 	move := fmt.Sprintf(`{"intentId":"22222222-2222-4222-8222-222222222222","kind":"move","cardIds":[%q],"to":"battlefield"}`, own.Hand[0].ID)
 	requireStatus(t, e.request("POST", actionPath, move, ana, nil), 200)
+	position := fmt.Sprintf(`{"intentId":"22222222-2222-4222-8222-222222222223","kind":"position","cardId":%q,"x":735,"row":2}`, own.Hand[0].ID)
+	positioned := e.request("POST", actionPath, position, ana, nil)
+	requireStatus(t, positioned, 200)
+	// Only the controller may organize a public card, and the public view
+	// exposes the durable, viewport-independent layout values.
+	requireStatus(t, e.request("POST", actionPath, position, bia, nil), 409)
+	if !bytes.Contains(positioned.body, []byte(`"positionX":735`)) || !bytes.Contains(positioned.body, []byte(`"row":2`)) || !bytes.Contains(positioned.body, []byte(`"kind":"position"`)) {
+		t.Fatalf("posição não confirmada: %s", positioned.body)
+	}
+	var placed struct {
+		Match struct {
+			Players []struct {
+				Battlefield []struct {
+					ID         string `json:"id"`
+					StackOrder int    `json:"stackOrder"`
+				} `json:"battlefield"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(positioned.body, &placed); err != nil {
+		t.Fatal(err)
+	}
+	stackOrder := 0
+	for _, player := range placed.Match.Players {
+		for _, card := range player.Battlefield {
+			if card.ID == own.Hand[0].ID {
+				stackOrder = card.StackOrder
+			}
+		}
+	}
+	if stackOrder == 0 {
+		t.Fatalf("posição sem ordem de pilha: %s", positioned.body)
+	}
 	otherView = e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", bia, nil)
 	requireStatus(t, otherView, 200)
 	if !bytes.Contains(otherView.body, []byte(own.Hand[0].Name)) || bytes.Contains(otherView.body, []byte(own.Hand[1].ID)) {
@@ -747,7 +780,10 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 					ID string `json:"id"`
 				} `json:"hand"`
 				Battlefield []struct {
-					ID string `json:"id"`
+					ID         string `json:"id"`
+					PositionX  int    `json:"positionX"`
+					Row        int    `json:"row"`
+					StackOrder int    `json:"stackOrder"`
 				} `json:"battlefield"`
 				Graveyard []struct {
 					ID string `json:"id"`
@@ -770,7 +806,10 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 			ID string `json:"id"`
 		}
 		Battlefield []struct {
-			ID string `json:"id"`
+			ID         string `json:"id"`
+			PositionX  int    `json:"positionX"`
+			Row        int    `json:"row"`
+			StackOrder int    `json:"stackOrder"`
 		}
 		Graveyard []struct {
 			ID string `json:"id"`
@@ -794,13 +833,21 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		}
 		return false
 	}
+	containsBattlefield := func(id string) bool {
+		for _, card := range restoredAna.Battlefield {
+			if card.ID == id {
+				return true
+			}
+		}
+		return false
+	}
 	hasShuffle := false
 	for _, entry := range restored.Match.Log {
 		if entry.Kind == "shuffle" {
 			hasShuffle = true
 		}
 	}
-	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 19+success || !hasShuffle {
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !containsBattlefield(own.Hand[0].ID) || restoredAna.Battlefield[0].PositionX != 735 || restoredAna.Battlefield[0].Row != 2 || restoredAna.Battlefield[0].StackOrder != stackOrder || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 20+success || !hasShuffle {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
 	restoredConsult := e.request("POST", actionPath, `{"intentId":"5d5d5d5d-5d5d-45d5-85d5-5d5d5d5d5d5d","kind":"consult","consultFrom":"top","count":5}`, ana, nil)

@@ -17,6 +17,8 @@ var errNotParticipant = errors.New("Você não participa desta partida.")
 var errNotController = errors.New("Você só pode mover cartas sob seu controle.")
 var errCardNotFound = errors.New("Carta não encontrada nesta zona.")
 var errInsufficientCards = errors.New("Não há cartas suficientes no grimório.")
+var errInvalidPosition = errors.New("Posição inválida no campo.")
+var errStackFull = errors.New("Essa pilha já tem 3 cartas.")
 
 type matchAction struct {
 	IntentID         string
@@ -27,6 +29,9 @@ type matchAction struct {
 	LibraryPlacement string
 	Sides            int
 	Direction        string
+	CardID           string
+	PositionX        int
+	Row              int
 	ConsultFrom      string
 }
 
@@ -113,6 +118,10 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	destination := zone(p, input.To)
 	for i := range cards {
 		cards[i].Zone = input.To
+		if input.To == "battlefield" {
+			cards[i].PositionX = (len(p.Battlefield) + i) * 80
+			cards[i].Row = 0
+		}
 	}
 	if input.To == "library" && input.LibraryPlacement == "top" {
 		*destination = append(cards, *destination...)
@@ -120,6 +129,35 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 		*destination = append(*destination, cards...)
 	}
 	return actionLogPayload{Kind: "move", From: from, To: input.To, Count: len(cards)}, nil
+}
+
+func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
+	if input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
+		return actionLogPayload{}, errInvalidPosition
+	}
+	others := 0
+	for _, card := range p.Battlefield {
+		if card.ID != input.CardID && card.Row == input.Row && card.PositionX == input.PositionX {
+			others++
+		}
+	}
+	if others >= 3 {
+		return actionLogPayload{}, errStackFull
+	}
+	for i := range p.Battlefield {
+		if p.Battlefield[i].ID != input.CardID {
+			continue
+		}
+		if p.Battlefield[i].ControllerID != p.UserID {
+			return actionLogPayload{}, errNotController
+		}
+		m.NextStackOrder++
+		p.Battlefield[i].PositionX = input.PositionX
+		p.Battlefield[i].Row = input.Row
+		p.Battlefield[i].StackOrder = m.NextStackOrder
+		return actionLogPayload{Kind: "position"}, nil
+	}
+	return actionLogPayload{}, errCardNotFound
 }
 
 func consultCards(p *playerState, input matchAction) (actionLogPayload, error) {
@@ -301,6 +339,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = drawCards(p, input.Count)
 	case "move":
 		payload, err = moveCards(p, input)
+	case "position":
+		payload, err = positionCard(&m, p, input)
 	case "consult":
 		payload, err = consultCards(p, input)
 	case "reveal":
