@@ -95,5 +95,9 @@ export function useMatch(roomId: number) {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.reveal(roomId, count, intentId));
     },
+    revealSelection: (ids: string[]) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.revealSelection(roomId, ids, intentId));
+    },
   };
 }

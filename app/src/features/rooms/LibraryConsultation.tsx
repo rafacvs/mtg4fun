@@ -1,145 +1,342 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { deckApi } from '../decks/deckApi';
+import { useEffect, useRef } from 'react';
+import { LibraryCards } from './LibraryCards';
 import type { Card } from './roomsApi';
+import {
+  useLibraryConsultation,
+  type LibraryOperations,
+  type LibrarySource,
+} from './useLibraryConsultation';
+import './library.css';
 
-type Destination = 'hand' | 'battlefield' | 'graveyard' | 'exile' | 'command' | 'library:top' | 'library:bottom';
-type Remainder = 'top' | 'bottom' | 'shuffle';
-type Source = 'top' | 'bottom' | 'all';
-
-type Props = {
+type Props = LibraryOperations & {
   open: boolean;
   cards: Card[];
   revealed: Card[];
+  consultationFrom?: LibrarySource;
+  libraryCount: number;
   busy: boolean;
-  onConsult: (from: Source, count: number) => void;
-  onReveal: (count: number) => void;
-  onMove: (ids: string[], to: string, placement?: 'top' | 'bottom') => void;
-  onReorder: (ids: string[]) => void;
-  onClose: (placement: 'top' | 'bottom', shuffle: boolean) => void;
+  error: string;
+  unconfirmed: boolean;
+  onRetry: () => Promise<boolean>;
   onInspect: (card: Card) => void;
   onDismiss: () => void;
 };
 
-const destinations: { value: Destination; label: string }[] = [
-  { value: 'hand', label: 'Mão' },
-  { value: 'battlefield', label: 'Campo' },
-  { value: 'graveyard', label: 'Cemitério' },
-  { value: 'exile', label: 'Exílio' },
-  { value: 'command', label: 'Comando' },
-  { value: 'library:top', label: 'Em cima do grimório' },
-  { value: 'library:bottom', label: 'Embaixo do grimório' },
-];
-
-export function LibraryConsultation({ open, cards, revealed, busy, onConsult, onReveal, onMove, onReorder, onClose, onInspect, onDismiss }: Props) {
+export function LibraryConsultation(props: Props) {
+  const { open, cards, revealed, consultationFrom, libraryCount, error, onInspect, onDismiss } =
+    props;
+  const busy = props.busy || props.unconfirmed;
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [mode, setMode] = useState<'consultar' | 'revelar'>('consultar');
-  const [source, setSource] = useState<Source>('top');
-  const [count, setCount] = useState(1);
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<string[]>([]);
-  const [destination, setDestination] = useState<Destination>('hand');
-  const [remainder, setRemainder] = useState<Remainder>('shuffle');
-  const [dragging, setDragging] = useState('');
-  const revealing = mode === 'revelar';
-  const quantityLocked = !revealing && source === 'all';
-  const pool = revealing ? revealed : cards;
+  const pool = [
+    ...cards,
+    ...revealed.filter((card) => !cards.some((consulted) => consulted.id === card.id)),
+  ];
+  const state = useLibraryConsultation(pool, props, consultationFrom);
+  const active = Boolean(consultationFrom || pool.length);
+  const searching = consultationFrom === 'all' || (!consultationFrom && cards.length > 0);
+  const publicCount = pool.filter((card) => card.revealed || card.zone === 'revealed').length;
+  const title = active
+    ? searching
+      ? consultationFrom
+        ? 'Buscar no grimório'
+        : 'Consulta em andamento'
+      : publicCount === pool.length && pool.length
+        ? 'Cartas reveladas'
+        : `Olhar cartas do ${consultationFrom === 'bottom' ? 'fundo' : 'topo'}`
+    : state.view === 'look'
+      ? 'Olhar cartas'
+      : state.view === 'reveal'
+        ? 'Revelar cartas'
+        : state.view === 'draw'
+          ? 'Comprar cartas'
+          : 'Grimório';
+
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onDismiss(); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.querySelector('.card-preview')) {
+        event.stopImmediatePropagation();
+        onDismiss();
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onDismiss]);
-  const filtered = useMemo(
-    () => pool.filter(card => card.name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))),
-    [pool, search],
-  );
-  const selectedCards = selected.filter(id => pool.some(card => card.id === id));
-  const toggle = (id: string) => setSelected(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]);
-  const send = () => {
-    const ids = pool.filter(card => selectedCards.includes(card.id)).map(card => card.id);
-    if (!ids.length) return;
-    const [to, placement] = destination.split(':') as [string, 'top' | 'bottom' | undefined];
-    onMove(ids, to, placement);
-    setSelected([]);
-  };
-  const dropRow = (targetId: string) => {
-    if (revealing || !dragging || dragging === targetId) return;
-    const next = [...cards];
-    const from = next.findIndex(card => card.id === dragging);
-    const to = next.findIndex(card => card.id === targetId);
-    if (from < 0 || to < 0) return;
-    const [card] = next.splice(from, 1);
-    next.splice(to, 0, card);
-    onReorder(next.map(item => item.id));
-    setDragging('');
-  };
-  const conclude = () => {
-    if (revealing) return;
-    if (cards.length === 0) {
-      if (remainder === 'shuffle') onClose('top', true);
-      return;
-    }
-    onClose(remainder === 'bottom' ? 'bottom' : 'top', remainder === 'shuffle');
-  };
   if (!open) return null;
-  return <div className="actions-panel library-consultation" role="dialog" aria-label="Consultar grimório">
-    <header>
-      <div><p className="actions-kicker">Grimório</p><h2>Consultar grimório</h2></div>
-      <button ref={closeRef} type="button" className="secondary" aria-label="Fechar consulta do grimório" onClick={onDismiss}>×</button>
-    </header>
-    <div className="consult-modes" role="group" aria-label="Modo do grimório">
-      <button type="button" aria-pressed={mode === 'consultar'} onClick={() => setMode('consultar')}>Consultar</button>
-      <button type="button" aria-pressed={revealing} onClick={() => setMode('revelar')}>Revelar</button>
+
+  const selectedCount = state.selectedIDs.length;
+  const validCount =
+    Number.isInteger(state.count) && state.count >= 1 && state.count <= libraryCount;
+  return (
+    <div
+      className={`actions-panel library-consultation ${active ? 'library-active' : ''}`}
+      role="dialog"
+      aria-label="Grimório"
+    >
+      <header>
+        <div>
+          <p className="actions-kicker">Grimório · {libraryCount} carta(s) disponível(is)</p>
+          <h2>{title}</h2>
+          {active && (
+            <p className={`library-visibility ${publicCount ? 'public' : ''}`}>
+              {publicCount
+                ? `◉ ${publicCount} carta(s) visível(is) para todos`
+                : '◈ Só você vê estas cartas'}
+            </p>
+          )}
+        </div>
+        <button
+          ref={closeRef}
+          type="button"
+          className="secondary"
+          aria-label="Fechar painel do grimório"
+          onClick={onDismiss}
+        >
+          ×
+        </button>
+      </header>
+      {error && (
+        <p role="alert" className="error">
+          {error}
+          {props.unconfirmed && (
+            <button disabled={props.busy} onClick={() => void props.onRetry()}>
+              Tentar novamente
+            </button>
+          )}
+        </p>
+      )}
+      {state.notice && (
+        <p role="status" className="library-notice">
+          {state.notice}
+        </p>
+      )}
+      {!active && state.view === 'menu' && (
+        <div className="library-menu">
+          <button
+            className="secondary"
+            disabled={busy || !libraryCount}
+            onClick={() => state.choose('draw')}
+          >
+            <strong>Comprar cartas</strong>
+            <span>Do topo para sua mão</span>
+          </button>
+          <button className="secondary" disabled={busy} onClick={() => void state.finish(true)}>
+            <strong>Embaralhar</strong>
+            <span>Embaralhar apenas o grimório</span>
+          </button>
+          <button
+            className="secondary"
+            disabled={busy || !libraryCount}
+            onClick={() => state.choose('look')}
+          >
+            <strong>Olhar cartas</strong>
+            <span>Topo ou fundo · Em privado</span>
+          </button>
+          <button
+            className="secondary"
+            disabled={busy || !libraryCount}
+            onClick={() => void state.searchLibrary()}
+          >
+            <strong>Buscar no grimório</strong>
+            <span>Consultar todas · Em privado</span>
+          </button>
+          <button
+            className="secondary"
+            disabled={busy || !libraryCount}
+            onClick={() => state.choose('reveal')}
+          >
+            <strong>Revelar cartas</strong>
+            <span>Do topo · Todos veem</span>
+          </button>
+        </div>
+      )}
+      {!active && state.view !== 'menu' && (
+        <div className="library-setup">
+          <p>
+            {state.view === 'look'
+              ? 'Só você verá estas cartas.'
+              : state.view === 'reveal'
+                ? 'Estas cartas serão mostradas a todos os jogadores.'
+                : 'Coloque cartas do topo na sua mão.'}
+          </p>
+          <div className="library-command">
+            {state.view === 'look' && (
+              <label>
+                De onde
+                <select
+                  disabled={busy}
+                  value={state.source}
+                  onChange={(event) => state.setSource(event.target.value as 'top' | 'bottom')}
+                >
+                  <option value="top">Topo</option>
+                  <option value="bottom">Fundo</option>
+                </select>
+              </label>
+            )}
+            <label>
+              Quantidade
+              <div className="library-stepper">
+                <button
+                  className="secondary"
+                  aria-label="Diminuir quantidade"
+                  disabled={busy || state.count <= 1}
+                  onClick={() => state.setCount(state.count - 1)}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  aria-label="Quantidade de cartas"
+                  min="1"
+                  max={libraryCount}
+                  disabled={busy}
+                  value={state.count}
+                  onChange={(event) => state.setCount(Number(event.target.value))}
+                />
+                <button
+                  className="secondary"
+                  aria-label="Aumentar quantidade"
+                  disabled={busy || state.count >= libraryCount}
+                  onClick={() => state.setCount(state.count + 1)}
+                >
+                  +
+                </button>
+              </div>
+            </label>
+          </div>
+          <div className="library-setup-actions">
+            <button className="secondary" disabled={busy} onClick={() => state.choose('menu')}>
+              Voltar
+            </button>
+            <button disabled={busy || !validCount} onClick={() => void state.begin()}>
+              {state.view === 'look' ? 'Olhar' : state.view === 'reveal' ? 'Revelar' : 'Comprar'}{' '}
+              {state.count || ''} carta(s)
+            </button>
+          </div>
+        </div>
+      )}
+      {active && (
+        <>
+          <div className="grimorio-workspace">
+            {searching && (
+              <div className="library-search">
+                <input
+                  aria-label="Buscar no grimório"
+                  placeholder="Buscar por nome"
+                  disabled={busy}
+                  value={state.search}
+                  onChange={(event) => state.setSearch(event.target.value)}
+                />
+                <button
+                  className="text-button"
+                  disabled={busy || !state.filtered.length}
+                  onClick={state.selectResults}
+                >
+                  {state.filtered.length &&
+                  state.filtered.every((card) => state.selectedIDs.includes(card.id))
+                    ? 'Desmarcar resultados'
+                    : 'Selecionar resultados'}
+                </button>
+              </div>
+            )}
+            {!searching && (
+              <p className="library-order">
+                Ordem no grimório: primeira → última · Reordene arrastando ou pelas setas.
+              </p>
+            )}
+            <LibraryCards
+              cards={pool}
+              filtered={state.filtered}
+              selectedIDs={state.selectedIDs}
+              searching={searching}
+              busy={busy}
+              onSelect={state.toggle}
+              onInspect={onInspect}
+              onReorder={state.reorder}
+            />
+          </div>
+          {selectedCount > 0 && (
+            <div className="library-selection" aria-label="Ações da seleção">
+              <span>{selectedCount} selecionada(s)</span>
+              <button className="secondary" disabled={busy} onClick={() => void state.move('hand')}>
+                Colocar {selectedCount} na mão
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => void state.move('library', 'bottom')}
+              >
+                No fundo
+              </button>
+              <label className="library-other">
+                <span>Outros destinos</span>
+                <select
+                  aria-label="Outros destinos"
+                  disabled={busy}
+                  value=""
+                  onChange={(event) => {
+                    const [to, placement] = event.target.value.split(':');
+                    if (to) void state.move(to, placement as 'top' | 'bottom' | undefined);
+                  }}
+                >
+                  <option value="">Escolher…</option>
+                  <option value="battlefield">Campo</option>
+                  <option value="graveyard">Cemitério</option>
+                  <option value="exile">Exílio</option>
+                  <option value="command">Comando</option>
+                  <option value="library:top">Topo do grimório</option>
+                </select>
+              </label>
+              {cards.length > 0 && (
+                <button
+                  className="secondary"
+                  disabled={
+                    busy ||
+                    state.selectedIDs.every((id) => cards.find((card) => card.id === id)?.revealed)
+                  }
+                  onClick={() => void state.reveal()}
+                >
+                  Revelar seleção
+                </button>
+              )}
+            </div>
+          )}
+          <footer className="library-finish">
+            <div>
+              <label>
+                Devolver {pool.length} restante(s) ao
+                <select
+                  aria-label="Destino das restantes"
+                  disabled={busy}
+                  value={state.placement}
+                  onChange={(event) => state.setPlacement(event.target.value as 'top' | 'bottom')}
+                >
+                  <option value="top">Topo do grimório</option>
+                  <option value="bottom">Fundo do grimório</option>
+                </select>
+              </label>
+              <small>Na ordem exibida, da primeira à última.</small>
+            </div>
+            <div className="library-finish-actions">
+              <button
+                className={searching ? '' : 'secondary'}
+                disabled={busy}
+                onClick={() => void state.finish(true)}
+              >
+                Devolver e embaralhar
+              </button>
+              <button
+                className={searching ? 'secondary' : ''}
+                disabled={busy}
+                onClick={() => void state.finish()}
+              >
+                Devolver sem embaralhar
+              </button>
+            </div>
+          </footer>
+        </>
+      )}
     </div>
-    <div className="consult-command">
-      <label>De onde
-        <select aria-label="De onde" disabled={revealing} value={revealing ? 'next' : source} onChange={event => setSource(event.target.value as Source)}>
-          {revealing
-            ? <option value="next">Próximas do topo</option>
-            : <>
-              <option value="top">Topo</option>
-              <option value="bottom">Fundo</option>
-              <option value="all">Grimório inteiro</option>
-            </>}
-        </select>
-      </label>
-      <div className="consult-stepper">
-        <span>Quantidade</span>
-        <button type="button" className="secondary" aria-label="Diminuir quantidade" disabled={busy || quantityLocked || count <= 1} onClick={() => setCount(value => Math.max(1, value - 1))}>−</button>
-        <input aria-label="Quantidade para consultar" inputMode="numeric" disabled={quantityLocked} value={quantityLocked ? '—' : count} onChange={event => setCount(Math.max(1, Number(event.target.value) || 1))} />
-        <button type="button" className="secondary" aria-label="Aumentar quantidade" disabled={busy || quantityLocked} onClick={() => setCount(value => value + 1)}>+</button>
-      </div>
-      <button type="button" disabled={busy || (!revealing && cards.length > 0) || (revealing && cards.length > 0)} onClick={() => revealing ? onReveal(count) : onConsult(source, quantityLocked ? 1 : count)}>{revealing ? 'Revelar' : 'Ver as cartas'}</button>
-    </div>
-    <div className="consult-list-band">
-      <div className="consult-list-tools">
-        <input aria-label="Buscar no grimório" value={search} placeholder="Buscar por nome" onChange={event => setSearch(event.target.value)} />
-        <button type="button" className="text-button" disabled={pool.length === 0} onClick={() => setSelected(selectedCards.length === pool.length ? [] : pool.map(card => card.id))}>Selecionar todas</button>
-      </div>
-      <div className="consult-cards">
-        {filtered.length === 0 && <p className="consult-empty">{pool.length === 0 ? 'Nenhuma carta aberta.' : 'Nenhuma carta com esse nome.'}</p>}
-        {filtered.map(card => <div key={card.id} className={`consult-row ${selectedCards.includes(card.id) ? 'selected' : ''}`} draggable={!revealing} onDragStart={() => setDragging(card.id)} onDragOver={event => event.preventDefault()} onDrop={() => dropRow(card.id)} onClick={() => toggle(card.id)}>
-          <button type="button" className="consult-face" aria-label={`Imagem de ${card.name}`} onClick={event => { event.stopPropagation(); onInspect(card); }}><img src={deckApi.imageURL(card.name)} alt="" /></button>
-          <span>{card.name}</span>
-        </div>)}
-      </div>
-    </div>
-    <div className="consult-footer">
-      <label>Enviar para
-        <select aria-label="Enviar para" value={destination} onChange={event => setDestination(event.target.value as Destination)}>
-          {destinations.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
-      </label>
-      <button type="button" disabled={busy || selectedCards.length === 0} onClick={send}>Enviar</button>
-      <label>O que sobrou
-        <select aria-label="O que sobrou" value={remainder} onChange={event => setRemainder(event.target.value as Remainder)}>
-          <option value="top">Devolver em cima</option>
-          <option value="bottom">Devolver embaixo</option>
-          <option value="shuffle">Embaralhar</option>
-        </select>
-      </label>
-      <button type="button" disabled={busy || revealing || (cards.length === 0 && remainder !== 'shuffle')} onClick={conclude}>Concluir</button>
-    </div>
-  </div>;
+  );
 }
