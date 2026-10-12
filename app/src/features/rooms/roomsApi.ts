@@ -13,10 +13,12 @@ export type Match = {
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
-  players: { userId: number; name: string; life: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
+  players: { userId: number; name: string; life: number; counters?: Record<string, number>; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
-export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean };
+export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; counters?: Record<string, number> };
+
+export type CounterAction = { target: 'player'; playerId: number; name: string; operation: 'set' | 'increment'; value: number } | { target: 'card'; cardId: string; name: string; operation: 'set' | 'increment'; value: number };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
   const response = await fetch(path, {
@@ -80,6 +82,7 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
     return data.match;
   },
+  counter: (id: number, input: CounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter', ...input }),
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
   move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),
   position: (id: number, cardId: string, x: number, row: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'position', cardId, x, row }),

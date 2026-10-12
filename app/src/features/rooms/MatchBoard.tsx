@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card } from './roomsApi';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
+import { CounterControls } from './CounterControls';
 import { GameActions } from './GameActions';
 import { LibraryConsultation } from './LibraryConsultation';
 import { deckApi } from '../decks/deckApi';
@@ -11,11 +12,12 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [countersOpen, setCountersOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState<Card | null>(null);
@@ -134,7 +136,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreview(card)}
       onDismiss={closeLibrary}
     />
-    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
+    <CounterControls open={countersOpen} match={match} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onChange={counter} onClose={() => setCountersOpen(false)} />
+    <GameActions onCounters={() => { setActionsOpen(false); setLibraryOpen(false); setCountersOpen(true); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
     <CardPreview card={preview} onClose={closePreview} />
   </section>;
 }
@@ -177,6 +180,7 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
+  if (entry.kind === 'counter') return `${entry.actorName} alterou contadores: ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
   if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
   if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;

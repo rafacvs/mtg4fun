@@ -54,6 +54,11 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		PositionX        int      `json:"x"`
 		Row              int      `json:"row"`
 		ConsultFrom      string   `json:"consultFrom"`
+		Target           string   `json:"target"`
+		PlayerID         int64    `json:"playerId"`
+		CounterName      string   `json:"name"`
+		Operation        string   `json:"operation"`
+		Value            *int64   `json:"value"`
 	}
 	if err := decoder.Decode(&raw); err != nil {
 		httpserver.WriteError(w, 400, "Ação inválida.")
@@ -68,7 +73,20 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		return matchAction{}, false
 	}
 	input := matchAction{IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs, To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction, CardID: raw.CardID, PositionX: raw.PositionX, Row: raw.Row, ConsultFrom: raw.ConsultFrom}
+	input.Target, input.PlayerID, input.CounterName, input.Operation = raw.Target, raw.PlayerID, strings.TrimSpace(raw.CounterName), raw.Operation
+	if raw.Value != nil {
+		input.Value = *raw.Value
+	}
+	if input.Kind != "counter" && (raw.Target != "" || raw.PlayerID != 0 || raw.CounterName != "" || raw.Operation != "" || raw.Value != nil) {
+		httpserver.WriteError(w, 400, "Ação inválida.")
+		return matchAction{}, false
+	}
 	switch input.Kind {
+	case "counter":
+		if raw.Value == nil || !validCounterInput(input) || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Contador inválido.")
+			return matchAction{}, false
+		}
 	case "draw":
 		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
@@ -151,7 +169,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull):
+	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)

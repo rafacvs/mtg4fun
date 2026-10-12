@@ -37,6 +37,12 @@ retomar, inclusive após recarregar a página. As cartas reveladas aparecem para
 todos até serem movidas ou devolvidas; as demais continuam privadas. Essas
 operações são manuais, sem automatizar mecânicas de Magic.
 
+Em **Ações → Contadores**, jogadores definem ou incrementam a própria vida
+e contadores nomeados de jogadores e cartas autorizadas. Valores negativos
+são aceitos sem interpretar derrota. Valores e registro persistem após
+reinício; contadores de cartas privadas continuam protegidos. Veja a
+[semântica de vida e contadores](docs/decisions/12-vida-e-contadores.md).
+
 ## Executar com Docker
 
 Requisitos: Docker com Docker Compose 2.20 ou mais recente. Execute os comandos

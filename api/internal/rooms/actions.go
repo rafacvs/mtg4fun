@@ -33,6 +33,11 @@ type matchAction struct {
 	PositionX        int
 	Row              int
 	ConsultFrom      string
+	Target           string
+	PlayerID         int64
+	CounterName      string
+	Operation        string
+	Value            int64
 }
 
 type actionLogPayload struct {
@@ -382,6 +387,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	}
 	var payload actionLogPayload
 	switch input.Kind {
+	case "counter":
+		payload, err = changeCounter(&m, p, input)
 	case "draw":
 		payload, err = drawCards(p, input.Count)
 	case "move":

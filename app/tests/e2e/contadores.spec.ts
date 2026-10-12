@@ -1,0 +1,63 @@
+import { test, expect } from './fixtures';
+
+test('vida e contadores de jogador e carta pelo painel com mouse ou toque', async ({ page, browser, baseURL }, info) => {
+  test.skip(info.project.name === 'celular', 'Mesa exige orientação horizontal.');
+  const api = page.request;
+  expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+  const upload = await api.post('/api/decks', { multipart: { file: { name: 'contadores.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Contadores</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
+  expect(upload.status()).toBe(201);
+  const { deck } = await upload.json();
+  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
+  const observer = await browser.newContext({ baseURL, viewport: info.project.use.viewport, isMobile: info.project.use.isMobile, hasTouch: info.project.use.hasTouch });
+  try {
+    expect((await observer.request.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+    const otherDeck = await observer.request.post('/api/decks', { multipart: { file: { name: 'outro.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Outro</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
+    expect(otherDeck.status()).toBe(201);
+    expect((await observer.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
+    expect((await observer.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: (await otherDeck.json()).deck.id } })).ok()).toBe(true);
+    expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);
+    await page.goto(`/#/salas/${room.id}`);
+    const press = async (name: string) => {
+      const button = page.getByRole('button', { name, exact: true });
+      if (info.project.use.hasTouch) await button.tap(); else await button.click();
+    };
+    await press('Ações');
+    await press('Contadores');
+    const panel = page.getByRole('dialog', { name: 'Vida e contadores' });
+    await expect(panel).toBeVisible();
+    await panel.getByLabel('Valor do contador').fill('-3');
+    await press('Incrementar');
+    await expect(panel.getByText('Vida: 37', { exact: true })).toBeVisible();
+    await panel.getByLabel('Nome do contador').fill('Veneno');
+    await panel.getByLabel('Valor do contador').fill('2');
+    await press('Definir');
+    await expect(panel.getByText('Veneno: 2', { exact: true })).toBeVisible();
+    await panel.getByLabel('Alvo do contador').selectOption({ label: 'Island · Mão · 1' });
+    await panel.getByLabel('Nome do contador').fill('+1/+1');
+    await panel.getByLabel('Valor do contador').fill('4');
+    await press('Definir');
+    await expect(panel.getByText('+1/+1: 4', { exact: true })).toBeVisible();
+    await press('Fechar contadores');
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('+1/+1: 4', { exact: true })).toBeVisible();
+    const otherPage = await observer.newPage();
+    await otherPage.goto(`/#/salas/${room.id}`);
+    const focus = otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ });
+    if (info.project.use.hasTouch) await focus.tap(); else await focus.click();
+    await expect(otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' }).getByText('Vida: 37', { exact: true })).toBeVisible();
+    await expect(otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' }).getByText('Veneno: 2', { exact: true })).toBeVisible();
+    const view = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
+    const own = view.players.find((player: { userId: number }) => player.userId === view.viewerId);
+    expect((await observer.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'card', cardId: own.hand[0].id, name: '+1/+1', operation: 'set', value: 99 } })).status()).toBe(409);
+    await otherPage.getByRole('button', { name: 'Ações', exact: true }).click();
+    await otherPage.getByRole('button', { name: 'Contadores', exact: true }).click();
+    const otherPanel = otherPage.getByRole('dialog', { name: 'Vida e contadores' });
+    await expect(otherPanel.getByLabel('Alvo do contador').locator('option')).toHaveCount(1);
+    await expect(otherPanel.getByText('+1/+1: 4', { exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa' }).getByText('Vida: 37', { exact: true })).toBeVisible();
+    await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa' }).getByText('Veneno: 2', { exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('+1/+1: 4', { exact: true })).toBeVisible();
+  } finally { await observer.close(); }
+});

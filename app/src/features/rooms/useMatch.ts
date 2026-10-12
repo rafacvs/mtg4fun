@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { roomsApi, UnconfirmedActionError, type Match } from './roomsApi';
+import { roomsApi, UnconfirmedActionError, type Match, type CounterAction } from './roomsApi';
 
 export function useMatch(roomId: number) {
   const [match, setMatch] = useState<Match | null>(null);
@@ -55,6 +55,10 @@ export function useMatch(roomId: number) {
   return {
     match, error: error || syncError, busy, unconfirmed,
     retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
+    counter: (input: CounterAction) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.counter(roomId, input, intentId));
+    },
     draw: (count: number) => {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.draw(roomId, count, intentId));
