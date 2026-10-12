@@ -7,18 +7,24 @@ export type Room = {
   vacancies: number;
 };
 
+export type MarkerColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple';
+export type Markers = Partial<Record<MarkerColor, number>>;
 export type Match = {
   roomId: number;
   viewerId: number;
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
-  players: { userId: number; name: string; life: number; counters?: Record<string, number>; counterNames?: string[]; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
+  players: { userId: number; name: string; life: number; markers?: Markers; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
-export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; counters?: Record<string, number> };
+export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; power?: number; toughness?: number; markers?: Markers };
 
-export type CounterAction = { target: 'player'; playerId: number; name: string; operation: 'set' | 'increment'; value: number } | { target: 'card'; cardId: string; name: string; operation: 'set' | 'increment'; value: number };
+export type CounterAction =
+  | { target: 'player'; playerId: number; subject: 'life'; operation: 'set' | 'increment'; value: number }
+  | { target: 'player'; playerId: number; subject: 'marker'; color: MarkerColor; operation: 'set' | 'increment'; value: number }
+  | { target: 'card'; cardId: string; subject: 'power' | 'toughness'; operation: 'set' | 'increment'; value: number }
+  | { target: 'card'; cardId: string; subject: 'marker'; color: MarkerColor; operation: 'set' | 'increment'; value: number };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
   const response = await fetch(path, {

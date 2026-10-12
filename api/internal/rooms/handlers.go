@@ -56,7 +56,8 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		ConsultFrom      string   `json:"consultFrom"`
 		Target           string   `json:"target"`
 		PlayerID         int64    `json:"playerId"`
-		CounterName      string   `json:"name"`
+		Subject          string   `json:"subject"`
+		Color            string   `json:"color"`
 		Operation        string   `json:"operation"`
 		Value            *int64   `json:"value"`
 	}
@@ -73,11 +74,11 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		return matchAction{}, false
 	}
 	input := matchAction{IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs, To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction, CardID: raw.CardID, PositionX: raw.PositionX, Row: raw.Row, ConsultFrom: raw.ConsultFrom}
-	input.Target, input.PlayerID, input.CounterName, input.Operation = raw.Target, raw.PlayerID, strings.TrimSpace(raw.CounterName), raw.Operation
+	input.Target, input.PlayerID, input.Subject, input.Color, input.Operation = raw.Target, raw.PlayerID, raw.Subject, raw.Color, raw.Operation
 	if raw.Value != nil {
 		input.Value = *raw.Value
 	}
-	if input.Kind != "counter" && (raw.Target != "" || raw.PlayerID != 0 || raw.CounterName != "" || raw.Operation != "" || raw.Value != nil) {
+	if input.Kind != "counter" && (raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil) {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
 	}

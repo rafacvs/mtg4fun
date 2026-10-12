@@ -3,8 +3,6 @@ package rooms
 import (
 	"errors"
 	"fmt"
-	"unicode"
-	"unicode/utf8"
 )
 
 const maxCounterValue int64 = 9007199254740991
@@ -12,19 +10,34 @@ const maxCounterValue int64 = 9007199254740991
 var errCounterPermission = errors.New("Você só pode alterar seus contadores e as cartas autorizadas.")
 var errCounterRange = errors.New("O valor do contador excede o intervalo permitido.")
 
-func validCounterInput(input matchAction) bool {
-	if input.CounterName == "" || utf8.RuneCountInString(input.CounterName) > 80 || input.Value < -maxCounterValue || input.Value > maxCounterValue {
+func validColor(color string) bool {
+	switch color {
+	case "red", "yellow", "green", "blue", "purple":
+		return true
+	default:
 		return false
 	}
-	for _, r := range input.CounterName {
-		if unicode.IsControl(r) {
-			return false
-		}
+}
+
+func validCounterInput(input matchAction) bool {
+	if input.Value < -maxCounterValue || input.Value > maxCounterValue {
+		return false
 	}
 	if input.Operation != "set" && input.Operation != "increment" {
 		return false
 	}
-	return input.Target == "player" && input.PlayerID > 0 && input.CardID == "" || input.Target == "card" && input.CardID != "" && input.PlayerID == 0
+	player := input.Target == "player" && input.PlayerID > 0 && input.CardID == ""
+	card := input.Target == "card" && input.CardID != "" && input.PlayerID == 0
+	switch input.Subject {
+	case "life":
+		return player
+	case "power", "toughness":
+		return card
+	case "marker":
+		return (player || card) && validColor(input.Color)
+	default:
+		return false
+	}
 }
 
 func counterValue(current int64, input matchAction) (int64, error) {
@@ -38,24 +51,50 @@ func counterValue(current int64, input matchAction) (int64, error) {
 	return value, nil
 }
 
-func rememberCounterName(actor *playerState, name string) {
-	for _, existing := range actor.CounterNames {
-		if existing == name {
-			return
-		}
+func markerSlot(counts *colorCounts, color string) *int64 {
+	switch color {
+	case "red":
+		return &counts.Red
+	case "yellow":
+		return &counts.Yellow
+	case "green":
+		return &counts.Green
+	case "blue":
+		return &counts.Blue
+	case "purple":
+		return &counts.Purple
+	default:
+		return nil
 	}
-	actor.CounterNames = append(actor.CounterNames, name)
 }
 
-func updateNamedCounter(counters *map[string]int64, input matchAction) (int64, error) {
-	value, err := counterValue((*counters)[input.CounterName], input)
+func colorLabel(color string) string {
+	switch color {
+	case "red":
+		return "vermelho"
+	case "yellow":
+		return "amarelo"
+	case "green":
+		return "verde"
+	case "blue":
+		return "azul"
+	case "purple":
+		return "roxo"
+	default:
+		return color
+	}
+}
+
+func applyMarker(counts *colorCounts, input matchAction) (int64, error) {
+	slot := markerSlot(counts, input.Color)
+	if slot == nil {
+		return 0, errCounterRange
+	}
+	value, err := counterValue(*slot, input)
 	if err != nil {
 		return 0, err
 	}
-	if *counters == nil {
-		*counters = map[string]int64{}
-	}
-	(*counters)[input.CounterName] = value
+	*slot = value
 	return value, nil
 }
 
@@ -64,20 +103,23 @@ func changeCounter(m *matchState, actor *playerState, input matchAction) (action
 		if input.PlayerID != actor.UserID {
 			return actionLogPayload{}, errCounterPermission
 		}
-		var value int64
-		var err error
-		if input.CounterName == "Vida" {
-			value, err = counterValue(int64(actor.Life), input)
-			if err == nil {
-				actor.Life = int(value)
+		switch input.Subject {
+		case "life":
+			value, err := counterValue(int64(actor.Life), input)
+			if err != nil {
+				return actionLogPayload{}, err
 			}
-		} else {
-			value, err = updateNamedCounter(&actor.Counters, input)
-			if err == nil {
-				rememberCounterName(actor, input.CounterName)
+			actor.Life = int(value)
+			return actionLogPayload{Kind: "counter", Result: fmt.Sprintf("vida = %d", value)}, nil
+		case "marker":
+			value, err := applyMarker(&actor.Markers, input)
+			if err != nil {
+				return actionLogPayload{}, err
 			}
+			return actionLogPayload{Kind: "counter", Result: fmt.Sprintf("marcador %s = %d", colorLabel(input.Color), value)}, nil
+		default:
+			return actionLogPayload{}, errCounterPermission
 		}
-		return actionLogPayload{Kind: "counter", Result: fmt.Sprintf("%s = %d", input.CounterName, value)}, err
 	}
 	for i := range m.Players {
 		for _, name := range []string{"hand", "battlefield", "graveyard", "exile", "command", "consulted", "revealed"} {
@@ -94,9 +136,24 @@ func changeCounter(m *matchState, actor *playerState, input matchAction) (action
 				if !permitted {
 					return actionLogPayload{}, errCounterPermission
 				}
-				_, err := updateNamedCounter(&card.Counters, input)
-				if err == nil {
-					rememberCounterName(actor, input.CounterName)
+				var err error
+				switch input.Subject {
+				case "power":
+					var value int64
+					value, err = counterValue(card.Power, input)
+					if err == nil {
+						card.Power = value
+					}
+				case "toughness":
+					var value int64
+					value, err = counterValue(card.Toughness, input)
+					if err == nil {
+						card.Toughness = value
+					}
+				case "marker":
+					_, err = applyMarker(&card.Markers, input)
+				default:
+					err = errCounterPermission
 				}
 				return actionLogPayload{Kind: "counter", Result: "contador de carta alterado"}, err
 			}

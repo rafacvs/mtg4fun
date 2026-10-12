@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CounterValues } from './CounterValues';
+import { CardStats } from './CounterValues';
 import { deckApi } from '../decks/deckApi';
 import type { Card } from './roomsApi';
 
@@ -74,6 +74,6 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
     {failed
       ? <span className="card-fallback">{card.name}</span>
       : <img src={deckApi.imageURL(card.name)} alt="" draggable={false} onError={() => setFailed(true)} />}
-    <CounterValues counters={card.counters} />
+    <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
   </button>;
 }

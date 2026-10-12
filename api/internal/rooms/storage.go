@@ -58,34 +58,42 @@ type Turn struct {
 	Name   string `json:"name"`
 	Roll   int    `json:"roll"`
 }
+type colorCounts struct {
+	Red    int64 `json:"red,omitempty"`
+	Yellow int64 `json:"yellow,omitempty"`
+	Green  int64 `json:"green,omitempty"`
+	Blue   int64 `json:"blue,omitempty"`
+	Purple int64 `json:"purple,omitempty"`
+}
 type Card struct {
-	FaceDown     bool             `json:"faceDown,omitempty"`
-	ID           string           `json:"id"`
-	Name         string           `json:"name"`
-	OwnerID      int64            `json:"ownerId"`
-	ControllerID int64            `json:"controllerId"`
-	Zone         string           `json:"zone"`
-	PositionX    int              `json:"positionX"`
-	Row          int              `json:"row"`
-	StackOrder   int              `json:"stackOrder"`
-	Revealed     bool             `json:"revealed,omitempty"`
-	Counters     map[string]int64 `json:"counters,omitempty"`
+	FaceDown     bool        `json:"faceDown,omitempty"`
+	ID           string      `json:"id"`
+	Name         string      `json:"name"`
+	OwnerID      int64       `json:"ownerId"`
+	ControllerID int64       `json:"controllerId"`
+	Zone         string      `json:"zone"`
+	PositionX    int         `json:"positionX"`
+	Row          int         `json:"row"`
+	StackOrder   int         `json:"stackOrder"`
+	Revealed     bool        `json:"revealed,omitempty"`
+	Power        int64       `json:"power,omitempty"`
+	Toughness    int64       `json:"toughness,omitempty"`
+	Markers      colorCounts `json:"markers,omitempty"`
 }
 type playerState struct {
-	UserID           int64            `json:"userId"`
-	Name             string           `json:"name"`
-	Life             int              `json:"life"`
-	Counters         map[string]int64 `json:"counters,omitempty"`
-	CounterNames     []string         `json:"counterNames,omitempty"`
-	Library          []Card           `json:"library"`
-	Hand             []Card           `json:"hand"`
-	Battlefield      []Card           `json:"battlefield"`
-	Graveyard        []Card           `json:"graveyard"`
-	Exile            []Card           `json:"exile"`
-	Command          []Card           `json:"command"`
-	Consulted        []Card           `json:"consulted,omitempty"`
-	Revealed         []Card           `json:"revealed,omitempty"`
-	ConsultationFrom string           `json:"consultationFrom,omitempty"`
+	UserID           int64       `json:"userId"`
+	Name             string      `json:"name"`
+	Life             int         `json:"life"`
+	Markers          colorCounts `json:"markers,omitempty"`
+	Library          []Card      `json:"library"`
+	Hand             []Card      `json:"hand"`
+	Battlefield      []Card      `json:"battlefield"`
+	Graveyard        []Card      `json:"graveyard"`
+	Exile            []Card      `json:"exile"`
+	Command          []Card      `json:"command"`
+	Consulted        []Card      `json:"consulted,omitempty"`
+	Revealed         []Card      `json:"revealed,omitempty"`
+	ConsultationFrom string      `json:"consultationFrom,omitempty"`
 }
 type matchState struct {
 	RoomID         int64         `json:"roomId"`
@@ -105,37 +113,38 @@ type Match struct {
 	Log         []MatchLog    `json:"log"`
 }
 type MatchPlayer struct {
-	UserID           int64            `json:"userId"`
-	Name             string           `json:"name"`
-	Life             int              `json:"life"`
-	Counters         map[string]int64 `json:"counters,omitempty"`
-	CounterNames     []string         `json:"counterNames,omitempty"`
-	LibraryCount     int              `json:"libraryCount"`
-	HandCount        int              `json:"handCount"`
-	BattlefieldCount int              `json:"battlefieldCount"`
-	GraveyardCount   int              `json:"graveyardCount"`
-	ExileCount       int              `json:"exileCount"`
-	CommandCount     int              `json:"commandCount"`
-	Hand             []VisibleCard    `json:"hand,omitempty"`
-	Battlefield      []VisibleCard    `json:"battlefield,omitempty"`
-	Graveyard        []VisibleCard    `json:"graveyard,omitempty"`
-	Exile            []VisibleCard    `json:"exile,omitempty"`
-	Command          []VisibleCard    `json:"command,omitempty"`
-	Consulted        []VisibleCard    `json:"consulted,omitempty"`
-	Revealed         []VisibleCard    `json:"revealed,omitempty"`
-	ConsultationFrom string           `json:"consultationFrom,omitempty"`
+	UserID           int64         `json:"userId"`
+	Name             string        `json:"name"`
+	Life             int           `json:"life"`
+	Markers          colorCounts   `json:"markers,omitempty"`
+	LibraryCount     int           `json:"libraryCount"`
+	HandCount        int           `json:"handCount"`
+	BattlefieldCount int           `json:"battlefieldCount"`
+	GraveyardCount   int           `json:"graveyardCount"`
+	ExileCount       int           `json:"exileCount"`
+	CommandCount     int           `json:"commandCount"`
+	Hand             []VisibleCard `json:"hand,omitempty"`
+	Battlefield      []VisibleCard `json:"battlefield,omitempty"`
+	Graveyard        []VisibleCard `json:"graveyard,omitempty"`
+	Exile            []VisibleCard `json:"exile,omitempty"`
+	Command          []VisibleCard `json:"command,omitempty"`
+	Consulted        []VisibleCard `json:"consulted,omitempty"`
+	Revealed         []VisibleCard `json:"revealed,omitempty"`
+	ConsultationFrom string        `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
-	ID           string           `json:"id"`
-	Name         string           `json:"name"`
-	OwnerID      int64            `json:"ownerId"`
-	ControllerID int64            `json:"controllerId"`
-	Zone         string           `json:"zone"`
-	PositionX    int              `json:"positionX"`
-	Row          int              `json:"row"`
-	StackOrder   int              `json:"stackOrder"`
-	Revealed     bool             `json:"revealed,omitempty"`
-	Counters     map[string]int64 `json:"counters,omitempty"`
+	ID           string      `json:"id"`
+	Name         string      `json:"name"`
+	OwnerID      int64       `json:"ownerId"`
+	ControllerID int64       `json:"controllerId"`
+	Zone         string      `json:"zone"`
+	PositionX    int         `json:"positionX"`
+	Row          int         `json:"row"`
+	StackOrder   int         `json:"stackOrder"`
+	Revealed     bool        `json:"revealed,omitempty"`
+	Power        int64       `json:"power,omitempty"`
+	Toughness    int64       `json:"toughness,omitempty"`
+	Markers      colorCounts `json:"markers,omitempty"`
 }
 type MatchLog struct {
 	ActorID   int64  `json:"actorId"`
@@ -147,21 +156,28 @@ type MatchLog struct {
 	Result    string `json:"result,omitempty"`
 }
 
+func hideCardModifiers(c Card, viewerID int64) bool {
+	if c.FaceDown && !c.Revealed && c.OwnerID != viewerID && c.ControllerID != viewerID {
+		return true
+	}
+	return (c.Zone == "hand" || c.Zone == "consulted") && c.OwnerID != viewerID && !c.Revealed
+}
+
 func visible(cards []Card, viewerID int64) []VisibleCard {
 	out := make([]VisibleCard, len(cards))
 	for i, c := range cards {
-		counters := c.Counters
-		if c.FaceDown && !c.Revealed && c.OwnerID != viewerID && c.ControllerID != viewerID {
-			counters = nil
+		power, toughness, markers := c.Power, c.Toughness, c.Markers
+		if hideCardModifiers(c, viewerID) {
+			power, toughness, markers = 0, 0, colorCounts{}
 		}
-		out[i] = VisibleCard{ID: c.ID, Name: c.Name, OwnerID: c.OwnerID, ControllerID: c.ControllerID, Zone: c.Zone, PositionX: c.PositionX, Row: c.Row, StackOrder: c.StackOrder, Revealed: c.Revealed, Counters: counters}
+		out[i] = VisibleCard{ID: c.ID, Name: c.Name, OwnerID: c.OwnerID, ControllerID: c.ControllerID, Zone: c.Zone, PositionX: c.PositionX, Row: c.Row, StackOrder: c.StackOrder, Revealed: c.Revealed, Power: power, Toughness: toughness, Markers: markers}
 	}
 	return out
 }
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, Counters: v.Counters, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID), Revealed: visible(v.Revealed, viewerID)}
+		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID), Revealed: visible(v.Revealed, viewerID)}
 		for _, card := range v.Consulted {
 			if card.Revealed {
 				p[i].Revealed = append(p[i].Revealed, visible([]Card{card}, viewerID)[0])
@@ -171,7 +187,6 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 			p[i].Hand = visible(v.Hand, viewerID)
 			p[i].Consulted = visible(v.Consulted, viewerID)
 			p[i].ConsultationFrom = v.ConsultationFrom
-			p[i].CounterNames = v.CounterNames
 		}
 	}
 	current := Turn{}

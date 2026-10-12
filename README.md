@@ -37,11 +37,14 @@ retomar, inclusive após recarregar a página. As cartas reveladas aparecem para
 todos até serem movidas ou devolvidas; as demais continuam privadas. Essas
 operações são manuais, sem automatizar mecânicas de Magic.
 
-Em **Ações → Contadores**, jogadores definem ou incrementam a própria vida
-e contadores nomeados de jogadores e cartas autorizadas. Valores negativos
-são aceitos sem interpretar derrota. Valores e registro persistem após
-reinício; contadores de cartas privadas continuam protegidos. Veja a
-[semântica de vida e contadores](docs/decisions/12-vida-e-contadores.md).
+Em **Ações**, a grade abre uma tela para vida, marcadores, compra e dado.
+**Vida** altera o total do próprio jogador. **Marcadores** usa cinco cores
+neutras, sem significado de regra. Na carta, poder/resistência e as mesmas
+cores ficam em passos do diálogo da imagem. Valores negativos são aceitos
+sem interpretar derrota. Vida e marcadores do jogador são públicos;
+modificador e marcador de carta na mão não aparecem para o oponente. Valores
+e registro persistem após reinício. Veja a
+[semântica de vida e marcadores](docs/decisions/12-vida-e-contadores.md).
 
 ## Executar com Docker
 

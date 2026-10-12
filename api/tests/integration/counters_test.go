@@ -10,22 +10,35 @@ import (
 	"testing"
 )
 
-type counterCard struct {
-	ID       string         `json:"id"`
-	Counters map[string]int `json:"counters"`
+type markerCounts struct {
+	Red    int `json:"red"`
+	Yellow int `json:"yellow"`
+	Green  int `json:"green"`
+	Blue   int `json:"blue"`
+	Purple int `json:"purple"`
 }
 
-func TestNamedCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
+type counterCard struct {
+	ID        string       `json:"id"`
+	Power     int          `json:"power"`
+	Toughness int          `json:"toughness"`
+	Markers   markerCounts `json:"markers"`
+}
+
+func TestCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
 	e, id, cookies, players := counterMatch(t)
 	path := fmt.Sprintf("/api/rooms/%d/match/actions", id)
 	sequence := 0
-	action := func(target, operation, name string, value int64, cardID string) string {
+	action := func(target, subject, operation, color, cardID string, value int64) string {
 		sequence++
-		data := map[string]any{"intentId": fmt.Sprintf("20000000-0000-4000-8000-%012d", sequence), "kind": "counter", "target": target, "operation": operation, "name": name, "value": value}
+		data := map[string]any{"intentId": fmt.Sprintf("20000000-0000-4000-8000-%012d", sequence), "kind": "counter", "target": target, "subject": subject, "operation": operation, "value": value}
 		if target == "player" {
 			data["playerId"] = players[0]
 		} else {
 			data["cardId"] = cardID
+		}
+		if subject == "marker" {
+			data["color"] = color
 		}
 		body, err := json.Marshal(data)
 		if err != nil {
@@ -33,55 +46,56 @@ func TestNamedCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
 		}
 		return string(body)
 	}
-	view := decodeCounters(t, e.request("POST", path, action("player", "set", "Veneno", 2, ""), cookies[0], nil))
-	if view.Players[0].Counters["Veneno"] != 2 {
-		t.Fatal("contador jogador não definido")
+	view := decodeCounters(t, e.request("POST", path, action("player", "marker", "set", "red", "", 2), cookies[0], nil))
+	if view.Players[0].Markers.Red != 2 {
+		t.Fatal("marcador do jogador não definido")
 	}
-	results := make(chan response, 8)
+	bodies := make([]string, 8)
+	for i := range bodies {
+		bodies[i] = action("player", "marker", "increment", "red", "", 1)
+	}
+	results := make(chan response, len(bodies))
 	gate := make(chan struct{})
-	for i := 0; i < 8; i++ {
-		body := action("player", "increment", "Veneno", 1, "")
-		go func() { <-gate; results <- e.request("POST", path, body, cookies[0], nil) }()
+	for _, body := range bodies {
+		go func(payload string) { <-gate; results <- e.request("POST", path, payload, cookies[0], nil) }(body)
 	}
 	close(gate)
-	for i := 0; i < 8; i++ {
+	for range bodies {
 		requireStatus(t, <-results, 200)
 	}
 	view = decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil))
-	if view.Players[0].Counters["Veneno"] != 10 {
+	if view.Players[0].Markers.Red != 10 {
 		t.Fatalf("incrementos perdidos: %+v", view.Players[0])
 	}
 	view = decodeCounters(t, e.request("POST", path, `{"intentId":"30000000-0000-4000-8000-000000000001","kind":"draw","count":1}`, cookies[0], nil))
 	cardID := view.Players[0].Hand[0].ID
-	private := action("card", "set", "Segredo contador", 4, cardID)
-	view = decodeCounters(t, e.request("POST", path, private, cookies[0], nil))
-	if view.Players[0].Hand[0].Counters["Segredo contador"] != 4 {
-		t.Fatal("contador carta não definido")
+	privatePower := action("card", "power", "set", "", cardID, 4)
+	privateMarker := action("card", "marker", "set", "purple", cardID, 9)
+	view = decodeCounters(t, e.request("POST", path, privatePower, cookies[0], nil))
+	view = decodeCounters(t, e.request("POST", path, privateMarker, cookies[0], nil))
+	if view.Players[0].Hand[0].Power != 4 || view.Players[0].Hand[0].Markers.Purple != 9 {
+		t.Fatal("modificador ou marcador da carta não definido")
 	}
-	if !hasCounterName(view, view.ViewerID, "Veneno") || !hasCounterName(view, view.ViewerID, "Segredo contador") {
-		t.Fatalf("nomes usados na partida: %+v", view.Players)
-	}
-	requireStatus(t, e.request("POST", path, private, cookies[1], nil), 409)
+	requireStatus(t, e.request("POST", path, privatePower, cookies[1], nil), 409)
 	opponent := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil)
 	requireStatus(t, opponent, 200)
-	if bytes.Contains(opponent.body, []byte("Segredo contador")) || bytes.Contains(opponent.body, []byte(cardID)) || bytes.Contains(opponent.body, []byte("counterNames")) {
-		t.Fatalf("contador privado vazou: %s", opponent.body)
+	if bytes.Contains(opponent.body, []byte(cardID)) || bytes.Contains(opponent.body, []byte(`"purple":9`)) || bytes.Contains(opponent.body, []byte(`"power":4`)) {
+		t.Fatalf("modificador privado vazou: %s", opponent.body)
 	}
 	move := fmt.Sprintf(`{"intentId":"30000000-0000-4000-8000-000000000002","kind":"move","cardIds":[%q],"to":"battlefield"}`, cardID)
 	view = decodeCounters(t, e.request("POST", path, move, cookies[0], nil))
-	view = decodeCounters(t, e.request("POST", path, action("card", "increment", "Segredo contador", -1, cardID), cookies[0], nil))
-	if view.Players[0].Battlefield[0].Counters["Segredo contador"] != 3 {
-		t.Fatal("contador não preservou movimento/incremento")
+	view = decodeCounters(t, e.request("POST", path, action("card", "power", "increment", "", cardID, -1), cookies[0], nil))
+	if view.Players[0].Battlefield[0].Power != 3 || view.Players[0].Battlefield[0].Markers.Purple != 9 {
+		t.Fatal("modificador não preservou movimento/incremento")
 	}
 	public := decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil))
-	if public.Players[0].Battlefield[0].Counters["Segredo contador"] != 3 {
-		t.Fatal("contador público não compartilhado")
+	if public.Players[0].Battlefield[0].Power != 3 || public.Players[0].Battlefield[0].Markers.Purple != 9 || public.Players[0].Markers.Red != 10 {
+		t.Fatal("valor público não compartilhado")
 	}
 	before := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil)
-	// Denying log insertion must roll back the snapshot update too.
 	e.sql("REVOKE INSERT ON " + e.db + ".* FROM '" + e.db + "'@'%'")
 	e.disconnectDatabaseConnections()
-	failedBody := action("player", "increment", "Vida", -8, "")
+	failedBody := action("player", "life", "increment", "", "", -8)
 	requireStatus(t, e.request("POST", path, failedBody, cookies[0], nil), 500)
 	after := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil)
 	requireStatus(t, after, 200)
@@ -94,40 +108,22 @@ func TestNamedCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
 	e.stop()
 	e.start(false)
 	view = decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil))
-	if view.Players[0].Counters["Veneno"] != 10 || view.Players[0].Battlefield[0].Counters["Segredo contador"] != 3 || view.Players[0].Life != 32 {
+	if view.Players[0].Markers.Red != 10 || view.Players[0].Battlefield[0].Power != 3 || view.Players[0].Battlefield[0].Markers.Purple != 9 || view.Players[0].Life != 32 {
 		t.Fatalf("não restaurou: %+v", view.Players[0])
 	}
-	if !hasCounterName(view, view.ViewerID, "Veneno") || !hasCounterName(view, view.ViewerID, "Segredo contador") {
-		t.Fatal("nomes do jogador não sobreviveram ao reinício")
-	}
 	for _, entry := range view.Log {
-		if strings.Contains(entry.Result, "Segredo contador") {
-			t.Fatal("nome privado vazou no log histórico")
+		if strings.Contains(entry.Result, cardID) || strings.Contains(entry.Result, "purple") || strings.Contains(entry.Result, "power") {
+			t.Fatal("detalhe privado vazou no log histórico")
 		}
 	}
 }
 
 type counterPlayer struct {
-	UserID       int64          `json:"userId"`
-	Life         int            `json:"life"`
-	Counters     map[string]int `json:"counters"`
-	CounterNames []string       `json:"counterNames"`
-	Hand         []counterCard  `json:"hand"`
-	Battlefield  []counterCard  `json:"battlefield"`
-}
-
-func hasCounterName(view counterView, userID int64, name string) bool {
-	for _, player := range view.Players {
-		if player.UserID != userID {
-			continue
-		}
-		for _, existing := range player.CounterNames {
-			if existing == name {
-				return true
-			}
-		}
-	}
-	return false
+	UserID      int64         `json:"userId"`
+	Life        int64         `json:"life"`
+	Markers     markerCounts  `json:"markers"`
+	Hand        []counterCard `json:"hand"`
+	Battlefield []counterCard `json:"battlefield"`
 }
 
 type counterView struct {
@@ -194,7 +190,7 @@ func counterMatch(t *testing.T) (*environment, int64, []*http.Cookie, []int64) {
 func TestLifeCountersPublicPermissionsAndDurability(t *testing.T) {
 	e, id, cookies, players := counterMatch(t)
 	path := fmt.Sprintf("/api/rooms/%d/match/actions", id)
-	body := fmt.Sprintf(`{"intentId":"10000000-0000-4000-8000-000000000001","kind":"counter","target":"player","playerId":%d,"name":"Vida","operation":"increment","value":-3}`, players[0])
+	body := fmt.Sprintf(`{"intentId":"10000000-0000-4000-8000-000000000001","kind":"counter","target":"player","playerId":%d,"subject":"life","operation":"increment","value":-3}`, players[0])
 	view := decodeCounters(t, e.request("POST", path, body, cookies[0], nil))
 	if view.Players[0].Life != 37 {
 		t.Fatalf("vida: %+v", view.Players[0])
@@ -202,6 +198,10 @@ func TestLifeCountersPublicPermissionsAndDurability(t *testing.T) {
 	view = decodeCounters(t, e.request("POST", path, body, cookies[0], nil))
 	if view.Players[0].Life != 37 {
 		t.Fatal("retry duplicou incremento")
+	}
+	shared := decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil))
+	if shared.Players[0].Life != 37 {
+		t.Fatal("vida não é pública")
 	}
 	requireStatus(t, e.request("POST", path, body, cookies[1], nil), 409)
 	requireStatus(t, e.request("POST", path, body, cookies[2], nil), 404)
@@ -213,26 +213,35 @@ func TestLifeCountersPublicPermissionsAndDurability(t *testing.T) {
 	}
 }
 
-func TestCountersValidateValuesNamesAndTargets(t *testing.T) {
+func TestCountersValidateValuesAndTargets(t *testing.T) {
 	e, id, cookies, players := counterMatch(t)
 	path := fmt.Sprintf("/api/rooms/%d/match/actions", id)
-	base := fmt.Sprintf(`{"intentId":"40000000-0000-4000-8000-000000000001","kind":"counter","target":"player","playerId":%d,"name":"Vida","operation":"set","value":0}`, players[0])
+	base := fmt.Sprintf(`{"intentId":"40000000-0000-4000-8000-000000000001","kind":"counter","target":"player","playerId":%d,"subject":"life","operation":"set","value":0}`, players[0])
 	for _, body := range []string{
 		strings.Replace(base, `"value":0`, `"value":0.5`, 1),
 		strings.Replace(base, `"value":0`, `"value":9007199254740992`, 1),
 		strings.Replace(base, `"value":0`, `"value":null`, 1),
-		strings.Replace(base, `"name":"Vida"`, `"name":"  "`, 1),
-		strings.Replace(base, `"name":"Vida"`, `"name":"x\ny"`, 1),
+		strings.Replace(base, `"subject":"life"`, `"name":"livre"`, 1),
+		strings.Replace(base, `"subject":"life"`, `"subject":"outro"`, 1),
 		strings.Replace(base, `"operation":"set"`, `"operation":"remove"`, 1),
 		strings.Replace(base, `"value":0`, `"value":0,"cardId":"foreign"`, 1),
 		strings.Replace(base, `"value":0`, `"value":0,"count":1`, 1),
 		strings.Replace(base, `"kind":"counter"`, `"kind":"coin"`, 1),
+		strings.Replace(base, `"subject":"life"`, `"subject":"marker"`, 1),
+		strings.Replace(base, `"subject":"life"`, `"subject":"marker","color":"orange"`, 1),
+		strings.Replace(base, `"subject":"life"`, `"subject":"power"`, 1),
+		fmt.Sprintf(`{"intentId":"40000000-0000-4000-8000-000000000009","kind":"counter","target":"card","cardId":"ausente","subject":"life","operation":"set","value":1}`),
 	} {
 		requireStatus(t, e.request("POST", path, body, cookies[0], nil), 400)
 	}
 	view := decodeCounters(t, e.request("POST", path, base, cookies[0], nil))
 	if view.Players[0].Life != 0 {
 		t.Fatal("zero deveria ser aceito")
+	}
+	ignored := strings.Replace(strings.Replace(base, "000000000001", "000000000010", 1), `"value":0`, `"value":7,"color":"red"`, 1)
+	view = decodeCounters(t, e.request("POST", path, ignored, cookies[0], nil))
+	if view.Players[0].Life != 7 || view.Players[0].Markers.Red != 0 {
+		t.Fatal("vida não deve usar cor")
 	}
 	negative := strings.Replace(strings.Replace(base, "000000000001", "000000000002", 1), `"value":0`, `"value":-20`, 1)
 	view = decodeCounters(t, e.request("POST", path, negative, cookies[0], nil))
@@ -244,7 +253,7 @@ func TestCountersValidateValuesNamesAndTargets(t *testing.T) {
 	overflow := strings.Replace(strings.Replace(strings.Replace(base, "000000000001", "000000000004", 1), `"operation":"set"`, `"operation":"increment"`, 1), `"value":0`, `"value":1`, 1)
 	requireStatus(t, e.request("POST", path, overflow, cookies[0], nil), 409)
 	view = decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil))
-	if int64(view.Players[0].Life) != 9007199254740991 {
+	if view.Players[0].Life != 9007199254740991 {
 		t.Fatal("overflow alterou estado")
 	}
 }
@@ -256,35 +265,25 @@ func TestCountersRespectControllerAndHiddenMetadata(t *testing.T) {
 	cardID := view.Players[0].Hand[0].ID
 	move := fmt.Sprintf(`{"intentId":"50000000-0000-4000-8000-000000000002","kind":"move","cardIds":[%q],"to":"battlefield"}`, cardID)
 	decodeCounters(t, e.request("POST", path, move, cookies[0], nil))
-	// Prepare an existing transferred, face-down card. The transfer action is
-	// issue 14; assertions below exercise counters exclusively over HTTP.
 	e.sql(fmt.Sprintf("UPDATE "+e.db+".matches SET snapshot=JSON_SET(snapshot,'$.players[0].battlefield[0].controllerId',%d,'$.players[0].battlefield[0].faceDown',true) WHERE room_id=%d", players[1], id))
-	body := fmt.Sprintf(`{"intentId":"50000000-0000-4000-8000-000000000003","kind":"counter","target":"card","cardId":%q,"name":"Nome oculto","operation":"set","value":5}`, cardID)
+	body := fmt.Sprintf(`{"intentId":"50000000-0000-4000-8000-000000000003","kind":"counter","target":"card","cardId":%q,"subject":"marker","color":"red","operation":"set","value":5}`, cardID)
 	requireStatus(t, e.request("POST", path, body, cookies[0], nil), 409)
 	view = decodeCounters(t, e.request("POST", path, body, cookies[1], nil))
-	if view.Players[0].Battlefield[0].Counters["Nome oculto"] != 5 {
-		t.Fatal("controlador não recebeu contador")
+	if view.Players[0].Battlefield[0].Markers.Red != 5 {
+		t.Fatal("controlador não recebeu marcador")
 	}
-	// An observer distinct from owner/controller must not see the counter on the face-down card.
-	// The name stays in the suggestion list of the player who created it, only in this match.
 	e.sql(fmt.Sprintf("UPDATE "+e.db+".matches SET snapshot=JSON_SET(snapshot,'$.players[0].battlefield[0].controllerId',%d) WHERE room_id=%d", players[0], id))
 	observer := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil)
 	requireStatus(t, observer, 200)
 	hidden := decodeCounters(t, observer)
-	if hidden.Players[0].Battlefield[0].Counters["Nome oculto"] != 0 {
-		t.Fatalf("contador de carta oculta vazou: %+v", hidden.Players[0].Battlefield[0])
-	}
-	if !hasCounterName(hidden, hidden.ViewerID, "Nome oculto") {
-		t.Fatal("quem criou o nome não o reencontrou na partida")
-	}
-	owner := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil)
-	requireStatus(t, owner, 200)
-	if bytes.Contains(owner.body, []byte("counterNames")) {
-		t.Fatalf("lista de nomes vazou para outro jogador: %s", owner.body)
+	if hidden.Players[0].Battlefield[0].Markers.Red != 0 || bytes.Contains(observer.body, []byte(`"red":5`)) {
+		t.Fatalf("marcador de carta oculta vazou: %s", observer.body)
 	}
 	decodeCounters(t, e.request("POST", path, fmt.Sprintf(`{"intentId":"50000000-0000-4000-8000-000000000004","kind":"move","cardIds":[%q],"to":"hand"}`, cardID), cookies[0], nil))
-	// Outside the battlefield only ownership authorizes the counter change.
 	e.sql(fmt.Sprintf("UPDATE "+e.db+".matches SET snapshot=JSON_SET(snapshot,'$.players[0].hand[0].controllerId',%d) WHERE room_id=%d", players[1], id))
 	requireStatus(t, e.request("POST", path, strings.Replace(body, "000000000003", "000000000005", 1), cookies[1], nil), 409)
-	decodeCounters(t, e.request("POST", path, strings.Replace(body, "000000000003", "000000000006", 1), cookies[0], nil))
+	owned := decodeCounters(t, e.request("POST", path, strings.Replace(body, "000000000003", "000000000006", 1), cookies[0], nil))
+	if owned.Players[0].Hand[0].Markers.Red != 5 {
+		t.Fatal("dono não alterou a carta na mão")
+	}
 }

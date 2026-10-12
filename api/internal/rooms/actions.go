@@ -35,7 +35,8 @@ type matchAction struct {
 	ConsultFrom      string
 	Target           string
 	PlayerID         int64
-	CounterName      string
+	Subject          string
+	Color            string
 	Operation        string
 	Value            int64
 }

@@ -1,11 +1,28 @@
-.counter-section { display: grid; gap: 8px; margin-bottom: 10px; }
-.counter-section h3 { margin: 0; font-size: .85rem; }
-.counter-section label, .counter-create label { display: grid; gap: 4px; }
-.counter-section select, .counter-section input, .counter-create select, .counter-create input { width: 100%; min-height: 40px; }
-.life-value { display: inline-block; min-width: 2.5rem; text-align: center; }
-.card-preview .counter-section { margin-top: 12px; }
-.counter-values { display: flex; flex-wrap: wrap; gap: 4px; font-size: .75rem; }
-.counter-values > span { padding: 2px 5px; border-radius: 4px; background: #263d2c; color: #fff; overflow-wrap: anywhere; }
-.playing-card { position: relative; }
-.playing-card > .counter-values { position: absolute; left: 1px; right: 1px; bottom: 1px; max-height: 50%; overflow: auto; font-size: .65rem; }
-.player-table > .counter-values { padding: 4px 8px; }
+.adjust-block { display: grid; gap: 10px; }
+.adjust-block .draw-row { margin-bottom: 0; }
+.adjust-pair { display: grid; gap: 14px; }
+.adjust-pair h3 { margin: 0; font-size: .9rem; }
+.life-figure, .adjust-value { display: inline-block; min-width: 3rem; text-align: center; font-variant-numeric: tabular-nums; }
+.life-figure { font-size: 2.75rem; line-height: 1; }
+.adjust-value { font-size: 1.6rem; line-height: 1; }
+.marker-dots { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.marker-dot { width: 46px; height: 46px; padding: 0; border: 2px solid #0006; border-radius: 50%; color: #fff; font-weight: 800; line-height: 1; }
+button.marker-dot { min-height: 46px; }
+.marker-red { background: #c23b3b; }
+.marker-yellow { background: #d4a017; color: #1a1404; }
+.marker-green { background: #3d8c4a; }
+.marker-blue { background: #3a6fbf; }
+.marker-purple { background: #7a4ea3; }
+.player-heading .marker-dot { width: 22px; height: 22px; border-width: 1px; font-size: .68rem; }
+.card-stats { position: absolute; left: 2px; right: 2px; bottom: 2px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; pointer-events: none; }
+.pt-modifier { padding: 0 3px; border-radius: 4px; background: #101915e6; color: #fff; font-size: .62rem; font-weight: 800; }
+.playing-card .marker-dots { gap: 2px; }
+.playing-card .marker-dot { width: 14px; height: 14px; border-width: 1px; font-size: .55rem; }
+.card-preview .adjust-pair, .card-preview .marker-dots, .card-preview .card-stats { margin-top: 12px; }
+.card-preview .card-stats { position: static; }
+.card-preview button.marker-dot { padding: 0; }
+@media (max-height: 550px) {
+  .life-figure { font-size: 2rem; }
+  .marker-dot { width: 40px; height: 40px; }
+  button.marker-dot { min-height: 40px; }
+}

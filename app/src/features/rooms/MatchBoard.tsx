@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card, Match } from './roomsApi';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
-import { LifeControl, NamedCounters } from './CounterControls';
 import { GameActions } from './GameActions';
 import { LibraryConsultation } from './LibraryConsultation';
 import { deckApi } from '../decks/deckApi';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
+import './counters.css';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
@@ -136,11 +136,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreviewId(card.id)}
       onDismiss={closeLibrary}
     />
-    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} playerCounters={<>
-      <LifeControl life={own.life} playerId={own.userId} disabled={busy || unconfirmed} onChange={counter} />
-      <NamedCounters title="Seus contadores" counters={own.counters} names={own.counterNames ?? []} disabled={busy || unconfirmed} onChange={(name, operation, value) => counter({ target: 'player', playerId: own.userId, name, operation, value })} />
-    </>} />
-    <CardPreview card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} names={own.counterNames ?? []} disabled={busy || unconfirmed} onCounter={(name, operation, value) => preview ? counter({ target: 'card', cardId: preview.id, name, operation, value }) : Promise.resolve(false)} onClose={closePreview} />
+    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
+    <CardPreview card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} onCounter={(subject, operation, value, color) => {
+      if (!preview) return Promise.resolve(false);
+      if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
+      if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
+      return Promise.resolve(false);
+    }} onClose={closePreview} />
   </section>;
 }
 
