@@ -64,6 +64,12 @@
 .has-focus .player-table:not(.focused-table) { display: none; }
 .own-dock { flex-shrink: 0; max-height: 34%; display: flex; align-items: flex-end; gap: 8px; overflow: auto; border-top: 1px solid #687452; background: #18251c; padding: 6px 12px; }
 .own-dock > .zone-hand { flex: 1; min-width: 0; border: 0; padding: 0; }
+.library-consultation { flex: 1; min-width: 18rem; max-width: 34rem; align-self: stretch; padding: .5rem; overflow: auto; border: 1px solid #405242; border-radius: 8px; background: #14231a; }
+.library-consultation h2 { margin: 0 0 .4rem; font-size: .9rem; }
+.library-consultation label { display: inline-flex; align-items: center; gap: .25rem; margin: .15rem; font-size: .75rem; }
+.library-consultation input { max-width: 7rem; }
+.consult-controls { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.consult-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); max-height: 7rem; overflow: auto; margin: .35rem 0; }
 .own-dock .zone-hand .zone-cards { flex-wrap: nowrap; overflow: auto; padding: 5px; }
 .own-dock .zone-hand .zone-placeholder { padding: 0; }
 .actions-toggle { flex: 0 0 auto; min-height: 42px; padding: 8px 16px; }

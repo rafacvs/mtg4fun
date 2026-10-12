@@ -3,6 +3,7 @@ import type { Card } from './roomsApi';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { GameActions } from './GameActions';
+import { LibraryConsultation } from './LibraryConsultation';
 import { deckApi } from '../decks/deckApi';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
@@ -10,7 +11,7 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, roll, coin, turn, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, roll, coin, turn, consult, reorder, closeConsultation, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -59,6 +60,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           )}</div>
           <section className="own-dock" aria-label="Sua mão e ações">
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+            <LibraryConsultation
+              cards={own.consulted ?? []}
+              busy={busy || unconfirmed}
+              onConsult={(from, amount) => void consult(from, amount)}
+              onMove={(ids, to, placement) => void move(ids, to, placement)}
+              onReorder={ids => void reorder(ids)}
+              onClose={(placement, shouldShuffle) => void closeConsultation(placement, shouldShuffle)}
+            />
             <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => setActionsOpen(true)}>Ações</button>
           </section>
         </div>
@@ -100,5 +109,9 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
   if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
+  if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;
+  if (entry.kind === 'reorder') return `${entry.actorName} reorganizou uma consulta privada.`;
+  if (entry.kind === 'close') return `${entry.actorName} fechou a consulta do grimório.`;
+  if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;
   return 'Partida iniciada.';
 }
