@@ -79,5 +79,21 @@ export function useMatch(roomId: number) {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.turn(roomId, direction, intentId));
     },
+    consult: (from: 'all' | 'top' | 'bottom', count: number) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.consult(roomId, from, count, intentId));
+    },
+    reorder: (ids: string[]) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.reorder(roomId, ids, intentId));
+    },
+    closeConsultation: (placement: 'top' | 'bottom', shuffle: boolean) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.closeConsultation(roomId, placement, shuffle, intentId));
+    },
+    reveal: (count: number) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.reveal(roomId, count, intentId));
+    },
   };
 }

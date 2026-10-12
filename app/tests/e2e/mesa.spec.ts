@@ -3,6 +3,71 @@ import type { BrowserContext, Locator } from '@playwright/test';
 
 const cardImage = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64');
 
+async function intersectsVisibleFocusNav(target: Locator) {
+  if (await target.count() === 0) return false;
+  return target.evaluate(element => {
+    const nav = element.closest('nav');
+    if (!(nav instanceof HTMLElement)) return false;
+    const elementRect = element.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    const top = Math.max(navRect.top + nav.clientTop, 0);
+    const left = Math.max(navRect.left + nav.clientLeft, 0);
+    const right = Math.min(navRect.left + nav.clientLeft + nav.clientWidth, window.innerWidth);
+    const bottom = Math.min(navRect.top + nav.clientTop + nav.clientHeight, window.innerHeight);
+    if (right <= left || bottom <= top || elementRect.width <= 0 || elementRect.height <= 0) return false;
+    return elementRect.left < right && elementRect.right > left && elementRect.top < bottom && elementRect.bottom > top;
+  });
+}
+
+async function scrollThumbnailOutOfFocusNav(thumbnail: Locator) {
+  await thumbnail.evaluate(button => {
+    const nav = button.closest('nav');
+    if (!(nav instanceof HTMLElement)) return;
+    const navRect = nav.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const visibleTop = navRect.top + nav.clientTop;
+    const buttonTop = nav.scrollTop + (buttonRect.top - visibleTop);
+    const buttonBottom = buttonTop + buttonRect.height;
+    const maxScroll = Math.max(0, nav.scrollHeight - nav.clientHeight);
+    const belowButton = buttonBottom + 1;
+    const next = belowButton <= maxScroll ? belowButton : Math.max(0, buttonTop - nav.clientHeight - 1);
+    nav.scrollTop = Math.min(maxScroll, next);
+  });
+}
+
+test('indica a atividade do participante certo quando nomes se repetem', async ({ browser, baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Coberto uma vez contra a API real.');
+  const contexts: BrowserContext[] = [];
+  try {
+    let roomId = 0;
+    for (const login of ['amigo', 'homonimo']) {
+      const context = await browser.newContext({ baseURL });
+      contexts.push(context);
+      const api = context.request;
+      expect((await api.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
+      const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'duplicado.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Duplicado</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
+      const { deck } = await uploaded.json();
+      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+      else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
+      expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
+    }
+    expect((await contexts[0].request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+    const page = await contexts[0].newPage();
+    const other = await contexts[1].newPage();
+    await page.goto(`/#/salas/${roomId}`);
+    await other.goto(`/#/salas/${roomId}`);
+    const thumbnails = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button');
+    await expect(thumbnails).toHaveCount(2);
+    await other.getByRole('button', { name: 'Ações', exact: true }).click();
+    await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
+    await expect(thumbnails.nth(1).getByText('Atividade recente', { exact: true })).toBeVisible();
+    await expect(thumbnails.nth(0).getByText('Atividade recente', { exact: true })).toHaveCount(0);
+    await expect(thumbnails.nth(0)).toHaveAttribute('aria-pressed', 'true');
+  } finally {
+    await Promise.all(contexts.map(context => context.close()));
+  }
+});
+
 test('observa seis mesas mantendo mão, ações e privacidade com sincronização real', async ({ browser, baseURL }, testInfo) => {
   test.setTimeout(60_000);
   const contexts: BrowserContext[] = [];
@@ -47,6 +112,17 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await closeActions();
     const drawn = hand.getByRole('button', { name: 'Island', exact: true });
     await expect(drawn).toHaveCount(1);
+    if (testInfo.project.name === 'celular') {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.getByText('Gire o celular para jogar', { exact: true })).toBeVisible();
+      await expect(hand).toBeHidden();
+      await activate(other.getByRole('button', { name: 'Ações', exact: true }));
+      await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+      await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
+      await page.setViewportSize({ width: 844, height: 390 });
+      await expect(page.getByRole('region', { name: 'Registro da partida', exact: true })).toContainText(/Segundo amigo rolou D20: \d+\./);
+      await expect(drawn).toBeVisible();
+    }
     await expect(drawn.locator('img')).toBeVisible();
     await activate(drawn);
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
@@ -59,6 +135,18 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await expect(drawn).toBeVisible();
     }
     await openActions();
+    const secondThumbnail = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Segundo amigo/ });
+    if (testInfo.project.name === 'celular') {
+      await scrollThumbnailOutOfFocusNav(secondThumbnail);
+      await expect.poll(() => intersectsVisibleFocusNav(secondThumbnail)).toBe(false);
+    }
+    await activate(other.getByRole('button', { name: 'Ações', exact: true }));
+    await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+    const recentActivity = secondThumbnail.getByText('Atividade recente', { exact: true });
+    if (testInfo.project.name === 'celular') await expect.poll(() => intersectsVisibleFocusNav(recentActivity)).toBe(true);
+    else await expect(recentActivity).toBeVisible();
+    await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
+    await expect(page.getByText('Observando:', { exact: false })).toContainText('Amigo 6');
     await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
     await closeActions();
     await expect(drawn).toHaveCount(2);

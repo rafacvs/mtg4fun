@@ -3,6 +3,7 @@ import type { Card } from './roomsApi';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { GameActions } from './GameActions';
+import { LibraryConsultation } from './LibraryConsultation';
 import { deckApi } from '../decks/deckApi';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
@@ -10,19 +11,37 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, reorder, closeConsultation, retry } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [preview, setPreview] = useState<Card | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
+  const thumbnailsRef = useRef<HTMLElement>(null);
+  const knownLogEntries = useRef(0);
   const closePreview = useCallback(() => setPreview(null), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
+  const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   useEffect(() => {
     const list = logRef.current;
     if (list) list.scrollTop = list.scrollHeight;
+  }, [match?.log.length]);
+  useEffect(() => {
+    if (!match) return;
+    const previousLength = knownLogEntries.current;
+    knownLogEntries.current = match.log.length;
+    if (previousLength === 0 || match.log.length <= previousLength) return;
+    const actorId = match.log.at(-1)?.actorId;
+    if (!actorId) return;
+    const index = match.players.findIndex(player => player.userId === actorId);
+    thumbnailsRef.current?.querySelectorAll('button')?.[index]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    setActivePlayerId(actorId);
+    const timeout = window.setTimeout(() => setActivePlayerId(null), 3_000);
+    return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const gesture: CardGesture = {
     onInspect: card => { if (!drag) setPreview(card); },
@@ -66,13 +85,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           )}</div>
           <section className="own-dock" aria-label="Sua mão e ações">
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
-            <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => setActionsOpen(true)}>Ações</button>
+            <div className="dock-toggles">
+              <button type="button" className="actions-toggle" aria-expanded={libraryOpen} onClick={() => { setLibraryOpen(true); setActionsOpen(false); }}>Grimório</button>
+              <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
+            </div>
           </section>
         </div>
         <aside className="side-rail">
-          <nav className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
+          <nav ref={thumbnailsRef} className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
             <button key={player.userId} className="secondary" aria-pressed={player.userId === focused.userId} onClick={() => setFocusId(player.userId)}>
-              <strong>{player.name}</strong><span>{player.userId === match.viewerId ? 'Sua mesa · ' : ''}Vida {player.life}</span><span>Campo {player.battlefieldCount} · Mão {player.handCount}</span>
+              <strong>{player.name}{player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}</strong><span>{player.userId === match.viewerId ? 'Sua mesa · ' : ''}Vida {player.life}</span><span>Campo {player.battlefieldCount} · Mão {player.handCount}</span>
             </button>
           )}</nav>
           <section className="match-log" aria-label="Registro da partida">
@@ -88,6 +110,19 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <img src={deckApi.imageURL(drag.card.name)} alt="" />
       </div>}
     </div>
+    <LibraryConsultation
+      open={libraryOpen}
+      cards={own.consulted ?? []}
+      revealed={own.revealed ?? []}
+      busy={busy || unconfirmed}
+      onConsult={(from, amount) => void consult(from, amount)}
+      onReveal={amount => void reveal(amount)}
+      onMove={(ids, to, placement) => void move(ids, to, placement)}
+      onReorder={ids => void reorder(ids)}
+      onClose={(placement, shouldShuffle) => void closeConsultation(placement, shouldShuffle)}
+      onInspect={card => setPreview(card)}
+      onDismiss={closeLibrary}
+    />
     <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
     <CardPreview card={preview} onClose={closePreview} />
   </section>;
@@ -133,5 +168,10 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
   if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
+  if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;
+  if (entry.kind === 'reveal') return `${entry.actorName} revelou ${entry.result}.`;
+  if (entry.kind === 'reorder') return `${entry.actorName} reorganizou uma consulta privada.`;
+  if (entry.kind === 'close') return `${entry.actorName} fechou a consulta do grimório.`;
+  if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;
   return 'Partida iniciada.';
 }
