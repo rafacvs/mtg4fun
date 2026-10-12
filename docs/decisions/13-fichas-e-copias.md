@@ -26,6 +26,13 @@ As fronteiras de teste são o executável/API HTTP com MySQL real e reinício e
 os fluxos reais de navegador, já exigidos pelo [AGENTS](../../AGENTS.md) e pela
 [estratégia de testes](../testing.md).
 
+## Aprovação explícita da interface
+
+Em 12 de outubro de 2026 o usuário aprovou a apresentação, depois de ver a
+tela: a janela usa o mesmo painel das ações e do grimório e começa pela
+escolha entre ficha do catálogo e ficha personalizada. A cópia independente
+permanece no diálogo da carta. O contrato de criação não muda.
+
 ## Implementação e validação
 
 `GET /api/rooms/{id}/match/tokens?q=` exige participação na partida e retorna

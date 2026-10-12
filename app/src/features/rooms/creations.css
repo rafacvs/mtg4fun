@@ -1,13 +1,10 @@
-.creation-backdrop { position: fixed; inset: 0; z-index: 70; background: #0009; display: grid; place-items: center; padding: 8px; }
-.creation-panel { background: #172130; color: #f3f5f8; padding: 16px; border-radius: 12px; width: min(720px, 100%); max-height: calc(100dvh - 16px); overflow: auto; }
-.creation-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.creation-panel label { display: grid; gap: 4px; margin: 10px 0; }
-.creation-panel textarea { min-height: 72px; resize: vertical; font: inherit; }
-.creation-panel input, .creation-panel textarea { width: 100%; box-sizing: border-box; }
-.creation-panel form { border-top: 1px solid #526175; margin-top: 16px; }
-.token-results { list-style: none; margin: 12px 0; padding: 0; max-height: 230px; overflow: auto; }
-.token-results li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #526175; }
-.token-results img { width: 72px; height: 101px; object-fit: contain; }
+.token-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #758875 #17261d; }
+.token-list li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: center; padding: 7px; border: 1px solid #405242; border-radius: 10px; background: #1a2c21; }
+.token-list img { width: 48px; aspect-ratio: 63 / 88; object-fit: cover; border-radius: 5px; background: #203327; }
+.token-list strong, .token-list span { display: block; }
+.token-list span { margin: 2px 0 8px; color: #d2c29b; font-size: .75rem; }
+.token-list button { min-height: 36px; }
 .token-stats { display: flex; gap: 12px; }
 .token-stats label { flex: 1; }
+.library-consultation textarea { width: 100%; min-height: 72px; box-sizing: border-box; resize: vertical; padding: 11px 13px; border: 1px solid #687d69; border-radius: 10px; background: #122019; color: #f8f5ec; font: inherit; }
 .instance-text { white-space: pre-wrap; }
