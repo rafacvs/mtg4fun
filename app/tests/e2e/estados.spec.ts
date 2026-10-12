@@ -41,6 +41,18 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
     if (testInfo.project.name === 'desktop') {
       await button.dblclick(); await expect(button).toHaveAttribute('data-tapped', 'true');
       await expect(page.getByRole('dialog', { name: 'Imagem de Day Test' })).toHaveCount(0);
+    } else {
+      await button.evaluate(element => {
+        const at = { bubbles: true, cancelable: true, pointerType: 'touch', pointerId: 1, button: 0, clientX: 20, clientY: 20 };
+        element.dispatchEvent(new PointerEvent('pointerdown', at));
+        element.dispatchEvent(new PointerEvent('pointerup', at));
+        element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+        element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }));
+      });
+      await expect(button).toHaveAttribute('data-tapped', 'false');
+      const touchPreview = page.getByRole('dialog', { name: 'Imagem de Day Test' });
+      await expect(touchPreview).toBeVisible();
+      await touchPreview.getByRole('button', { name: 'Fechar', exact: true }).click();
     }
     await button.click();
     const preview = page.getByRole('dialog', { name: 'Imagem de Day Test' });

@@ -74,7 +74,7 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
     onPointerDown={pointerDown}
     onDoubleClick={() => {
       if (clickTimer.current) window.clearTimeout(clickTimer.current);
-      if (draggable && card.zone === 'battlefield') onToggleTapped?.(card);
+      if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse') onToggleTapped?.(card);
     }}
     onClick={event => {
       if (suppressClick.current) { suppressClick.current = false; return; }
