@@ -54,9 +54,25 @@ export function useMatch(roomId: number) {
   }
   return {
     match, error: error || syncError, busy, unconfirmed,
-    cardState: (fields: Record<string, unknown>) => {
+    setTapped: (cardIds: string[], tapped: boolean) => {
       const intentId = crypto.randomUUID();
-      return act(() => roomsApi.cardState(roomId, fields, intentId));
+      return act(() => roomsApi.setTapped(roomId, cardIds, tapped, intentId));
+    },
+    untapAll: () => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.untapAll(roomId, intentId));
+    },
+    setFace: (cardId: string, faceIndex: number) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.setFace(roomId, cardId, faceIndex, intentId));
+    },
+    setFaceDown: (cardIds: string[], faceDown: boolean) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.setFaceDown(roomId, cardIds, faceDown, intentId));
+    },
+    revealCards: (cardIds: string[], revealed: boolean) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.revealCards(roomId, cardIds, revealed, intentId));
     },
     retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
     draw: (count: number) => {

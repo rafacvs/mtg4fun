@@ -70,7 +70,11 @@ function subscribe(updates: Updates): () => void {
 
 export const roomsApi = {
   subscribe,
-  cardState: (id: number, fields: Record<string, unknown>, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, ...fields }),
+  setTapped: (id: number, cardIds: string[], tapped: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_tapped', cardIds, tapped }),
+  untapAll: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'untap_all' }),
+  setFace: (id: number, cardId: string, faceIndex: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face', cardId, faceIndex }),
+  setFaceDown: (id: number, cardIds: string[], faceDown: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face_down', cardIds, faceDown }),
+  revealCards: (id: number, cardIds: string[], revealed: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal_cards', cardIds, revealed }),
   create: () => change('/api/rooms'),
   join: (id: number) => change(`/api/rooms/${id}/participants`),
   ready: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/ready`, 'PUT', { deckId }),

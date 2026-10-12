@@ -12,7 +12,7 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry, cardState } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry, setTapped, untapAll, setFace, setFaceDown, revealCards } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -47,7 +47,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const gesture: CardGesture = {
-    onToggleTapped: card => { if (!busy && !unconfirmed) void cardState({kind: 'set_tapped', cardIds: [card.id], tapped: !card.tapped}); },
+    onToggleTapped: card => { if (!busy && !unconfirmed) void setTapped([card.id], !card.tapped); },
     onInspect: card => { if (!drag) setPreview(card); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
@@ -55,10 +55,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   };
 
   const changeCardState: CardStateChange = (kind, card, value) => {
-    const fields = kind === 'set_face'
-      ? { kind, cardId: card.id, faceIndex: value }
-      : { kind, cardIds: [card.id], [kind === 'set_tapped' ? 'tapped' : kind === 'set_face_down' ? 'faceDown' : 'revealed']: value };
-    void cardState(fields);
+    if (kind === 'set_face') void setFace(card.id, Number(value));
+    else if (kind === 'set_tapped') void setTapped([card.id], Boolean(value));
+    else if (kind === 'set_face_down') void setFaceDown([card.id], Boolean(value));
+    else void revealCards([card.id], Boolean(value));
   };
 
   async function dropCard(card: Card, x: number, y: number) {
@@ -144,7 +144,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreview(card)}
       onDismiss={closeLibrary}
     />
-    <GameActions onUntapAll={() => void cardState({kind: 'untap_all'})} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
+    <GameActions onUntapAll={() => void untapAll()} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
     <CardPreview card={currentPreview} onClose={closePreview} viewerId={match.viewerId} disabled={busy || unconfirmed} onStateChange={changeCardState} />
   </section>;
 }
