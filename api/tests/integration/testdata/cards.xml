@@ -3,4 +3,6 @@
 <card><name>Island</name><text>Add U.</text><set uuid="island-printing">TST</set><prop><type>Basic Land — Island</type><colors>U</colors></prop></card>
 <card><name>Fire // Ice</name><text>Two faces.</text><set>TST</set><prop><type>Instant</type><manacost>1R // 1U</manacost><layout>split</layout></prop><related attach="transform">Fire</related><related attach="transform">Ice</related></card>
 <card><name>Urza's Saga</name><text>Chapter I.</text><set>TST</set><prop><type>Enchantment Land — Urza's Saga</type></prop></card>
+<card><name>Day Test</name><text>Front face.</text><set uuid="day-test">TST</set><related attach="transform">Night Test</related></card>
+<card><name>Night Test</name><text>Back face.</text><set uuid="day-test">TST</set><prop><side>back</side></prop><related attach="transform">Day Test</related></card>
 </cards></cockatrice_carddatabase>

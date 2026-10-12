@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MarkerRows, QuantityAdjust } from './CounterControls';
 import type { CounterAction, Markers } from './roomsApi';
 
-const laterActions = ['Desvirar todas', 'Criar ficha'];
+const laterActions = ['Criar ficha'];
 type Screen = 'menu' | 'draw' | 'roll' | 'life' | 'markers';
 
 type Props = {
@@ -25,9 +25,10 @@ type Props = {
   onLibrary: () => void;
   onCounter: (input: CounterAction) => Promise<boolean>;
   onClose: () => void;
+  onUntapAll: () => void;
 };
 
-export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, life, markers, playerId, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onCounter, onClose }: Props) {
+export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, life, markers, playerId, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onCounter, onClose, onUntapAll }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -69,6 +70,7 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
       {consultationActive
         ? <button type="button" onClick={onLibrary}>Retomar consulta do grimório</button>
         : <button type="button" disabled={!canAct} onClick={onShuffle}>Embaralhar grimório</button>}
+      <button type="button" disabled={!canAct} onClick={onUntapAll}>Desvirar todas</button>
       <button type="button" disabled={!canAct} onClick={() => setScreen('life')}>Vida</button>
       <button type="button" disabled={!canAct} onClick={() => setScreen('markers')}>Marcadores</button>
       {laterActions.map(action => <button type="button" key={action} disabled>{action}</button>)}

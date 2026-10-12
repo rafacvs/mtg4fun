@@ -60,6 +60,10 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		Color            string   `json:"color"`
 		Operation        string   `json:"operation"`
 		Value            *int64   `json:"value"`
+		Tapped           *bool    `json:"tapped"`
+		FaceDown         *bool    `json:"faceDown"`
+		Revealed         *bool    `json:"revealed"`
+		FaceIndex        *int     `json:"faceIndex"`
 	}
 	if err := decoder.Decode(&raw); err != nil {
 		httpserver.WriteError(w, 400, "Ação inválida.")
@@ -78,7 +82,21 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	if raw.Value != nil {
 		input.Value = *raw.Value
 	}
-	if input.Kind != "counter" && (raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil) {
+	if raw.Tapped != nil {
+		input.Tapped = *raw.Tapped
+	}
+	if raw.FaceDown != nil {
+		input.FaceDown = *raw.FaceDown
+	}
+	if raw.Revealed != nil {
+		input.Revealed = *raw.Revealed
+	}
+	if raw.FaceIndex != nil {
+		input.FaceIndex = *raw.FaceIndex
+	}
+	counterFields := raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil
+	stateFields := input.Kind != "set_tapped" && raw.Tapped != nil || input.Kind != "set_face_down" && raw.FaceDown != nil || input.Kind != "reveal_cards" && raw.Revealed != nil || input.Kind != "set_face" && raw.FaceIndex != nil
+	if input.Kind != "counter" && counterFields || stateFields {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
 	}
@@ -88,6 +106,25 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			httpserver.WriteError(w, 400, "Contador inválido.")
 			return matchAction{}, false
 		}
+	case "set_tapped", "set_face_down", "reveal_cards", "set_face", "untap_all":
+		valid := input.Count == 0 && input.To == "" && input.LibraryPlacement == "" && input.Sides == 0 && input.Direction == "" && input.PositionX == 0 && input.Row == 0 && input.ConsultFrom == ""
+		switch input.Kind {
+		case "untap_all":
+			valid = valid && len(input.CardIDs) == 0 && input.CardID == ""
+		case "set_face":
+			valid = valid && input.CardID != "" && len(input.CardIDs) == 0 && raw.FaceIndex != nil && input.FaceIndex >= 0
+		case "set_tapped":
+			valid = valid && len(input.CardIDs) > 0 && input.CardID == "" && raw.Tapped != nil
+		case "set_face_down":
+			valid = valid && len(input.CardIDs) > 0 && input.CardID == "" && raw.FaceDown != nil
+		case "reveal_cards":
+			valid = valid && len(input.CardIDs) > 0 && input.CardID == "" && raw.Revealed != nil
+		}
+		if !valid {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+
 	case "draw":
 		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
@@ -170,7 +207,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange):
+	case errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)
