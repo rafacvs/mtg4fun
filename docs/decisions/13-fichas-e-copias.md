@@ -17,8 +17,10 @@ somente das características ou de todos os estados. O usuário respondeu
   alterações posteriores no original não propagam para a cópia.
 - Busca autenticada de fichas compartilhadas, com até 100 resultados ordenados.
 - Personalização: nome entre 1 e 200 caracteres, descrição até 5000,
-  poder/resistência opcionais como texto até 32 caracteres; imagem padrão local,
-  sem upload.
+  poder/resistência opcionais como o modificador numérico da mesa, inclusive
+  negativo; imagem padrão local, sem upload. A busca do catálogo ainda mostra
+  o texto impresso da ficha. Na mesa, só entra o inteiro; um valor como `*`
+  fica zero.
 - Ações novas reutilizam HTTP, intenção UUID, transação, snapshot e log já
   existentes. Nenhuma nova dependência, infraestrutura ou fonte externa.
 
