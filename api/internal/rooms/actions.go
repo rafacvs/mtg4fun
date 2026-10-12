@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"mtg4fun/internal/auth"
 )
@@ -60,6 +61,10 @@ func zone(p *playerState, name string) *[]Card {
 		return &p.Exile
 	case "command":
 		return &p.Command
+	case "consulted":
+		return &p.Consulted
+	case "revealed":
+		return &p.Revealed
 	}
 	return nil
 }
@@ -77,11 +82,8 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 		}
 		seen[id] = true
 		found := false
-		for _, name := range []string{"hand", "battlefield", "graveyard", "exile", "command", "consulted"} {
+		for _, name := range []string{"hand", "battlefield", "graveyard", "exile", "command", "consulted", "revealed"} {
 			cardsInZone := zone(p, name)
-			if name == "consulted" {
-				cardsInZone = &p.Consulted
-			}
 			for i, c := range *cardsInZone {
 				if c.ID != id {
 					continue
@@ -192,6 +194,21 @@ func closeConsultation(p *playerState, placement string, shuffleLibrary bool) (a
 	return actionLogPayload{Kind: "close"}, nil
 }
 
+func revealCards(p *playerState, count int) (actionLogPayload, error) {
+	if len(p.Consulted) != 0 || count < 1 || count > len(p.Library) {
+		return actionLogPayload{}, errInsufficientCards
+	}
+	cards := append([]Card(nil), p.Library[:count]...)
+	p.Library = p.Library[count:]
+	names := make([]string, len(cards))
+	for i := range cards {
+		cards[i].Zone = "revealed"
+		names[i] = cards[i].Name
+	}
+	p.Revealed = append(p.Revealed, cards...)
+	return actionLogPayload{Kind: "reveal", Count: len(cards), Result: strings.Join(names, ", ")}, nil
+}
+
 func drawCards(p *playerState, count int) (actionLogPayload, error) {
 	if count < 1 || count > len(p.Library) {
 		return actionLogPayload{}, errInsufficientCards
@@ -286,6 +303,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = moveCards(p, input)
 	case "consult":
 		payload, err = consultCards(p, input)
+	case "reveal":
+		payload, err = revealCards(p, input.Count)
 	case "reorder":
 		payload, err = reorderConsulted(p, input.CardIDs)
 	case "close":

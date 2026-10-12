@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -488,6 +489,38 @@ func TestStartReturnsControlledD20TiebreakOverHTTP(t *testing.T) {
 	}
 }
 
+func consultedCardIDs(t *testing.T, body []byte) []string {
+	t.Helper()
+	var payload struct {
+		Match struct {
+			Players []struct {
+				Consulted []struct {
+					ID string `json:"id"`
+				} `json:"consulted"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for _, player := range payload.Match.Players {
+		if len(player.Consulted) == 0 {
+			continue
+		}
+		if ids != nil {
+			t.Fatalf("mais de um jogador com consulta: %s", body)
+		}
+		for _, card := range player.Consulted {
+			ids = append(ids, card.ID)
+		}
+	}
+	if len(ids) == 0 {
+		t.Fatalf("consulta privada ausente: %s", body)
+	}
+	return ids
+}
+
 func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	e := newEnvironment(t)
 	for _, account := range []string{"ana", "bia", "fora"} {
@@ -560,20 +593,46 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	if bytes.Contains(otherConsult.body, []byte(consulted[0].ID)) || bytes.Contains(otherConsult.body, []byte(consulted[0].Name)) {
 		t.Fatalf("consulta privada vazou: %s", otherConsult.body)
 	}
-	reorder := fmt.Sprintf(`{"intentId":"20202020-2020-4020-8020-202020202020","kind":"reorder","cardIds":[%q,%q]}`, consulted[1].ID, consulted[0].ID)
+	reordered := []string{consulted[1].ID, consulted[0].ID}
+	reorder := fmt.Sprintf(`{"intentId":"20202020-2020-4020-8020-202020202020","kind":"reorder","cardIds":[%q,%q]}`, reordered[0], reordered[1])
 	requireStatus(t, e.request("POST", actionPath, reorder, ana, nil), 200)
 	requireStatus(t, e.request("POST", actionPath, `{"intentId":"30303030-3030-4030-8030-303030303030","kind":"close","libraryPlacement":"top"}`, ana, nil), 200)
-	bottomConsult := e.request("POST", actionPath, `{"intentId":"31313131-3131-4131-8131-313131313131","kind":"consult","consultFrom":"bottom","count":1}`, ana, nil)
-	requireStatus(t, bottomConsult, 200)
-	if !bytes.Contains(bottomConsult.body, []byte(`"consulted"`)) {
-		t.Fatalf("consulta do fundo não foi confirmada publicamente: %s", bottomConsult.body)
+	topAfterReorder := e.request("POST", actionPath, `{"intentId":"50505050-5050-4050-8050-505050505050","kind":"consult","consultFrom":"top","count":2}`, ana, nil)
+	requireStatus(t, topAfterReorder, 200)
+	if got := consultedCardIDs(t, topAfterReorder.body); !slices.Equal(got, reordered) {
+		t.Fatalf("reordenar e fechar no topo não preservou a ordem: obtido %v, esperado %v", got, reordered)
 	}
-	requireStatus(t, e.request("POST", actionPath, `{"intentId":"32323232-3232-4232-8232-323232323232","kind":"close","libraryPlacement":"bottom"}`, ana, nil), 200)
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"51515151-5151-4151-8151-515151515151","kind":"close","libraryPlacement":"bottom"}`, ana, nil), 200)
+	bottomAfterClose := e.request("POST", actionPath, `{"intentId":"52525252-5252-4252-8252-525252525252","kind":"consult","consultFrom":"bottom","count":2}`, ana, nil)
+	requireStatus(t, bottomAfterClose, 200)
+	if got := consultedCardIDs(t, bottomAfterClose.body); !slices.Equal(got, reordered) {
+		t.Fatalf("fechar no fundo não devolveu os mesmos ids ao consultar o fundo: obtido %v, esperado %v", got, reordered)
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"53535353-5353-4353-8353-535353535353","kind":"close","libraryPlacement":"bottom"}`, ana, nil), 200)
+	topAfterBottom := e.request("POST", actionPath, `{"intentId":"54545454-5454-4454-8454-545454545454","kind":"consult","consultFrom":"top","count":2}`, ana, nil)
+	requireStatus(t, topAfterBottom, 200)
+	if got := consultedCardIDs(t, topAfterBottom.body); slices.Equal(got, reordered) || slices.Contains(got, reordered[0]) || slices.Contains(got, reordered[1]) {
+		t.Fatalf("consultar o topo devolveu a sequência fechada no fundo: %v", got)
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"56565656-5656-4566-8566-565656565656","kind":"close","libraryPlacement":"top"}`, ana, nil), 200)
+	beforeShuffle := e.request("POST", actionPath, `{"intentId":"57575757-5757-4575-8575-575757575757","kind":"consult","consultFrom":"top","count":7}`, ana, nil)
+	requireStatus(t, beforeShuffle, 200)
+	orderBeforeShuffle := consultedCardIDs(t, beforeShuffle.body)
+	if len(orderBeforeShuffle) != 7 {
+		t.Fatalf("topo antes de embaralhar: %v", orderBeforeShuffle)
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"58585858-5858-4585-8585-585858585858","kind":"close","libraryPlacement":"top"}`, ana, nil), 200)
 	shuffle := e.request("POST", actionPath, `{"intentId":"40404040-4040-4040-8040-404040404040","kind":"shuffle","libraryPlacement":"top"}`, ana, nil)
 	requireStatus(t, shuffle, 200)
 	if !bytes.Contains(shuffle.body, []byte(`"kind":"shuffle"`)) {
 		t.Fatalf("embaralhamento não foi confirmado publicamente: %s", shuffle.body)
 	}
+	afterShuffle := e.request("POST", actionPath, `{"intentId":"59595959-5959-4595-8595-595959595959","kind":"consult","consultFrom":"top","count":7}`, ana, nil)
+	requireStatus(t, afterShuffle, 200)
+	if got := consultedCardIDs(t, afterShuffle.body); slices.Equal(got, orderBeforeShuffle) {
+		t.Fatalf("embaralhar não mudou a ordem do topo: %v", orderBeforeShuffle)
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"5a5a5a5a-5a5a-45a5-85a5-5a5a5a5a5a5a","kind":"close","libraryPlacement":"top"}`, ana, nil), 200)
 	draw := `{"intentId":"11111111-1111-4111-8111-111111111111","kind":"draw","count":2}`
 	requireStatus(t, e.request("POST", actionPath, draw, ana, nil), 200)
 	// The same intent may be retried after a lost response without drawing again.
@@ -668,6 +727,13 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		}
 	}
 	requireStatus(t, e.request("POST", actionPath, `{"intentId":"33333333-3333-4333-8333-333333333333","kind":"draw","count":1}`, outsider, nil), 404)
+	persistedConsult := e.request("POST", actionPath, `{"intentId":"5b5b5b5b-5b5b-45b5-85b5-5b5b5b5b5b5b","kind":"consult","consultFrom":"top","count":5}`, ana, nil)
+	requireStatus(t, persistedConsult, 200)
+	libraryOrder := consultedCardIDs(t, persistedConsult.body)
+	if len(libraryOrder) != 5 {
+		t.Fatalf("ordem do grimório antes de reiniciar: %v", libraryOrder)
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"5c5c5c5c-5c5c-45c5-85c5-5c5c5c5c5c5c","kind":"close","libraryPlacement":"top"}`, ana, nil), 200)
 	e.stop()
 	e.start(false)
 	recovered := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
@@ -734,16 +800,24 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 			hasShuffle = true
 		}
 	}
-	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 9+success || !hasShuffle {
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !contains(restoredAna.Battlefield, own.Hand[0].ID) || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 19+success || !hasShuffle {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
+	restoredConsult := e.request("POST", actionPath, `{"intentId":"5d5d5d5d-5d5d-45d5-85d5-5d5d5d5d5d5d","kind":"consult","consultFrom":"top","count":5}`, ana, nil)
+	requireStatus(t, restoredConsult, 200)
+	if got := consultedCardIDs(t, restoredConsult.body); !slices.Equal(got, libraryOrder) {
+		t.Fatalf("ordem persistida do grimório: obtido %v, esperado %v", got, libraryOrder)
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"5e5e5e5e-5e5e-45e5-85e5-5e5e5e5e5e5e","kind":"close","libraryPlacement":"top"}`, ana, nil), 200)
 	// A database permission failure after parsing cannot publish an acknowledged partial draw.
+	baseline := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, baseline, 200)
 	e.sql("REVOKE INSERT ON " + e.db + ".* FROM '" + e.db + "'@'%'; GRANT INSERT ON " + e.db + ".rooms TO '" + e.db + "'@'%'")
 	e.disconnectDatabaseConnections()
 	requireStatus(t, e.request("POST", actionPath, `{"intentId":"44444444-4444-4444-8444-444444444444","kind":"draw","count":1}`, ana, nil), 500)
 	still := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
 	requireStatus(t, still, 200)
-	if !bytes.Equal(still.body, recovered.body) {
+	if !bytes.Equal(still.body, baseline.body) {
 		t.Fatalf("falha parcial alterou estado: %s", still.body)
 	}
 }
