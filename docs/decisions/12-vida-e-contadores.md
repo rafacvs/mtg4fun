@@ -2,14 +2,19 @@
 
 Issue: [12](../issues/12-modificar-vida-e-contadores.md).
 
-## Proposta e aprovação explícita
+## Implementação existente
 
-Após investigar o endpoint de ações e o snapshot transacional existentes,
-foram apresentados definir e incrementar inteiros, permissões do próprio
-jogador, dono em zonas privadas e controlador no campo, com filtragem de
-informações privadas. O usuário respondeu **“12: ok”** à proposta consolidada
-durante esta implementação. Essa autorização não altera banco, transporte,
-autenticação ou as regras de Magic.
+A issue pede documentar a semântica de definir e incrementar. O contrato
+abaixo é a escolha implementada para cumprir essa issue: inteiros com
+definir e incrementar, permissão do próprio jogador, dono fora do campo e
+controlador no campo, com filtragem de informações privadas. Não há registro
+de proposta apresentada ao usuário nem de autorização explícita anterior
+à implementação.
+
+A escolha não cria migration, transporte nem autenticação novos e não
+interpreta regras de Magic. Campos JSON opcionais no snapshot existente
+mantêm partidas antigas legíveis. Confirmar ou ajustar essa semântica
+continua com o usuário.
 
 ## Contrato e semântica
 
