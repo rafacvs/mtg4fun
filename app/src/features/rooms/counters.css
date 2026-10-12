@@ -1,7 +1,13 @@
 .adjust-block { display: grid; gap: 10px; }
 .adjust-block .draw-row { margin-bottom: 0; }
-.adjust-pair { display: grid; gap: 14px; }
-.adjust-pair h3 { margin: 0; font-size: .9rem; }
+.pt-line { display: flex; align-items: center; gap: 8px; }
+.pt-line input { width: 4.5rem; min-height: 40px; text-align: center; }
+.pt-slash { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+.pt-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.marker-rows { display: grid; gap: 8px; }
+.marker-row { display: flex; align-items: center; gap: 8px; }
+.marker-row input { width: 3.5rem; min-height: 40px; text-align: center; }
+.marker-row .marker-dot { flex: 0 0 auto; }
 .life-figure, .adjust-value { display: inline-block; min-width: 3rem; text-align: center; font-variant-numeric: tabular-nums; }
 .life-figure { font-size: 2.75rem; line-height: 1; }
 .adjust-value { font-size: 1.6rem; line-height: 1; }

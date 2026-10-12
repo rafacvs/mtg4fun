@@ -18,15 +18,14 @@ não interpreta o que a cor significa, nem derrota, custo ou regra de Magic.
 - **Vida** abre uma tela só, a partir do item Vida na grade de ações. Número
   grande, − e +, e uma quantidade com Definir, Adicionar e Subtrair. Subtrair
   usa número positivo. Não há marcador ao lado.
-- **Marcadores** do jogador abre outra tela. Cinco cores neutras — vermelho,
-  amarelo, verde, azul e roxo — aparecem como círculos com a quantidade.
-  Escolher uma cor abre o ajuste só daquela cor. O rótulo acessível é
-  “marcador vermelho”, “marcador amarelo”, “marcador verde”, “marcador azul”
-  e “marcador roxo”.
-- Na carta, o diálogo já aberto pelo clique (`CardPreview`) tem dois passos,
-  não um formulário único: **Poder e resistência** (dois inteiros, positivos
-  ou negativos) e **Marcador** (as mesmas cinco cores). Na carta, o modificador
-  aparece como `+2/+2` ou `-1/+0` quando não é zero. Não existe o nome “+1/+1”.
+- **Marcadores** do jogador abre uma tela só. Cada cor — vermelho, amarelo,
+  verde, azul e roxo — fica numa linha, com −, quantidade, + e Definir na
+  frente do círculo. Não abre outra tela por cor.
+- Na carta, **Poder e resistência** é uma linha: quantidade de poder, /,
+  quantidade de resistência, e um único Definir, Adicionar e Subtrair.
+  **Marcador** usa as mesmas linhas de cor, sem sair do diálogo. Na carta, o
+  modificador aparece como `+2/+2` ou `-1/+0` quando não é zero. Não existe o
+  nome “+1/+1”.
 
 O menu Ações volta a ser só a grade de intenções. Cada intenção que pede
 valor abre uma tela. Voltar fica no cabeçalho, à esquerda do título, na mesma

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { MarkerPalette, QuantityAdjust, markerName, markerValue } from './CounterControls';
-import type { CounterAction, MarkerColor, Markers } from './roomsApi';
+import { MarkerRows, QuantityAdjust } from './CounterControls';
+import type { CounterAction, Markers } from './roomsApi';
 
 const laterActions = ['Desvirar todas', 'Criar ficha'];
-type Screen = 'menu' | 'draw' | 'roll' | 'life' | 'markers' | 'marker';
+type Screen = 'menu' | 'draw' | 'roll' | 'life' | 'markers';
 
 type Props = {
   open: boolean;
@@ -32,17 +32,15 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const [screen, setScreen] = useState<Screen>('menu');
-  const [color, setColor] = useState<MarkerColor | null>(null);
   const canAct = !busy && !unconfirmed;
   const canDraw = canAct && Number.isInteger(count) && count >= 1;
   const canRoll = canAct && Number.isInteger(sides) && sides >= 2 && sides <= 100;
-  const opened = open ? `${screen}:${color ?? ''}` : '';
-  const title = screen === 'marker' && color ? `Marcador ${markerName(color)}` : { menu: 'Ações do jogo', draw: 'Comprar cartas', roll: 'Rolar dado', life: 'Vida', markers: 'Marcadores', marker: 'Marcadores' }[screen];
+  const opened = open ? screen : '';
+  const title = { menu: 'Ações do jogo', draw: 'Comprar cartas', roll: 'Rolar dado', life: 'Vida', markers: 'Marcadores' }[screen];
 
   useEffect(() => {
     if (open) return;
     setScreen('menu');
-    setColor(null);
   }, [open]);
 
   // Foca o fechar só quando a tela abre. O polling e uma nova identidade de onClose não recentram o foco.
@@ -55,11 +53,7 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
   }, [opened]);
 
   if (!open) return null;
-  const back = () => {
-    if (screen === 'marker') { setScreen('markers'); setColor(null); return; }
-    setScreen('menu');
-    setColor(null);
-  };
+  const back = () => setScreen('menu');
   return <div className="actions-panel" role="dialog" aria-label="Ações do jogo">
     <header>
       {screen !== 'menu' && <button type="button" className="secondary panel-back" onClick={back}>Voltar</button>}
@@ -98,7 +92,6 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
       <button type="button" disabled={!canRoll} onClick={onRoll}>Rolar dado</button>
     </div>}
     {screen === 'life' && <QuantityAdjust label="vida" value={life} disabled={!canAct} onApply={(operation, value) => onCounter({ target: 'player', playerId, subject: 'life', operation, value })} />}
-    {screen === 'markers' && <MarkerPalette markers={markers} disabled={!canAct} onPick={next => { setColor(next); setScreen('marker'); }} />}
-    {screen === 'marker' && color && <QuantityAdjust label={`marcador ${markerName(color)}`} value={markerValue(markers, color)} disabled={!canAct} onApply={(operation, value) => onCounter({ target: 'player', playerId, subject: 'marker', color, operation, value })} />}
+    {screen === 'markers' && <MarkerRows markers={markers} disabled={!canAct} onApply={(color, operation, value) => onCounter({ target: 'player', playerId, subject: 'marker', color, operation, value })} />}
   </div>;
 }
