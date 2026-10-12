@@ -38,18 +38,14 @@ segundo; não foi criado stream de partidas nem WebSocket.
 
 ## Posicionamento em fileiras (issue 08)
 
-O campo tem quatro fileiras invisíveis. A posição horizontal é guardada como
-um inteiro normalizado de 0 a 1000 e cada fileira como 0 a 3; assim, as duas
-medidas representam a mesma organização lógica em telas de qualquer largura
-ou altura. Na renderização, 0 e 1000 encostam respectivamente as bordas
-esquerda e direita da carta no campo, e as fileiras repartem sua altura em
-quatro posições. Esta é uma escolha local de apresentação, sem alterar a
-arquitetura nem o contrato de transporte aprovado.
-
-Cada reposicionamento recebe uma ordem de pilha monotônica persistida. Cartas
-na mesma coordenada e fileira podem se sobrepor, e a ordem é reproduzida para
-todos os participantes. A sobreposição não cria relação entre cartas: a ação
-seguinte sempre reposiciona somente a carta indicada.
+O campo tem fileiras invisíveis sem quantidade fixa. A fileira é um inteiro
+a partir de 0 e a posição horizontal é um inteiro em pixels de referência
+(carta de 72 px). A tela desenha cada fileira com a altura da carta mais 3 px,
+e a mesa rola na horizontal e na vertical. O zoom é só da vista de quem olha.
+Soltar uma carta sobre outra forma uma pilha de no máximo 3, com as de cima
+deslocadas 14 px à direita e 16 px para baixo. A quarta carta fica ao lado,
+na mesma fileira. A ordem da pilha é persistida e reproduzida para todos. A
+ação seguinte reposiciona somente a carta indicada.
 
 ## Correção da experiência da mesa
 

@@ -24,29 +24,36 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   await expect(cards).toHaveCount(2);
   await cards.nth(0).dragTo(field, { steps: 8 });
-  await expect(field.getByRole('button', { name: 'Island', exact: true })).toHaveCount(1);
-  await cards.nth(0).dragTo(field, { steps: 8 });
   const fieldCards = field.getByRole('button', { name: 'Island', exact: true });
+  await expect(fieldCards).toHaveCount(1);
+  const base = await fieldCards.nth(0).boundingBox();
+  if (testInfo.project.use.hasTouch) await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: base!.x + base!.width / 2, y: base!.y + base!.height / 2 });
+  else await cards.nth(0).dragTo(fieldCards.nth(0), { targetPosition: { x: base!.width / 2, y: base!.height / 2 }, steps: 8 });
   await expect(fieldCards).toHaveCount(2);
-  const first = await fieldCards.nth(0).boundingBox();
-  const second = await fieldCards.nth(1).boundingBox();
-  expect(Math.abs(first!.x - second!.x)).toBeLessThan(3);
-  expect(Math.abs(first!.y - second!.y)).toBeLessThan(3);
-
-  const fieldBox = await field.boundingBox();
-  const target = { x: fieldBox!.x + 8, y: fieldBox!.y + fieldBox!.height / 3 };
-  if (testInfo.project.use.hasTouch) await dragWithTouch(page, second!, target);
+  const stacked = await fieldCards.nth(1).boundingBox();
+  expect(stacked!.x - base!.x).toBeGreaterThanOrEqual(8);
+  expect(stacked!.x - base!.x).toBeLessThanOrEqual(24);
+  expect(stacked!.y - base!.y).toBeGreaterThanOrEqual(8);
+  expect(stacked!.y - base!.y).toBeLessThanOrEqual(24);
+  const target = { x: base!.x + 8, y: base!.y + base!.height + 10 };
+  if (testInfo.project.use.hasTouch) await dragWithTouch(page, stacked!, target);
   else {
-    await page.mouse.move(second!.x + second!.width / 2, second!.y + second!.height / 2);
+    await page.mouse.move(stacked!.x + stacked!.width / 2, stacked!.y + stacked!.height / 2);
     await page.mouse.down();
     await page.mouse.move(target.x, target.y, { steps: 8 });
     await page.mouse.up();
   }
   await expect(fieldCards).toHaveCount(2);
-  const moved = await fieldCards.nth(1).boundingBox();
-  expect(Math.abs(first!.x - moved!.x)).toBeGreaterThan(10);
-  const rows = await field.locator('.positioned-card').evaluateAll(cards => cards.map(card => Number.parseFloat((card as HTMLElement).style.top)));
-  expect(rows.some(row => Math.abs(row - 100 / 3) < 0.01)).toBe(true);
+  await expect(async () => {
+    const stayed = await fieldCards.nth(0).boundingBox();
+    const moved = await fieldCards.nth(1).boundingBox();
+    expect(Math.abs(stayed!.x - base!.x)).toBeLessThanOrEqual(2);
+    expect(Math.abs(stayed!.y - base!.y)).toBeLessThanOrEqual(2);
+    expect(Math.hypot(moved!.x - stacked!.x, moved!.y - stacked!.y)).toBeGreaterThan(2);
+    const gap = moved!.y - (stayed!.y + stayed!.height);
+    expect(gap).toBeGreaterThanOrEqual(2);
+    expect(gap).toBeLessThanOrEqual(4);
+  }).toPass();
 });
 
 async function dragWithTouch(page: Page, source: { x: number; y: number; width: number; height: number }, target: { x: number; y: number }) {

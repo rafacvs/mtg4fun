@@ -1,3 +1,4 @@
+import { useEffect, useState, type CSSProperties } from 'react';
 import type { Card, Match } from './roomsApi';
 import { PlayingCard } from './PlayingCard';
 
@@ -62,11 +63,39 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture }: 
 
 function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps) {
   const cards = player.battlefield ?? [];
-  return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined}>
-    <header><span>Campo</span><strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong></header>
-    <div className="zone-cards battlefield-cards">
-      {cards.map(card => <div key={card.id} className="positioned-card" style={{ left: `${card.positionX / 10}%`, top: `${card.row * 100 / 3}%`, transform: `translate(-${card.positionX / 10}%, -${card.row * 100 / 3}%)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} {...gesture} /></div>)}
-      {cards.length === 0 && <span className="zone-placeholder">Campo</span>}
+  const [zoom, setZoom] = useState(1);
+  const maxRow = cards.reduce((max, card) => Math.max(max, card.row), 0);
+  const maxX = cards.reduce((max, card) => Math.max(max, card.positionX), 0);
+  useEffect(() => {
+    const node = document.querySelector<HTMLElement>(`[data-field-owner="${player.userId}"] .battlefield-scroll`);
+    if (!node) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      setZoom(current => Math.min(2.5, Math.max(0.5, Math.round((current + (event.deltaY < 0 ? 0.25 : -0.25)) * 100) / 100)));
+    };
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
+  }, [player.userId]);
+  return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
+    <header>
+      <span>Campo</span>
+      <span className="field-zoom">
+        <button type="button" aria-label="Diminuir zoom" onClick={() => setZoom(current => Math.max(0.5, Math.round((current - 0.25) * 100) / 100))}>−</button>
+        <button type="button" aria-label="Aumentar zoom" onClick={() => setZoom(current => Math.min(2.5, Math.round((current + 0.25) * 100) / 100))}>+</button>
+      </span>
+      <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
+    </header>
+    <div className="battlefield-scroll">
+      <div className="battlefield-zoom-space" style={{ '--mat-cols': Math.max(14, Math.ceil(maxX / 72) + 6), '--mat-rows': maxRow + 8, '--mat-zoom': zoom } as CSSProperties}>
+        <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} style={{ '--mat-cols': Math.max(14, Math.ceil(maxX / 72) + 6), '--mat-rows': maxRow + 8, '--mat-zoom': zoom } as CSSProperties}>
+          {cards.map(card => {
+            const mates = cards.filter(other => other.row === card.row && other.positionX === card.positionX).sort((a, b) => a.stackOrder - b.stackOrder);
+            const index = Math.max(0, mates.findIndex(other => other.id === card.id));
+            return <div key={card.id} className="positioned-card" data-pos-x={card.positionX} data-row={card.row} data-stack-size={mates.length} style={{ left: `calc(${card.positionX} * var(--card-width) / 72 + ${index * 14}px)`, top: `calc(${card.row} * (var(--card-width) * 88 / 63 + 3px) + ${index * 16}px)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} {...gesture} /></div>;
+          })}
+        </div>
+      </div>
     </div>
   </section>;
 }

@@ -17,6 +17,7 @@ var errNotController = errors.New("Você só pode mover cartas sob seu controle.
 var errCardNotFound = errors.New("Carta não encontrada nesta zona.")
 var errInsufficientCards = errors.New("Não há cartas suficientes no grimório.")
 var errInvalidPosition = errors.New("Posição inválida no campo.")
+var errStackFull = errors.New("Essa pilha já tem 3 cartas.")
 
 type matchAction struct {
 	IntentID         string
@@ -112,9 +113,8 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	for i := range cards {
 		cards[i].Zone = input.To
 		if input.To == "battlefield" {
-			position := len(p.Battlefield) + i
-			cards[i].PositionX = (position % 4) * 250
-			cards[i].Row = (position / 4) % 4
+			cards[i].PositionX = (len(p.Battlefield) + i) * 80
+			cards[i].Row = 0
 		}
 	}
 	if input.To == "library" && input.LibraryPlacement == "top" {
@@ -126,8 +126,17 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 }
 
 func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
-	if input.PositionX < 0 || input.PositionX > 1000 || input.Row < 0 || input.Row > 3 {
+	if input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
 		return actionLogPayload{}, errInvalidPosition
+	}
+	others := 0
+	for _, card := range p.Battlefield {
+		if card.ID != input.CardID && card.Row == input.Row && card.PositionX == input.PositionX {
+			others++
+		}
+	}
+	if others >= 3 {
+		return actionLogPayload{}, errStackFull
 	}
 	for i := range p.Battlefield {
 		if p.Battlefield[i].ID != input.CardID {

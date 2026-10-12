@@ -94,7 +94,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			return matchAction{}, false
 		}
 	case "position":
-		if input.CardID == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.PositionX < 0 || input.PositionX > 1000 || input.Row < 0 || input.Row > 3 {
+		if input.CardID == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
@@ -124,7 +124,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition):
+	case errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)

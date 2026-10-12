@@ -582,6 +582,30 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 	if !bytes.Contains(positioned.body, []byte(`"positionX":735`)) || !bytes.Contains(positioned.body, []byte(`"row":2`)) || !bytes.Contains(positioned.body, []byte(`"kind":"position"`)) {
 		t.Fatalf("posição não confirmada: %s", positioned.body)
 	}
+	var placed struct {
+		Match struct {
+			Players []struct {
+				Battlefield []struct {
+					ID         string `json:"id"`
+					StackOrder int    `json:"stackOrder"`
+				} `json:"battlefield"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(positioned.body, &placed); err != nil {
+		t.Fatal(err)
+	}
+	stackOrder := 0
+	for _, player := range placed.Match.Players {
+		for _, card := range player.Battlefield {
+			if card.ID == own.Hand[0].ID {
+				stackOrder = card.StackOrder
+			}
+		}
+	}
+	if stackOrder == 0 {
+		t.Fatalf("posição sem ordem de pilha: %s", positioned.body)
+	}
 	otherView = e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", bia, nil)
 	requireStatus(t, otherView, 200)
 	if !bytes.Contains(otherView.body, []byte(own.Hand[0].Name)) || bytes.Contains(otherView.body, []byte(own.Hand[1].ID)) {
@@ -643,9 +667,10 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 					ID string `json:"id"`
 				} `json:"hand"`
 				Battlefield []struct {
-					ID        string `json:"id"`
-					PositionX int    `json:"positionX"`
-					Row       int    `json:"row"`
+					ID         string `json:"id"`
+					PositionX  int    `json:"positionX"`
+					Row        int    `json:"row"`
+					StackOrder int    `json:"stackOrder"`
 				} `json:"battlefield"`
 				Graveyard []struct {
 					ID string `json:"id"`
@@ -668,9 +693,10 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 			ID string `json:"id"`
 		}
 		Battlefield []struct {
-			ID        string `json:"id"`
-			PositionX int    `json:"positionX"`
-			Row       int    `json:"row"`
+			ID         string `json:"id"`
+			PositionX  int    `json:"positionX"`
+			Row        int    `json:"row"`
+			StackOrder int    `json:"stackOrder"`
 		}
 		Graveyard []struct {
 			ID string `json:"id"`
@@ -702,7 +728,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		}
 		return false
 	}
-	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !containsBattlefield(own.Hand[0].ID) || restoredAna.Battlefield[0].PositionX != 735 || restoredAna.Battlefield[0].Row != 2 || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 4+success {
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !containsBattlefield(own.Hand[0].ID) || restoredAna.Battlefield[0].PositionX != 735 || restoredAna.Battlefield[0].Row != 2 || restoredAna.Battlefield[0].StackOrder != stackOrder || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 4+success {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
 	// A database permission failure after parsing cannot publish an acknowledged partial draw.

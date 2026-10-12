@@ -102,14 +102,26 @@ function dropZoneAt(x: number, y: number) {
 }
 
 function battlefieldPositionAt(x: number, y: number) {
-  for (const element of document.elementsFromPoint(x, y)) {
-    const field = element.closest<HTMLElement>('[data-drop-zone="battlefield"]');
-    if (!field) continue;
-    const box = field.getBoundingClientRect();
-    return {
-      x: Math.round(Math.max(0, Math.min(1, (x - box.left) / box.width)) * 1000),
-      row: Math.round(Math.max(0, Math.min(1, (y - box.top) / box.height)) * 3),
-    };
+  const elements = document.elementsFromPoint(x, y);
+  for (const element of elements) {
+    const stack = element.closest<HTMLElement>('[data-stack-size]');
+    if (!stack) continue;
+    const size = Number(stack.dataset.stackSize);
+    const anchorX = Number(stack.dataset.posX);
+    const row = Number(stack.dataset.row);
+    if (size < 3) return { x: anchorX, row };
+    return { x: anchorX + 86, row };
+  }
+  for (const element of elements) {
+    const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
+    if (!canvas) continue;
+    const zoom = Number(canvas.dataset.zoom || '1');
+    const box = canvas.getBoundingClientRect();
+    const cardWidth = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--card-width')) || 72;
+    const localX = (x - box.left) / zoom;
+    const localY = (y - box.top) / zoom;
+    const pitch = cardWidth * 88 / 63 + 3;
+    return { x: Math.max(0, Math.round(localX / cardWidth * 72)), row: Math.max(0, Math.floor(localY / pitch)) };
   }
   return null;
 }
