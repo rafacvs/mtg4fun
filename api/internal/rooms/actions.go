@@ -37,6 +37,12 @@ type matchAction struct {
 	Revealed         bool
 	FaceIndex        int
 	ConsultFrom      string
+	Target           string
+	PlayerID         int64
+	Subject          string
+	Color            string
+	Operation        string
+	Value            int64
 }
 
 type actionLogPayload struct {
@@ -384,6 +390,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	}
 	var payload actionLogPayload
 	switch input.Kind {
+	case "counter":
+		payload, err = changeCounter(&m, p, input)
 	case "set_tapped", "untap_all", "set_face", "set_face_down", "reveal_cards":
 		payload, err = changeCardState(p, input)
 	case "draw":

@@ -44,6 +44,15 @@ Duplo clique no próprio campo vira/desvira; **Desvirar todas** fica no menu
 **Ações**. Escolher um lado da carta e colocá-la face para baixo são estados
 independentes. Movimentos preservam esses estados e a revelação.
 
+Em **Ações**, a grade abre uma tela para vida, marcadores, compra e dado.
+**Vida** altera o total do próprio jogador. **Marcadores** usa cinco cores
+neutras, sem significado de regra. Na carta, poder e resistência ficam no
+diálogo da imagem, e as cores abrem em seguida. Valores negativos são aceitos
+sem interpretar derrota. Vida e marcadores do jogador são públicos;
+modificador e marcador de carta na mão não aparecem para o oponente. Valores
+e registro persistem após reinício. Veja a
+[semântica de vida e marcadores](docs/decisions/12-vida-e-contadores.md).
+
 ## Executar com Docker
 
 Requisitos: Docker com Docker Compose 2.20 ou mais recente. Execute os comandos

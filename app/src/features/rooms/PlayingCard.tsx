@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CardStats } from './CounterValues';
 import { deckApi } from '../decks/deckApi';
 import type { Card } from './roomsApi';
 
@@ -87,5 +88,6 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
     {card.faceDown || !card.name ? <span className="card-back">Face para baixo{card.revealed && <small>Revelada</small>}</span> : failed
       ? <span className="card-fallback">{card.name}</span>
       : <img src={deckApi.imageURL(card.faces?.[card.faceIndex ?? 0] || card.name)} alt="" draggable={false} onError={() => setFailed(true)} />}
+    <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
   </button>;
 }
