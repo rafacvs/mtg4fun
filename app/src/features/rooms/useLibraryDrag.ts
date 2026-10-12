@@ -56,7 +56,6 @@ export function useLibraryDrag(
           current.y >= rect.top - 28 &&
           current.y <= rect.bottom + 28
         ) {
-          list.scrollLeft += speed(current.x, rect.left, rect.right);
           list.scrollTop += speed(current.y, rect.top, rect.bottom);
           locate(current);
         }

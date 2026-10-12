@@ -126,13 +126,10 @@
   min-height: 0;
   padding: 5px;
   gap: 12px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #758875 #17261d;
-}
-.library-strip {
-  display: flex;
-  align-items: flex-start;
 }
 .library-list {
   display: flex;
@@ -150,10 +147,6 @@
   background: #1a2c21;
   padding: 7px;
   min-width: 0;
-}
-.library-strip .library-card {
-  width: 148px;
-  flex: 0 0 148px;
 }
 .library-card.selected {
   border-color: #f1cd83;
@@ -235,9 +228,6 @@
 .library-card-info {
   min-width: 0;
 }
-.library-strip .library-card-info {
-  grid-column: 2;
-}
 .library-card-info strong {
   display: block;
   font-size: 0.8rem;
@@ -250,6 +240,7 @@
   color: #d2c29b;
 }
 .library-list .library-card {
+  flex-shrink: 0;
   grid-template-columns: 28px 48px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
@@ -386,22 +377,8 @@
   .grimorio-workspace {
     gap: 4px;
   }
-  .library-strip .library-card {
-    width: 200px;
-    flex-basis: 200px;
-    grid-template-columns: 28px 60px minmax(0, 1fr);
-    align-items: center;
-    gap: 5px;
-  }
   .library-card {
     padding: 4px;
-  }
-  .library-strip .library-image {
-    width: 60px;
-    margin: 0;
-  }
-  .library-strip .library-card-info {
-    grid-column: 3;
   }
   .library-card-info strong {
     font-size: 0.68rem;

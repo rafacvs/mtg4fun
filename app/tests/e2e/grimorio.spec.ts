@@ -1,6 +1,20 @@
 import { test, expect } from './fixtures';
 import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 
+async function expectVerticalList(library: Locator) {
+  const list = library.locator('.library-cards');
+  const rows = list.locator('.library-card');
+  const first = (await rows.first().boundingBox())!;
+  let previous = first;
+  for (let index = 1; index < (await rows.count()); index++) {
+    const next = (await rows.nth(index).boundingBox())!;
+    expect(Math.abs(next.x - first.x)).toBeLessThanOrEqual(1);
+    expect(next.y).toBeGreaterThanOrEqual(previous.y + previous.height);
+    previous = next;
+  }
+  expect(await list.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+}
+
 async function dragCard(
   page: Page,
   source: Locator,
@@ -173,6 +187,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await activate(library.getByRole('button', { name: 'Olhar 3 carta(s)', exact: true }));
     await expect(library.locator('.library-card')).toHaveCount(3);
     await expect(library).toContainText('Só você vê estas cartas');
+    await expectVerticalList(library);
     const original = (await readOwn()).consulted as { id: string; name: string }[];
     const rows = library.locator('.library-card');
     await expect(
@@ -216,7 +231,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await rows
       .nth(0)
       .getByRole('button', { name: /^Reordenar / })
-      .press('ArrowRight');
+      .press('ArrowDown');
     await expect
       .poll(async () => (await readOwn()).consulted.map((card: { id: string }) => card.id))
       .toEqual(original.map((card) => card.id));
@@ -224,7 +239,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await rows
       .nth(1)
       .getByRole('button', { name: /^Reordenar / })
-      .press('ArrowLeft');
+      .press('ArrowUp');
     await expect
       .poll(async () => (await readOwn()).consulted.map((card: { id: string }) => card.id))
       .toEqual(reordered);
@@ -281,12 +296,13 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
     const original = (await readOwn()).consulted as { id: string }[];
     const rows = library.locator('.library-card');
     await expect(rows).toHaveCount(12);
+    await expectVerticalList(library);
     const list = library.locator('.library-cards');
     const bounds = (await list.boundingBox())!;
     const grip = (await rows.first().locator('.library-drag-handle').boundingBox())!;
     const start = { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 };
-    const edge = { x: bounds.x + bounds.width - 10, y: start.y };
-    expect((await rows.last().boundingBox())!.x).toBeGreaterThan(bounds.x + bounds.width);
+    const edge = { x: start.x, y: bounds.y + bounds.height - 10 };
+    expect((await rows.last().boundingBox())!.y).toBeGreaterThan(bounds.y + bounds.height);
     if (session) {
       await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
       await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [edge] });
@@ -299,11 +315,11 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
       .poll(
         async () => {
           const last = (await rows.last().boundingBox())!;
-          return last.x + last.width;
+          return last.y + last.height;
         },
         { timeout: 8000 },
       )
-      .toBeLessThanOrEqual(bounds.x + bounds.width);
+      .toBeLessThanOrEqual(bounds.y + bounds.height);
     const last = (await rows.last().boundingBox())!;
     const end = { x: last.x + last.width / 2, y: last.y + last.height / 2 };
     if (session) {
@@ -364,6 +380,7 @@ test('revela apenas a seleção e finaliza cartas públicas sem expor a mão', a
     await expect(library).toContainText('1 carta(s) visível(is) para todos');
     await library.getByLabel('Buscar no grimório').fill('');
     await expect(library.locator('.library-card')).toHaveCount(3);
+    await expectVerticalList(library);
     await library.getByLabel('Buscar no grimório').fill('Fire');
     await activate(
       library.locator('.library-card strong').getByText('Fire // Ice', { exact: true }),
@@ -377,6 +394,8 @@ test('revela apenas a seleção e finaliza cartas públicas sem expor a mão', a
     await activate(library.getByRole('button', { name: 'Revelar 2 carta(s)', exact: true }));
     await expect(publicArea.getByRole('button')).toHaveCount(2);
     await expect(library.getByRole('heading', { name: 'Cartas reveladas' })).toBeVisible();
+    await expectVerticalList(library);
+    await own.screenshot({ path: info.outputPath('grimorio-revelacao-vertical.png') });
     await library.getByLabel('Destino das restantes').selectOption('bottom');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
     await expect(publicArea).toHaveCount(0);

@@ -8,7 +8,6 @@ type Props = {
   cards: Card[];
   filtered: Card[];
   selectedIDs: string[];
-  searching: boolean;
   busy: boolean;
   onSelect: (id: string) => void;
   onInspect: (card: Card) => void;
@@ -21,7 +20,7 @@ export function LibraryCards(props: Props) {
   return (
     <div
       ref={drag.container}
-      className={`library-cards ${props.searching ? 'library-list' : 'library-strip'}`}
+      className="library-cards library-list"
       aria-label="Cartas da consulta"
     >
       {!props.filtered.length && (

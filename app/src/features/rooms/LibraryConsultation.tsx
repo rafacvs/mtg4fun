@@ -249,7 +249,6 @@ export function LibraryConsultation(props: Props) {
               cards={pool}
               filtered={state.filtered}
               selectedIDs={state.selectedIDs}
-              searching={searching}
               busy={busy}
               onSelect={state.toggle}
               onInspect={onInspect}

@@ -25,6 +25,10 @@ de arraste à esquerda da imagem, seleção ao clicar na linha (sem ícone de +)
 e ampliação ao clicar na imagem (sem botão separado). Essa solicitação substitui
 esses detalhes da proposta inicial, mantendo as operações e contratos aprovados.
 
+Depois, o usuário pediu que Olhar e Revelar usem a mesma lista vertical de
+Buscar, rejeitando a apresentação em faixa com rolagem horizontal. As três
+operações compartilham a apresentação e a reordenação por arraste vertical.
+
 Essa autorização é limitada à interface/operações do grimório descritas aqui.
 Não contempla as demais ações da issue 11, novas dependências, infraestrutura,
 motor de regras ou mudanças no mecanismo de autenticação/transporte.
