@@ -24,6 +24,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [selectionIds, setSelectionIds] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const thumbnailsRef = useRef<HTMLElement>(null);
@@ -56,6 +58,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
     onDragCancel: () => setDrag(null),
+    selectedIds: selectionIds,
+    selectionMode,
+    onSelect: card => {
+      if (card.zone !== 'battlefield') return;
+      setSelectionIds(current => current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id]);
+    },
+    onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
   };
 
   const changeCardState: CardStateChange = (kind, card, value) => {
@@ -68,11 +77,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   async function dropCard(card: Card, x: number, y: number) {
     const zone = dropZoneAt(x, y);
     if (!zone || busy || unconfirmed || card.controllerId !== match?.viewerId) return;
+    const selected = card.zone === 'battlefield' && selectionIds.includes(card.id)
+      ? [card.id, ...selectionIds.filter(id => id !== card.id)]
+      : [card.id];
     if (zone === 'battlefield') {
       const layout = battlefieldPositionAt(x, y);
       if (!layout) return;
       if (card.zone !== 'battlefield' && !await move([card.id], 'battlefield')) return;
-      await position(card.id, layout.x, layout.row);
+      if (await position(selected, layout.x, layout.row)) setSelectionIds([]);
       return;
     }
     if (zone === 'library') await move([card.id], 'library', 'top');
@@ -104,6 +116,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section className="own-dock" aria-label="Sua mão e ações">
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             <div className="dock-toggles">
+              <span className="selection-controls"><button type="button" className="actions-toggle" aria-pressed={selectionMode} onClick={() => setSelectionMode(current => !current)}>Selecionar cartas</button>{selectionIds.length > 0 && <button type="button" className="secondary" onClick={() => { setSelectionIds([]); setSelectionMode(false); }}>Limpar seleção ({selectionIds.length})</button>}</span>
               <button type="button" className="actions-toggle" aria-label="Grimório" aria-expanded={libraryOpen} onClick={openLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
               <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
             </div>
@@ -215,7 +228,7 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'reveal_cards') return entry.result ? `${entry.actorName} revelou ${entry.result}.` : `${entry.actorName} ocultou uma revelação.`;
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
-  if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;
+  if (entry.kind === 'position') return `${entry.actorName} reposicionou ${entry.count || 1} carta(s) no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'counter') return `${entry.actorName} alterou contadores: ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
