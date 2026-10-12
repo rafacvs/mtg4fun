@@ -42,9 +42,11 @@ export function CardPreview({ card, editable, disabled, onCounter, onClose }: { 
         {failed
           ? <p role="status">A imagem não está disponível agora.</p>
           : <img src={deckApi.imageURL(card.name)} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
-        <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
-        {editable && <PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
-        {editable && <button type="button" disabled={disabled} onClick={() => setStep('markers')}>Marcador</button>}
+        {!editable && <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />}
+        {editable && <div className="card-toolbar">
+          <PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />
+          <button type="button" className="secondary" disabled={disabled} onClick={() => setStep('markers')}>Marcador</button>
+        </div>}
       </>}
       {step === 'markers' && editable && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
     </div>

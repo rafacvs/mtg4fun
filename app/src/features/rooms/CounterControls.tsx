@@ -54,19 +54,15 @@ export function PowerToughnessAdjust({ power, toughness, disabled, onApply }: { 
   const toughnessRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (document.activeElement !== powerRef.current) setLeft(String(power)); }, [power]);
   useEffect(() => { if (document.activeElement !== toughnessRef.current) setRight(String(toughness)); }, [toughness]);
-  const leftValue = integerText(left);
-  const rightValue = integerText(right);
-  const ready = leftValue !== null && rightValue !== null && (leftValue !== power || rightValue !== toughness);
-  const confirm = async () => {
-    if (leftValue === null || rightValue === null || disabled) return;
-    if (leftValue !== power && !await onApply('power', 'set', leftValue)) return;
-    if (rightValue !== toughness) await onApply('toughness', 'set', rightValue);
+  const commit = (subject: 'power' | 'toughness', raw: string, current: number) => {
+    const numeric = integerText(raw);
+    if (numeric === null || numeric === current || disabled) return;
+    void onApply(subject, 'set', numeric);
   };
   return <div className="pt-line">
-    <input ref={powerRef} aria-label="Poder" type="number" step="1" value={left} onChange={event => setLeft(event.target.value)} onBlur={() => { if (integerText(left) === null) setLeft(String(power)); }} />
+    <input ref={powerRef} aria-label="Poder" type="number" step="1" value={left} onChange={event => { setLeft(event.target.value); commit('power', event.target.value, power); }} onBlur={() => { if (integerText(left) === null) setLeft(String(power)); }} />
     <span className="pt-slash" aria-hidden="true">/</span>
-    <input ref={toughnessRef} aria-label="Resistência" type="number" step="1" value={right} onChange={event => setRight(event.target.value)} onBlur={() => { if (integerText(right) === null) setRight(String(toughness)); }} />
-    <button type="button" disabled={disabled || !ready} onClick={() => void confirm()}>Confirmar</button>
+    <input ref={toughnessRef} aria-label="Resistência" type="number" step="1" value={right} onChange={event => { setRight(event.target.value); commit('toughness', event.target.value, toughness); }} onBlur={() => { if (integerText(right) === null) setRight(String(toughness)); }} />
   </div>;
 }
 

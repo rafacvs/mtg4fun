@@ -1,5 +1,9 @@
 .adjust-block { display: grid; gap: 10px; }
 .adjust-block .draw-row { margin-bottom: 0; }
+.card-toolbar { display: flex; align-items: center; gap: 8px; width: min(280px, 100%); margin: 12px auto 0; }
+.card-toolbar .pt-line { flex: 1; min-width: 0; }
+.card-toolbar .pt-line input { flex: 1; width: auto; min-width: 0; }
+.card-toolbar > button { flex: 0 0 auto; min-height: 40px; }
 .pt-line { display: flex; align-items: center; gap: 8px; }
 .pt-line input { width: 4.5rem; min-height: 40px; text-align: center; }
 .pt-slash { font-size: 1.4rem; font-weight: 800; line-height: 1; }
