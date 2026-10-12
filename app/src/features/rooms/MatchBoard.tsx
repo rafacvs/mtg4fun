@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card } from './roomsApi';
+import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { GameActions } from './GameActions';
@@ -11,7 +12,7 @@ import './match.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, retry, setTapped, untapAll, setFace, setFaceDown, revealCards } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -46,10 +47,18 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const gesture: CardGesture = {
+    onToggleTapped: card => { if (!busy && !unconfirmed) void setTapped([card.id], !card.tapped); },
     onInspect: card => { if (!drag) setPreview(card); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
     onDragCancel: () => setDrag(null),
+  };
+
+  const changeCardState: CardStateChange = (kind, card, value) => {
+    if (kind === 'set_face') void setFace(card.id, Number(value));
+    else if (kind === 'set_tapped') void setTapped([card.id], Boolean(value));
+    else if (kind === 'set_face_down') void setFaceDown([card.id], Boolean(value));
+    else void revealCards([card.id], Boolean(value));
   };
 
   async function dropCard(card: Card, x: number, y: number) {
@@ -68,6 +77,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   }
 
   if (!match) return <p role={error ? 'alert' : 'status'}>{error || 'Carregando mesa…'}</p>;
+  const currentPreview = preview ? match.players.flatMap(player => [...(player.hand ?? []), ...(player.battlefield ?? []), ...(player.graveyard ?? []), ...(player.exile ?? []), ...(player.command ?? []), ...(player.consulted ?? []), ...(player.revealed ?? []), ...(player.exposedCards ?? [])]).find(card => card.id === preview.id) ?? null : null;
   const own = match.players.find(player => player.userId === match.viewerId)!;
   const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
@@ -134,8 +144,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreview(card)}
       onDismiss={closeLibrary}
     />
-    <GameActions open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
-    <CardPreview card={preview} onClose={closePreview} />
+    <GameActions onUntapAll={() => void untapAll()} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onClose={closeActions} />
+    <CardPreview card={currentPreview} onClose={closePreview} viewerId={match.viewerId} disabled={busy || unconfirmed} onStateChange={changeCardState} />
   </section>;
 }
 
@@ -173,6 +183,11 @@ function battlefieldPositionAt(x: number, y: number) {
 }
 
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
+  if (entry.kind === 'set_tapped') return `${entry.actorName} alterou virar/desvirar de ${entry.count} carta(s).`;
+  if (entry.kind === 'untap_all') return `${entry.actorName} desvirou todas as cartas do próprio campo.`;
+  if (entry.kind === 'set_face') return `${entry.actorName} escolheu uma face da carta.`;
+  if (entry.kind === 'set_face_down') return `${entry.actorName} alterou face para baixo de ${entry.count} carta(s).`;
+  if (entry.kind === 'reveal_cards') return entry.result ? `${entry.actorName} revelou ${entry.result}.` : `${entry.actorName} ocultou uma revelação.`;
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;

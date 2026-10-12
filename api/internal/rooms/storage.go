@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"math/big"
 	"mtg4fun/internal/auth"
+	"mtg4fun/internal/catalog"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -59,15 +61,19 @@ type Turn struct {
 	Roll   int    `json:"roll"`
 }
 type Card struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	OwnerID      int64  `json:"ownerId"`
-	ControllerID int64  `json:"controllerId"`
-	Zone         string `json:"zone"`
-	PositionX    int    `json:"positionX"`
-	Row          int    `json:"row"`
-	StackOrder   int    `json:"stackOrder"`
-	Revealed     bool   `json:"revealed,omitempty"`
+	Tapped       bool     `json:"tapped,omitempty"`
+	FaceDown     bool     `json:"faceDown,omitempty"`
+	Faces        []string `json:"faces,omitempty"`
+	FaceIndex    int      `json:"faceIndex,omitempty"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	OwnerID      int64    `json:"ownerId"`
+	ControllerID int64    `json:"controllerId"`
+	Zone         string   `json:"zone"`
+	PositionX    int      `json:"positionX"`
+	Row          int      `json:"row"`
+	StackOrder   int      `json:"stackOrder"`
+	Revealed     bool     `json:"revealed,omitempty"`
 }
 type playerState struct {
 	UserID           int64  `json:"userId"`
@@ -101,6 +107,7 @@ type Match struct {
 	Log         []MatchLog    `json:"log"`
 }
 type MatchPlayer struct {
+	ExposedCards     []ExposedCard `json:"exposedCards,omitempty"`
 	UserID           int64         `json:"userId"`
 	Name             string        `json:"name"`
 	Life             int           `json:"life"`
@@ -120,15 +127,33 @@ type MatchPlayer struct {
 	ConsultationFrom string        `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	OwnerID      int64  `json:"ownerId"`
-	ControllerID int64  `json:"controllerId"`
-	Zone         string `json:"zone"`
-	PositionX    int    `json:"positionX"`
-	Row          int    `json:"row"`
-	StackOrder   int    `json:"stackOrder"`
-	Revealed     bool   `json:"revealed,omitempty"`
+	Tapped       bool     `json:"tapped,omitempty"`
+	FaceDown     bool     `json:"faceDown,omitempty"`
+	Faces        []string `json:"faces,omitempty"`
+	FaceIndex    int      `json:"faceIndex,omitempty"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name,omitempty"`
+	OwnerID      int64    `json:"ownerId"`
+	ControllerID int64    `json:"controllerId"`
+	Zone         string   `json:"zone"`
+	PositionX    int      `json:"positionX"`
+	Row          int      `json:"row"`
+	StackOrder   int      `json:"stackOrder"`
+	Revealed     bool     `json:"revealed,omitempty"`
+}
+
+// ExposedCard shares a revealed identity without disclosing private zone order or positions.
+type ExposedCard struct {
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	OwnerID      int64    `json:"ownerId"`
+	ControllerID int64    `json:"controllerId"`
+	Zone         string   `json:"zone"`
+	Tapped       bool     `json:"tapped,omitempty"`
+	FaceDown     bool     `json:"faceDown,omitempty"`
+	Faces        []string `json:"faces,omitempty"`
+	FaceIndex    int      `json:"faceIndex,omitempty"`
+	Revealed     bool     `json:"revealed"`
 }
 type MatchLog struct {
 	ActorID   int64  `json:"actorId"`
@@ -140,25 +165,40 @@ type MatchLog struct {
 	Result    string `json:"result,omitempty"`
 }
 
-func visible(cards []Card) []VisibleCard {
+func visible(cards []Card, viewerID int64) []VisibleCard {
 	out := make([]VisibleCard, len(cards))
 	for i, c := range cards {
-		out[i] = VisibleCard{c.ID, c.Name, c.OwnerID, c.ControllerID, c.Zone, c.PositionX, c.Row, c.StackOrder, c.Revealed}
+		v := VisibleCard{ID: c.ID, OwnerID: c.OwnerID, ControllerID: c.ControllerID, Zone: c.Zone, PositionX: c.PositionX, Row: c.Row, StackOrder: c.StackOrder, Tapped: c.Tapped, FaceDown: c.FaceDown, Revealed: c.Revealed}
+		if !c.FaceDown || c.Revealed || viewerID == c.ControllerID || viewerID == c.OwnerID {
+			v.Name = c.Name
+			v.Faces = c.Faces
+			v.FaceIndex = c.FaceIndex
+		}
+		out[i] = v
 	}
 	return out
 }
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield), Graveyard: visible(v.Graveyard), Exile: visible(v.Exile), Command: visible(v.Command), Revealed: visible(v.Revealed)}
+		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID), Revealed: visible(v.Revealed, viewerID)}
+		for _, cards := range [][]Card{v.Hand, v.Library} {
+			for _, card := range cards {
+				if card.Revealed {
+					view := ExposedCard{ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: true}
+					p[i].ExposedCards = append(p[i].ExposedCards, view)
+				}
+			}
+		}
+		sort.Slice(p[i].ExposedCards, func(a, b int) bool { return p[i].ExposedCards[a].ID < p[i].ExposedCards[b].ID })
 		for _, card := range v.Consulted {
 			if card.Revealed {
-				p[i].Revealed = append(p[i].Revealed, visible([]Card{card})[0])
+				p[i].Revealed = append(p[i].Revealed, visible([]Card{card}, viewerID)[0])
 			}
 		}
 		if v.UserID == viewerID {
-			p[i].Hand = visible(v.Hand)
-			p[i].Consulted = visible(v.Consulted)
+			p[i].Hand = visible(v.Hand, viewerID)
+			p[i].Consulted = visible(v.Consulted, viewerID)
 			p[i].ConsultationFrom = v.ConsultationFrom
 		}
 	}
@@ -170,13 +210,18 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 }
 
 type Service struct {
-	db    *sql.DB
-	users *auth.Service
-	roll  func() (int, error)
+	catalog *catalog.Catalog
+	db      *sql.DB
+	users   *auth.Service
+	roll    func() (int, error)
 }
 
-func New(db *sql.DB, users *auth.Service) *Service {
-	return &Service{db: db, users: users, roll: configuredRoller()}
+func New(db *sql.DB, users *auth.Service, cards ...*catalog.Catalog) *Service {
+	s := &Service{db: db, users: users, roll: configuredRoller()}
+	if len(cards) > 0 {
+		s.catalog = cards[0]
+	}
+	return s
 }
 func configuredRoller() func() (int, error) {
 	values := strings.Split(os.Getenv("MTG4FUN_TEST_D20"), ",")
@@ -438,6 +483,12 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 		}
 		if len(cards) == 0 {
 			return Match{}, errDeckNotFound
+		}
+		if s.catalog != nil {
+			for i := range cards {
+				entry, _ := s.catalog.Lookup(cards[i].Name)
+				cards[i].Faces = append([]string(nil), entry.Faces...)
+			}
 		}
 		if e = shuffle(cards); e != nil {
 			return Match{}, e

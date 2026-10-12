@@ -340,7 +340,7 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
   }
 });
 
-test('revela apenas a seleção e finaliza cartas públicas sem expor a mão', async ({
+test('revela apenas a seleção e preserva exposição ao mover e devolver', async ({
   browser,
   baseURL,
 }, info) => {
@@ -386,19 +386,19 @@ test('revela apenas a seleção e finaliza cartas públicas sem expor a mão', a
       library.locator('.library-card strong').getByText('Fire // Ice', { exact: true }),
     );
     await activate(library.getByRole('button', { name: 'Colocar 1 na mão', exact: true }));
-    await expect(publicArea).toHaveCount(0);
+    await expect(publicArea.getByRole('button')).toHaveCount(1);
     expect((await readOwn()).hand[0].name).toBe('Fire // Ice');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
     await activate(library.getByRole('button', { name: /^Revelar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('2');
     await activate(library.getByRole('button', { name: 'Revelar 2 carta(s)', exact: true }));
-    await expect(publicArea.getByRole('button')).toHaveCount(2);
+    await expect(publicArea.getByRole('button')).toHaveCount(3);
     await expect(library.getByRole('heading', { name: 'Cartas reveladas' })).toBeVisible();
     await expectVerticalList(library);
     await own.screenshot({ path: info.outputPath('grimorio-revelacao-vertical.png') });
     await library.getByLabel('Destino das restantes').selectOption('bottom');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
-    await expect(publicArea).toHaveCount(0);
+    await expect(publicArea.getByRole('button')).toHaveCount(3);
     expect((await readOwn()).libraryCount).toBe(2);
     await activate(library.getByRole('button', { name: /^Comprar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('1');

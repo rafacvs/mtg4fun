@@ -6,6 +6,7 @@ export const zoneNames: Record<string, string> = { library: 'Grimório', hand: '
 
 export type CardGesture = {
   onInspect: (card: Card) => void;
+  onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
   onDragCancel: () => void;
@@ -39,7 +40,7 @@ export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture
         <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} />
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
-      {Boolean(player.revealed?.length) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><span>Reveladas · Todos veem</span><div>{player.revealed!.map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
+      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><span>Reveladas · Todos veem</span><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
 }

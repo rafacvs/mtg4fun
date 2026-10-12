@@ -41,7 +41,7 @@ func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, imageCache, 
 	api.Handle("/api/decks/", deckHandler)
 	imageHandler := images.New(cards, imageCache).Handler(users)
 	api.Handle("/api/cards/image", imageHandler)
-	roomHandler := rooms.New(db, users).Handler()
+	roomHandler := rooms.New(db, users, cards).Handler()
 	api.Handle("/api/rooms", roomHandler)
 	api.Handle("/api/rooms/", roomHandler)
 	api.Handle("/api/", users.Handler(secure == "true"))
