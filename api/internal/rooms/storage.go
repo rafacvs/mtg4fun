@@ -75,6 +75,8 @@ type playerState struct {
 	Graveyard   []Card `json:"graveyard"`
 	Exile       []Card `json:"exile"`
 	Command     []Card `json:"command"`
+	Consulted   []Card `json:"consulted,omitempty"`
+	Revealed    []Card `json:"revealed,omitempty"`
 }
 type matchState struct {
 	RoomID      int64         `json:"roomId"`
@@ -107,6 +109,8 @@ type MatchPlayer struct {
 	Graveyard        []VisibleCard `json:"graveyard,omitempty"`
 	Exile            []VisibleCard `json:"exile,omitempty"`
 	Command          []VisibleCard `json:"command,omitempty"`
+	Consulted        []VisibleCard `json:"consulted,omitempty"`
+	Revealed         []VisibleCard `json:"revealed,omitempty"`
 }
 type VisibleCard struct {
 	ID           string `json:"id"`
@@ -135,9 +139,10 @@ func visible(cards []Card) []VisibleCard {
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield), Graveyard: visible(v.Graveyard), Exile: visible(v.Exile), Command: visible(v.Command)}
+		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield), Graveyard: visible(v.Graveyard), Exile: visible(v.Exile), Command: visible(v.Command), Revealed: visible(v.Revealed)}
 		if v.UserID == viewerID {
 			p[i].Hand = visible(v.Hand)
+			p[i].Consulted = visible(v.Consulted)
 		}
 	}
 	current := Turn{}
@@ -420,7 +425,7 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 		if e = shuffle(cards); e != nil {
 			return Match{}, e
 		}
-		m.Players = append(m.Players, playerState{p.ID, p.Name, life, cards, []Card{}, []Card{}, []Card{}, []Card{}, []Card{}})
+		m.Players = append(m.Players, playerState{UserID: p.ID, Name: p.Name, Life: life, Library: cards, Hand: []Card{}, Battlefield: []Card{}, Graveyard: []Card{}, Exile: []Card{}, Command: []Card{}, Consulted: []Card{}})
 	}
 	snapshot, e := json.Marshal(m)
 	if e != nil {
