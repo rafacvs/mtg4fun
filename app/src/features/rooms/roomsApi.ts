@@ -18,7 +18,9 @@ export type Match = {
   players: { userId: number; name: string; life: number; markers?: Markers; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
 };
-export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; power?: number; toughness?: number; markers?: Markers };
+export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; power?: number; toughness?: number; markers?: Markers };
+export type CatalogToken = { name: string; text?: string; power?: string; toughness?: string; imageName?: string };
+export type CustomToken = { name: string; description: string; power?: string; toughness?: string };
 
 export type CounterAction =
   | { target: 'player'; playerId: number; subject: 'life'; operation: 'set' | 'increment'; value: number }
@@ -93,6 +95,15 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
     return data.match;
   },
+  tokens: async (id: number, query: string): Promise<CatalogToken[]> => {
+    const response = await fetch(`/api/rooms/${id}/match/tokens?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Não foi possível consultar as fichas.');
+    return data.tokens;
+  },
+  createToken: (id: number, tokenName: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'create-token', tokenName }),
+  createCustomToken: (id: number, token: CustomToken, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'create-custom-token', ...token }),
+  copyCard: (id: number, cardId: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'copy-card', cardId }),
   counter: (id: number, input: CounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter', ...input }),
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
   move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),

@@ -53,6 +53,14 @@ modificador e marcador de carta na mão não aparecem para o oponente. Valores
 e registro persistem após reinício. Veja a
 [semântica de vida e marcadores](docs/decisions/12-vida-e-contadores.md).
 
+Em **Ações → Criar ficha**, busque uma ficha do catálogo compartilhado ou
+preencha nome, descrição e poder/resistência numéricos, inclusive negativos.
+Fichas personalizadas usam uma imagem padrão. Clique/toque em uma carta
+identificada e escolha **Criar cópia independente**: a nova instância entra no
+seu campo e não acompanha alterações posteriores no original. Fichas e cópias
+usam os movimentos normais e permanecem nas outras zonas. Atributos copiados
+e contrato: [decisão de fichas/cópias](docs/decisions/13-fichas-e-copias.md).
+
 ## Executar com Docker
 
 Requisitos: Docker com Docker Compose 2.20 ou mais recente. Execute os comandos

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { deckApi } from '../decks/deckApi';
+import { cardImageURL } from './cardImage';
 import { CardStateControls, type CardStateChange } from './CardStateControls';
 import { MarkerRows, PowerToughnessAdjust, type CounterOperation } from './CounterControls';
 import { CardStats } from './CounterValues';
@@ -8,8 +9,18 @@ import type { Card, MarkerColor } from './roomsApi';
 type Step = 'view' | 'markers';
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ card, editable, disabled, onCounter, onClose, viewerId, onStateChange }: { card: Card | null; editable: boolean; disabled: boolean; onCounter: CardCounter; onClose: () => void; viewerId?: number; onStateChange?: CardStateChange }) {
-  const imageName = card?.faces?.[card.faceIndex ?? 0] || card?.name || '';
+export function CardPreview({ card, editable = false, disabled = false, onCounter, onClose, viewerId, onStateChange, onCopy, busy = false }: {
+  card: Card | null;
+  editable?: boolean;
+  disabled?: boolean;
+  onCounter?: CardCounter;
+  onClose: () => void;
+  viewerId?: number;
+  onStateChange?: CardStateChange;
+  onCopy?: (id: string) => void;
+  busy?: boolean;
+}) {
+  const imageName = card?.faces?.[card.faceIndex ?? 0] || card?.imageName || card?.name || '';
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -31,6 +42,7 @@ export function CardPreview({ card, editable, disabled, onCounter, onClose, view
 
   if (!card) return null;
   const title = step === 'markers' ? 'Marcador' : (card.name || 'Carta face para baixo');
+  const image = card.instanceKind || card.imageName ? cardImageURL(card) : deckApi.imageURL(imageName);
   return <div className="card-preview-backdrop" onClick={onClose}>
     <div className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${card.name || 'Carta face para baixo'}`} onClick={event => event.stopPropagation()}>
       <header>
@@ -41,15 +53,17 @@ export function CardPreview({ card, editable, disabled, onCounter, onClose, view
       {step === 'view' && <>
         {!card.name ? <p>Face para baixo · identidade oculta.</p> : failed
           ? <p role="status">A imagem não está disponível agora.</p>
-          : <img src={deckApi.imageURL(imageName)} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
+          : <img src={image} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
+        {card.text && <p className="instance-text">{card.text}</p>}
         {!editable && <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />}
-        {editable && <div className="card-toolbar">
+        {editable && onCounter && <div className="card-toolbar">
           <PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />
           <button type="button" className="secondary" disabled={disabled} onClick={() => setStep('markers')}>Marcador</button>
         </div>}
         {viewerId && onStateChange && <CardStateControls card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
+        {onCopy && card.id && <button type="button" disabled={busy} onClick={() => onCopy(card.id)}>Criar cópia independente</button>}
       </>}
-      {step === 'markers' && editable && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
+      {step === 'markers' && editable && onCounter && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
     </div>
   </div>;
 }

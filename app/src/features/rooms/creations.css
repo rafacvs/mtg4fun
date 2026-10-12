@@ -1,0 +1,24 @@
+.creations-panel > header { align-items: center; }
+.creations-heading { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.creations-heading h2 { min-width: 0; }
+.creations-panel > header .text-button { flex: 0 0 auto; width: auto; min-width: 0; padding: 0 2px; font-size: .85rem; line-height: 1.2; white-space: nowrap; }
+.creations-panel > p,
+.creations-panel .library-search,
+.creations-panel .library-order { margin: 0; }
+.creations-panel .library-empty { margin: 0 !important; }
+.creations-catalog { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.token-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; max-height: min(420px, 50dvh); overflow: auto; scrollbar-width: thin; scrollbar-color: #758875 #17261d; }
+.token-list li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: center; padding: 7px; border: 1px solid #405242; border-radius: 10px; background: #1a2c21; }
+.token-thumb { display: block; width: 48px; min-height: 0; aspect-ratio: 63 / 88; padding: 0; border: 0; border-radius: 5px; overflow: hidden; background: #203327; }
+.token-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.token-thumb span { display: flex; align-items: center; justify-content: center; height: 100%; padding: 2px; color: #ece2c7; font-size: .55rem; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
+.token-list li > div > strong, .token-list li > div > span { display: block; }
+.token-list li > div > span { margin: 2px 0 8px; color: #d2c29b; font-size: .75rem; }
+.token-list li > div > button { min-height: 36px; }
+.creations-form { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.creations-form label { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: .78rem; color: #c4d6c0; }
+.creations-form textarea { width: 100%; min-height: 72px; box-sizing: border-box; resize: vertical; padding: 11px 13px; border: 1px solid #687d69; border-radius: 10px; background: #122019; color: #f8f5ec; font: inherit; }
+.creations-form > button { width: 100%; margin-top: 0; }
+.token-stats { display: flex; gap: 12px; }
+.token-stats label { flex: 1; min-width: 0; }
+.instance-text { white-space: pre-wrap; }

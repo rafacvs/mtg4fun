@@ -4,8 +4,9 @@ import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { GameActions } from './GameActions';
+import { CreateInstances } from './CreateInstances';
+import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
-import { deckApi } from '../decks/deckApi';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
 import './counters.css';
@@ -13,11 +14,12 @@ import './counters.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [creationOpen, setCreationOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -27,6 +29,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const thumbnailsRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
   const closePreview = useCallback(() => setPreviewId(null), []);
+  const closeCreation = useCallback(() => setCreationOpen(false), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
@@ -122,7 +125,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         </aside>}
       </div>
       {drag && <div className="drag-ghost" style={{ left: drag.x, top: drag.y }} aria-hidden="true">
-        <img src={deckApi.imageURL(drag.card.name)} alt="" />
+        <img src={cardImageURL(drag.card)} alt="" />
       </div>}
     </div>
     <LibraryConsultation
@@ -145,8 +148,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreviewId(card.id)}
       onDismiss={closeLibrary}
     />
-    <GameActions onUntapAll={() => void untapAll()} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
-    <CardPreview card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
+    <GameActions onUntapAll={() => void untapAll()} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
+    <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
+    <CardPreview card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy || unconfirmed} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
       if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
@@ -202,6 +206,8 @@ function battlefieldPositionAt(x: number, y: number) {
 }
 
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
+  if (entry.kind === 'create-token' || entry.kind === 'create-custom-token') return `${entry.actorName} criou a ficha ${entry.result}.`;
+  if (entry.kind === 'copy-card') return `${entry.actorName} criou uma cópia de ${entry.result}.`;
   if (entry.kind === 'set_tapped') return `${entry.actorName} alterou virar/desvirar de ${entry.count} carta(s).`;
   if (entry.kind === 'untap_all') return `${entry.actorName} desvirou todas as cartas do próprio campo.`;
   if (entry.kind === 'set_face') return `${entry.actorName} escolheu uma face da carta.`;

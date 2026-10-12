@@ -9,12 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"mtg4fun/internal/auth"
-	"mtg4fun/internal/catalog"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"mtg4fun/internal/auth"
+	"mtg4fun/internal/catalog"
 )
 
 const capacity = 6
@@ -81,6 +82,9 @@ type Card struct {
 	Row          int         `json:"row"`
 	StackOrder   int         `json:"stackOrder"`
 	Revealed     bool        `json:"revealed,omitempty"`
+	Text         string      `json:"text,omitempty"`
+	ImageName    string      `json:"imageName,omitempty"`
+	InstanceKind string      `json:"instanceKind,omitempty"`
 	Power        int64       `json:"power,omitempty"`
 	Toughness    int64       `json:"toughness,omitempty"`
 	Markers      colorCounts `json:"markers,omitempty"`
@@ -145,6 +149,9 @@ type VisibleCard struct {
 	FaceIndex    int         `json:"faceIndex,omitempty"`
 	ID           string      `json:"id"`
 	Name         string      `json:"name,omitempty"`
+	Text         string      `json:"text,omitempty"`
+	ImageName    string      `json:"imageName,omitempty"`
+	InstanceKind string      `json:"instanceKind,omitempty"`
 	OwnerID      int64       `json:"ownerId"`
 	ControllerID int64       `json:"controllerId"`
 	Zone         string      `json:"zone"`
@@ -161,6 +168,9 @@ type VisibleCard struct {
 type ExposedCard struct {
 	ID           string      `json:"id"`
 	Name         string      `json:"name"`
+	Text         string      `json:"text,omitempty"`
+	ImageName    string      `json:"imageName,omitempty"`
+	InstanceKind string      `json:"instanceKind,omitempty"`
 	OwnerID      int64       `json:"ownerId"`
 	ControllerID int64       `json:"controllerId"`
 	Zone         string      `json:"zone"`
@@ -196,6 +206,9 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 		v := VisibleCard{ID: c.ID, OwnerID: c.OwnerID, ControllerID: c.ControllerID, Zone: c.Zone, PositionX: c.PositionX, Row: c.Row, StackOrder: c.StackOrder, Tapped: c.Tapped, FaceDown: c.FaceDown, Revealed: c.Revealed}
 		if !c.FaceDown || c.Revealed || viewerID == c.ControllerID || viewerID == c.OwnerID {
 			v.Name = c.Name
+			v.Text = c.Text
+			v.ImageName = c.ImageName
+			v.InstanceKind = c.InstanceKind
 			v.Faces = c.Faces
 			v.FaceIndex = c.FaceIndex
 		}
@@ -238,10 +251,10 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 }
 
 type Service struct {
-	catalog *catalog.Catalog
 	db      *sql.DB
 	users   *auth.Service
 	roll    func() (int, error)
+	catalog *catalog.Catalog
 }
 
 func New(db *sql.DB, users *auth.Service, cards ...*catalog.Catalog) *Service {

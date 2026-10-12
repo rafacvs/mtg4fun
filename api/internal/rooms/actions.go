@@ -32,6 +32,11 @@ type matchAction struct {
 	CardID           string
 	PositionX        int
 	Row              int
+	TokenName        string
+	CustomName       string
+	Description      string
+	Power            string
+	Toughness        string
 	Tapped           bool
 	FaceDown         bool
 	Revealed         bool
@@ -390,6 +395,14 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	}
 	var payload actionLogPayload
 	switch input.Kind {
+	case "create-custom-token":
+		power, _ := modifierFromText(input.Power)
+		toughness, _ := modifierFromText(input.Toughness)
+		payload, err = addCreatedCard(p, Card{Name: input.CustomName, Text: input.Description, Power: power, Toughness: toughness, InstanceKind: "custom-token"}, input.Kind)
+	case "copy-card":
+		payload, err = s.copyCard(&m, p, input.CardID)
+	case "create-token":
+		payload, err = s.createCatalogToken(p, input.TokenName)
 	case "counter":
 		payload, err = changeCounter(&m, p, input)
 	case "set_tapped", "untap_all", "set_face", "set_face_down", "reveal_cards":

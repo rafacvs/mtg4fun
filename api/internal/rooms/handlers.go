@@ -23,6 +23,7 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/ready", s.readyParticipant)
 	mux.HandleFunc("POST /api/rooms/{id}/start", s.startMatch)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
+	mux.HandleFunc("GET /api/rooms/{id}/match/tokens", s.listTokens)
 	mux.HandleFunc("POST /api/rooms/{id}/match/actions", s.applyMatchAction)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := s.requireUser(w, r); !ok {
@@ -54,6 +55,11 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		PositionX        int      `json:"x"`
 		Row              int      `json:"row"`
 		ConsultFrom      string   `json:"consultFrom"`
+		TokenName        string   `json:"tokenName"`
+		CustomName       string   `json:"name"`
+		Description      string   `json:"description"`
+		Power            string   `json:"power"`
+		Toughness        string   `json:"toughness"`
 		Target           string   `json:"target"`
 		PlayerID         int64    `json:"playerId"`
 		Subject          string   `json:"subject"`
@@ -77,7 +83,13 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		httpserver.WriteError(w, 400, "intentId inválido.")
 		return matchAction{}, false
 	}
-	input := matchAction{IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs, To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction, CardID: raw.CardID, PositionX: raw.PositionX, Row: raw.Row, ConsultFrom: raw.ConsultFrom}
+	input := matchAction{
+		IntentID: raw.IntentID, Kind: raw.Kind, Count: raw.Count, CardIDs: raw.CardIDs,
+		To: raw.To, LibraryPlacement: raw.LibraryPlacement, Sides: raw.Sides, Direction: raw.Direction,
+		CardID: raw.CardID, PositionX: raw.PositionX, Row: raw.Row, ConsultFrom: raw.ConsultFrom,
+		TokenName: raw.TokenName, CustomName: strings.TrimSpace(raw.CustomName),
+		Description: raw.Description, Power: raw.Power, Toughness: raw.Toughness,
+	}
 	input.Target, input.PlayerID, input.Subject, input.Color, input.Operation = raw.Target, raw.PlayerID, raw.Subject, raw.Color, raw.Operation
 	if raw.Value != nil {
 		input.Value = *raw.Value
@@ -96,11 +108,26 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	}
 	counterFields := raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil
 	stateFields := input.Kind != "set_tapped" && raw.Tapped != nil || input.Kind != "set_face_down" && raw.FaceDown != nil || input.Kind != "reveal_cards" && raw.Revealed != nil || input.Kind != "set_face" && raw.FaceIndex != nil
-	if input.Kind != "counter" && counterFields || stateFields {
+	if input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && counterFields || stateFields {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
 	}
 	switch input.Kind {
+	case "create-custom-token":
+		if !validCustomToken(input) || !creationFieldsOnly(input) || input.CardID != "" {
+			httpserver.WriteError(w, 400, "Ficha personalizada inválida.")
+			return matchAction{}, false
+		}
+	case "copy-card":
+		if input.CardID == "" || !creationFieldsOnly(input) {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "create-token":
+		if input.TokenName == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
 	case "counter":
 		if raw.Value == nil || !validCounterInput(input) || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Contador inválido.")

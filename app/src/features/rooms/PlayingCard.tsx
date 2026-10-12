@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { cardImageURL } from './cardImage';
 import { CardStats } from './CounterValues';
-import { deckApi } from '../decks/deckApi';
 import type { Card } from './roomsApi';
 
 const dragThreshold = 8;
@@ -26,7 +26,7 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
   handlers.current = { onInspect, onDragMove, onDragEnd, onDragCancel };
 
   useEffect(() => () => { stopTracking.current?.(); if (clickTimer.current) window.clearTimeout(clickTimer.current); }, []);
-  useEffect(() => setFailed(false), [card.name, card.faceIndex]);
+  useEffect(() => setFailed(false), [card.imageName, card.name, card.faceIndex]);
 
   function pointerDown(event: React.PointerEvent<HTMLButtonElement>) {
     pointerType.current = event.pointerType;
@@ -87,7 +87,7 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
   >
     {card.faceDown || !card.name ? <span className="card-back">Face para baixo{card.revealed && <small>Revelada</small>}</span> : failed
       ? <span className="card-fallback">{card.name}</span>
-      : <img src={deckApi.imageURL(card.faces?.[card.faceIndex ?? 0] || card.name)} alt="" draggable={false} onError={() => setFailed(true)} />}
+      : <img src={cardImageURL(card)} alt="" draggable={false} onError={() => setFailed(true)} />}
     <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
   </button>;
 }
