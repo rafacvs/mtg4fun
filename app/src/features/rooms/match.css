@@ -156,3 +156,7 @@
 .card-state-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .card-state-controls label, .card-state-controls p { width: 100%; }
 .card-state-controls select { width: 100%; }
+.card-control-transfer { display: grid; gap: 8px; margin-top: 12px; }
+.card-control-transfer div { display: grid; gap: 4px; }
+.card-control-transfer label { font-size: .88rem; }
+.card-control-transfer select { min-height: 36px; }
