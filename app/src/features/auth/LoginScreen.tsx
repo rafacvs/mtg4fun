@@ -8,10 +8,11 @@ export function LoginScreen({ auth }: { auth: AuthState }) {
     void auth.signIn();
   }
 
-  return <>
+  return <div className="login-screen">
+    <div className="login-symbol" aria-hidden="true">♧</div>
     <h1 id="title">Toda boa partida<br />começa entre amigos.</h1>
     <p>Entre com a conta recebida do responsável para acessar o mtg4fun.</p>
-    <form onSubmit={submit}>
+    <form aria-busy={auth.busy} onSubmit={submit}>
       <label htmlFor="login">Login</label>
       <input
         id="login"
@@ -46,5 +47,5 @@ export function LoginScreen({ auth }: { auth: AuthState }) {
     <p className="invitation">
       Acesso apenas para convidados. Precisa de uma conta? Fale com o responsável pelo servidor.
     </p>
-  </>;
+  </div>;
 }

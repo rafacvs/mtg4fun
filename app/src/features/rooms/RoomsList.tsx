@@ -12,12 +12,14 @@ export function RoomsList({ userId }: { userId: number }) {
       <button onClick={() => void rooms.create()} disabled={rooms.busy || rooms.loading}>Criar sala</button>
     </div>
     {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
-    {!rooms.loading && rooms.rooms.length === 0 && <p>Nenhuma sala por aqui. Crie uma para reunir seus amigos.</p>}
+    {rooms.loading && <p className="loading-state" role="status">Carregando mesas…</p>}
+    {!rooms.loading && rooms.rooms.length === 0 && <div className="empty-rooms"><span aria-hidden="true">♧</span><h3>A próxima mesa pode ser sua.</h3><p>Nenhuma sala por aqui. Crie uma para reunir seus amigos.</p></div>}
     <div className="room-list">{rooms.rooms.map(room => {
       const participates = room.participants.some(participant => participant.id === userId);
       return <article key={room.id} className="room-card" aria-labelledby={`room-${room.id}`}>
         <h3 id={`room-${room.id}`}>{room.title}</h3>
         <p className="room-status">{room.status === 'preparing' ? 'Em preparação' : 'Partida iniciada'}</p>
+        <p className="room-occupancy">{room.participants.length}/6 jogadores</p>
         <p className="room-vacancies">{room.vacancies === 0 ? 'Sala cheia' : `${room.vacancies} ${room.vacancies === 1 ? 'vaga disponível' : 'vagas disponíveis'}`}</p>
         <ul aria-label={`Participantes da ${room.title}`}>{room.participants.map(participant => <li key={participant.id}>
           {participant.name}{participant.id === room.creatorId && <span> · Criador</span>}{participant.ready && <span> · Pronto</span>}

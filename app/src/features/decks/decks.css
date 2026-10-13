@@ -63,3 +63,17 @@
   .deck-detail-header .danger-button { width: 100%; }
   .deck-preview { padding: 16px; }
 }
+
+.deck-library { margin-top: 24px; }
+.section-intro h2 { font-size: 1.5rem; }
+.section-intro p { font-size: .88rem; }
+.saved-deck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 10px; margin-bottom: 20px; }
+.saved-deck-card { display: flex; align-items: center; gap: 12px; padding: 12px; min-width: 0; background: #14231a; border-color: #405242; text-align: left; }
+.saved-deck-card[aria-pressed=true] { border-color: #e6c481; background: #254231; }
+.saved-deck-card > span:nth-child(2) { flex: 1; min-width: 0; }
+.saved-deck-card strong { display: block; overflow-wrap: anywhere; font-size: .9rem; }
+.saved-deck-card small { display: block; color: #b6c3b7; font-weight: 400; font-size: .75rem; }
+.deck-emblem { display: grid; place-items: center; width: 38px; height: 50px; flex-shrink: 0; border: 1px solid #60775c; border-radius: 5px; color: #e6c481; background: #23392b; font-size: 1.5rem; }
+.import-card { background: #1d3325; padding: 16px 18px; border-radius: 12px; }
+.import-card summary { font-size: 1rem; }
+.empty-decks { background: #14231a; }
