@@ -180,26 +180,21 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	if got := libraryPlayers(t, shuffled)[0]; got.LibraryCount != initial.LibraryCount-3 || len(got.Hand) != 3 {
 		t.Fatalf("embaralhar sem consulta: %+v", got)
 	}
-	// Legacy snapshots/clients can have private and public temporary cards
-	// simultaneously. Their private-only reorder remains valid, while the new
-	// client can order the entire block without hiding the public card.
-	legacyPublic := libraryPlayers(t, action(owner, `"kind":"reveal","count":1`))[0].Revealed[0].ID
-	legacyConsult := action(owner, `"kind":"consult","consultFrom":"top","count":2`)
-	requireStatus(t, legacyConsult, 200)
-	privateOrder := consultedCardIDs(t, legacyConsult.body)
-	slices.Reverse(privateOrder)
-	encoded, _ = json.Marshal(privateOrder)
-	requireStatus(t, action(owner, `"kind":"reorder","cardIds":`+string(encoded)), 200)
-	combined := append([]string{legacyPublic}, privateOrder...)
-	encoded, _ = json.Marshal(combined)
-	requireStatus(t, action(owner, `"kind":"reorder","cardIds":`+string(encoded)), 200)
-	if seen := libraryPlayers(t, read(opponent))[0]; len(seen.Revealed) != 1 || seen.Revealed[0].ID != legacyPublic {
-		t.Fatal("reordenação perdeu a exposição pública")
+	// Revealing the top uses the same consultation and cannot start a second one.
+	public = action(owner, `"kind":"reveal","count":1`)
+	publicID := libraryPlayers(t, public)[0].Revealed[0].ID
+	requireStatus(t, action(owner, `"kind":"consult","consultFrom":"top","count":2`), 409)
+	requireStatus(t, action(owner, `"kind":"hide_all_revealed"`), 200)
+	if seen := libraryPlayers(t, read(opponent))[0]; len(seen.Revealed) != 0 {
+		t.Fatal("hidden consultation still public")
+	}
+	if own := libraryPlayers(t, read(owner))[0]; len(own.Consulted) != 1 || own.Consulted[0].ID != publicID {
+		t.Fatal("hiding moved or lost the consulted card")
 	}
 	requireStatus(t, action(owner, `"kind":"close","libraryPlacement":"bottom"`), 200)
-	legacyBottom := action(owner, `"kind":"consult","consultFrom":"bottom","count":3`)
-	requireStatus(t, legacyBottom, 200)
-	if !slices.Equal(consultedCardIDs(t, legacyBottom.body), combined) {
-		t.Fatal("consulta antiga perdeu cartas ou ordem ao finalizar")
+	bottom = action(owner, `"kind":"consult","consultFrom":"bottom","count":1`)
+	requireStatus(t, bottom, 200)
+	if consultedCardIDs(t, bottom.body)[0] != publicID {
+		t.Fatal("return changed library order")
 	}
 }

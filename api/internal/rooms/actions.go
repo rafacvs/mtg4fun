@@ -67,85 +67,6 @@ func playerByID(m *matchState, id int64) *playerState {
 	return nil
 }
 
-func zone(p *playerState, name string) *[]Card {
-	switch name {
-	case "library":
-		return &p.Library
-	case "hand":
-		return &p.Hand
-	case "battlefield":
-		return &p.Battlefield
-	case "graveyard":
-		return &p.Graveyard
-	case "exile":
-		return &p.Exile
-	case "command":
-		return &p.Command
-	case "consulted":
-		return &p.Consulted
-	case "revealed":
-		return &p.Revealed
-	}
-	return nil
-}
-
-func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
-	if zone(p, input.To) == nil || input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom" {
-		return actionLogPayload{}, errCardNotFound
-	}
-	seen := map[string]bool{}
-	cards := []Card{}
-	from := ""
-	for _, id := range input.CardIDs {
-		if seen[id] {
-			return actionLogPayload{}, errCardNotFound
-		}
-		seen[id] = true
-		found := false
-		for _, name := range []string{"hand", "battlefield", "graveyard", "exile", "command", "consulted", "revealed"} {
-			cardsInZone := zone(p, name)
-			for i, c := range *cardsInZone {
-				if c.ID != id {
-					continue
-				}
-				if c.ControllerID != p.UserID {
-					return actionLogPayload{}, errNotController
-				}
-				if from == "" {
-					from = name
-				}
-				if from != name {
-					return actionLogPayload{}, errCardNotFound
-				}
-				*cardsInZone = append((*cardsInZone)[:i], (*cardsInZone)[i+1:]...)
-				cards = append(cards, c)
-				found = true
-				break
-			}
-			if found {
-				break
-			}
-		}
-		if !found {
-			return actionLogPayload{}, errCardNotFound
-		}
-	}
-	destination := zone(p, input.To)
-	for i := range cards {
-		cards[i].Zone = input.To
-		if input.To == "battlefield" {
-			cards[i].PositionX = (len(p.Battlefield) + i) * 80
-			cards[i].Row = 0
-		}
-	}
-	if input.To == "library" && input.LibraryPlacement == "top" {
-		*destination = append(cards, *destination...)
-	} else {
-		*destination = append(*destination, cards...)
-	}
-	return actionLogPayload{Kind: "move", From: from, To: input.To, Count: len(cards)}, nil
-}
-
 func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
 	if input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
 		return actionLogPayload{}, errInvalidPosition
@@ -197,10 +118,7 @@ func consultCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	default:
 		return actionLogPayload{}, errCardNotFound
 	}
-	for i := range cards {
-		cards[i].Zone = "consulted"
-	}
-	p.Consulted = cards
+	placeCards(p, cards, "library", "consulted", "")
 	p.ConsultationFrom = input.ConsultFrom
 	return actionLogPayload{Kind: "consult", Count: len(cards)}, nil
 }
@@ -209,12 +127,9 @@ func reorderConsulted(p *playerState, ids []string) (actionLogPayload, error) {
 	// Older clients can leave both kinds of temporary cards open. Combine
 	// them without losing visibility so their displayed order can be saved.
 	if len(p.Consulted) > 0 && len(p.Revealed) > 0 && len(ids) == len(p.Consulted)+len(p.Revealed) {
-		for _, card := range p.Revealed {
-			card.Zone = "consulted"
-			card.Revealed = true
-			p.Consulted = append(p.Consulted, card)
-		}
+		cards := p.Revealed
 		p.Revealed = nil
+		placeCards(p, cards, "revealed", "consulted", "")
 	}
 	cards := &p.Consulted
 	if len(*cards) == 0 {
@@ -245,14 +160,7 @@ func closeConsultation(p *playerState, placement string, shuffleLibrary bool) (a
 		return actionLogPayload{}, errCardNotFound
 	}
 	cards := append(p.Consulted, p.Revealed...)
-	for i := range cards {
-		cards[i].Zone = "library"
-	}
-	if placement == "top" {
-		p.Library = append(cards, p.Library...)
-	} else {
-		p.Library = append(p.Library, cards...)
-	}
+	placeCards(p, cards, "consulted", "library", placement)
 	p.Consulted = []Card{}
 	p.Revealed = []Card{}
 	p.ConsultationFrom = ""
@@ -273,11 +181,10 @@ func revealCards(p *playerState, count int) (actionLogPayload, error) {
 	p.Library = p.Library[count:]
 	names := make([]string, len(cards))
 	for i := range cards {
-		cards[i].Zone = "revealed"
 		cards[i].Revealed = true
 		names[i] = cards[i].Name
 	}
-	p.Revealed = append(p.Revealed, cards...)
+	placeCards(p, cards, "library", "consulted", "")
 	p.ConsultationFrom = "top"
 	return actionLogPayload{Kind: "reveal", Count: len(cards), Result: strings.Join(names, ", ")}, nil
 }
@@ -313,10 +220,7 @@ func drawCards(p *playerState, count int) (actionLogPayload, error) {
 	}
 	cards := append([]Card(nil), p.Library[:count]...)
 	p.Library = p.Library[count:]
-	for i := range cards {
-		cards[i].Zone = "hand"
-	}
-	p.Hand = append(p.Hand, cards...)
+	placeCards(p, cards, "library", "hand", "")
 	return actionLogPayload{Kind: "draw", From: "library", To: "hand", Count: count}, nil
 }
 
@@ -354,7 +258,10 @@ func changeTurn(m *matchState, direction string) (actionLogPayload, error) {
 	}
 	if direction == "next" {
 		m.TurnIndex = (m.TurnIndex + 1) % len(m.TurnOrder)
-		return actionLogPayload{Kind: "turn", Result: "avançou para o turno de " + m.TurnOrder[m.TurnIndex].Name}, nil
+		for i := range m.Players {
+			clearRevelations(&m.Players[i])
+		}
+		return actionLogPayload{Kind: "turn", Result: "avançou para o turno de " + m.TurnOrder[m.TurnIndex].Name + " e ocultou todas as revelações"}, nil
 	}
 	m.TurnIndex = (m.TurnIndex + len(m.TurnOrder) - 1) % len(m.TurnOrder)
 	return actionLogPayload{Kind: "turn", Result: "corrigiu para o turno de " + m.TurnOrder[m.TurnIndex].Name}, nil
@@ -405,6 +312,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = s.createCatalogToken(p, input.TokenName)
 	case "counter":
 		payload, err = changeCounter(&m, p, input)
+	case "hide_all_revealed":
+		payload, err = actionLogPayload{Kind: input.Kind, Count: clearRevelations(p)}, nil
 	case "set_tapped", "untap_all", "set_face", "set_face_down", "reveal_cards":
 		payload, err = changeCardState(p, input)
 	case "draw":

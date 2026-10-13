@@ -80,9 +80,6 @@ func changeCardState(p *playerState, input matchAction) (actionLogPayload, error
 			}
 		}
 	}
-	if input.Kind == "reveal_cards" && !input.Revealed {
-		concealRevealedZone(p, ids)
-	}
 	result := ""
 	if input.Kind == "reveal_cards" && input.Revealed {
 		result = strings.Join(names, ", ")
@@ -90,26 +87,17 @@ func changeCardState(p *playerState, input matchAction) (actionLogPayload, error
 	return actionLogPayload{Kind: input.Kind, Count: len(cards), Result: result}, nil
 }
 
-// A top reveal lives in a public zone until the player returns it. Hiding moves
-// that card into the private consultation instead of leaving the name visible.
-func concealRevealedZone(p *playerState, ids []string) {
-	hidden := make(map[string]bool, len(ids))
-	for _, id := range ids {
-		hidden[id] = true
-	}
-	kept := make([]Card, 0, len(p.Revealed))
-	for _, card := range p.Revealed {
-		if !hidden[card.ID] {
-			kept = append(kept, card)
-			continue
+// Clearing a disclosure never changes a card's zone or library order.
+func clearRevelations(p *playerState) int {
+	count := 0
+	for _, name := range []string{"battlefield", "hand", "graveyard", "exile", "command", "consulted", "revealed", "library"} {
+		for i := range *zone(p, name) {
+			card := &(*zone(p, name))[i]
+			if card.Revealed {
+				count++
+			}
+			card.Revealed = false
 		}
-		card.Zone = "consulted"
-		card.Revealed = false
-		p.Consulted = append(p.Consulted, card)
 	}
-	if len(kept) == 0 {
-		p.Revealed = nil
-	} else {
-		p.Revealed = kept
-	}
+	return count
 }
