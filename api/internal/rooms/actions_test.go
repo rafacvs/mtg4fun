@@ -37,11 +37,15 @@ func TestRevealShowsNamesToTheOtherPlayerInLibraryOrder(t *testing.T) {
 }
 
 func TestConsultationMovesSelectedCardWithoutDuplication(t *testing.T) {
-	p := &playerState{UserID: 1, Library: []Card{{ID: "commander", Name: "Comandante", ControllerID: 1, Zone: "library"}}}
+	m := matchState{Players: []playerState{{
+		UserID:  1,
+		Library: []Card{{ID: "commander", Name: "Comandante", ControllerID: 1, Zone: "library"}},
+	}}}
+	p := &m.Players[0]
 	if _, err := consultCards(p, matchAction{ConsultFrom: "all", Count: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := moveCards(p, matchAction{CardIDs: []string{"commander"}, To: "command"}); err != nil {
+	if _, err := moveCards(&m, p, matchAction{CardIDs: []string{"commander"}, To: "command"}); err != nil {
 		t.Fatal(err)
 	}
 	if len(p.Library) != 0 || len(p.Consulted) != 0 || len(p.Command) != 1 || p.Command[0].Zone != "command" {

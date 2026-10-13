@@ -48,6 +48,7 @@ type matchAction struct {
 	Color            string
 	Operation        string
 	Value            int64
+	ControllerID     int64
 }
 
 type actionLogPayload struct {
@@ -89,7 +90,7 @@ func zone(p *playerState, name string) *[]Card {
 	return nil
 }
 
-func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
+func moveCards(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
 	if zone(p, input.To) == nil || input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom" {
 		return actionLogPayload{}, errCardNotFound
 	}
@@ -130,7 +131,6 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 			return actionLogPayload{}, errCardNotFound
 		}
 	}
-	destination := zone(p, input.To)
 	for i := range cards {
 		cards[i].Zone = input.To
 		if input.To == "battlefield" {
@@ -138,12 +138,55 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 			cards[i].Row = 0
 		}
 	}
-	if input.To == "library" && input.LibraryPlacement == "top" {
-		*destination = append(cards, *destination...)
-	} else {
-		*destination = append(*destination, cards...)
+	destinations := map[*playerState][]Card{}
+	for _, card := range cards {
+		destinationPlayer := p
+		if from == "battlefield" && input.To != "battlefield" && card.OwnerID != p.UserID {
+			destinationPlayer = playerByID(m, card.OwnerID)
+			if destinationPlayer == nil {
+				return actionLogPayload{}, errCardNotFound
+			}
+			card.ControllerID = card.OwnerID
+		}
+		destinations[destinationPlayer] = append(destinations[destinationPlayer], card)
+	}
+	for destinationPlayer, moved := range destinations {
+		destination := zone(destinationPlayer, input.To)
+		if input.To == "library" && input.LibraryPlacement == "top" {
+			*destination = append(moved, *destination...)
+		} else {
+			*destination = append(*destination, moved...)
+		}
 	}
 	return actionLogPayload{Kind: "move", From: from, To: input.To, Count: len(cards)}, nil
+}
+
+func transferControl(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
+	if input.ControllerID == p.UserID {
+		return actionLogPayload{}, errInvalidCardState
+	}
+	target := playerByID(m, input.ControllerID)
+	if target == nil {
+		return actionLogPayload{}, errInvalidCardState
+	}
+	for i := range p.Battlefield {
+		card := p.Battlefield[i]
+		if card.ID != input.CardID {
+			continue
+		}
+		if card.ControllerID != p.UserID {
+			return actionLogPayload{}, errNotController
+		}
+		p.Battlefield = append(p.Battlefield[:i], p.Battlefield[i+1:]...)
+		m.NextStackOrder++
+		card.ControllerID = target.UserID
+		card.PositionX = len(target.Battlefield) * 80
+		card.Row = 0
+		card.StackOrder = m.NextStackOrder
+		target.Battlefield = append(target.Battlefield, card)
+		return actionLogPayload{Kind: "transfer_control", Result: target.Name}, nil
+	}
+	return actionLogPayload{}, errCardNotFound
 }
 
 func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
@@ -410,7 +453,9 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	case "draw":
 		payload, err = drawCards(p, input.Count)
 	case "move":
-		payload, err = moveCards(p, input)
+		payload, err = moveCards(&m, p, input)
+	case "transfer_control":
+		payload, err = transferControl(&m, p, input)
 	case "position":
 		payload, err = positionCard(&m, p, input)
 	case "consult":
