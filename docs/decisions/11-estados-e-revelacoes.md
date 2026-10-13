@@ -1,5 +1,7 @@
 # Estados e revelações de cartas
 
+> Ajustes posteriores: [regras e interface da mesa](22-ajustes-da-mesa.md).
+
 Issue: [11](../issues/11-alterar-estados-e-revelar-cartas.md).
 
 ## Aprovação explícita

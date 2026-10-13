@@ -1,5 +1,7 @@
 # Vida e marcadores
 
+> Ajustes posteriores: [regras e interface da mesa](22-ajustes-da-mesa.md).
+
 Issue: [12](../issues/12-modificar-vida-e-contadores.md).
 
 ## Aprovação revogada

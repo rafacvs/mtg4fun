@@ -35,21 +35,27 @@ Devolva as restantes ao topo/fundo na ordem exibida, com ou sem
 embaralhamento explícito. Fechar o painel mantém a consulta em andamento para
 retomar, inclusive após recarregar a página. As cartas reveladas aparecem para
 todos até ocultar sua revelação explicitamente, inclusive após mover/devolver;
-as demais continuam privadas. Essas
-operações são manuais, sem automatizar mecânicas de Magic.
+as demais continuam privadas. Passar o turno oculta todas as revelações sem
+mover as cartas. Na zona Reveladas, **Ocultar todas reveladas** limpa as suas.
+Abrir uma imagem é uma visualização local; fechar o detalhe oculta a carta,
+salvo se marcar **Manter revelada ao fechar**. Essas operações não interpretam
+texto de cartas.
 
 Clique/toque na carta abre controles de virar/desvirar no campo, face para
 baixo/cima, escolha entre faces preservadas do catálogo e revelar/ocultar.
 Duplo clique no próprio campo vira/desvira; **Desvirar todas** fica no menu
 **Ações**. Escolher um lado da carta e colocá-la face para baixo são estados
-independentes. Movimentos preservam esses estados e a revelação.
+independentes. Ao sair do campo para cemitério/exílio, a carta perde marcadores, modificadores
+de poder/resistência, virado e face para baixo. A face escolhida permanece.
 
 Em **Ações**, a grade abre uma tela para vida, marcadores, compra e dado.
 **Vida** altera o total do próprio jogador. **Marcadores** usa cinco cores
 neutras, sem significado de regra. Na carta, poder e resistência ficam no
 diálogo da imagem, e as cores abrem em seguida. Valores negativos são aceitos
 sem interpretar derrota. Vida e marcadores do jogador são públicos;
-modificador e marcador de carta na mão não aparecem para o oponente. Valores
+modificador e marcador de carta na mão não aparecem para o oponente. Digite um
+inteiro e confirme com Enter, ou use os botões −/+ para alterar uma unidade.
+Valores
 e registro persistem após reinício. Veja a
 [semântica de vida e marcadores](docs/decisions/12-vida-e-contadores.md).
 
@@ -58,8 +64,17 @@ preencha nome, descrição e poder/resistência numéricos, inclusive negativos.
 Fichas personalizadas usam uma imagem padrão. Clique/toque em uma carta
 identificada e escolha **Criar cópia independente**: a nova instância entra no
 seu campo e não acompanha alterações posteriores no original. Fichas e cópias
-usam os movimentos normais e permanecem nas outras zonas. Atributos copiados
+são removidas do jogo ao mover para qualquer zona fora do campo. Atributos copiados
 e contrato: [decisão de fichas/cópias](docs/decisions/13-fichas-e-copias.md).
+
+A barra junto da mão oferece comprar uma carta, passar turno e desvirar todas.
+Atalhos: **D** comprar, **U** desvirar todas, **N** passar turno e **H** ocultar
+as próprias reveladas. Não atuam durante digitação, com modificadores ou com
+um diálogo aberto. Duplo clique no grimório compra uma carta; clique abre suas
+ações. As linhas do campo aceitam agrupamento manual de até três cartas, com
+espaço para cartas viradas e scroll horizontal. **Jogadores / Registro** abre
+ou recolhe a coluna lateral; ela começa recolhida em telas menores.
+Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).
 
 ## Executar com Docker
 
@@ -257,6 +272,7 @@ go -C api vet ./...
 go -C api test ./... -count=1
 npm ci --prefix app
 npm run build --prefix app
+npm run test:unit --prefix app
 npm test --prefix app -- --workers=3
 python3 infra/tests/docker_smoke.py
 ```
@@ -266,6 +282,17 @@ containers ao terminar. A verificação Docker constrói os dois modos, exercita
 login/recarga/logout no navegador, recria serviços conservando a sessão e
 verifica hot reload de React e Go em cópias descartáveis dos fontes.
 Use `--mode dev` ou `--mode prod` para verificar somente um modo.
+
+Para validar visualmente pilhas de duas/três cartas, pilhas mistas com cartas
+viradas, linhas e overflow, execute:
+
+```bash
+npm test --prefix app -- ajustes-mesa.spec.ts --workers=2
+```
+
+Esse fluxo cria os cenários pela API real em banco descartável e gera
+`campo-cenarios.png` e `painel-carta.png` nos relatórios de `app/test-results/`.
+Não altera as mesas em execução no Docker local.
 
 ## Organização do repositório
 

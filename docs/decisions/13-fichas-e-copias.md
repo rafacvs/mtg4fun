@@ -1,5 +1,7 @@
 # Fichas e cópias independentes
 
+> Ajustes posteriores: [regras e interface da mesa](22-ajustes-da-mesa.md).
+
 Issue: [13](../issues/13-criar-fichas-e-copias.md).
 
 ## Proposta e aprovação explícita

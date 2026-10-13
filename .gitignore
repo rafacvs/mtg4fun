@@ -10,3 +10,4 @@
 *.db
 *.db-shm
 *.db-wal
+/docs/relatorios/mudancas-deste-chat.html
