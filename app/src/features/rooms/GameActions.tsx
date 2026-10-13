@@ -47,7 +47,8 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
   // Foca o fechar só quando a tela abre. O polling e uma nova identidade de onClose não recentram o foco.
   useEffect(() => {
     if (!opened) return;
-    closeRef.current?.focus();
+    const input = closeRef.current?.closest('[role="dialog"]')?.querySelector<HTMLInputElement>('input');
+    if (input) input.focus(); else closeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCloseRef.current(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

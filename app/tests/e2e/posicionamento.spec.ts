@@ -27,16 +27,22 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await cards.nth(0).dragTo(field, { steps: 8 });
   const fieldCards = field.getByRole('button', { name: 'Island', exact: true });
   await expect(fieldCards).toHaveCount(1);
+  await expect.poll(async () => (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.log.at(-1)?.kind).toBe('position');
+  const confirmed = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
+  const placed = confirmed.players.find((player: { userId: number }) => player.userId === confirmed.viewerId).battlefield[0];
+  await expect(field.locator(`[data-pos-x="${placed.positionX}"][data-row="${placed.row}"]`)).toHaveCount(1);
   const base = await fieldCards.nth(0).boundingBox();
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: base!.x + base!.width / 2, y: base!.y + base!.height / 2 });
   else await cards.nth(0).dragTo(fieldCards.nth(0), { targetPosition: { x: base!.width / 2, y: base!.height / 2 }, steps: 8 });
   await expect(fieldCards).toHaveCount(2);
+  await expect(field.locator('[data-stack-size="2"]')).toHaveCount(2);
+  const baseAfterPosition = await fieldCards.nth(0).boundingBox();
   const stacked = await fieldCards.nth(1).boundingBox();
-  expect(stacked!.x - base!.x).toBeGreaterThanOrEqual(8);
-  expect(stacked!.x - base!.x).toBeLessThanOrEqual(24);
-  expect(stacked!.y - base!.y).toBeGreaterThanOrEqual(8);
-  expect(stacked!.y - base!.y).toBeLessThanOrEqual(24);
-  const target = { x: base!.x + 8, y: base!.y + base!.height + 10 };
+  expect(stacked!.x - baseAfterPosition!.x).toBeGreaterThanOrEqual(8);
+  expect(stacked!.x - baseAfterPosition!.x).toBeLessThanOrEqual(24);
+  expect(stacked!.y - baseAfterPosition!.y).toBeGreaterThanOrEqual(8);
+  expect(stacked!.y - baseAfterPosition!.y).toBeLessThanOrEqual(24);
+  const target = { x: base!.x + 8, y: base!.y + base!.height + 45 };
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, stacked!, target);
   else {
     await page.mouse.move(stacked!.x + stacked!.width / 2, stacked!.y + stacked!.height / 2);
@@ -52,8 +58,8 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     expect(Math.abs(stayed!.y - base!.y)).toBeLessThanOrEqual(2);
     expect(Math.hypot(moved!.x - stacked!.x, moved!.y - stacked!.y)).toBeGreaterThan(2);
     const gap = moved!.y - (stayed!.y + stayed!.height);
-    expect(gap).toBeGreaterThanOrEqual(2);
-    expect(gap).toBeLessThanOrEqual(4);
+    expect(gap).toBeGreaterThanOrEqual(41);
+    expect(gap).toBeLessThanOrEqual(43);
   }).toPass();
 });
 

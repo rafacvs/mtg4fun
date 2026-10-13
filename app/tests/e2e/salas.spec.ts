@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, openMatchRail } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -167,13 +167,16 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(hand.getByRole('button')).toHaveCount(1);
   expect((await ownHand())[0].id).not.toBe(returnedId);
   await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), board.getByRole('region', { name: 'Campo', exact: true }));
+  await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
   await page.reload();
   await expect(page).toHaveURL(roomURL);
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
+  await openMatchRail(page);
   await expect(board.getByRole('region', { name: 'Registro da partida', exact: true }).getByText('Amigo da mesa moveu 1 carta(s) de Mão para Grimório.')).toHaveCount(2);
   await page.getByRole('link', { name: 'Voltar ao lobby' }).click();
   await expect(board).toHaveCount(0);
   await page.goto(roomURL);
+  await openMatchRail(page);
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
   await buy('3');
   await expect(hand.getByRole('button')).toHaveCount(3);
@@ -191,7 +194,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
   await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);
   await activate(board.getByRole('button', { name: 'Avançar turno', exact: true }));
-  await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa.');
+  await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa e ocultou todas as revelações.');
   await activate(board.getByRole('button', { name: 'Corrigir turno', exact: true }));
   await expect(log).toContainText('Amigo da mesa corrigiu para o turno de Amigo da mesa.');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

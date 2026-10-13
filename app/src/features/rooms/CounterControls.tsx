@@ -33,7 +33,7 @@ export function QuantityAdjust({ label, value, disabled, onApply }: { label: str
       <button type="button" className="secondary" aria-label={`Aumentar ${label}`} disabled={disabled} onClick={() => apply('increment', 1)}>+</button>
     </div>
     <div className="draw-row">
-      <label>Quantidade<input aria-label={`Quantidade de ${label}`} type="number" step="1" value={amount} onChange={event => setAmount(event.target.value)} /></label>
+      <label>Quantidade<input aria-label={`Quantidade de ${label}`} type="number" step="1" value={amount} aria-invalid={!integer} onChange={event => setAmount(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && integer && !disabled) { event.preventDefault(); apply('set', numeric); } }} /></label>
       <button type="button" disabled={disabled || !integer} onClick={() => apply('set', numeric)}>Definir</button>
       <button type="button" disabled={disabled || !positive} onClick={() => apply('increment', numeric)}>Adicionar</button>
       <button type="button" disabled={disabled || !positive} onClick={() => apply('increment', -numeric)}>Subtrair</button>
@@ -47,31 +47,41 @@ function integerText(raw: string) {
   return Number.isSafeInteger(numeric) ? numeric : null;
 }
 
-export function PowerToughnessAdjust({ power, toughness, disabled, onApply }: { power: number; toughness: number; disabled: boolean; onApply: (subject: 'power' | 'toughness', operation: CounterOperation, value: number) => Promise<boolean> }) {
-  const [left, setLeft] = useState(String(power));
-  const [right, setRight] = useState(String(toughness));
-  const powerRef = useRef<HTMLInputElement>(null);
-  const toughnessRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (document.activeElement !== powerRef.current) setLeft(String(power)); }, [power]);
-  useEffect(() => { if (document.activeElement !== toughnessRef.current) setRight(String(toughness)); }, [toughness]);
-  const commit = (subject: 'power' | 'toughness', raw: string, current: number) => {
-    const numeric = integerText(raw);
-    if (numeric === null || numeric === current || disabled) return;
-    void onApply(subject, 'set', numeric);
+function NumericCounter({ label, value, disabled, onApply }: { label: string; value: number; disabled: boolean; onApply: Apply }) {
+  const [draft, setDraft] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pending = useRef<number | null>(null);
+  const numeric = integerText(draft);
+  useEffect(() => { if (document.activeElement !== inputRef.current) setDraft(String(value)); }, [value]);
+  useEffect(() => {
+    if (disabled || pending.current === null) return;
+    const next = pending.current;
+    pending.current = null;
+    if (next !== value) void onApply('set', next);
+  }, [disabled, value, onApply]);
+  const confirm = () => {
+    if (numeric === null || numeric === value) return;
+    if (disabled) pending.current = numeric;
+    else void onApply('set', numeric);
   };
+  return <div className="numeric-counter">
+    <button type="button" className="secondary" aria-label={`Diminuir ${label}`} disabled={disabled} onClick={() => void onApply('increment', -1)}>−</button>
+    <input ref={inputRef} aria-label={label} title="Digite um inteiro e pressione Enter" type="number" step="1" value={draft} aria-invalid={numeric === null} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); confirm(); } }} onBlur={() => { if (numeric === null) setDraft(String(value)); else confirm(); }} />
+    <button type="button" className="secondary" aria-label={`Aumentar ${label}`} disabled={disabled} onClick={() => void onApply('increment', 1)}>+</button>
+  </div>;
+}
+
+export function PowerToughnessAdjust({ power, toughness, disabled, onApply }: { power: number; toughness: number; disabled: boolean; onApply: (subject: 'power' | 'toughness', operation: CounterOperation, value: number) => Promise<boolean> }) {
   return <div className="pt-line">
-    <input ref={powerRef} aria-label="Poder" type="number" step="1" value={left} onChange={event => { setLeft(event.target.value); commit('power', event.target.value, power); }} onBlur={() => { if (integerText(left) === null) setLeft(String(power)); }} />
-    <span className="pt-slash" aria-hidden="true">/</span>
-    <input ref={toughnessRef} aria-label="Resistência" type="number" step="1" value={right} onChange={event => { setRight(event.target.value); commit('toughness', event.target.value, toughness); }} onBlur={() => { if (integerText(right) === null) setRight(String(toughness)); }} />
+    <div className="pt-control"><span>Poder</span><NumericCounter label="Poder" value={power} disabled={disabled} onApply={(operation, value) => onApply('power', operation, value)} /></div>
+    <div className="pt-control"><span>Resistência</span><NumericCounter label="Resistência" value={toughness} disabled={disabled} onApply={(operation, value) => onApply('toughness', operation, value)} /></div>
   </div>;
 }
 
 function MarkerRow({ name, color, value, disabled, onApply }: { name: string; color: MarkerColor; value: number; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
   return <div className="marker-row">
     <span className={`marker-dot marker-${color}`} aria-hidden="true" />
-    <button type="button" className="secondary" aria-label={`Diminuir marcador ${name}`} disabled={disabled} onClick={() => void onApply(color, 'increment', -1)}>−</button>
-    <strong className="marker-count">{value}</strong>
-    <button type="button" className="secondary" aria-label={`Aumentar marcador ${name}`} disabled={disabled} onClick={() => void onApply(color, 'increment', 1)}>+</button>
+    <NumericCounter label={`marcador ${name}`} value={value} disabled={disabled} onApply={(operation, value) => onApply(color, operation, value)} />
   </div>;
 }
 

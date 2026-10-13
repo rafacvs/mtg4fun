@@ -10,6 +10,6 @@ export function CardStateControls({ card, viewerId, disabled, onChange }: { card
     <button disabled={disabled} onClick={() => onChange('reveal_cards', card, !card.revealed)}>{card.revealed ? 'Ocultar revelação' : 'Revelar para todos'}</button>
     {Boolean(card.faces && card.faces.length > 1) && <label>Face da carta<select disabled={disabled} value={card.faceIndex ?? 0} onChange={event => onChange('set_face', card, Number(event.target.value))}>{card.faces!.map((face, index) => <option key={face} value={index}>{face}</option>)}</select></label>}
     {card.faceDown && <p>Face para baixo · a face escolhida permanece.</p>}
-    {card.revealed && <p>Revelada até ocultar explicitamente, mesmo ao mover.</p>}
+    {card.revealed && <p>Visível para todos até ocultar ou passar o turno.</p>}
   </section>;
 }

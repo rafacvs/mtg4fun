@@ -58,6 +58,10 @@ export function useMatch(roomId: number) {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.setTapped(roomId, cardIds, tapped, intentId));
     },
+    hideAllRevealed: () => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.hideAllRevealed(roomId, intentId));
+    },
     untapAll: () => {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.untapAll(roomId, intentId));

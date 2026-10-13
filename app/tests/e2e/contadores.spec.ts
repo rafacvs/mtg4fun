@@ -1,5 +1,5 @@
 import type { Locator } from '@playwright/test';
-import { test, expect } from './fixtures';
+import { test, expect, openMatchRail } from './fixtures';
 
 test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', async ({ page, browser, baseURL }, info) => {
   test.skip(info.project.name === 'celular', 'Mesa exige orientação horizontal.');
@@ -47,14 +47,18 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await press('Fechar ações');
     await press('Island');
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
-    await preview.getByLabel('Poder').fill('-1');
-    const toughnessAmount = preview.getByLabel('Resistência');
+    await preview.getByLabel('Poder', { exact: true }).fill('-1');
+    await preview.getByLabel('Poder', { exact: true }).press('Enter');
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+0', { exact: true })).toBeVisible();
+    const toughnessAmount = preview.getByLabel('Resistência', { exact: true });
     await toughnessAmount.fill('4');
+    await toughnessAmount.press('Enter');
     await page.waitForTimeout(1_300);
     await expect(toughnessAmount).toBeFocused();
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+4', { exact: true })).toBeVisible();
     const otherPage = await observer.newPage();
     await otherPage.goto(`/#/salas/${room.id}`);
+    await openMatchRail(otherPage);
     const focus = otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ });
     if (info.project.use.hasTouch) await focus.tap(); else await focus.click();
     const otherTable = otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' });

@@ -15,7 +15,7 @@
 .life-figure { font-size: 2.75rem; line-height: 1; }
 .adjust-value { font-size: 1.6rem; line-height: 1; }
 .marker-dots { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.marker-dot { width: 46px; height: 46px; padding: 0; border: 2px solid #0006; border-radius: 50%; color: #fff; font-weight: 800; line-height: 1; }
+.marker-dot { display: inline-grid; place-items: center; flex-shrink: 0; text-align: center; font-variant-numeric: tabular-nums; width: 46px; height: 46px; padding: 0; border: 2px solid #0006; border-radius: 50%; color: #fff; font-weight: 800; line-height: 1; }
 button.marker-dot { min-height: 46px; }
 .marker-red { background: #c23b3b; }
 .marker-yellow { background: #d4a017; color: #1a1404; }
@@ -35,3 +35,14 @@ button.marker-dot { min-height: 46px; }
   .marker-dot { width: 40px; height: 40px; }
   button.marker-dot { min-height: 40px; }
 }
+
+.numeric-counter { display: grid; grid-template-columns: 28px minmax(40px, 1fr) 28px; align-items: center; gap: 4px; }
+.numeric-counter button { min-height: 32px; padding: 0; }
+.numeric-counter input { min-height: 32px; padding: 4px; text-align: center; }
+.numeric-counter input[aria-invalid=true] { border-color: #f0bbaf; }
+.marker-row { grid-template-columns: 24px minmax(0, 1fr); }
+.marker-row .marker-dot { width: 24px; height: 24px; }
+.card-toolbar { display: flex; flex-direction: column; align-items: stretch; width: 100%; margin: 0; }
+.pt-line { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pt-line .pt-control { min-width: 0; margin: 0; font-size: .7rem; }
+.pt-line input { width: 100%; }

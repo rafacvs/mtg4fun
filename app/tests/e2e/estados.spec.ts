@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, openMatchRail } from './fixtures';
 import type { BrowserContext } from '@playwright/test';
 
 // Images are unrelated to state permissions; all state requests use the real server.
@@ -67,6 +67,7 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
     await expect(button).toHaveAttribute('data-face-down', 'true');
     await preview.getByRole('button', { name: 'Fechar', exact: true }).click();
     const otherField = other.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true }).getByRole('region', { name: 'Campo', exact: true });
+    await openMatchRail(other);
     if (testInfo.project.name !== 'desktop') await other.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }).tap();
     await expect(otherField.getByRole('button', { name: 'Carta face para baixo', exact: true })).toBeVisible();
     await expect(otherField.getByRole('button', { name: 'Day Test', exact: true })).toHaveCount(0);
@@ -74,6 +75,7 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
     await preview.getByRole('button', { name: 'Revelar para todos', exact: true }).click();
     await expect(otherField.getByRole('button', { name: 'Day Test', exact: true })).toBeVisible();
     await preview.getByRole('button', { name: 'Colocar face para cima', exact: true }).click();
+    await preview.getByLabel('Manter revelada ao fechar (até passar o turno)').check();
     await expect(preview.getByLabel('Face da carta')).toHaveValue('1');
     await preview.getByRole('button', { name: 'Fechar', exact: true }).click();
     await page.getByRole('button', { name: 'Ações', exact: true }).click();

@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, openMatchRail } from './fixtures';
 import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 
 async function expectVerticalList(library: Locator) {
@@ -109,6 +109,8 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
     }
     await own.goto(`/#/salas/${roomId}`);
     await opponent.goto(`/#/salas/${roomId}`);
+    await openMatchRail(own);
+    await openMatchRail(opponent);
     const activate = async (button: Locator) =>
       info.project.use.hasTouch ? button.tap() : button.click();
     const library = own.getByRole('dialog', { name: 'Grimório', exact: true });
@@ -156,6 +158,7 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
     expect((await readOwn()).command).toHaveLength(1);
     await activate(library.getByRole('button', { name: 'Devolver e embaralhar', exact: true }));
     await expect(library.getByRole('button', { name: /^Buscar no grimório/ })).toBeVisible();
+    await openMatchRail(opponent);
     await activate(
       opponent
         .getByRole('navigation', { name: 'Foco da mesa' })
@@ -167,7 +170,7 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
         .getByRole('region', { name: 'Comando', exact: true })
         .getByRole('button', { name: 'Fire // Ice', exact: true }),
     ).toBeVisible();
-    expect((await readOwn()).libraryCount).toBe(2);
+    await expect.poll(async () => (await readOwn()).libraryCount).toBe(2);
   } finally {
     await Promise.all(game.contexts.map((context) => context.close()));
   }
@@ -204,7 +207,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     expect(gripBox.x + gripBox.width).toBeLessThanOrEqual(imageBox.x);
     if (info.project.use.hasTouch) {
       await dragCard(own, handle, rows.nth(0), true, true);
-      expect((await readOwn()).consulted.map((card: { id: string }) => card.id)).toEqual(
+      expect(((await readOwn()).consulted ?? []).map((card: { id: string }) => card.id)).toEqual(
         original.map((card) => card.id),
       );
       await expect(library.locator('.dragging, .drag-target')).toHaveCount(0);
@@ -212,7 +215,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await dragCard(own, handle, rows.nth(0), !!info.project.use.hasTouch);
     const reordered = [original[1].id, original[0].id, original[2].id];
     await expect
-      .poll(async () => (await readOwn()).consulted.map((card: { id: string }) => card.id))
+      .poll(async () => ((await readOwn()).consulted ?? []).map((card: { id: string }) => card.id))
       .toEqual(reordered);
     await expect(library.locator('.library-selection')).toHaveCount(0);
     await expect(rows.nth(0)).toHaveAttribute('aria-disabled', 'false');
@@ -233,7 +236,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
       .getByRole('button', { name: /^Reordenar / })
       .press('ArrowDown');
     await expect
-      .poll(async () => (await readOwn()).consulted.map((card: { id: string }) => card.id))
+      .poll(async () => ((await readOwn()).consulted ?? []).map((card: { id: string }) => card.id))
       .toEqual(original.map((card) => card.id));
     await expect(rows.nth(1)).toHaveAttribute('aria-disabled', 'false');
     await rows
@@ -241,7 +244,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
       .getByRole('button', { name: /^Reordenar / })
       .press('ArrowUp');
     await expect
-      .poll(async () => (await readOwn()).consulted.map((card: { id: string }) => card.id))
+      .poll(async () => ((await readOwn()).consulted ?? []).map((card: { id: string }) => card.id))
       .toEqual(reordered);
     await own.screenshot({ path: info.outputPath('grimorio-consulta.png') });
     const box = (await library.boundingBox())!;
@@ -257,6 +260,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     for (const card of original)
       await expect(opponent.locator('body')).not.toContainText(card.name);
     await own.reload();
+    await openMatchRail(own);
     await open();
     await expect(library.locator('.library-card')).toHaveCount(3);
     await library.getByLabel('Destino das restantes').selectOption('bottom');
@@ -267,7 +271,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await library.getByLabel('Quantidade de cartas').fill('3');
     await activate(library.getByRole('button', { name: 'Olhar 3 carta(s)', exact: true }));
     await expect
-      .poll(async () => (await readOwn()).consulted.map((card: { id: string }) => card.id))
+      .poll(async () => ((await readOwn()).consulted ?? []).map((card: { id: string }) => card.id))
       .toEqual(reordered);
     await library.getByLabel('Destino das restantes').selectOption('top');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
@@ -293,9 +297,9 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
     await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('12');
     await activate(library.getByRole('button', { name: 'Olhar 12 carta(s)', exact: true }));
-    const original = (await readOwn()).consulted as { id: string }[];
     const rows = library.locator('.library-card');
     await expect(rows).toHaveCount(12);
+    const original = (await readOwn()).consulted as { id: string }[];
     await expectVerticalList(library);
     const list = library.locator('.library-cards');
     const bounds = (await list.boundingBox())!;
@@ -330,7 +334,7 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
       await own.mouse.up();
     }
     await expect
-      .poll(async () => (await readOwn()).consulted.map((card: { id: string }) => card.id))
+      .poll(async () => ((await readOwn()).consulted ?? []).map((card: { id: string }) => card.id))
       .toEqual([...original.slice(1).map((card) => card.id), original[0].id]);
     await expect(library.locator('.library-selection')).toHaveCount(0);
     await expect(library.locator('.dragging, .drag-target')).toHaveCount(0);
@@ -364,6 +368,7 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     expect(rowBox.x + rowBox.width - (markBox.x + markBox.width)).toBeGreaterThanOrEqual(16);
     await own.screenshot({ path: info.outputPath('grimorio-selecao-centralizada.png') });
     await activate(library.getByRole('button', { name: 'Revelar seleção', exact: true }));
+    await openMatchRail(opponent);
     await activate(
       opponent
         .getByRole('navigation', { name: 'Foco da mesa' })
@@ -387,7 +392,7 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     );
     await activate(library.getByRole('button', { name: 'Colocar 1 na mão', exact: true }));
     await expect(publicArea.getByRole('button')).toHaveCount(1);
-    expect((await readOwn()).hand[0].name).toBe('Fire // Ice');
+    await expect.poll(async () => (await readOwn()).hand?.[0]?.name).toBe('Fire // Ice');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
     await activate(library.getByRole('button', { name: /^Revelar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('2');
@@ -399,7 +404,7 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     await library.getByLabel('Destino das restantes').selectOption('bottom');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
     await expect(publicArea.getByRole('button')).toHaveCount(3);
-    expect((await readOwn()).libraryCount).toBe(2);
+    await expect.poll(async () => (await readOwn()).libraryCount).toBe(2);
     await activate(library.getByRole('button', { name: /^Comprar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('1');
     await activate(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true }));

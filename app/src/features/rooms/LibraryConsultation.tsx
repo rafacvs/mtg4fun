@@ -34,7 +34,7 @@ export function LibraryConsultation(props: Props) {
   const state = useLibraryConsultation(pool, props, consultationFrom);
   const active = Boolean(consultationFrom || pool.length);
   const searching = consultationFrom === 'all' || (!consultationFrom && cards.length > 0);
-  const publicCount = pool.filter((card) => card.revealed || card.zone === 'revealed').length;
+  const publicCount = pool.filter((card) => card.revealed).length;
   const title = active
     ? searching
       ? consultationFrom
