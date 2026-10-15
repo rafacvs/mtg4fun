@@ -10,6 +10,9 @@ export type Room = {
 export type MarkerColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple';
 export type Markers = Partial<Record<MarkerColor, number>>;
 export type Match = {
+  finished: boolean;
+  finishVotes: number[];
+  finishRequired: number;
   roomId: number;
   viewerId: number;
   initialLife: number;
@@ -79,6 +82,7 @@ function subscribe(updates: Updates): () => void {
 }
 
 export const roomsApi = {
+  finish: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'finish' }),
   subscribe,
   setTapped: (id: number, cardIds: string[], tapped: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_tapped', cardIds, tapped }),
   hideAllRevealed: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'hide_all_revealed' }),

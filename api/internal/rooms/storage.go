@@ -106,6 +106,8 @@ type playerState struct {
 	ConsultationFrom string      `json:"consultationFrom,omitempty"`
 }
 type matchState struct {
+	Finished       bool          `json:"finished,omitempty"`
+	FinishVotes    []int64       `json:"finishVotes,omitempty"`
 	RoomID         int64         `json:"roomId"`
 	InitialLife    int           `json:"initialLife"`
 	TurnOrder      []Turn        `json:"turnOrder"`
@@ -114,13 +116,16 @@ type matchState struct {
 	Players        []playerState `json:"players"`
 }
 type Match struct {
-	RoomID      int64         `json:"roomId"`
-	ViewerID    int64         `json:"viewerId"`
-	InitialLife int           `json:"initialLife"`
-	TurnOrder   []Turn        `json:"turnOrder"`
-	CurrentTurn Turn          `json:"currentTurn"`
-	Players     []MatchPlayer `json:"players"`
-	Log         []MatchLog    `json:"log"`
+	Finished       bool          `json:"finished"`
+	FinishVotes    []int64       `json:"finishVotes"`
+	FinishRequired int           `json:"finishRequired"`
+	RoomID         int64         `json:"roomId"`
+	ViewerID       int64         `json:"viewerId"`
+	InitialLife    int           `json:"initialLife"`
+	TurnOrder      []Turn        `json:"turnOrder"`
+	CurrentTurn    Turn          `json:"currentTurn"`
+	Players        []MatchPlayer `json:"players"`
+	Log            []MatchLog    `json:"log"`
 }
 type MatchPlayer struct {
 	ExposedCards     []ExposedCard `json:"exposedCards,omitempty"`
@@ -256,7 +261,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	if len(m.TurnOrder) > 0 {
 		current = m.TurnOrder[m.TurnIndex%len(m.TurnOrder)]
 	}
-	return Match{RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, Players: p, Log: log}
+	return Match{Finished: m.Finished, FinishVotes: append([]int64{}, m.FinishVotes...), FinishRequired: (len(m.Players) + 1) / 2, RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, Players: p, Log: log}
 }
 
 type Service struct {
@@ -322,7 +327,9 @@ func (s *Service) list(ctx context.Context) ([]Room, error) {
 		if e != nil {
 			return nil, e
 		}
-		out = append(out, r.view())
+		if r.Status != "finished" {
+			out = append(out, r.view())
+		}
 	}
 	return out, rows.Err()
 }
@@ -377,6 +384,9 @@ func (s *Service) join(ctx context.Context, id int64, u auth.User) (Room, error)
 	r, e := lockedRoom(ctx, tx, id)
 	if e != nil {
 		return Room{}, e
+	}
+	if r.Status == "finished" {
+		return Room{}, errMatchFinished
 	}
 	for _, p := range r.Participants {
 		if p.ID == u.ID {

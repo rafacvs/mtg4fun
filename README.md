@@ -79,6 +79,15 @@ carta mostra sua prévia ampliada. **Ocultar prévia / Mostrar prévia** control
 essa seção; **Recolher registro** recolhe toda a lateral, incluindo a prévia.
 Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).
 
+**Finalizar**, em vermelho à direita de **Ocultar prévia**, abre a confirmação
+de encerramento. Qualquer jogador pode concordar; pelo menos metade dos
+participantes, arredondando para cima, encerra a partida e fecha a sala para
+todos. Sozinho, basta confirmar. Enquanto faltam concordâncias, a mesa continua
+jogável e os votos ficam salvos. Ao encerrar, todos voltam ao lobby e a sala
+sai da lista; estado final e registro são preservados. Veja a
+[decisão de encerramento](docs/decisions/24-finalizar-partida.md).
+O grimório usa o verso de carta fornecido na revisão visual, com efeito de pilha.
+
 ## Executar com Docker
 
 Requisitos: Docker com Docker Compose 2.20 ou mais recente. Execute os comandos

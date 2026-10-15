@@ -300,8 +300,30 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	if !errors.Is(err, sql.ErrNoRows) {
 		return Match{}, err
 	}
+	if m.Finished {
+		return Match{}, errMatchFinished
+	}
+	if input.Kind == "finish" && hasFinishVote(m, u.ID) {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO match_intents(room_id,actor_id,intent_id) VALUES (?,?,?)", roomID, u.ID, input.IntentID); err != nil {
+			return Match{}, err
+		}
+		log, err := matchLog(ctx, tx, roomID, m)
+		if err != nil {
+			return Match{}, err
+		}
+		if err = tx.Commit(); err != nil {
+			return Match{}, err
+		}
+		return m.view(u.ID, log), nil
+	}
 	var payload actionLogPayload
 	switch input.Kind {
+	case "finish":
+		payload = voteToFinish(&m, u.ID)
+		err = nil
+		if m.Finished {
+			err = finishRoom(ctx, tx, roomID, u.ID)
+		}
 	case "create-custom-token":
 		power, _ := modifierFromText(input.Power)
 		toughness, _ := modifierFromText(input.Toughness)
