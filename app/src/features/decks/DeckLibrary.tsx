@@ -46,6 +46,9 @@ export function DeckLibrary({ library }: Props) {
     </details>
     {library.error && <p role="alert" className="error">{library.error}</p>}
     {library.loading ? <p role="status">Carregando decks…</p> : library.decks.length === 0 ? <div className="empty-decks"><h3>Sua biblioteca começa aqui.</h3><p>Nenhum deck salvo. Importe seu primeiro arquivo.</p></div> : <div className="library-workspace">
+      <div className="saved-deck-grid" aria-label="Decks salvos">{library.decks.map(deck => <button key={deck.id} type="button" className="saved-deck-card secondary" aria-pressed={library.selected === deck.id} onClick={() => { inspection.close(); library.setSelected(deck.id); }}>
+        <span className="deck-emblem" aria-hidden="true">♧</span><span><strong>{deck.name}</strong><small>{deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cartas</small></span><span aria-hidden="true">→</span>
+      </button>)}</div>
       <div className="deck-picker">
         <label htmlFor="saved-deck">Escolher deck salvo</label>
         <select id="saved-deck" value={library.selected ?? ''} onChange={event => { inspection.close(); library.setSelected(event.target.value ? Number(event.target.value) : null); }}>

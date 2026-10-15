@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -56,3 +56,10 @@ export const test = base.extend<{}, { appURL: string }>({
 });
 
 export { expect };
+
+// The new compact rail starts collapsed on smaller viewports.
+export async function openMatchRail(page: Page) {
+  const toggle = page.locator('.rail-toggle');
+  await expect(toggle).toBeVisible();
+  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+}

@@ -133,10 +133,10 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			httpserver.WriteError(w, 400, "Contador inválido.")
 			return matchAction{}, false
 		}
-	case "set_tapped", "set_face_down", "reveal_cards", "set_face", "untap_all":
+	case "set_tapped", "set_face_down", "reveal_cards", "set_face", "untap_all", "hide_all_revealed":
 		valid := input.Count == 0 && input.To == "" && input.LibraryPlacement == "" && input.Sides == 0 && input.Direction == "" && input.PositionX == 0 && input.Row == 0 && input.ConsultFrom == ""
 		switch input.Kind {
-		case "untap_all":
+		case "untap_all", "hide_all_revealed":
 			valid = valid && len(input.CardIDs) == 0 && input.CardID == ""
 		case "set_face":
 			valid = valid && input.CardID != "" && len(input.CardIDs) == 0 && raw.FaceIndex != nil && input.FaceIndex >= 0

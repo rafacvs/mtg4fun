@@ -22,3 +22,23 @@
   .room-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 990px) { .room-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.rooms { margin-top: 24px; }
+.rooms-heading h2 { font-size: 1.5rem; }
+.room-list { grid-template-columns: 1fr; margin-top: 18px; gap: 10px; }
+.room-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 16px 18px; border-radius: 12px; background: linear-gradient(120deg, #1d3325, #14231a); }
+.room-card h3 { font-size: 1.05rem; margin: 0; }
+.room-card .room-status { justify-self: end; margin: 0; padding: 3px 9px; font-size: .7rem; }
+.room-occupancy { font-size: .8rem; }
+.room-card .room-vacancies { justify-self: end; font-size: .75rem; }
+.room-card ul { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 0; list-style: none; margin: 6px 0; font-size: .8rem; }
+.room-card li { margin: 0; }
+.room-card > button, .room-card > .room-enter { grid-column: 2; width: auto; min-height: 36px; padding: 6px 14px; margin-top: 0; font-size: .8rem; }
+.room-card .room-member { grid-column: 1; font-size: .75rem; align-self: center; }
+.empty-rooms { display: grid; justify-items: center; padding: 32px 20px; margin-top: 18px; border: 1px dashed #617363; border-radius: 14px; text-align: center; }
+.empty-rooms > span { font-size: 2rem; color: #e6c481; }
+.empty-rooms p { margin: 0; font-size: .88rem; }
+@media (max-width: 480px) {
+  .room-card { gap: 6px 8px; padding: 14px; }
+  .room-card .room-status { max-width: 110px; text-align: center; }
+}

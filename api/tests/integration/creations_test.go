@@ -148,11 +148,11 @@ func TestCustomTokensAndCopiesAreIndependentAndRecoverable(t *testing.T) {
 	}
 	requireStatus(t, action(cookies[1], fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"hand"`, copy.ID)), 200)
 	requireStatus(t, action(cookies[0], fmt.Sprintf(`"kind":"copy-card","cardId":%q`, copy.ID)), 409)
-	requireStatus(t, action(cookies[1], fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"graveyard"`, copy.ID)), 200)
+	requireStatus(t, action(cookies[1], fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"graveyard"`, copy.ID)), 409)
 	e.stop()
 	e.start(false)
 	restored := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))
-	if len(restored[0].Graveyard) != 1 || len(restored[1].Graveyard) != 1 || restored[1].Graveyard[0].ID != copy.ID || restored[1].Graveyard[0].Power != -1 {
+	if len(restored[0].Graveyard) != 0 || len(restored[1].Graveyard) != 0 || len(restored[1].Hand) != 0 {
 		t.Fatalf("persistência: %+v", restored)
 	}
 	// Private own cards can be copied without moving or exposing the original.

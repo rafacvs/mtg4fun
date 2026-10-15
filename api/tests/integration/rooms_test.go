@@ -955,7 +955,7 @@ func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 			turnResult = entry.Result
 		}
 	}
-	if rolls != 1 || coins != 1 || turns != 1 || rollActorID == 0 || coinActorID == 0 || rollActorID == coinActorID || len(view.Match.TurnOrder) != 2 || !strings.HasPrefix(rollResult, "D20: ") || coinResult != "Cara" && coinResult != "Coroa" || turnResult != "avançou para o turno de "+view.Match.TurnOrder[1].Name || view.Match.CurrentTurn.Name != view.Match.TurnOrder[1].Name {
+	if rolls != 1 || coins != 1 || turns != 1 || rollActorID == 0 || coinActorID == 0 || rollActorID == coinActorID || len(view.Match.TurnOrder) != 2 || !strings.HasPrefix(rollResult, "D20: ") || coinResult != "Cara" && coinResult != "Coroa" || turnResult != "avançou para o turno de "+view.Match.TurnOrder[1].Name+" e ocultou todas as revelações" || view.Match.CurrentTurn.Name != view.Match.TurnOrder[1].Name {
 		t.Fatalf("ações públicas: %s", turn.body)
 	}
 	e.stop()

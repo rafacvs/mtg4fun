@@ -45,8 +45,9 @@ func addCreatedCard(p *playerState, card Card, kind string) (actionLogPayload, e
 	card.ID = "created-" + hex.EncodeToString(identifier[:])
 	card.OwnerID = p.UserID
 	card.ControllerID = p.UserID
+	card.IsToken = true
 	card.Zone = "battlefield"
-	card.PositionX = len(p.Battlefield) * 80
+	card.PositionX = len(p.Battlefield) * 120
 	p.Battlefield = append(p.Battlefield, card)
 	return actionLogPayload{Kind: kind, To: "battlefield", Count: 1, Result: card.Name}, nil
 }

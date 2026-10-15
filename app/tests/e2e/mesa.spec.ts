@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, openMatchRail } from './fixtures';
 import type { BrowserContext, Locator } from '@playwright/test';
 
 const cardImage = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64');
@@ -23,6 +23,9 @@ async function scrollThumbnailOutOfFocusNav(thumbnail: Locator) {
   await thumbnail.evaluate(button => {
     const nav = button.closest('nav');
     if (!(nav instanceof HTMLElement)) return;
+    // Compact thumbnails can fit all six. Constrain the rail for this scenario
+    // so the activity event must actually reveal a scrolled-out participant.
+    nav.style.maxHeight = '76px';
     const navRect = nav.getBoundingClientRect();
     const buttonRect = button.getBoundingClientRect();
     const visibleTop = navRect.top + nav.clientTop;
@@ -56,6 +59,7 @@ test('indica a atividade do participante certo quando nomes se repetem', async (
     const other = await contexts[1].newPage();
     await page.goto(`/#/salas/${roomId}`);
     await other.goto(`/#/salas/${roomId}`);
+    await openMatchRail(page);
     const thumbnails = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button');
     await expect(thumbnails).toHaveCount(2);
     await other.getByRole('button', { name: 'Ações', exact: true }).click();
@@ -123,6 +127,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
       await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
       await page.setViewportSize({ width: 844, height: 390 });
+      await openMatchRail(page);
       await expect(page.getByRole('region', { name: 'Registro da partida', exact: true })).toContainText(/Segundo amigo rolou D20: \d+\./);
       await expect(drawn).toBeVisible();
     }
@@ -132,6 +137,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await expect(preview.getByRole('img', { name: 'Imagem ampliada de Island' })).toBeVisible();
     await activate(preview.getByRole('button', { name: 'Fechar', exact: true }));
     await expect(preview).toHaveCount(0);
+    await openMatchRail(page);
     for (const name of ['Segundo amigo', 'Amigo 3', 'Amigo 4', 'Amigo 5', 'Amigo 6']) {
       await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: new RegExp(name) }));
       await expect(page.getByRole('article', { name: `Mesa de ${name}`, exact: true })).toBeVisible();
@@ -140,6 +146,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await openActions();
     const secondThumbnail = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Segundo amigo/ });
     if (testInfo.project.name === 'celular') {
+      await expect(page.locator('.activity-indicator')).toHaveCount(0);
       await scrollThumbnailOutOfFocusNav(secondThumbnail);
       await expect.poll(() => intersectsVisibleFocusNav(secondThumbnail)).toBe(false);
     }
@@ -192,6 +199,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await drawn.first().dragTo(field, { steps: 8 });
     await expect(field.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
     await expect(drawn).toHaveCount(1);
+    await openMatchRail(other);
     await activate(other.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
     const observed = other.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const publicCard = observed.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });

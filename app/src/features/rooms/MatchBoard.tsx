@@ -3,8 +3,10 @@ import type { Card, Match } from './roomsApi';
 import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
+import { HoverCardPreview } from './HoverCardPreview';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
+import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
@@ -14,18 +16,22 @@ import './counters.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed } = useMatch(roomId);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [creationOpen, setCreationOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [railOpen, setRailOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
+  const [hoverPreviewOpen, setHoverPreviewOpen] = useState(true);
+  const [hoverCardId, setHoverCardId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
+  const dockRef = useRef<HTMLElement>(null);
   const thumbnailsRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
   const closePreview = useCallback(() => setPreviewId(null), []);
@@ -33,6 +39,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
+  useEffect(() => {
+    const dock = dockRef.current;
+    const board = dock?.closest<HTMLElement>('.match-board');
+    if (!dock || !board) return;
+    const update = () => board.style.setProperty('--dock-height', `${dock.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(dock);
+    return () => observer.disconnect();
+  }, [Boolean(match)]);
   useEffect(() => {
     const list = logRef.current;
     if (list) list.scrollTop = list.scrollHeight;
@@ -50,7 +66,26 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     const timeout = window.setTimeout(() => setActivePlayerId(null), 3_000);
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
+  const drawOne = () => {
+    if (!busy && !unconfirmed) void draw(1).then(ok => { if (ok) setNotice('Uma carta comprada.'); });
+  };
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const editing = Boolean(target?.closest('input, textarea, select, [contenteditable], [role="textbox"]'));
+      const command = shortcutCommand(event, editing || Boolean(document.querySelector('[role="dialog"]')));
+      if (!match || busy || unconfirmed || !command) return;
+      event.preventDefault();
+      if (command === 'draw') drawOne();
+      else if (command === 'untap') void untapAll();
+      else if (command === 'turn') void turn('next');
+      else void hideAllRevealed();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [match, busy, unconfirmed, draw, untapAll, turn, hideAllRevealed]);
   const gesture: CardGesture = {
+    onHover: card => { if (!drag && railOpen && hoverPreviewOpen) setHoverCardId(card.id); },
     onToggleTapped: card => { if (!busy && !unconfirmed) void setTapped([card.id], !card.tapped); },
     onInspect: card => { if (!drag) setPreviewId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
@@ -89,30 +124,39 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   return <section className={`match-board ${drag ? 'dragging' : ''}`} aria-label="Mesa da partida">
     <div className="rotate-device" role="status"><strong>Gire o celular para jogar</strong><p>A mesa funciona na horizontal. Sua partida continua conectada.</p><a href="/#/salas">Voltar ao lobby</a></div>
     <div className="match-content">
-      <div className="table-toolbar"><span>Observando: <strong>{focused.name}</strong></span>
+      <div className="table-toolbar"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby">← Lobby</a><strong>Sala {roomId}</strong><span>Observando: <strong>{focused.name}</strong></span>
         {focusId !== null && <button className="secondary show-all" onClick={() => setFocusId(null)}>Ver todas as mesas</button>}
         <span>Turno atual: <strong>{match.currentTurn.name}</strong></span>
-        <span className="turn-order">Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
+        <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
+        <button className="secondary rail-toggle" aria-expanded={railOpen} aria-controls="match-rail" onClick={() => setRailOpen(value => !value)} title="Jogadores e registro">{railOpen ? 'Recolher registro' : 'Jogadores / Registro'}</button>
+        <button className="secondary" aria-expanded={railOpen && hoverPreviewOpen} aria-controls="hover-card-preview" onClick={() => {
+          if (railOpen && hoverPreviewOpen) setHoverPreviewOpen(false);
+          else { setHoverPreviewOpen(true); setRailOpen(true); }
+        }}>{railOpen && hoverPreviewOpen ? 'Ocultar prévia' : 'Mostrar prévia'}</button>
       </div>
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
           <div className={`match-players ${focusId !== null ? 'has-focus' : ''}`}>{match.players.map(player =>
-            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} />
+            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
           )}</div>
-          <section className="own-dock" aria-label="Sua mão e ações">
-            <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
-            <div className="dock-toggles">
+          <section ref={dockRef} className="own-dock" aria-label="Sua mão e ações">
+            <nav className="quick-actions" aria-label="Ações rápidas">
+              <button disabled={busy || unconfirmed || !own.libraryCount} title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}>↓ Comprar</button>
+              <button className="secondary" disabled={busy || unconfirmed} title="Passar turno e ocultar todas as reveladas (N)" aria-keyshortcuts="N" onClick={() => void turn('next')}>→ Passar turno</button>
+              <button className="secondary" disabled={busy || unconfirmed} title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}>↺ Desvirar todas</button>
               <button type="button" className="actions-toggle" aria-label="Grimório" aria-expanded={libraryOpen} onClick={openLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
               <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
-            </div>
+            </nav>
+            <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
           </section>
         </div>
-        <aside className="side-rail">
+        <aside id="match-rail" className={`side-rail ${railOpen ? '' : 'is-collapsed'}`}>
+          {hoverPreviewOpen && <HoverCardPreview card={hoverCardId ? findCard(match, hoverCardId) : null} />}
           <nav ref={thumbnailsRef} className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
             <button key={player.userId} className="secondary" aria-pressed={player.userId === focused.userId} onClick={() => setFocusId(player.userId)}>
-              <strong>{player.name}{player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}</strong><span>{player.userId === match.viewerId ? 'Sua mesa · ' : ''}Vida {player.life}</span><span>Campo {player.battlefieldCount} · Mão {player.handCount}</span>
+              <strong title={player.userId === match.viewerId ? `${player.name} · Sua mesa` : player.name}>{player.name}</strong><span title="Vida" aria-label={`Vida ${player.life}`}>♥ {player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}>C {player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}>M {player.handCount}</span>{player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}
             </button>
           )}</nav>
           <section className="match-log" aria-label="Registro da partida">
@@ -150,7 +194,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     />
     <GameActions onUntapAll={() => void untapAll()} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
     <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
-    <CardPreview card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy || unconfirmed} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
+    <CardPreview error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
       if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
@@ -189,7 +233,7 @@ function battlefieldPositionAt(x: number, y: number) {
     const anchorX = Number(stack.dataset.posX);
     const row = Number(stack.dataset.row);
     if (size < 3) return { x: anchorX, row };
-    return { x: anchorX + 86, row };
+    return { x: anchorX + 160, row };
   }
   for (const element of elements) {
     const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
@@ -199,7 +243,7 @@ function battlefieldPositionAt(x: number, y: number) {
     const cardWidth = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--card-width')) || 72;
     const localX = (x - box.left) / zoom;
     const localY = (y - box.top) / zoom;
-    const pitch = cardWidth * 88 / 63 + 3;
+    const pitch = cardWidth * 88 / 63 + 42;
     return { x: Math.max(0, Math.round(localX / cardWidth * 72)), row: Math.max(0, Math.floor(localY / pitch)) };
   }
   return null;
@@ -213,7 +257,9 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'set_face') return `${entry.actorName} escolheu uma face da carta.`;
   if (entry.kind === 'set_face_down') return `${entry.actorName} alterou face para baixo de ${entry.count} carta(s).`;
   if (entry.kind === 'reveal_cards') return entry.result ? `${entry.actorName} revelou ${entry.result}.` : `${entry.actorName} ocultou uma revelação.`;
+  if (entry.kind === 'hide_all_revealed') return `${entry.actorName} ocultou todas as suas reveladas (${entry.count}).`;
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
+  if (entry.kind === 'move' && entry.result) return `${entry.actorName}: ${entry.result} ao mover para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;

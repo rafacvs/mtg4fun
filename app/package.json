@@ -7,7 +7,8 @@
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:unit": "node --experimental-strip-types --test src/features/rooms/*.test.ts"
   },
   "dependencies": {
     "react": "^19.3.0",
