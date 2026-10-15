@@ -8,6 +8,7 @@ import { PlayingCard } from './PlayingCard';
 export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando', consulted: 'consulta', revealed: 'cartas reveladas' };
 
 export type CardGesture = {
+  onHover?: (card: Card) => void;
   onInspect: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;

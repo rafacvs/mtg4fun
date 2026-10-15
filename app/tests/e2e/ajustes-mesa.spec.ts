@@ -29,6 +29,61 @@ async function prepare(api: APIRequestContext, other: APIRequestContext) {
   return { roomId, action, read, cards: cards.slice(1) };
 }
 
+test('prévia lateral por hover e recolhimento completo', async ({ page, browser, baseURL }, info) => {
+  test.skip(info.project.name !== 'desktop', 'Hover usa mouse no desktop.');
+  test.setTimeout(90_000);
+  const observer = await browser.newContext({ baseURL });
+  try {
+    const { roomId, action, read, cards } = await prepare(page.request, observer.request);
+    await action({ kind: 'move', cardIds: [cards[0].id], to: 'battlefield' });
+    let failImage = false;
+    await page.route('**/api/cards/image?*', route => failImage ? route.fulfill({ status: 502, body: 'Imagem indisponível' }) : route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#31573e"/></svg>' }));
+    await page.goto(`/#/salas/${roomId}`);
+    const panel = page.getByRole('region', { name: 'Prévia da carta', exact: true });
+    await expect(panel).toContainText('Passe o mouse');
+    const before = (await read()).log.length;
+    await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first().hover();
+    await expect(panel.getByRole('img', { name: 'Prévia de Island' })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect((await read()).log.length).toBe(before);
+    const box = await panel.boundingBox();
+    const players = await page.getByRole('navigation', { name: 'Foco da mesa' }).boundingBox();
+    expect(box!.x).toBeGreaterThan(900);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(players!.y);
+    await page.getByRole('button', { name: 'Ocultar prévia', exact: true }).click();
+    await expect(panel).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeVisible();
+    await page.getByRole('button', { name: 'Mostrar prévia', exact: true }).click();
+    await expect(panel).toBeVisible();
+    await page.getByRole('button', { name: 'Recolher registro', exact: true }).click();
+    await expect(panel).toBeHidden();
+    await expect(page.getByRole('navigation', { name: 'Foco da mesa' })).toBeHidden();
+    await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeHidden();
+    await page.getByRole('button', { name: 'Jogadores / Registro', exact: true }).click();
+    await expect(panel).toBeVisible();
+
+    const drawn = await action({ kind: 'draw', count: 1 }, observer.request);
+    const otherCard = drawn.players.find(p => p.userId === drawn.viewerId)!.hand![0];
+    await action({ kind: 'move', cardIds: [otherCard.id], to: 'battlefield' }, observer.request);
+    const otherField = page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true });
+    await otherField.getByRole('button', { name: 'Island', exact: true }).hover();
+    await expect(panel.getByRole('img')).toBeVisible();
+    await action({ kind: 'set_face_down', cardIds: [otherCard.id], faceDown: true }, observer.request);
+    await expect(panel).toContainText('identidade oculta');
+    await expect(panel.getByRole('img')).toHaveCount(0);
+    await otherField.getByRole('button', { name: 'Carta face para baixo', exact: true }).hover();
+    await expect(panel).toContainText('identidade oculta');
+    await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first().hover();
+    await expect(panel.getByRole('img')).toBeVisible();
+    await page.screenshot({ path: info.outputPath('previa-lateral.png'), fullPage: true });
+    failImage = true;
+    await page.reload();
+    await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first().focus();
+    await expect(panel).toContainText('A imagem não está disponível agora.');
+    await expect(panel.getByRole('heading', { name: 'Island', exact: true })).toBeVisible();
+  } finally { await observer.close(); }
+});
+
 for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e painel de carta']) {
   test(scenario, async ({ page, browser, baseURL }, info) => {
     test.skip(info.project.name === 'celular', 'Mesa em orientação horizontal.');

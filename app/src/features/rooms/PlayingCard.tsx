@@ -9,13 +9,14 @@ type Props = {
   card: Card;
   draggable: boolean;
   onInspect: (card: Card) => void;
+  onHover?: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd, onDragCancel, onToggleTapped }: Props) {
+export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, onDragEnd, onDragCancel, onToggleTapped }: Props) {
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
   const clickTimer = useRef<number | null>(null);
@@ -73,6 +74,8 @@ export function PlayingCard({ card, draggable, onInspect, onDragMove, onDragEnd,
     data-tapped={Boolean(card.tapped)}
     data-face-down={Boolean(card.faceDown)}
     onPointerDown={pointerDown}
+    onPointerEnter={event => { if (event.pointerType === 'mouse') onHover?.(card); }}
+    onFocus={() => onHover?.(card)}
     onDoubleClick={() => {
       if (clickTimer.current) window.clearTimeout(clickTimer.current);
       if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse') onToggleTapped?.(card);

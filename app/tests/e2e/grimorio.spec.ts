@@ -136,6 +136,11 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
   try {
     await activate(own.getByRole('button', { name: 'Abrir ações do grimório' }));
     await expect(library).toBeVisible();
+    if (info.project.name === 'desktop') {
+      const panel = await library.boundingBox();
+      const bar = await own.getByRole('navigation', { name: 'Ações rápidas' }).boundingBox();
+      expect(panel!.y + panel!.height).toBeLessThanOrEqual(bar!.y);
+    }
     await own.screenshot({ path: info.outputPath('grimorio-menu.png') });
     await activate(library.getByRole('button', { name: /^Embaralhar/ }));
     await expect(library.getByRole('status')).toHaveText('Grimório embaralhado.');

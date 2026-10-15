@@ -2,7 +2,7 @@
 
 Resumo do trabalho no mtg4fun até 13/10/2026. Este documento reúne a atualização do projeto, os ajustes de regras e interface e as revisões pedidas após visualizar a mesa.
 
-**Estado atual:** trabalho na branch `work/testes-mesa`, com commits locais autorizados por você. Sem push, PR ou merge. A `master` não recebeu alterações. O aplicativo está disponível no ambiente de desenvolvimento em [localhost:8080](http://localhost:8080).
+**Estado registrado em 13/10/2026:** trabalho na branch `work/testes-mesa`, com commits locais autorizados por você. Naquela etapa, sem push, PR ou merge. A `master` não recebeu alterações. O endereço do ambiente de desenvolvimento é [localhost:8080](http://localhost:8080). Este relatório preserva o histórico daquela entrega.
 
 ## 1. Atualização do GitHub e execução local
 

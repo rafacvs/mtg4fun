@@ -3,6 +3,7 @@ import type { Card, Match } from './roomsApi';
 import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
+import { HoverCardPreview } from './HoverCardPreview';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
 import { shortcutCommand } from './libraryGesture';
@@ -23,11 +24,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [creationOpen, setCreationOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
+  const [hoverPreviewOpen, setHoverPreviewOpen] = useState(true);
+  const [hoverCardId, setHoverCardId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
+  const dockRef = useRef<HTMLElement>(null);
   const thumbnailsRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
   const closePreview = useCallback(() => setPreviewId(null), []);
@@ -35,6 +39,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
+  useEffect(() => {
+    const dock = dockRef.current;
+    const board = dock?.closest<HTMLElement>('.match-board');
+    if (!dock || !board) return;
+    const update = () => board.style.setProperty('--dock-height', `${dock.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(dock);
+    return () => observer.disconnect();
+  }, [Boolean(match)]);
   useEffect(() => {
     const list = logRef.current;
     if (list) list.scrollTop = list.scrollHeight;
@@ -71,6 +85,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [match, busy, unconfirmed, draw, untapAll, turn, hideAllRevealed]);
   const gesture: CardGesture = {
+    onHover: card => { if (!drag && railOpen && hoverPreviewOpen) setHoverCardId(card.id); },
     onToggleTapped: card => { if (!busy && !unconfirmed) void setTapped([card.id], !card.tapped); },
     onInspect: card => { if (!drag) setPreviewId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
@@ -114,6 +129,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <span>Turno atual: <strong>{match.currentTurn.name}</strong></span>
         <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
         <button className="secondary rail-toggle" aria-expanded={railOpen} aria-controls="match-rail" onClick={() => setRailOpen(value => !value)} title="Jogadores e registro">{railOpen ? 'Recolher registro' : 'Jogadores / Registro'}</button>
+        <button className="secondary" aria-expanded={railOpen && hoverPreviewOpen} aria-controls="hover-card-preview" onClick={() => {
+          if (railOpen && hoverPreviewOpen) setHoverPreviewOpen(false);
+          else { setHoverPreviewOpen(true); setRailOpen(true); }
+        }}>{railOpen && hoverPreviewOpen ? 'Ocultar prévia' : 'Mostrar prévia'}</button>
       </div>
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       {notice && <p role="status" className="library-notice">{notice}</p>}
@@ -122,7 +141,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <div className={`match-players ${focusId !== null ? 'has-focus' : ''}`}>{match.players.map(player =>
             <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
           )}</div>
-          <section className="own-dock" aria-label="Sua mão e ações">
+          <section ref={dockRef} className="own-dock" aria-label="Sua mão e ações">
             <nav className="quick-actions" aria-label="Ações rápidas">
               <button disabled={busy || unconfirmed || !own.libraryCount} title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}>↓ Comprar</button>
               <button className="secondary" disabled={busy || unconfirmed} title="Passar turno e ocultar todas as reveladas (N)" aria-keyshortcuts="N" onClick={() => void turn('next')}>→ Passar turno</button>
@@ -134,6 +153,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           </section>
         </div>
         <aside id="match-rail" className={`side-rail ${railOpen ? '' : 'is-collapsed'}`}>
+          {hoverPreviewOpen && <HoverCardPreview card={hoverCardId ? findCard(match, hoverCardId) : null} />}
           <nav ref={thumbnailsRef} className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
             <button key={player.userId} className="secondary" aria-pressed={player.userId === focused.userId} onClick={() => setFocusId(player.userId)}>
               <strong title={player.userId === match.viewerId ? `${player.name} · Sua mesa` : player.name}>{player.name}</strong><span title="Vida" aria-label={`Vida ${player.life}`}>♥ {player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}>C {player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}>M {player.handCount}</span>{player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}

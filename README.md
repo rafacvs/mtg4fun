@@ -74,6 +74,9 @@ um diálogo aberto. Duplo clique no grimório compra uma carta; clique abre suas
 ações. As linhas do campo aceitam agrupamento manual de até três cartas, com
 espaço para cartas viradas e scroll horizontal. **Jogadores / Registro** abre
 ou recolhe a coluna lateral; ela começa recolhida em telas menores.
+Na lateral direita, acima dos jogadores/registro, passar o mouse sobre uma
+carta mostra sua prévia ampliada. **Ocultar prévia / Mostrar prévia** controla
+essa seção; **Recolher registro** recolhe toda a lateral, incluindo a prévia.
 Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).
 
 ## Executar com Docker
