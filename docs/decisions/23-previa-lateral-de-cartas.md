@@ -54,3 +54,46 @@ pelo Playwright. Após instalá-lo, os testes executaram; a falha de sobreposiç
 encontrada na regressão foi corrigida e a suíte repetida. Esses resultados são
 desta entrega. Não foi executada a suíte operacional Docker de produção nem
 repetido o smoke opt-in do provedor de imagens, que permanece o existente.
+
+## Prévia pelo registro, em 15/10/2026
+
+Na revisão seguinte, o usuário pediu que passar o mouse sobre uma carta no
+registro também mostrasse sua imagem na prévia lateral. O pedido estende a
+consulta local aos nomes de cartas associados às novas entradas de registro.
+Mouse, foco por teclado e toque reutilizam o mesmo painel, sem enviar ações
+de jogo, revelar cartas ou abrir o diálogo de edição.
+
+Eventos passam a guardar referências de instância junto do payload JSON
+existente, na mesma transação da ação. O servidor acrescenta `cards` opcional
+às entradas da visão do registro, com ID e nome somente quando permitidos.
+O texto e os contratos de entrada das ações existentes são preservados, sem
+nova tabela, migration, dependência ou transporte.
+
+As referências respeitam tanto a visibilidade no momento da ação quanto a
+visibilidade atual do snapshot filtrado. Uma ação originalmente privada não
+ganha referências públicas retroativamente quando a carta aparece no campo.
+Cartas que voltam ao grimório, à mão privada do oponente ou ficam face para
+baixo sem revelação deixam de oferecer uma prévia identificada ao observador.
+O próprio jogador pode consultar as referências ainda permitidas na sua mão.
+Fichas removidas deixam de ter referência consultável no snapshot atual.
+
+Entradas antigas sem IDs de cartas continuam legíveis como texto; não se
+deduzem vínculos por quantidade, posição, nome ou ordem das zonas. Textos
+públicos históricos de revelação mantêm a semântica anterior.
+
+Validação desta extensão em 15/10/2026, distinta da execução acima:
+
+- `go -C api vet ./...` e suíte completa `go -C api test ./... -count=1`:
+  passaram com MySQL descartável. O novo teste HTTP verifica referências de
+  movimentos públicos, privacidade ao voltar à mão/grimório ou ficar face para
+  baixo, ausência de exposição retroativa de movimentos privados, recuperação
+  após reinício e leitura de eventos antigos sem referências.
+- Build/TypeScript e três testes unitários do frontend: passaram.
+- Regressão de navegador: 62 passaram, 28 omitidos por orientação/mouse e
+  opt-in. O novo fluxo usa a API real e verifica hover/toque/foco pelo registro,
+  prévia sem abrir diálogo ou criar ações, mudança de visibilidade para outro
+  participante e recarga. Captura desktop conferida.
+- Links locais e `git diff --check`: conferidos. O usuário também confirmou
+  manualmente que o comportamento visual estava correto.
+
+A suíte operacional Docker de produção não foi repetida nesta extensão.

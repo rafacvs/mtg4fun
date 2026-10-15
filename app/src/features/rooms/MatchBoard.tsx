@@ -4,6 +4,8 @@ import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { HoverCardPreview } from './HoverCardPreview';
+import { FinishMatch } from './FinishMatch';
+import { MatchLogCards } from './MatchLogCards';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
 import { shortcutCommand } from './libraryGesture';
@@ -16,7 +18,8 @@ import './counters.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish } = useMatch(roomId);
+  useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -67,7 +70,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const drawOne = () => {
-    if (!busy && !unconfirmed) void draw(1).then(ok => { if (ok) setNotice('Uma carta comprada.'); });
+    if (!busy && !unconfirmed) void draw(1);
   };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -133,7 +136,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           if (railOpen && hoverPreviewOpen) setHoverPreviewOpen(false);
           else { setHoverPreviewOpen(true); setRailOpen(true); }
         }}>{railOpen && hoverPreviewOpen ? 'Ocultar prévia' : 'Mostrar prévia'}</button>
+        <FinishMatch match={match} busy={busy} unconfirmed={unconfirmed} error={error} onConfirm={finish} onRetry={retry} />
       </div>
+      {match.finishVotes.length > 0 && <p className="finish-vote-notice" role="status">Encerramento solicitado: {match.finishVotes.length} de {match.finishRequired} concordância(s). Use Finalizar para acompanhar ou concordar.</p>}
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
@@ -161,7 +166,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           )}</nav>
           <section className="match-log" aria-label="Registro da partida">
             <h2>Registro</h2>
-            <ol ref={logRef}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}</li>)}</ol>
+            <ol ref={logRef}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}<MatchLogCards cards={entry.cards} onPreview={id => {
+              const card = findCard(match, id);
+              if (card) gesture.onHover?.(card);
+            }} /></li>)}</ol>
           </section>
         </aside>
         {drag && ownHidden && <aside className="drag-own-column" aria-label="Suas zonas">
@@ -250,6 +258,8 @@ function battlefieldPositionAt(x: number, y: number) {
 }
 
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
+  if (entry.kind === 'finish_vote') return `${entry.actorName} concordou em finalizar a partida (${entry.result}).`;
+  if (entry.kind === 'finished') return `${entry.actorName} confirmou o encerramento da partida (${entry.result}). Sala encerrada.`;
   if (entry.kind === 'create-token' || entry.kind === 'create-custom-token') return `${entry.actorName} criou a ficha ${entry.result}.`;
   if (entry.kind === 'copy-card') return `${entry.actorName} criou uma cópia de ${entry.result}.`;
   if (entry.kind === 'set_tapped') return `${entry.actorName} alterou virar/desvirar de ${entry.count} carta(s).`;

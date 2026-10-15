@@ -96,13 +96,13 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 
 ### Votações
 
-- Qualquer participante propõe reinício ou encerramento; cada jogador recebe aceitar/recusar.
-- Exigir unanimidade de todos os participantes, inclusive desconectados quando retornarem.
-- Uma recusa encerra a proposta; proponente pode cancelar. Partida continua enquanto aguarda.
+- Qualquer participante propõe reinício; cada jogador recebe aceitar/recusar.
+- Reinício exige unanimidade de todos os participantes, inclusive desconectados quando retornarem.
+- No reinício, uma recusa encerra a proposta; proponente pode cancelar. Partida continua enquanto aguarda.
 - Não há aprovação automática por tempo nem exceção para desconectados; partida pode aguardar indefinidamente.
 - Reinício aprovado volta à preparação, mantendo participantes e decks selecionados, permitindo troca.
 - Novo início limpa mesa e contadores, restaura vida inicial, carrega/embaralha decks e sorteia novamente a ordem.
-- Encerramento aprovado termina a partida, preservando snapshots e log. Não exige interface de histórico.
+- Qualquer participante pode solicitar encerramento pelo botão vermelho **Finalizar**, à direita de **Ocultar prévia**. Confirmar registra concordância; pelo menos metade dos participantes, arredondando para cima, encerra a partida e fecha a sala. Uma pessoa sozinha pode confirmar e encerrar. A sala sai do lobby e todos voltam ao lobby, preservando snapshot e log. Votos persistem e a partida continua enquanto faltam concordâncias. Detalhes e autorização: [decisão de encerramento](../decisions/24-finalizar-partida.md).
 
 ## Decisões de teste
 
@@ -120,7 +120,7 @@ Critérios observáveis:
 - Controle transferido altera quem pode manipular; dono original permanece.
 - Sorteio resolve empates somente entre empatados. Usar aleatoriedade controlável no teste sem impor mecanismo público de manipulação dos resultados.
 - Turno não bloqueia jogadas; correções aparecem no log.
-- Votação não conclui sem desconectado; recusa/cancelamento encerra proposta; unanimidade reinicia ou encerra corretamente.
+- Reinício não conclui sem o voto de desconectados; recusa/cancelamento encerra a proposta; unanimidade reinicia corretamente. Encerramento exige metade dos participantes, incluindo os desconectados no total, e preserva estado/log ao fechar a sala.
 
 Testar comportamento observável, evitando snapshots de CSS ou testes que apenas repitam cálculos internos de layout.
 

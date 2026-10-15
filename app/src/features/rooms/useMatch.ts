@@ -54,6 +54,10 @@ export function useMatch(roomId: number) {
   }
   return {
     match, error: error || syncError, busy, unconfirmed,
+    finish: () => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.finish(roomId, intentId));
+    },
     setTapped: (cardIds: string[], tapped: boolean) => {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.setTapped(roomId, cardIds, tapped, intentId));

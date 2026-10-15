@@ -63,7 +63,7 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 - Reinício carrega o último estado confirmado e restaura partidas independentemente de jogadores conectados.
 - Desconexão altera presença, não remove participante, suas cartas ou lugar.
 - Snapshot inclui dados necessários para preservar a ordem do grimório; retomada não embaralha nem sorteia novamente.
-- Persistir votos pendentes e não concluir votação sem unanimidade.
+- Persistir votos pendentes: reinício exige unanimidade; encerramento exige pelo menos metade dos participantes, arredondando para cima, conforme a [decisão de encerramento](../decisions/24-finalizar-partida.md).
 - Snapshot é o mecanismo de recuperação; não exigir reconstrução por event sourcing.
 - Manter estado/snapshot final e log após encerramento. Não excluir automaticamente por decisão de finalizar.
 - Não foi exigida retenção de um snapshot histórico por ação; atualizar o snapshot recuperável e preservar o final atende ao requisito. Se versões forem adicionadas, não são obrigação desta primeira versão.

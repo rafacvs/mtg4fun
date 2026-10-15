@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, openMatchRail } from './fixtures';
 import type { APIRequestContext, BrowserContext } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
@@ -81,6 +81,44 @@ test('prévia lateral por hover e recolhimento completo', async ({ page, browser
     await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first().focus();
     await expect(panel).toContainText('A imagem não está disponível agora.');
     await expect(panel.getByRole('heading', { name: 'Island', exact: true })).toBeVisible();
+  } finally { await observer.close(); }
+});
+
+test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({ page, browser, baseURL }, info) => {
+  test.skip(info.project.name === 'celular', 'A mesa exige orientação horizontal.');
+  test.setTimeout(60_000);
+  const observer = await browser.newContext({ baseURL });
+  try {
+    const { roomId, action, read, cards } = await prepare(page.request, observer.request);
+    await action({ kind: 'move', cardIds: [cards[0].id], to: 'graveyard' });
+    const other = await observer.newPage();
+    for (const current of [page, other]) {
+      await current.route('**/api/cards/image?*', route => route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#31573e"/></svg>' }));
+      await current.goto(`/#/salas/${roomId}`);
+      await openMatchRail(current);
+    }
+    const log = page.getByRole('region', { name: 'Registro da partida' });
+    const otherLog = other.getByRole('region', { name: 'Registro da partida' });
+    const panel = page.getByRole('region', { name: 'Prévia da carta', exact: true });
+    const otherPanel = other.getByRole('region', { name: 'Prévia da carta', exact: true });
+    const link = log.getByRole('button', { name: 'Prévia de Island no registro', exact: true }).last();
+    const before = (await read()).log.length;
+    if (info.project.use.hasTouch) await link.tap(); else await link.hover();
+    await expect(panel.getByRole('img', { name: 'Prévia de Island', exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect((await read()).log.length).toBe(before);
+    await otherLog.getByRole('button', { name: 'Prévia de Island no registro', exact: true }).last().hover();
+    await expect(otherPanel.getByRole('img')).toBeVisible();
+    await action({ kind: 'move', cardIds: [cards[0].id], to: 'hand' });
+    await expect(otherLog.locator('li').filter({ hasText: 'para Cemitério' }).getByRole('button')).toHaveCount(0);
+    await expect(otherLog.locator('li').filter({ hasText: 'de Cemitério para Mão' }).getByRole('button')).toHaveCount(0);
+    await expect(otherPanel.getByRole('img')).toHaveCount(0);
+    await page.reload();
+    await openMatchRail(page);
+    const ownMove = log.locator('li').filter({ hasText: 'de Cemitério para Mão' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
+    await ownMove.focus();
+    await expect(panel.getByRole('img')).toBeVisible();
+    await page.screenshot({ path: info.outputPath('previa-no-registro.png'), fullPage: true });
   } finally { await observer.close(); }
 });
 

@@ -10,13 +10,16 @@ export type Room = {
 export type MarkerColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple';
 export type Markers = Partial<Record<MarkerColor, number>>;
 export type Match = {
+  finished: boolean;
+  finishVotes: number[];
+  finishRequired: number;
   roomId: number;
   viewerId: number;
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
   players: { userId: number; name: string; life: number; markers?: Markers; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consultationFrom?: 'top' | 'bottom' | 'all' }[];
-  log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }[];
+  log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
 export type Card = { id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; markers?: Markers };
 export type CatalogToken = { name: string; text?: string; power?: string; toughness?: string; imageName?: string };
@@ -79,6 +82,7 @@ function subscribe(updates: Updates): () => void {
 }
 
 export const roomsApi = {
+  finish: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'finish' }),
   subscribe,
   setTapped: (id: number, cardIds: string[], tapped: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_tapped', cardIds, tapped }),
   hideAllRevealed: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'hide_all_revealed' }),
