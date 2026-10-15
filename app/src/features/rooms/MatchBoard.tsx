@@ -5,6 +5,7 @@ import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
+import { MatchLogCards } from './MatchLogCards';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
 import { shortcutCommand } from './libraryGesture';
@@ -165,7 +166,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           )}</nav>
           <section className="match-log" aria-label="Registro da partida">
             <h2>Registro</h2>
-            <ol ref={logRef}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}</li>)}</ol>
+            <ol ref={logRef}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}<MatchLogCards cards={entry.cards} onPreview={id => {
+              const card = findCard(match, id);
+              if (card) gesture.onHover?.(card);
+            }} /></li>)}</ol>
           </section>
         </aside>
         {drag && ownHidden && <aside className="drag-own-column" aria-label="Suas zonas">

@@ -77,6 +77,9 @@ ou recolhe a coluna lateral; ela começa recolhida em telas menores.
 Na lateral direita, acima dos jogadores/registro, passar o mouse sobre uma
 carta mostra sua prévia ampliada. **Ocultar prévia / Mostrar prévia** controla
 essa seção; **Recolher registro** recolhe toda a lateral, incluindo a prévia.
+Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
+por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas
+antigas sem referência de carta continuam como texto.
 Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).
 
 **Finalizar**, em vermelho à direita de **Ocultar prévia**, abre a confirmação

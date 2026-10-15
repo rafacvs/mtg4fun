@@ -167,6 +167,8 @@
 .rail-toggle { margin-left: auto; flex-shrink: 0; }
 .side-rail { width: 260px; flex-basis: 260px; }
 .side-rail.is-collapsed { display: none; }
+.match-log .log-card { display: inline; min-height: 0; padding: 0; border: 0; border-radius: 2px; background: transparent; box-shadow: none; color: #e6c481; font: inherit; line-height: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.match-log .log-card:hover, .match-log .log-card:focus-visible { color: #fff0c2; background: #334d35; }
 .hover-card-preview { flex: 0 1 390px; max-height: 50%; min-height: 100px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; border: 1px solid #405242; border-radius: 12px; background: #14231a; overflow: hidden; }
 .hover-card-preview h2 { flex-shrink: 0; margin: 0; font-size: .8rem; text-align: center; }
 .hover-card-preview img { flex: 1; min-height: 0; max-width: 100%; width: 100%; object-fit: contain; border-radius: 8px; }

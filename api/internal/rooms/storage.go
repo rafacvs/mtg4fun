@@ -192,13 +192,14 @@ type ExposedCard struct {
 	Markers      colorCounts `json:"markers,omitempty"`
 }
 type MatchLog struct {
-	ActorID   int64  `json:"actorId"`
-	ActorName string `json:"actorName"`
-	Kind      string `json:"kind"`
-	From      string `json:"from,omitempty"`
-	To        string `json:"to,omitempty"`
-	Count     int    `json:"count,omitempty"`
-	Result    string `json:"result,omitempty"`
+	Cards     []LogCard `json:"cards,omitempty"`
+	ActorID   int64     `json:"actorId"`
+	ActorName string    `json:"actorName"`
+	Kind      string    `json:"kind"`
+	From      string    `json:"from,omitempty"`
+	To        string    `json:"to,omitempty"`
+	Count     int       `json:"count,omitempty"`
+	Result    string    `json:"result,omitempty"`
 }
 
 func hideCardModifiers(c Card, viewerID int64) bool {
@@ -573,7 +574,7 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = save(ctx, tx, r, u.ID, "started"); e != nil {
 		return Match{}, e
 	}
-	log, e := matchLog(ctx, tx, id, m)
+	log, e := matchLog(ctx, tx, id, m, u.ID)
 	if e != nil {
 		return Match{}, e
 	}
@@ -595,7 +596,7 @@ func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, erro
 	if playerByID(&m, u.ID) == nil {
 		return Match{}, errNotParticipant
 	}
-	log, e := matchLog(ctx, s.db, id, m)
+	log, e := matchLog(ctx, s.db, id, m, u.ID)
 	if e != nil {
 		return Match{}, e
 	}
