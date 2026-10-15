@@ -1,12 +1,12 @@
 .app-layout { width: min(100% - 32px, 540px); margin: 0 auto; padding: 26px 0 16px; }
 .app-layout-wide { width: min(100% - 32px, 1180px); }
 .brand { display: inline-flex; align-items: center; font-size: 1.35rem; font-weight: 800; letter-spacing: -.07em; margin-bottom: 22px; }
-.brand > span:not(.mark) { color: #e7bf77; }
-.mark { display: inline-grid; place-items: center; color: #e7bf77; background: #23392b; border: 1px solid #607052; border-radius: 10px; width: 37px; height: 37px; margin-right: 9px; letter-spacing: 0; }
-.panel { background: #1b2921; border: 1px solid #405242; border-radius: 20px; padding: clamp(22px, 4vw, 36px); box-shadow: 0 22px 70px #080f0b66; }
+.brand > span:not(.mark) { color: var(--gold); }
+.mark { display: inline-grid; place-items: center; color: var(--gold); background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; width: 37px; height: 37px; margin-right: 9px; letter-spacing: 0; }
+.panel { background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-radius: 20px; padding: clamp(22px, 4vw, 36px); box-shadow: 0 22px 70px #0006; }
 .app-layout-wide .panel { padding: clamp(18px, 3vw, 36px); }
-.eyebrow { color: #e8c888; font-size: .68rem; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; margin: 0 0 .7rem; }
-footer { color: #8fa393; font-size: .75rem; text-align: center; padding: 22px 0 4px; }
+.eyebrow { color: var(--gold); font-size: .68rem; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; margin: 0 0 .7rem; }
+footer { color: var(--muted); font-size: .75rem; text-align: center; padding: 22px 0 4px; }
 
 @media (min-width: 740px) { .app-layout { padding-top: 42px; } .brand { margin-bottom: 25px; } }
 @media (max-height: 500px) { .app-layout { padding-top: 12px; } .brand { margin-bottom: 10px; } }

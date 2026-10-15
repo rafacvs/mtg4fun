@@ -2,7 +2,7 @@ import { test, expect } from './fixtures';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-test('importa, reutiliza e exclui deck salvo', async ({ page }) => {
+test('importa, reutiliza e exclui deck salvo', async ({ page }, info) => {
   await page.goto('/');
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
@@ -16,6 +16,7 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }) => {
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Amigos & mágicas' })).toBeVisible();
   await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath('biblioteca-de-decks.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.reload();
   await page.getByLabel('Escolher deck salvo').selectOption({ label: 'Amigos & mágicas (7 cartas)' });
