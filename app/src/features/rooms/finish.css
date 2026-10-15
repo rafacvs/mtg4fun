@@ -1,0 +1,11 @@
+.finish-button { background: #a82b32; border: 1px solid #e2787d; color: #fff; white-space: nowrap; flex-shrink: 0; }
+.finish-button:hover:not(:disabled) { background: #c23840; }
+.finish-button:disabled { opacity: .55; }
+.finish-dialog { width: min(480px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow: auto; margin: auto; padding: 24px; border: 1px solid #b56b6e; border-radius: 14px; background: var(--panel); color: var(--text); font-size: .95rem; }
+.finish-dialog::backdrop { background: #000a; }
+.finish-dialog h2 { margin: 0 0 12px; font-size: 1.2rem; }
+.finish-dialog p { margin: 12px 0; line-height: 1.5; }
+.finish-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.table-toolbar .finish-dialog button { min-height: 40px; padding: 8px 12px; font-size: .85rem; }
+.finish-vote-notice { margin: 4px 12px; font-size: .8rem; color: #f2c8ca; }
+.table-toolbar > span:not(.turn-order) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }

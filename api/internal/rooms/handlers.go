@@ -167,7 +167,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
-	case "coin":
+	case "coin", "finish":
 		if input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
@@ -234,7 +234,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange):
+	case errors.Is(err, errMatchFinished), errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)
@@ -408,7 +408,7 @@ func (s *Service) joinRoom(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		httpserver.WriteError(w, 404, "Sala não encontrada.")
-	case errors.Is(err, errRoomFull), errors.Is(err, errRoomStarted):
+	case errors.Is(err, errMatchFinished), errors.Is(err, errRoomFull), errors.Is(err, errRoomStarted):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)

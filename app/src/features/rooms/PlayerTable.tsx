@@ -121,7 +121,7 @@ function LibraryPile({ count, droppable, hoverZone, onOpen, onDraw, disabled }: 
   useEffect(() => () => { gesture.current.cancel(); clearTimeout(feedbackTimer.current); }, []);
   return <section className={`table-zone zone-library ${feedback ? 'draw-feedback' : ''} ${droppable && hoverZone === 'library' ? 'drop-hover' : ''}`} aria-label="Grimório" data-drop-zone={droppable ? 'library' : undefined}>
     <header><span>Grimório</span><strong aria-label={`${count} cartas`}>{count}</strong></header>
-    <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}><span /><span /><span />{onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title="Clique: ações · Duplo clique: comprar uma carta (D)" onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
+    <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}>{[0, 1, 2].map(layer => <span key={layer}><img src="/library-back.png" alt="" draggable={false} /></span>)}{onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title="Clique: ações · Duplo clique: comprar uma carta (D)" onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
       gesture.current.doubleClick();
       if (disabled || !count) return;
       setFeedback(true); clearTimeout(feedbackTimer.current);

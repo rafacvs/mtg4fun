@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { useDecks } from '../decks/useDecks';
 import { MatchBoard } from './MatchBoard';
 import { useRooms } from './useRooms';
+import { roomsApi } from './roomsApi';
 
 type Props = { roomId: number; userId: number; decks: ReturnType<typeof useDecks> };
 
@@ -10,7 +11,7 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
   const [deckId, setDeckId] = useState('');
   const room = rooms.rooms.find(value => value.id === roomId);
   if (rooms.loading) return <p role="status">{rooms.connection}</p>;
-  if (!room) return <p role="alert">Sala não encontrada.</p>;
+  if (!room) return <MissingRoom roomId={roomId} />;
   const participant = room.participants.find(value => value.id === userId);
   if (!participant) return <section aria-label="Entrada na sala">
     <h2>{room.title}</h2>
@@ -34,4 +35,17 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
     {room.creatorId === userId && <button className="secondary" disabled={rooms.busy} onClick={() => void rooms.start(roomId)}>Iniciar partida</button>}
     {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
   </section>;
+}
+
+function MissingRoom({ roomId }: { roomId: number }) {
+  const [checking, setChecking] = useState(true);
+  useEffect(() => {
+    let active = true;
+    setChecking(true);
+    void roomsApi.match(roomId).then(match => {
+      if (active && match.finished) window.location.hash = '/salas';
+    }).catch(() => {}).finally(() => { if (active) setChecking(false); });
+    return () => { active = false; };
+  }, [roomId]);
+  return <p role={checking ? 'status' : 'alert'}>{checking ? 'Verificando sala…' : 'Sala não encontrada.'}</p>;
 }

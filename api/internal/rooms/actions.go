@@ -51,11 +51,12 @@ type matchAction struct {
 }
 
 type actionLogPayload struct {
-	Kind   string `json:"kind"`
-	From   string `json:"from,omitempty"`
-	To     string `json:"to,omitempty"`
-	Count  int    `json:"count,omitempty"`
-	Result string `json:"result,omitempty"`
+	Cards  []logCardReference `json:"cards,omitempty"`
+	Kind   string             `json:"kind"`
+	From   string             `json:"from,omitempty"`
+	To     string             `json:"to,omitempty"`
+	Count  int                `json:"count,omitempty"`
+	Result string             `json:"result,omitempty"`
 }
 
 func playerByID(m *matchState, id int64) *playerState {
@@ -186,7 +187,7 @@ func revealCards(p *playerState, count int) (actionLogPayload, error) {
 	}
 	placeCards(p, cards, "library", "consulted", "")
 	p.ConsultationFrom = "top"
-	return actionLogPayload{Kind: "reveal", Count: len(cards), Result: strings.Join(names, ", ")}, nil
+	return actionLogPayload{Kind: "reveal", Count: len(cards), Result: strings.Join(names, ", "), Cards: referencesForCards(cards)}, nil
 }
 
 func revealSelection(p *playerState, ids []string) (actionLogPayload, error) {
@@ -288,7 +289,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	var duplicate int
 	err = tx.QueryRowContext(ctx, "SELECT 1 FROM match_intents WHERE room_id=? AND actor_id=? AND intent_id=?", roomID, u.ID, input.IntentID).Scan(&duplicate)
 	if err == nil {
-		log, e := matchLog(ctx, tx, roomID, m)
+		log, e := matchLog(ctx, tx, roomID, m, u.ID)
 		if e != nil {
 			return Match{}, e
 		}
@@ -300,8 +301,35 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	if !errors.Is(err, sql.ErrNoRows) {
 		return Match{}, err
 	}
+	if m.Finished {
+		return Match{}, errMatchFinished
+	}
+	if input.Kind == "finish" && hasFinishVote(m, u.ID) {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO match_intents(room_id,actor_id,intent_id) VALUES (?,?,?)", roomID, u.ID, input.IntentID); err != nil {
+			return Match{}, err
+		}
+		log, err := matchLog(ctx, tx, roomID, m, u.ID)
+		if err != nil {
+			return Match{}, err
+		}
+		if err = tx.Commit(); err != nil {
+			return Match{}, err
+		}
+		return m.view(u.ID, log), nil
+	}
+	ids := append([]string{}, input.CardIDs...)
+	if input.CardID != "" {
+		ids = append(ids, input.CardID)
+	}
+	beforeCards := referencesForIDs(m, ids)
 	var payload actionLogPayload
 	switch input.Kind {
+	case "finish":
+		payload = voteToFinish(&m, u.ID)
+		err = nil
+		if m.Finished {
+			err = finishRoom(ctx, tx, roomID, u.ID)
+		}
 	case "create-custom-token":
 		power, _ := modifierFromText(input.Power)
 		toughness, _ := modifierFromText(input.Toughness)
@@ -352,6 +380,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	if err != nil {
 		return Match{}, err
 	}
+	payload.Cards = mergeLogReferences(beforeCards, referencesForIDs(m, ids), payload.Cards)
 	encodedPayload, err := json.Marshal(payload)
 	if err != nil {
 		return Match{}, err
@@ -365,7 +394,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	if _, err = tx.ExecContext(ctx, "INSERT INTO match_intents(room_id,actor_id,intent_id) VALUES (?,?,?)", roomID, u.ID, input.IntentID); err != nil {
 		return Match{}, err
 	}
-	log, err := matchLog(ctx, tx, roomID, m)
+	log, err := matchLog(ctx, tx, roomID, m, u.ID)
 	if err != nil {
 		return Match{}, err
 	}
@@ -373,36 +402,4 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		return Match{}, err
 	}
 	return m.view(u.ID, log), nil
-}
-
-type queryer interface {
-	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
-}
-
-func matchLog(ctx context.Context, q queryer, roomID int64, m matchState) ([]MatchLog, error) {
-	rows, err := q.QueryContext(ctx, "SELECT actor_id,action,payload FROM match_events WHERE room_id=? ORDER BY id", roomID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	names := map[int64]string{}
-	for _, p := range m.Players {
-		names[p.UserID] = p.Name
-	}
-	log := []MatchLog{}
-	for rows.Next() {
-		var actor int64
-		var action string
-		var raw []byte
-		if err = rows.Scan(&actor, &action, &raw); err != nil {
-			return nil, err
-		}
-		var p actionLogPayload
-		_ = json.Unmarshal(raw, &p)
-		if p.Kind == "" {
-			p.Kind = action
-		}
-		log = append(log, MatchLog{ActorID: actor, ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result})
-	}
-	return log, rows.Err()
 }

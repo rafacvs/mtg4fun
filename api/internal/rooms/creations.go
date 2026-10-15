@@ -49,7 +49,7 @@ func addCreatedCard(p *playerState, card Card, kind string) (actionLogPayload, e
 	card.Zone = "battlefield"
 	card.PositionX = len(p.Battlefield) * 120
 	p.Battlefield = append(p.Battlefield, card)
-	return actionLogPayload{Kind: kind, To: "battlefield", Count: 1, Result: card.Name}, nil
+	return actionLogPayload{Kind: kind, To: "battlefield", Count: 1, Result: card.Name, Cards: referencesForCards([]Card{card})}, nil
 }
 
 func creationFieldsOnly(input matchAction) bool {
