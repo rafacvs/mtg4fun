@@ -18,7 +18,7 @@ import './counters.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
@@ -126,6 +126,11 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   async function dropCard(card: Card, x: number, y: number) {
     const zone = dropZoneAt(x, y);
     if (!zone || busy || unconfirmed || card.controllerId !== match?.viewerId) return;
+    if (card.zone === 'battlefield' && card.ownerId !== match.viewerId && zone !== 'battlefield') {
+      setPreviewId(card.id);
+      setNotice('Escolha explicitamente a zona do dono para mover a carta.');
+      return;
+    }
     if (zone === 'battlefield') {
       const layout = battlefieldPositionAt(x, y);
       if (!layout) return;
@@ -225,7 +230,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     />
     <GameActions onUntapAll={() => void untapAll()} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
     <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
-    <CardPreview error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
+    <CardPreview players={match.players} onTransfer={(cardId, controllerId) => void transferControl(cardId, controllerId)} onMoveToOwner={(cardId, destination) => {
+      const [to, placement] = destination.split('-');
+      void move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => { if (ok) setNotice(''); });
+    }} error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
       if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
@@ -294,6 +302,7 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move' && entry.result) return `${entry.actorName}: ${entry.result} ao mover para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
+  if (entry.kind === 'transfer_control') return `${entry.actorName} transferiu o controle de uma carta para ${entry.result}.`;
   if (entry.kind === 'position') return `${entry.actorName} reposicionou ${entry.count || 1} carta(s) no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'counter') return `${entry.actorName} alterou contadores: ${entry.result}.`;

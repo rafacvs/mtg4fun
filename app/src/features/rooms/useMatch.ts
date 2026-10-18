@@ -107,6 +107,10 @@ export function useMatch(roomId: number) {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.move(roomId, ids, to, intentId, placement));
     },
+    transferControl: (cardId: string, controllerId: number) => {
+      const intentId = crypto.randomUUID();
+      return act(() => roomsApi.transferControl(roomId, cardId, controllerId, intentId));
+    },
     position: (ids: string[], x: number, row: number) => {
       const intentId = crypto.randomUUID();
       return act(() => roomsApi.position(roomId, ids, x, row, intentId));

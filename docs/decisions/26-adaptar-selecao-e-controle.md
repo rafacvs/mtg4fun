@@ -61,3 +61,27 @@ absolutas anteriores ao scroll e procuravam cantos fora da área visível. O tes
 passou a verificar a posição individual também pela API real e a exercitar o
 retângulo em viewport desktop com zoom. Esses resultados não são aprovação da
 regressão conjunta, que pertence à task 4.
+
+## Validação intermediária: task 3 e integração das funcionalidades
+
+Em 18/10/2026, a transferência foi adaptada em seguida à seleção. O módulo
+`control.go` mantém a ação de transferência; o retorno de cartas passa por
+`zone_transitions.go` e `placeCards`, incluindo remoção de fichas/cópias e
+limpeza de estados. O detalhe atual mantém revelação, erro/retry e prévias;
+`CardControlTransfer` guarda as escolhas locais sem reiniciá-las a cada polling.
+
+Passaram build/TypeScript, testes de `internal/rooms` e as integrações HTTP
+`TestTransferControlKeepsOwnerAndReturnsCardsToOwnerZones`,
+`TestCollectivePositionIsAtomicAndSurvivesRestart` e
+`TestTransferredSelectionPreservesZoneRulesAndRollsBack`. O último verifica
+seleção de donos diferentes, rollback real por falha de INSERT no MySQL,
+reenvio da transferência/posição, reinício, retorno de cada carta ao dono,
+limpeza de estados, remoção de fichas/cópias, privacidade e ordem de topo/fundo.
+
+O fluxo de transferência passou em desktop e celular horizontal com a API
+real, incluindo escolha persistente de terceiro participante, seleção/movimento
+conjunto de cartas próprias e recebidas, limpeza da seleção quando o controle
+muda por polling, arraste bloqueado até escolha explícita e retorno ao dono.
+O teste antigo precisou abrir o registro, que agora começa recolhido no celular,
+e usar eventos reais de toque no arraste. Captura do detalhe no celular foi
+revisada com a paleta atual. A regressão completa segue na task 4.

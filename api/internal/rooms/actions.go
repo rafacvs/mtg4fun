@@ -48,6 +48,7 @@ type matchAction struct {
 	Color            string
 	Operation        string
 	Value            int64
+	ControllerID     int64
 }
 
 type actionLogPayload struct {
@@ -395,7 +396,9 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	case "draw":
 		payload, err = drawCards(p, input.Count)
 	case "move":
-		payload, err = moveCards(p, input)
+		payload, err = moveCards(&m, p, input)
+	case "transfer_control":
+		payload, err = transferControl(&m, p, input)
 	case "position":
 		payload, err = positionCard(&m, p, input)
 	case "consult":

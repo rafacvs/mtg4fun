@@ -48,7 +48,7 @@ func TestMovingSeveralCardsLeavesAllInPlaceWhenOneIsForbidden(t *testing.T) {
 		{ID: "mine", ControllerID: 1, Zone: "hand"},
 		{ID: "theirs", ControllerID: 2, Zone: "hand"},
 	}}
-	if _, err := moveCards(p, matchAction{CardIDs: []string{"mine", "theirs"}, To: "battlefield"}); err != errNotController {
+	if _, err := moveCards(&matchState{}, p, matchAction{CardIDs: []string{"mine", "theirs"}, To: "battlefield"}); err != errNotController {
 		t.Fatalf("permissão coletiva: %v", err)
 	}
 	if len(p.Hand) != 2 || len(p.Battlefield) != 0 || p.Hand[0].ID != "mine" || p.Hand[1].ID != "theirs" {
