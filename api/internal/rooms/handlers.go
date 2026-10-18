@@ -178,7 +178,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			return matchAction{}, false
 		}
 	case "position":
-		if input.CardID == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" || input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
+		if (input.CardID == "" && len(input.CardIDs) == 0) || (input.CardID != "" && len(input.CardIDs) != 0) || input.Count != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" || input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}

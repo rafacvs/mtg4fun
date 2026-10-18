@@ -72,29 +72,77 @@ func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPa
 	if input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
 		return actionLogPayload{}, errInvalidPosition
 	}
-	others := 0
+	ids := input.CardIDs
+	if len(ids) == 0 && input.CardID != "" {
+		ids = []string{input.CardID}
+	}
+	if len(ids) == 0 {
+		return actionLogPayload{}, errCardNotFound
+	}
+	// Preserve the established single-card response when a target stack is
+	// already full, including malformed references sent by older clients.
+	if len(input.CardIDs) == 0 {
+		others := 0
+		for _, card := range p.Battlefield {
+			if card.ID != input.CardID && card.PositionX == input.PositionX && card.Row == input.Row {
+				others++
+			}
+		}
+		if others >= 3 {
+			return actionLogPayload{}, errStackFull
+		}
+	}
+	selected := make(map[string]int, len(ids))
+	for _, id := range ids {
+		if _, duplicate := selected[id]; duplicate {
+			return actionLogPayload{}, errCardNotFound
+		}
+		for i := range p.Battlefield {
+			if p.Battlefield[i].ID != id {
+				continue
+			}
+			if p.Battlefield[i].ControllerID != p.UserID {
+				return actionLogPayload{}, errNotController
+			}
+			selected[id] = i
+			break
+		}
+		if _, found := selected[id]; !found {
+			return actionLogPayload{}, errCardNotFound
+		}
+	}
+	anchor := p.Battlefield[selected[ids[0]]]
+	deltaX, deltaRow := input.PositionX-anchor.PositionX, input.Row-anchor.Row
+	type target struct{ x, row int }
+	targets := make(map[string]target, len(ids))
+	for _, id := range ids {
+		card := p.Battlefield[selected[id]]
+		x, row := card.PositionX+deltaX, card.Row+deltaRow
+		if x < 0 || x > 20000 || row < 0 || row > 2000 {
+			return actionLogPayload{}, errInvalidPosition
+		}
+		targets[id] = target{x: x, row: row}
+	}
+	stacks := map[target]int{}
 	for _, card := range p.Battlefield {
-		if card.ID != input.CardID && card.Row == input.Row && card.PositionX == input.PositionX {
-			others++
+		if _, moving := selected[card.ID]; !moving {
+			stacks[target{x: card.PositionX, row: card.Row}]++
 		}
 	}
-	if others >= 3 {
-		return actionLogPayload{}, errStackFull
+	for _, destination := range targets {
+		stacks[destination]++
+		if stacks[destination] > 3 {
+			return actionLogPayload{}, errStackFull
+		}
 	}
-	for i := range p.Battlefield {
-		if p.Battlefield[i].ID != input.CardID {
-			continue
-		}
-		if p.Battlefield[i].ControllerID != p.UserID {
-			return actionLogPayload{}, errNotController
-		}
+	for _, id := range ids {
+		i, destination := selected[id], targets[id]
 		m.NextStackOrder++
-		p.Battlefield[i].PositionX = input.PositionX
-		p.Battlefield[i].Row = input.Row
+		p.Battlefield[i].PositionX = destination.x
+		p.Battlefield[i].Row = destination.row
 		p.Battlefield[i].StackOrder = m.NextStackOrder
-		return actionLogPayload{Kind: "position"}, nil
 	}
-	return actionLogPayload{}, errCardNotFound
+	return actionLogPayload{Kind: "position", Count: len(ids)}, nil
 }
 
 func consultCards(p *playerState, input matchAction) (actionLogPayload, error) {

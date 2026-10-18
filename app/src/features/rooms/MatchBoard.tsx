@@ -32,6 +32,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [selectionIds, setSelectionIds] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const dockRef = useRef<HTMLElement>(null);
@@ -87,7 +89,25 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [match, busy, unconfirmed, draw, untapAll, turn, hideAllRevealed]);
+  useEffect(() => {
+    const valid = new Set(match?.players.find(player => player.userId === match.viewerId)?.battlefield?.filter(card => card.controllerId === match.viewerId).map(card => card.id));
+    setSelectionIds(current => current.every(id => valid.has(id)) ? current : current.filter(id => valid.has(id)));
+  }, [match]);
+  useEffect(() => {
+    const clear = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) { setSelectionIds([]); setSelectionMode(false); }
+    };
+    window.addEventListener('keydown', clear);
+    return () => window.removeEventListener('keydown', clear);
+  }, []);
   const gesture: CardGesture = {
+    selectedIds: selectionIds,
+    selectionMode,
+    onSelect: card => {
+      if (card.zone !== 'battlefield' || card.controllerId !== match?.viewerId) return;
+      setSelectionIds(current => current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id]);
+    },
+    onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
     onHover: card => { if (!drag && railOpen && hoverPreviewOpen) setHoverCardId(card.id); },
     onToggleTapped: card => { if (!busy && !unconfirmed) void setTapped([card.id], !card.tapped); },
     onInspect: card => { if (!drag) setPreviewId(card.id); },
@@ -110,7 +130,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const layout = battlefieldPositionAt(x, y);
       if (!layout) return;
       if (card.zone !== 'battlefield' && !await move([card.id], 'battlefield')) return;
-      await position(card.id, layout.x, layout.row);
+      const ids = card.zone === 'battlefield' && selectionIds.includes(card.id) ? [card.id, ...selectionIds.filter(id => id !== card.id)] : [card.id];
+      if (await position(ids, layout.x, layout.row)) setSelectionIds([]);
       return;
     }
     if (zone === 'library') await move([card.id], 'library', 'top');
@@ -151,6 +172,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
               <button disabled={busy || unconfirmed || !own.libraryCount} title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}>↓ Comprar</button>
               <button className="secondary" disabled={busy || unconfirmed} title="Passar turno e ocultar todas as reveladas (N)" aria-keyshortcuts="N" onClick={() => void turn('next')}>→ Passar turno</button>
               <button className="secondary" disabled={busy || unconfirmed} title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}>↺ Desvirar todas</button>
+              <button type="button" className="secondary" aria-pressed={selectionMode} onClick={() => setSelectionMode(current => !current)}>Selecionar cartas</button>
+              {selectionIds.length > 0 && <button type="button" className="secondary" onClick={() => { setSelectionIds([]); setSelectionMode(false); }}>Limpar seleção ({selectionIds.length})</button>}
               <button type="button" className="actions-toggle" aria-label="Grimório" aria-expanded={libraryOpen} onClick={openLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
               <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
             </nav>
@@ -271,7 +294,7 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move' && entry.result) return `${entry.actorName}: ${entry.result} ao mover para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
-  if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;
+  if (entry.kind === 'position') return `${entry.actorName} reposicionou ${entry.count || 1} carta(s) no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'counter') return `${entry.actorName} alterou contadores: ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;

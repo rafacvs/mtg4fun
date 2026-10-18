@@ -61,6 +61,78 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     expect(gap).toBeGreaterThanOrEqual(41);
     expect(gap).toBeLessThanOrEqual(43);
   }).toPass();
+  await page.getByRole('button', { name: 'Selecionar cartas', exact: true }).click();
+  if (testInfo.project.use.hasTouch) {
+    await tapWithTouch(page, (await fieldCards.nth(0).boundingBox())!);
+    await tapWithTouch(page, (await fieldCards.nth(1).boundingBox())!);
+  } else {
+    await fieldCards.nth(0).click();
+    await fieldCards.nth(1).click();
+  }
+  await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
+  const beforeGroup = await Promise.all([fieldCards.nth(0).boundingBox(), fieldCards.nth(1).boundingBox()]);
+  const groupTarget = { x: beforeGroup[1]!.x + 130, y: beforeGroup[1]!.y + 4 };
+  if (testInfo.project.use.hasTouch) await dragWithTouch(page, beforeGroup[1]!, groupTarget);
+  else {
+    await page.mouse.move(beforeGroup[1]!.x + beforeGroup[1]!.width / 2, beforeGroup[1]!.y + beforeGroup[1]!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(groupTarget.x, groupTarget.y, { steps: 8 });
+    await page.mouse.up();
+  }
+  await expect(field.locator('.playing-card.is-selected')).toHaveCount(0);
+  await expect(async () => {
+    const afterGroup = await Promise.all([fieldCards.nth(0).boundingBox(), fieldCards.nth(1).boundingBox()]);
+    expect(Math.abs((afterGroup[1]!.x - afterGroup[0]!.x) - (beforeGroup[1]!.x - beforeGroup[0]!.x))).toBeLessThanOrEqual(2);
+    expect(Math.abs((afterGroup[1]!.y - afterGroup[0]!.y) - (beforeGroup[1]!.y - beforeGroup[0]!.y))).toBeLessThanOrEqual(2);
+  }).toPass();
+  const beforeIndividual = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.players[0].battlefield;
+  const firstAfterGroup = (await fieldCards.nth(0).boundingBox())!;
+  const individualTarget = { x: firstAfterGroup.x + 100, y: firstAfterGroup.y + firstAfterGroup.height / 2 };
+  if (testInfo.project.use.hasTouch) await dragWithTouch(page, firstAfterGroup, individualTarget);
+  else {
+    await page.mouse.move(firstAfterGroup.x + firstAfterGroup.width / 2, firstAfterGroup.y + firstAfterGroup.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(individualTarget.x, individualTarget.y, { steps: 8 });
+    await page.mouse.up();
+  }
+  await expect(async () => {
+    const after = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.players[0].battlefield;
+    expect(after[0].positionX).not.toBe(beforeIndividual[0].positionX);
+    expect(after[1].positionX).toBe(beforeIndividual[1].positionX);
+    expect(after[1].row).toBe(beforeIndividual[1].row);
+    await expect(field.locator(`[data-pos-x="${after[0].positionX}"][data-row="${after[0].row}"]`)).toHaveCount(1);
+  }).toPass();
+  if (!testInfo.project.use.hasTouch) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await field.getByRole('button', { name: 'Diminuir zoom' }).click();
+    const area = await page.evaluate(() => {
+      const canvas = document.querySelector<HTMLElement>('[data-battlefield-canvas]')!;
+      const cards = [...canvas.querySelectorAll<HTMLElement>('.playing-card')].map(card => card.getBoundingClientRect());
+      const left = Math.min(...cards.map(card => card.left));
+      const right = Math.max(...cards.map(card => card.right));
+      const top = Math.min(...cards.map(card => card.top));
+      const bottom = Math.max(...cards.map(card => card.bottom));
+      const candidates = [
+        { x: left - 3, y: top - 3, endX: right + 3, endY: bottom + 3 },
+        { x: right + 3, y: top - 3, endX: left - 3, endY: bottom + 3 },
+        { x: left - 3, y: bottom + 3, endX: right + 3, endY: top - 3 },
+        { x: right + 3, y: bottom + 3, endX: left - 3, endY: top - 3 },
+      ];
+      return candidates.find(candidate => {
+        const target = document.elementFromPoint(candidate.x, candidate.y);
+        return target !== null && canvas.contains(target) && target.closest('.playing-card') === null;
+      }) ?? null;
+    });
+    expect(area).not.toBeNull();
+    await page.mouse.move(area!.x, area!.y);
+    await page.mouse.down();
+    await page.mouse.move(area!.endX, area!.endY, { steps: 8 });
+    await page.mouse.up();
+    await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
+    await page.screenshot({ path: testInfo.outputPath('retangulo-selecao.png'), fullPage: true });
+    await page.getByRole('button', { name: /Limpar seleção/ }).click();
+  }
+  await page.screenshot({ path: testInfo.outputPath('selecao-atual.png'), fullPage: true });
 });
 
 async function dragWithTouch(page: Page, source: { x: number; y: number; width: number; height: number }, target: { x: number; y: number }) {
@@ -70,6 +142,14 @@ async function dragWithTouch(page: Page, source: { x: number; y: number; width: 
   for (let step = 1; step <= 8; step += 1) {
     await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (target.x - start.x) * step / 8, y: start.y + (target.y - start.y) * step / 8, id: 1 }] });
   }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await session.detach();
+}
+
+async function tapWithTouch(page: Page, target: { x: number; y: number; width: number; height: number }) {
+  const session = await page.context().newCDPSession(page);
+  const touch = { x: target.x + target.width / 2, y: target.y + target.height / 2, id: 1 };
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch] });
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await session.detach();
 }

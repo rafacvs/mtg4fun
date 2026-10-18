@@ -3,11 +3,16 @@ import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
 import { battlefieldLayout } from './battlefieldLayout';
 import { createLibraryGesture } from './libraryGesture';
+import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
 
 export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando', consulted: 'consulta', revealed: 'cartas reveladas' };
 
 export type CardGesture = {
+  selectedIds?: string[];
+  selectionMode?: boolean;
+  onSelect?: (card: Card) => void;
+  onSelectArea?: (cards: Card[]) => void;
   onHover?: (card: Card) => void;
   onInspect: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
@@ -99,12 +104,12 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZonePr
     </header>
     <div className="battlefield-scroll">
       <div className="battlefield-zoom-space" style={{ '--mat-cols': Math.max(14, Math.ceil(maxX / 72) + 6), '--mat-rows': maxRow + 8, '--mat-zoom': zoom } as CSSProperties}>
-        <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} style={{ '--mat-cols': Math.max(14, Math.ceil(maxX / 72) + 6), '--mat-rows': maxRow + 8, '--mat-zoom': zoom } as CSSProperties}>
+        <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
           {cards.map(card => {
             const { x, index, size } = layout.get(card.id)!;
-            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={size} style={{ left: `calc(${x + index * 14} * var(--card-width) / 72)`, top: `calc(${card.row} * (var(--card-width) * 88 / 63 + 42px) + ${index * 16} * var(--card-width) / 72)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} {...gesture} /></div>;
+            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={size} style={{ left: `calc(${x + index * 14} * var(--card-width) / 72)`, top: `calc(${card.row} * (var(--card-width) * 88 / 63 + 42px) + ${index * 16} * var(--card-width) / 72)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} selected={gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
           })}
-        </div>
+        </BattlefieldCanvas>
       </div>
     </div>
   </section>;
