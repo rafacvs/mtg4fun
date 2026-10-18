@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sort"
 	"strings"
 
 	"mtg4fun/internal/auth"
@@ -136,7 +137,17 @@ func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPa
 			return actionLogPayload{}, errStackFull
 		}
 	}
-	for _, id := range ids {
+	// The dragged anchor can be the top card. Preserve the existing order
+	// within each selected stack instead of following request order.
+	ordered := append([]string(nil), ids...)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		a, b := p.Battlefield[selected[ordered[i]]], p.Battlefield[selected[ordered[j]]]
+		if a.StackOrder == b.StackOrder {
+			return a.ID < b.ID
+		}
+		return a.StackOrder < b.StackOrder
+	})
+	for _, id := range ordered {
 		i, destination := selected[id], targets[id]
 		m.NextStackOrder++
 		p.Battlefield[i].PositionX = destination.x

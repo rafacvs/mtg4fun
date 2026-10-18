@@ -4,15 +4,22 @@
 
 **Blocked by:** 08: Posicionar e sobrepor cartas em fileiras.
 
-**Status:** ready-for-agent
+**Status:** implementado na branch `work/adaptar-selecao-e-controle`; aguardando revisão.
 
-- [ ] Desktop seleciona por arraste de área; celular tem modo explícito de seleção e adiciona/remove cartas por toque.
-- [ ] Estado visual distingue seleção e permite limpar/sair do modo.
-- [ ] Mover seleção preserva disposição relativa compatível com fileiras e atualiza as cartas como uma ação coletiva consistente.
-- [ ] Verificar permissão para todas as cartas; falha não deixa movimento parcialmente confirmado.
-- [ ] Sobreposição anterior não força seleção conjunta e movimento não cria vínculo permanente.
-- [ ] Posições resultantes sincronizam e são persistidas com log; seleção local não precisa integrar snapshot compartilhado.
-- [ ] Testes por mouse/toque verificam seleção, movimento e manipulação individual posterior; teste público verifica atomicidade.
+- [x] Desktop seleciona por arraste de área; celular tem modo explícito de seleção e adiciona/remove cartas por toque.
+- [x] Estado visual distingue seleção e permite limpar/sair do modo.
+- [x] Mover seleção preserva disposição relativa compatível com fileiras e atualiza as cartas como uma ação coletiva consistente.
+- [x] Verificar permissão para todas as cartas; falha não deixa movimento parcialmente confirmado.
+- [x] Sobreposição anterior não força seleção conjunta e movimento não cria vínculo permanente.
+- [x] Posições resultantes sincronizam e são persistidas com log; seleção local não precisa integrar snapshot compartilhado.
+- [x] Testes por mouse/toque verificam seleção, movimento e manipulação individual posterior; teste público verifica atomicidade.
+
+## Adaptação à mesa atual
+
+As tasks, autorização, compatibilidade e verificações estão no
+[registro da adaptação dos PRs 23 e 24](../decisions/26-adaptar-selecao-e-controle.md).
+A implementação usa a paleta e os fluxos atuais; a validação dos PRs antigos
+permanece histórica.
 
 ## Regras de execução
 

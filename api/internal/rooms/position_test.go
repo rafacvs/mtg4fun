@@ -55,3 +55,17 @@ func TestMovingSeveralCardsLeavesAllInPlaceWhenOneIsForbidden(t *testing.T) {
 		t.Fatalf("movimento parcial: %+v", p)
 	}
 }
+
+func TestCollectivePositionPreservesStackOrderWhenTopCardIsAnchor(t *testing.T) {
+	m := &matchState{NextStackOrder: 2}
+	p := &playerState{UserID: 1, Battlefield: []Card{
+		{ID: "base", ControllerID: 1, Zone: "battlefield", PositionX: 40, Row: 1, StackOrder: 1},
+		{ID: "top", ControllerID: 1, Zone: "battlefield", PositionX: 40, Row: 1, StackOrder: 2},
+	}}
+	if _, err := positionCard(m, p, matchAction{CardIDs: []string{"top", "base"}, PositionX: 500, Row: 3}); err != nil {
+		t.Fatal(err)
+	}
+	if p.Battlefield[0].PositionX != 500 || p.Battlefield[1].PositionX != 500 || p.Battlefield[0].Row != 3 || p.Battlefield[1].Row != 3 || p.Battlefield[0].StackOrder >= p.Battlefield[1].StackOrder {
+		t.Fatalf("collective movement reversed the stack: %+v", p.Battlefield)
+	}
+}

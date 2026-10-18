@@ -31,17 +31,46 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   const confirmed = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
   const placed = confirmed.players.find((player: { userId: number }) => player.userId === confirmed.viewerId).battlefield[0];
   await expect(field.locator(`[data-pos-x="${placed.positionX}"][data-row="${placed.row}"]`)).toHaveCount(1);
-  const base = await fieldCards.nth(0).boundingBox();
+  let base = await fieldCards.nth(0).boundingBox();
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: base!.x + base!.width / 2, y: base!.y + base!.height / 2 });
   else await cards.nth(0).dragTo(fieldCards.nth(0), { targetPosition: { x: base!.width / 2, y: base!.height / 2 }, steps: 8 });
   await expect(fieldCards).toHaveCount(2);
   await expect(field.locator('[data-stack-size="2"]')).toHaveCount(2);
   const baseAfterPosition = await fieldCards.nth(0).boundingBox();
-  const stacked = await fieldCards.nth(1).boundingBox();
+  let stacked = await fieldCards.nth(1).boundingBox();
   expect(stacked!.x - baseAfterPosition!.x).toBeGreaterThanOrEqual(8);
   expect(stacked!.x - baseAfterPosition!.x).toBeLessThanOrEqual(24);
   expect(stacked!.y - baseAfterPosition!.y).toBeGreaterThanOrEqual(8);
   expect(stacked!.y - baseAfterPosition!.y).toBeLessThanOrEqual(24);
+  // Dragging the top of a selected stack must keep its visual order.
+  await page.getByRole('button', { name: 'Selecionar cartas', exact: true }).click();
+  if (testInfo.project.use.hasTouch) {
+    await tapWithTouch(page, { ...baseAfterPosition!, width: 12, height: 12 });
+    await tapWithTouch(page, stacked!);
+  } else {
+    await fieldCards.nth(0).click({ position: { x: 6, y: 6 } });
+    await fieldCards.nth(1).click();
+  }
+  await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
+  const stackTarget = { x: stacked!.x + 100, y: stacked!.y + stacked!.height / 2 };
+  if (testInfo.project.use.hasTouch) await dragWithTouch(page, stacked!, stackTarget);
+  else {
+    await page.mouse.move(stacked!.x + stacked!.width / 2, stacked!.y + stacked!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stackTarget.x, stackTarget.y, { steps: 8 });
+    await page.mouse.up();
+  }
+  await expect(field.locator('.playing-card.is-selected')).toHaveCount(0);
+  await expect(async () => {
+    const lower = (await fieldCards.nth(0).boundingBox())!;
+    const upper = (await fieldCards.nth(1).boundingBox())!;
+    expect(upper.x - lower.x).toBeGreaterThanOrEqual(8);
+    expect(upper.y - lower.y).toBeGreaterThanOrEqual(8);
+    expect(Math.abs(lower.x - baseAfterPosition!.x)).toBeGreaterThan(2);
+  }).toPass();
+  await page.getByRole('button', { name: 'Selecionar cartas', exact: true }).click();
+  base = await fieldCards.nth(0).boundingBox();
+  stacked = await fieldCards.nth(1).boundingBox();
   const target = { x: base!.x + 8, y: base!.y + base!.height + 45 };
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, stacked!, target);
   else {
@@ -105,6 +134,8 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   if (!testInfo.project.use.hasTouch) {
     await page.setViewportSize({ width: 1280, height: 900 });
     await field.getByRole('button', { name: 'Diminuir zoom' }).click();
+    expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'set_tapped', cardIds: [beforeIndividual[0].id], tapped: true } })).ok()).toBe(true);
+    await expect(field.locator('.is-tapped')).toHaveCount(1);
     const area = await page.evaluate(() => {
       const canvas = document.querySelector<HTMLElement>('[data-battlefield-canvas]')!;
       const cards = [...canvas.querySelectorAll<HTMLElement>('.playing-card')].map(card => card.getBoundingClientRect());
@@ -130,7 +161,9 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     await page.mouse.up();
     await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
     await page.screenshot({ path: testInfo.outputPath('retangulo-selecao.png'), fullPage: true });
-    await page.getByRole('button', { name: /Limpar seleção/ }).click();
+    await page.keyboard.press('Escape');
+    await expect(field.locator('.is-selected')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Selecionar cartas', exact: true })).toHaveAttribute('aria-pressed', 'false');
   }
   await page.screenshot({ path: testInfo.outputPath('selecao-atual.png'), fullPage: true });
 });

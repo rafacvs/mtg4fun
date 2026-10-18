@@ -17,21 +17,21 @@ coletivas adicionais ou transferência para zonas privadas de outro jogador.
 
 ## Tasks, executadas em sequência
 
-1. **API de seleção/movimento:** aceitar `cardIds` na ação `position`, mantendo
+1. **API de seleção/movimento — concluída:** aceitar `cardIds` na ação `position`, mantendo
    `cardId` individual; validar a seleção inteira antes de alterar posições,
    respeitar limites/pilhas, preservar deslocamentos, transação, log e retry.
    Adaptar a validação de movimento em `zone_transitions.go`, preservando
    `placeCards` e as regras atuais de fichas/cópias e limpeza de estados.
-2. **Interação de seleção:** retângulo no desktop e modo explícito por toque,
+2. **Interação de seleção — concluída:** retângulo no desktop e modo explícito por toque,
    destaque/limpeza e movimento sem vínculo permanente. Usar a geometria
    renderizada atual (zoom, rotação e pilhas), barra de ações e paleta atuais.
    Validar HTTP/reinício e navegador antes de integrar a próxima funcionalidade.
-3. **Transferência de controle:** acrescentar `transfer_control`, `cardId` e
+3. **Transferência de controle — concluída:** acrescentar `transfer_control`, `cardId` e
    `controllerId` no endpoint existente; mover para o campo do participante
    escolhido sem alterar dono, transferir permissões, devolver a zona explícita
    do dono ao sair do campo e preservar privacidade, idempotência e persistência.
    Acrescentar controles ao detalhe atual, mantendo revelação, retry e prévias.
-4. **Regressão conjunta:** testar seleção de cartas próprias e recebidas,
+4. **Regressão conjunta — validada:** testar seleção de cartas próprias e recebidas,
    perda de controle durante seleção, retorno ao dono, fichas/cópias, estados,
    log, reinício e fluxos existentes. Conferir design por capturas e publicar
    novo PR contra master com os resultados efetivamente executados.
@@ -85,3 +85,33 @@ muda por polling, arraste bloqueado até escolha explícita e retorno ao dono.
 O teste antigo precisou abrir o registro, que agora começa recolhido no celular,
 e usar eventos reais de toque no arraste. Captura do detalhe no celular foi
 revisada com a paleta atual. A regressão completa segue na task 4.
+
+## Regressão e revisão final (task 4)
+
+Em 18/10/2026, passaram `go -C api test ./... -count=1` com MySQL
+isolado, `go -C api vet ./...`, build/TypeScript, os três testes unitários do
+frontend e a regressão completa `npm test --prefix app -- --workers=3`:
+**73 passaram e 29 foram omitidos** pelos critérios existentes de orientação,
+mouse e opt-in. Incluem acesso, login animado/fallback/movimento reduzido,
+decks, seis jogadores, prévias, estados, consultas, fichas, contadores,
+encerramento, seleção e transferência. Os dados locais não foram usados.
+
+Na revisão posterior à regressão, um teste novo reproduziu a inversão da
+pilha quando a carta de cima era a âncora do arraste coletivo. O reposicionamento
+agora preserva a ordem anterior entre as selecionadas. A transferência também
+procura uma posição livre, evitando inserir uma quarta carta numa pilha cheia.
+Após essas correções passaram novamente os testes do módulo de salas, `go vet`,
+as três integrações HTTP de seleção/transferência e quatro fluxos de navegador
+(posicionamento e transferência, desktop/celular horizontal). O fluxo de
+posicionamento verifica a ordem visual da pilha movida pela carta de cima.
+A execução final de desktop também passou com retângulo sobre carta virada,
+zoom e limpeza da seleção por Escape, com captura revisada.
+
+As capturas de seleção e detalhe da carta foram revisadas; a paleta global,
+o login e o lockfile permanecem os da master usada como base. Os controles
+novos usam as variáveis e a barra/detalhe atuais. Links locais e
+`git diff --check` foram conferidos. Sem novas dependências ou migrations.
+O aviso de tamanho do chunk Three.js já existente permanece no build.
+
+Não foi executado o smoke operacional Docker de produção nem a verificação
+opt-in do provedor de imagens; não houve alterações nesses componentes.

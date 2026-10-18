@@ -4,14 +4,21 @@
 
 **Blocked by:** 06: Comprar e mover cartas entre zonas.
 
-**Status:** ready-for-agent
+**Status:** implementado na branch `work/adaptar-selecao-e-controle`; aguardando revisão.
 
-- [ ] Ação explícita seleciona participante e move carta para campo do novo controlador.
-- [ ] Dono original permanece; novo controlador recebe permissão e antigo deixa de agir como controlador.
-- [ ] Ao sair do campo, oferecer zonas do dono original como destino padrão, com escolha explícita permitida.
-- [ ] Não permitir manipulação arbitrária de mão/grimório de outro jogador pela transferência.
-- [ ] Estado, permissões e log sincronizam e persistem antes da confirmação.
-- [ ] Interface PT-BR por mouse/toque; testes públicos verificam autorização antes/depois, dono, destinos e recuperação.
+- [x] Ação explícita seleciona participante e move carta para campo do novo controlador.
+- [x] Dono original permanece; novo controlador recebe permissão e antigo deixa de agir como controlador.
+- [x] Ao sair do campo, oferecer zonas do dono original como destino padrão, com escolha explícita permitida.
+- [x] Não permitir manipulação arbitrária de mão/grimório de outro jogador pela transferência.
+- [x] Estado, permissões e log sincronizam e persistem antes da confirmação.
+- [x] Interface PT-BR por mouse/toque; testes públicos verificam autorização antes/depois, dono, destinos e recuperação.
+
+## Adaptação à mesa atual
+
+As tasks, autorização, compatibilidade e verificações estão no
+[registro da adaptação dos PRs 23 e 24](../decisions/26-adaptar-selecao-e-controle.md).
+A implementação usa a paleta e os fluxos atuais; a validação dos PRs antigos
+permanece histórica.
 
 ## Regras de execução
 

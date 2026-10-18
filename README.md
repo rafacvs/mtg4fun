@@ -24,8 +24,19 @@ comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
 numa carta e escolha o destino na faixa inferior. A mão própria permanece
 disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
 celular usa orientação horizontal e miniaturas à direita. A partida atualiza
-a cada segundo. A seleção múltipla no campo e as demais ações das
-specs ainda têm entregas próprias pendentes.
+a cada segundo. No campo, arraste uma área com mouse para selecionar várias
+cartas ou ative **Selecionar cartas** e adicione/remova por clique/toque.
+Arrastar uma selecionada reposiciona o conjunto preservando sua disposição;
+**Limpar seleção** ou Escape limpa a seleção. Não há vínculo permanente entre
+as cartas, e esse comando coletivo se limita ao reposicionamento no campo.
+
+No detalhe de uma carta do seu campo, **Transferir controle para** escolhe
+outro participante. A carta vai para o campo dele sem mudar o dono original;
+só o controlador atual pode manipulá-la. Ao sair do campo, **Mover para zona
+do dono** oferece mão, cemitério, exílio, comando ou topo/fundo do grimório do
+dono. Arrastar uma carta recebida para fora do campo pede essa escolha explícita.
+As regras atuais de limpeza de estados e remoção de fichas/cópias continuam
+valendo. Veja as [tasks e a adaptação dos PRs 23 e 24](docs/decisions/26-adaptar-selecao-e-controle.md).
 
 O menu do grimório oferece comprar, embaralhar diretamente, olhar cartas do
 topo/fundo em privado, buscar no grimório inteiro e revelar cartas. Durante
