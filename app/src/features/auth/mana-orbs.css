@@ -1,0 +1,17 @@
+.mana-orbs { position: relative; width: 100%; height: 360px; margin: 12px 0 0; pointer-events: none; }
+.mana-orbs canvas { display: block; width: 100%; height: 100%; opacity: 0; }
+.mana-orbs.is-ready canvas { opacity: 1; }
+.mana-orbs.is-ready .mana-orbs-fallback { display: none; }
+.mana-orbs-fallback { position: absolute; inset: 0; margin: auto; width: min(100%, 350px); height: 100%; }
+.mana-orbs-fallback span { position: absolute; width: 24%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #ffffff80, transparent 65%), var(--orb-color); box-shadow: inset -10px -14px 20px #0005, 0 10px 28px #0006; }
+.mana-orb-white { --orb-color: #f2e8c0; top: 4%; left: 38%; }
+.mana-orb-blue { --orb-color: #3f8fd6; top: 29%; left: 5%; }
+.mana-orb-black { --orb-color: #3a3740; top: 66%; left: 18%; }
+.mana-orb-red { --orb-color: #e0553a; top: 66%; right: 18%; }
+.mana-orb-green { --orb-color: #43a263; top: 29%; right: 5%; }
+@media (max-width: 760px) {
+  .mana-orbs { height: 280px; max-width: 400px; margin: 0 auto; }
+}
+@media (max-height: 550px) and (min-width: 761px) {
+  .mana-orbs { height: 240px; }
+}
