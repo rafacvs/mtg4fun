@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, selectFieldArea } from './fixtures';
 
 const deckFile = {
   name: 'ilha.cod',
@@ -65,34 +65,33 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     const chosenField = chosenTable.getByRole('region', { name: 'Campo', exact: true });
     const controlledCard = chosenField.locator(`[data-card-id="${drawn.id}"]`);
     await expect(controlledCard).toBeVisible();
-    // Select cards of different owners under the same controller and move
-    // them through the real UI before exercising return to the owner.
-    await chosenPage.getByRole('button', { name: 'Selecionar cartas', exact: true }).click();
-    await activate(chosenField.locator(`[data-card-id="${ownCardId}"]`));
-    await activate(controlledCard);
-    await expect(chosenField.locator('.is-selected')).toHaveCount(2);
-    const before = await third.request.get(`/api/rooms/${room.id}/match`);
-    const beforePlayer = (await before.json()).match.players.find((player: { userId: number }) => player.userId === thirdId);
-    const anchor = (await controlledCard.boundingBox())!;
-    await dragCard(chosenPage, controlledCard, { x: anchor.x + anchor.width + 100, y: anchor.y + anchor.height / 2 }, Boolean(info.project.use.hasTouch));
-    await expect(chosenField.locator('.is-selected')).toHaveCount(0);
-    await expect(async () => {
-      const response = await third.request.get(`/api/rooms/${room.id}/match`);
-      const current = (await response.json()).match.players.find((player: { userId: number }) => player.userId === thirdId);
-      const [first, received] = current.battlefield;
-      expect(first.positionX).not.toBe(beforePlayer.battlefield[0].positionX);
-      expect(received.positionX - first.positionX).toBe(beforePlayer.battlefield[1].positionX - beforePlayer.battlefield[0].positionX);
-      expect(received.ownerId).toBe(drawn.ownerId);
-    }).toPass();
-    await activate(chosenField.locator(`[data-card-id="${ownCardId}"]`));
-    await activate(controlledCard);
-    await expect(chosenField.locator('.is-selected')).toHaveCount(2);
-    expect((await third.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'transfer_control', cardId: drawn.id, controllerId: secondId } })).ok()).toBe(true);
-    await expect(chosenField.locator('.is-selected')).toHaveCount(1);
-    await expect(controlledCard).toHaveCount(0);
-    expect((await second.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'transfer_control', cardId: drawn.id, controllerId: thirdId } })).ok()).toBe(true);
-    await expect(controlledCard).toBeVisible();
-    await chosenPage.getByRole('button', { name: /Limpar seleção/ }).click();
+    if (!info.project.use.hasTouch) {
+      // Multiple-card selection is by mouse area; touch keeps individual actions.
+      await selectFieldArea(chosenPage, chosenField);
+      await expect(chosenField.locator('.is-selected')).toHaveCount(2);
+      const before = await third.request.get(`/api/rooms/${room.id}/match`);
+      const beforePlayer = (await before.json()).match.players.find((player: { userId: number }) => player.userId === thirdId);
+      const anchor = (await controlledCard.boundingBox())!;
+      await dragCard(chosenPage, controlledCard, { x: anchor.x + anchor.width + 100, y: anchor.y + anchor.height / 2 }, false);
+      await expect(chosenField.locator('.is-selected')).toHaveCount(0);
+      await expect(async () => {
+        const response = await third.request.get(`/api/rooms/${room.id}/match`);
+        const current = (await response.json()).match.players.find((player: { userId: number }) => player.userId === thirdId);
+        const [first, received] = current.battlefield;
+        expect(first.positionX).not.toBe(beforePlayer.battlefield[0].positionX);
+        expect(received.positionX - first.positionX).toBe(beforePlayer.battlefield[1].positionX - beforePlayer.battlefield[0].positionX);
+        expect(received.ownerId).toBe(drawn.ownerId);
+      }).toPass();
+      await selectFieldArea(chosenPage, chosenField);
+      await expect(chosenField.locator('.is-selected')).toHaveCount(2);
+      expect((await third.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'transfer_control', cardId: drawn.id, controllerId: secondId } })).ok()).toBe(true);
+      await expect(chosenField.locator('.is-selected')).toHaveCount(1);
+      await expect(controlledCard).toHaveCount(0);
+      expect((await second.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'transfer_control', cardId: drawn.id, controllerId: thirdId } })).ok()).toBe(true);
+      await expect(controlledCard).toBeVisible();
+      await chosenPage.keyboard.press('Escape');
+      await expect(chosenField.locator('.is-selected')).toHaveCount(0);
+    }
     const graveyard = (await chosenTable.getByRole('region', { name: 'Cemitério', exact: true }).boundingBox())!;
     await dragCard(chosenPage, controlledCard, { x: graveyard.x + graveyard.width / 2, y: graveyard.y + graveyard.height / 2 }, Boolean(info.project.use.hasTouch));
     await expect(chosenPage.getByText('Escolha explicitamente a zona do dono para mover a carta.')).toBeVisible();

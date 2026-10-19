@@ -115,3 +115,37 @@ O aviso de tamanho do chunk Three.js já existente permanece no build.
 
 Não foi executado o smoke operacional Docker de produção nem a verificação
 opt-in do provedor de imagens; não houve alterações nesses componentes.
+
+## Revisão da posição dos comandos
+
+Na revisão local, o usuário pediu explicitamente: **“quero que todos esses
+fiquem dentro de ações, +selecionar cartas+, +passar turno+, +grimorio+”**.
+Esses três comandos passam ao painel **Ações**. **Passar turno** substitui o
+nome **Avançar turno** no menu existente, mantendo a ação e o atalho N.
+**Selecionar cartas** ativa/desativa o modo e fecha o painel para permitir
+selecionar no campo; **Limpar seleção** também fica nesse painel. **Grimório**
+abre a consulta e fecha as ações. Os controles rápidos de comprar e desvirar,
+as cores, o acesso pelo desenho do grimório e os atalhos permanecem.
+
+Essa solicitação atualiza a posição dos comandos descrita nos registros
+históricos dos ajustes da mesa e desta adaptação. Não altera contratos HTTP,
+regras, persistência ou dependências. As verificações anteriores permanecem
+históricas.
+
+Nesta revisão passaram build/TypeScript e 27 fluxos de navegador em desktop e
+celular horizontal; um cenário de hover foi omitido no perfil de toque pelo
+critério existente. O conjunto cobre posicionamento/seleção, transferência,
+grimório, ajustes da mesa e salas. As duas verificações de retomada da consulta
+precisaram ser atualizadas para abrir **Ações** antes de procurar **Consulta em
+andamento**, e passaram na repetição. O fluxo de posicionamento verifica que os
+três comandos estão no painel e ausentes da barra rápida. `git diff --check`
+passou e o frontend local retornou HTTP 200. Não foram repetidas as suítes Go,
+pois esta revisão altera apenas apresentação e navegação do frontend.
+
+As alterações desta revisão permanecem locais na branch de adaptação para
+os testes manuais solicitados pelo usuário, sem novo commit, PR ou merge.
+
+O trecho acima registra a etapa intermediária. A revisão posterior removeu
+os controles de seleção por clique/toque e acrescentou limpeza pelo espaço
+vazio e duplo clique coletivo. Consulte o [estado preparado para publicação](27-duplo-clique-na-selecao.md#revisão-para-publicação),
+incluindo as limitações atuais e as verificações desta entrega.

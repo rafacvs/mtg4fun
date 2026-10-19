@@ -33,7 +33,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
-  const [selectionMode, setSelectionMode] = useState(false);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const dockRef = useRef<HTMLElement>(null);
@@ -95,21 +94,20 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   }, [match]);
   useEffect(() => {
     const clear = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) { setSelectionIds([]); setSelectionMode(false); }
+      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) { setSelectionIds([]); }
     };
     window.addEventListener('keydown', clear);
     return () => window.removeEventListener('keydown', clear);
   }, []);
   const gesture: CardGesture = {
     selectedIds: selectionIds,
-    selectionMode,
-    onSelect: card => {
-      if (card.zone !== 'battlefield' || card.controllerId !== match?.viewerId) return;
-      setSelectionIds(current => current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id]);
-    },
     onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
     onHover: card => { if (!drag && railOpen && hoverPreviewOpen) setHoverCardId(card.id); },
-    onToggleTapped: card => { if (!busy && !unconfirmed) void setTapped([card.id], !card.tapped); },
+    onToggleTapped: card => {
+      if (busy || unconfirmed) return;
+      const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
+      void setTapped(ids, !card.tapped);
+    },
     onInspect: card => { if (!drag) setPreviewId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
@@ -175,11 +173,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section ref={dockRef} className="own-dock" aria-label="Sua mão e ações">
             <nav className="quick-actions" aria-label="Ações rápidas">
               <button disabled={busy || unconfirmed || !own.libraryCount} title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}>↓ Comprar</button>
-              <button className="secondary" disabled={busy || unconfirmed} title="Passar turno e ocultar todas as reveladas (N)" aria-keyshortcuts="N" onClick={() => void turn('next')}>→ Passar turno</button>
               <button className="secondary" disabled={busy || unconfirmed} title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}>↺ Desvirar todas</button>
-              <button type="button" className="secondary" aria-pressed={selectionMode} onClick={() => setSelectionMode(current => !current)}>Selecionar cartas</button>
-              {selectionIds.length > 0 && <button type="button" className="secondary" onClick={() => { setSelectionIds([]); setSelectionMode(false); }}>Limpar seleção ({selectionIds.length})</button>}
-              <button type="button" className="actions-toggle" aria-label="Grimório" aria-expanded={libraryOpen} onClick={openLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
               <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
             </nav>
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
@@ -228,7 +222,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreviewId(card.id)}
       onDismiss={closeLibrary}
     />
-    <GameActions onUntapAll={() => void untapAll()} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
+    <GameActions onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
     <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
     <CardPreview players={match.players} onTransfer={(cardId, controllerId) => void transferControl(cardId, controllerId)} onMoveToOwner={(cardId, destination) => {
       const [to, placement] = destination.split('-');

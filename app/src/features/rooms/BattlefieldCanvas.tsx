@@ -12,11 +12,17 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
 }) {
   const [rectangle, setRectangle] = useState<{ start: Point; end: Point } | null>(null);
   const stopTracking = useRef<(() => void) | null>(null);
+  const suppressClick = useRef(false);
   const current = useRef({ cards, onSelectArea });
   current.current = { cards, onSelectArea };
   useEffect(() => () => stopTracking.current?.(), []);
 
-  return <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} onPointerDown={event => {
+  return <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} onClick={event => {
+    if ((event.target as Element).closest('.playing-card')) return;
+    if (suppressClick.current) { suppressClick.current = false; return; }
+    current.current.onSelectArea?.([]);
+  }} onPointerDown={event => {
+    suppressClick.current = false;
     if (!enabled || event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('.playing-card')) return;
     event.preventDefault();
     stopTracking.current?.();
@@ -44,6 +50,7 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
       const left = Math.min(start.x, pointer.clientX), right = Math.max(start.x, pointer.clientX);
       const top = Math.min(start.y, pointer.clientY), bottom = Math.max(start.y, pointer.clientY);
       if (right - left >= 4 || bottom - top >= 4) {
+        suppressClick.current = true;
         const selected = new Set<string>();
         // Use rendered bounds: stacks, rotation, zoom and spacing can shift
         // the visible card away from its persisted reference coordinates.

@@ -10,8 +10,6 @@ export const zoneNames: Record<string, string> = { library: 'Grimório', hand: '
 
 export type CardGesture = {
   selectedIds?: string[];
-  selectionMode?: boolean;
-  onSelect?: (card: Card) => void;
   onSelectArea?: (cards: Card[]) => void;
   onHover?: (card: Card) => void;
   onInspect: (card: Card) => void;

@@ -9,8 +9,6 @@ type Props = {
   card: Card;
   draggable: boolean;
   selected?: boolean;
-  selectionMode?: boolean;
-  onSelect?: (card: Card) => void;
   onInspect: (card: Card) => void;
   onHover?: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
@@ -19,7 +17,7 @@ type Props = {
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected, selectionMode, onSelect }: Props) {
+export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected }: Props) {
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
   const clickTimer = useRef<number | null>(null);
@@ -73,7 +71,6 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, o
   return <button
     type="button"
     className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''} ${selected ? 'is-selected' : ''}`}
-    aria-pressed={selectionMode && draggable && card.zone === 'battlefield' ? Boolean(selected) : undefined}
     aria-label={card.name || 'Carta face para baixo'}
     data-card-id={card.id}
     data-tapped={Boolean(card.tapped)}
@@ -83,12 +80,11 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, o
     onFocus={() => onHover?.(card)}
     onDoubleClick={() => {
       if (clickTimer.current) window.clearTimeout(clickTimer.current);
-      if (!selectionMode && draggable && card.zone === 'battlefield' && pointerType.current === 'mouse') onToggleTapped?.(card);
+      if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse') onToggleTapped?.(card);
     }}
     onClick={event => {
       if (suppressClick.current) { suppressClick.current = false; return; }
       if (clickTimer.current) window.clearTimeout(clickTimer.current);
-      if (selectionMode && draggable && card.zone === 'battlefield') { onSelect?.(card); return; }
       if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse' && event.detail > 0) {
         if (event.detail === 1) clickTimer.current = window.setTimeout(() => handlers.current.onInspect(card), 350);
       } else handlers.current.onInspect(card);

@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect, type Page, type Locator } from '@playwright/test';
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -62,4 +62,35 @@ export async function openMatchRail(page: Page) {
   const toggle = page.locator('.rail-toggle');
   await expect(toggle).toBeVisible();
   if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+}
+
+export async function openGameActions(page: Page) {
+  const actions = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
+  if (!await actions.isVisible()) await page.getByRole('button', { name: 'Ações', exact: true }).click();
+  await expect(actions).toBeVisible();
+  return actions;
+}
+
+export async function selectFieldArea(page: Page, field: Locator) {
+  const area = await field.locator('[data-battlefield-canvas]').evaluate(canvas => {
+    const cards = [...canvas.querySelectorAll<HTMLElement>('.playing-card')].map(card => card.getBoundingClientRect());
+    const left = Math.min(...cards.map(card => card.left));
+    const right = Math.max(...cards.map(card => card.right));
+    const top = Math.min(...cards.map(card => card.top));
+    const bottom = Math.max(...cards.map(card => card.bottom));
+    const candidates = [
+      { x: left - 4, y: top + 4, endX: right + 4, endY: bottom + 4 },
+      { x: right + 4, y: top + 4, endX: left - 4, endY: bottom + 4 },
+      { x: left - 4, y: bottom + 4, endX: right + 4, endY: top - 4 },
+    ];
+    return candidates.find(candidate => {
+      const target = document.elementFromPoint(candidate.x, candidate.y);
+      return target !== null && canvas.contains(target) && target.closest('.playing-card') === null;
+    }) ?? null;
+  });
+  expect(area).not.toBeNull();
+  await page.mouse.move(area!.x, area!.y);
+  await page.mouse.down();
+  await page.mouse.move(area!.endX, area!.endY, { steps: 8 });
+  await page.mouse.up();
 }

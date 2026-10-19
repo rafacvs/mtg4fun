@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, openGameActions } from './fixtures';
 import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 
 async function expectVerticalList(library: Locator) {
@@ -114,7 +114,11 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
     const activate = async (button: Locator) =>
       info.project.use.hasTouch ? button.tap() : button.click();
     const library = own.getByRole('dialog', { name: 'Grimório', exact: true });
-    const open = () => activate(own.getByRole('button', { name: 'Grimório', exact: true }));
+    const open = async () => {
+      const actions = await openGameActions(own);
+      await activate(actions.getByRole('button', { name: 'Grimório', exact: true }));
+      await expect(actions).toHaveCount(0);
+    };
     const readOwn = async () => {
       const { match } = await (await contexts[0].request.get(`/api/rooms/${roomId}/match`)).json();
       return match.players.find((player: { userId: number }) => player.userId === match.viewerId);
@@ -258,7 +262,8 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     const footer = (await library.locator('.library-finish').boundingBox())!;
     expect(footer.y + footer.height).toBeLessThanOrEqual(box.y + box.height);
     await activate(library.getByRole('button', { name: 'Fechar painel do grimório' }));
-    await expect(own.getByText('Consulta em andamento')).toBeVisible();
+    await openGameActions(own);
+    await expect(own.getByRole('dialog', { name: 'Ações do jogo' }).getByText('Consulta em andamento')).toBeVisible();
     await expect(opponent.getByRole('region', { name: 'Registro da partida' })).toContainText(
       'consultou o grimório',
     );

@@ -239,7 +239,6 @@
 
 .playing-card.is-selected { outline: 3px solid var(--gold); outline-offset: 2px; box-shadow: 0 0 0 5px var(--gold-wash); }
 .selection-rectangle { position: absolute; z-index: 2147483647; pointer-events: none; border: 2px solid var(--gold); background: var(--gold-wash); }
-.quick-actions button[aria-pressed=true] { border-color: var(--gold); background: var(--gold-wash); }
 
 .card-control-transfer { display: grid; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .card-control-transfer > div { display: grid; gap: 6px; }

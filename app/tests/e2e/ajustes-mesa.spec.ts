@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, openGameActions } from './fixtures';
 import type { APIRequestContext, BrowserContext } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
@@ -203,7 +203,8 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await expect.poll(async () => own(await read()).handCount).toBe(beforeDraw + 3);
         await page.getByRole('button', { name: '↺ Desvirar todas', exact: true }).click();
         await expect.poll(async () => (await read()).log.at(-1)?.kind).toBe('untap_all');
-        await page.getByRole('button', { name: '→ Passar turno', exact: true }).click();
+        const actions = await openGameActions(page);
+        await actions.getByRole('button', { name: 'Passar turno', exact: true }).click();
         await expect.poll(async () => (await read()).log.at(-1)?.kind).toBe('turn');
       } else {
         const fieldCards = cards.slice(0, 18);

@@ -4,7 +4,7 @@
 
 **Blocked by:** 06: Comprar e mover cartas entre zonas.
 
-**Status:** implementado na branch `work/adaptar-selecao-e-controle`; aguardando revisão.
+**Status:** implementado e em revisão na branch `review/issue-09-selecao-e-acoes`, junto da adaptação da seleção.
 
 - [x] Ação explícita seleciona participante e move carta para campo do novo controlador.
 - [x] Dono original permanece; novo controlador recebe permissão e antigo deixa de agir como controlador.

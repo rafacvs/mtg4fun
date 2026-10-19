@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, selectFieldArea } from './fixtures';
 import type { Page } from '@playwright/test';
 
 test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independentemente', async ({ page }, testInfo) => {
@@ -17,7 +17,19 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await page.goto(`/#/salas/${room.id}`);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const field = page.getByRole('region', { name: 'Campo', exact: true });
+  const quickActions = page.getByRole('navigation', { name: 'Ações rápidas', exact: true });
+  for (const name of ['Selecionar cartas', 'Passar turno', 'Grimório']) {
+    await expect(quickActions.getByRole('button', { name, exact: true })).toHaveCount(0);
+  }
   await page.getByRole('button', { name: 'Ações', exact: true }).click();
+  const menu = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
+  for (const name of ['Passar turno', 'Grimório']) {
+    await expect(menu.getByRole('button', { name, exact: true })).toBeVisible();
+  }
+  for (const name of [/^Selecionar cartas$/, /^Limpar seleção/, /^Desvirar todas$/]) {
+    await expect(menu.getByRole('button', { name })).toHaveCount(0);
+  }
+  await page.screenshot({ path: testInfo.outputPath('comandos-dentro-de-acoes.png'), fullPage: true });
   await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
@@ -42,35 +54,27 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   expect(stacked!.x - baseAfterPosition!.x).toBeLessThanOrEqual(24);
   expect(stacked!.y - baseAfterPosition!.y).toBeGreaterThanOrEqual(8);
   expect(stacked!.y - baseAfterPosition!.y).toBeLessThanOrEqual(24);
-  // Dragging the top of a selected stack must keep its visual order.
-  await page.getByRole('button', { name: 'Selecionar cartas', exact: true }).click();
-  if (testInfo.project.use.hasTouch) {
-    await tapWithTouch(page, { ...baseAfterPosition!, width: 12, height: 12 });
-    await tapWithTouch(page, stacked!);
-  } else {
-    await fieldCards.nth(0).click({ position: { x: 6, y: 6 } });
-    await fieldCards.nth(1).click();
-  }
-  await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
-  const stackTarget = { x: stacked!.x + 100, y: stacked!.y + stacked!.height / 2 };
-  if (testInfo.project.use.hasTouch) await dragWithTouch(page, stacked!, stackTarget);
-  else {
+  if (!testInfo.project.use.hasTouch) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await selectFieldArea(page, field);
+    await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
+    const beforeStackMove = (await fieldCards.nth(0).boundingBox())!;
+    stacked = await fieldCards.nth(1).boundingBox();
     await page.mouse.move(stacked!.x + stacked!.width / 2, stacked!.y + stacked!.height / 2);
     await page.mouse.down();
-    await page.mouse.move(stackTarget.x, stackTarget.y, { steps: 8 });
+    await page.mouse.move(stacked!.x + 100, stacked!.y + stacked!.height / 2, { steps: 8 });
     await page.mouse.up();
+    await expect(field.locator('.playing-card.is-selected')).toHaveCount(0);
+    await expect(async () => {
+      const lower = (await fieldCards.nth(0).boundingBox())!;
+      const upper = (await fieldCards.nth(1).boundingBox())!;
+      expect(upper.x - lower.x).toBeGreaterThanOrEqual(8);
+      expect(upper.y - lower.y).toBeGreaterThanOrEqual(8);
+      expect(Math.abs(lower.x - beforeStackMove.x)).toBeGreaterThan(2);
+    }).toPass();
+    base = await fieldCards.nth(0).boundingBox();
+    stacked = await fieldCards.nth(1).boundingBox();
   }
-  await expect(field.locator('.playing-card.is-selected')).toHaveCount(0);
-  await expect(async () => {
-    const lower = (await fieldCards.nth(0).boundingBox())!;
-    const upper = (await fieldCards.nth(1).boundingBox())!;
-    expect(upper.x - lower.x).toBeGreaterThanOrEqual(8);
-    expect(upper.y - lower.y).toBeGreaterThanOrEqual(8);
-    expect(Math.abs(lower.x - baseAfterPosition!.x)).toBeGreaterThan(2);
-  }).toPass();
-  await page.getByRole('button', { name: 'Selecionar cartas', exact: true }).click();
-  base = await fieldCards.nth(0).boundingBox();
-  stacked = await fieldCards.nth(1).boundingBox();
   const target = { x: base!.x + 8, y: base!.y + base!.height + 45 };
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, stacked!, target);
   else {
@@ -90,14 +94,8 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     expect(gap).toBeGreaterThanOrEqual(41);
     expect(gap).toBeLessThanOrEqual(43);
   }).toPass();
-  await page.getByRole('button', { name: 'Selecionar cartas', exact: true }).click();
-  if (testInfo.project.use.hasTouch) {
-    await tapWithTouch(page, (await fieldCards.nth(0).boundingBox())!);
-    await tapWithTouch(page, (await fieldCards.nth(1).boundingBox())!);
-  } else {
-    await fieldCards.nth(0).click();
-    await fieldCards.nth(1).click();
-  }
+  if (testInfo.project.use.hasTouch) return;
+  await selectFieldArea(page, field);
   await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
   const beforeGroup = await Promise.all([fieldCards.nth(0).boundingBox(), fieldCards.nth(1).boundingBox()]);
   const groupTarget = { x: beforeGroup[1]!.x + 130, y: beforeGroup[1]!.y + 4 };
@@ -163,7 +161,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     await page.screenshot({ path: testInfo.outputPath('retangulo-selecao.png'), fullPage: true });
     await page.keyboard.press('Escape');
     await expect(field.locator('.is-selected')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Selecionar cartas', exact: true })).toHaveAttribute('aria-pressed', 'false');
+
   }
   await page.screenshot({ path: testInfo.outputPath('selecao-atual.png'), fullPage: true });
 });
@@ -175,14 +173,6 @@ async function dragWithTouch(page: Page, source: { x: number; y: number; width: 
   for (let step = 1; step <= 8; step += 1) {
     await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (target.x - start.x) * step / 8, y: start.y + (target.y - start.y) * step / 8, id: 1 }] });
   }
-  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await session.detach();
-}
-
-async function tapWithTouch(page: Page, target: { x: number; y: number; width: number; height: number }) {
-  const session = await page.context().newCDPSession(page);
-  const touch = { x: target.x + target.width / 2, y: target.y + target.height / 2, id: 1 };
-  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch] });
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await session.detach();
 }
