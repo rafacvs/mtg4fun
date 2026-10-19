@@ -6,8 +6,8 @@ func TestMoveClearsBattlefieldStateAndRemovesTokens(t *testing.T) {
 	for _, destination := range []string{"graveyard", "exile", "hand", "library", "command"} {
 		for _, kind := range []string{"", "token", "custom-token", "copy"} {
 			t.Run(destination+"/"+kind, func(t *testing.T) {
-				p := playerState{UserID: 1, Battlefield: []Card{{ID: "card", Zone: "battlefield", ControllerID: 1, InstanceKind: kind, Tapped: true, FaceDown: true, Power: 4, Toughness: -2, Markers: colorCounts{Red: 7, Blue: -1}}}}
-				if _, err := moveCards(&p, matchAction{CardIDs: []string{"card"}, To: destination, LibraryPlacement: "top"}); err != nil {
+				p := playerState{UserID: 1, Battlefield: []Card{{ID: "card", Zone: "battlefield", ControllerID: 1, OwnerID: 1, InstanceKind: kind, Tapped: true, FaceDown: true, Power: 4, Toughness: -2, Markers: colorCounts{Red: 7, Blue: -1}}}}
+				if _, err := moveCards(&matchState{}, &p, matchAction{CardIDs: []string{"card"}, To: destination, LibraryPlacement: "top"}); err != nil {
 					t.Fatal(err)
 				}
 				if len(p.Battlefield) != 0 {

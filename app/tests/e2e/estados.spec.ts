@@ -78,10 +78,8 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
     await preview.getByLabel('Manter revelada ao fechar (até passar o turno)').check();
     await expect(preview.getByLabel('Face da carta')).toHaveValue('1');
     await preview.getByRole('button', { name: 'Fechar', exact: true }).click();
-    await page.getByRole('button', { name: 'Ações', exact: true }).click();
-    await page.getByRole('dialog', { name: 'Ações do jogo' }).getByRole('button', { name: 'Desvirar todas', exact: true }).click();
+    await page.getByRole('button', { name: '↺ Desvirar todas', exact: true }).click();
     await expect(button).toHaveAttribute('data-tapped', 'false');
-    await page.getByRole('button', { name: 'Fechar ações', exact: true }).click();
     await action({ kind: 'move', cardIds: [card.id], to: 'library', libraryPlacement: 'bottom' });
     const exposed = page.getByRole('region', { name: 'Cartas reveladas de Amigo da mesa', exact: true });
     await expect(exposed.getByRole('button', { name: 'Day Test', exact: true })).toBeVisible();

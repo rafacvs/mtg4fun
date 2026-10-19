@@ -65,6 +65,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		Subject          string   `json:"subject"`
 		Color            string   `json:"color"`
 		Operation        string   `json:"operation"`
+		ControllerID     int64    `json:"controllerId"`
 		Value            *int64   `json:"value"`
 		Tapped           *bool    `json:"tapped"`
 		FaceDown         *bool    `json:"faceDown"`
@@ -91,6 +92,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		Description: raw.Description, Power: raw.Power, Toughness: raw.Toughness,
 	}
 	input.Target, input.PlayerID, input.Subject, input.Color, input.Operation = raw.Target, raw.PlayerID, raw.Subject, raw.Color, raw.Operation
+	input.ControllerID = raw.ControllerID
 	if raw.Value != nil {
 		input.Value = *raw.Value
 	}
@@ -108,7 +110,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	}
 	counterFields := raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil
 	stateFields := input.Kind != "set_tapped" && raw.Tapped != nil || input.Kind != "set_face_down" && raw.FaceDown != nil || input.Kind != "reveal_cards" && raw.Revealed != nil || input.Kind != "set_face" && raw.FaceIndex != nil
-	if input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && counterFields || stateFields {
+	if input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && counterFields || input.Kind != "transfer_control" && raw.ControllerID != 0 || stateFields {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
 	}
@@ -162,6 +164,11 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
+	case "transfer_control":
+		if input.CardID == "" || input.ControllerID <= 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
 	case "roll":
 		if input.Sides < 2 || input.Sides > 100 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
@@ -178,7 +185,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			return matchAction{}, false
 		}
 	case "position":
-		if input.CardID == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" || input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
+		if (input.CardID == "" && len(input.CardIDs) == 0) || (input.CardID != "" && len(input.CardIDs) != 0) || input.Count != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" || input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}

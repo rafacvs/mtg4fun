@@ -24,11 +24,10 @@ type Props = {
   onLibrary: () => void;
   onCounter: (input: CounterAction) => Promise<boolean>;
   onClose: () => void;
-  onUntapAll: () => void;
   onCreate: () => void;
 };
 
-export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, life, markers, playerId, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onCounter, onClose, onUntapAll, onCreate }: Props) {
+export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, life, markers, playerId, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onCounter, onClose, onCreate }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -66,12 +65,10 @@ export function GameActions({ open, count, sides, busy, unconfirmed, consultatio
       <button type="button" disabled={!canAct} onClick={() => setScreen('draw')}>Comprar cartas</button>
       <button type="button" disabled={!canAct} onClick={() => setScreen('roll')}>Rolar dado</button>
       <button type="button" disabled={!canAct} onClick={onCoin}>Jogar moeda</button>
-      <button type="button" disabled={!canAct} onClick={() => onTurn('next')}>Avançar turno</button>
+      <button type="button" disabled={!canAct} title="Passar turno e ocultar todas as reveladas (N)" aria-keyshortcuts="N" onClick={() => onTurn('next')}>Passar turno</button>
       <button type="button" disabled={!canAct} onClick={() => onTurn('previous')}>Corrigir turno</button>
-      {consultationActive
-        ? <button type="button" onClick={onLibrary}>Retomar consulta do grimório</button>
-        : <button type="button" disabled={!canAct} onClick={onShuffle}>Embaralhar grimório</button>}
-      <button type="button" disabled={!canAct} onClick={onUntapAll}>Desvirar todas</button>
+      <button type="button" aria-label="Grimório" onClick={onLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
+      {!consultationActive && <button type="button" disabled={!canAct} onClick={onShuffle}>Embaralhar grimório</button>}
       <button type="button" disabled={!canAct} onClick={() => setScreen('life')}>Vida</button>
       <button type="button" disabled={!canAct} onClick={() => setScreen('markers')}>Marcadores</button>
       <button type="button" disabled={!canAct} onClick={onCreate}>Criar ficha</button>

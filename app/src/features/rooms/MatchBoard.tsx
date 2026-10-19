@@ -18,7 +18,7 @@ import './counters.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish } = useMatch(roomId);
+  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
@@ -32,6 +32,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [selectionIds, setSelectionIds] = useState<string[]>([]);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const dockRef = useRef<HTMLElement>(null);
@@ -87,9 +88,26 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [match, busy, unconfirmed, draw, untapAll, turn, hideAllRevealed]);
+  useEffect(() => {
+    const valid = new Set(match?.players.find(player => player.userId === match.viewerId)?.battlefield?.filter(card => card.controllerId === match.viewerId).map(card => card.id));
+    setSelectionIds(current => current.every(id => valid.has(id)) ? current : current.filter(id => valid.has(id)));
+  }, [match]);
+  useEffect(() => {
+    const clear = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) { setSelectionIds([]); }
+    };
+    window.addEventListener('keydown', clear);
+    return () => window.removeEventListener('keydown', clear);
+  }, []);
   const gesture: CardGesture = {
+    selectedIds: selectionIds,
+    onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
     onHover: card => { if (!drag && railOpen && hoverPreviewOpen) setHoverCardId(card.id); },
-    onToggleTapped: card => { if (!busy && !unconfirmed) void setTapped([card.id], !card.tapped); },
+    onToggleTapped: card => {
+      if (busy || unconfirmed) return;
+      const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
+      void setTapped(ids, !card.tapped);
+    },
     onInspect: card => { if (!drag) setPreviewId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
@@ -106,11 +124,17 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   async function dropCard(card: Card, x: number, y: number) {
     const zone = dropZoneAt(x, y);
     if (!zone || busy || unconfirmed || card.controllerId !== match?.viewerId) return;
+    if (card.zone === 'battlefield' && card.ownerId !== match.viewerId && zone !== 'battlefield') {
+      setPreviewId(card.id);
+      setNotice('Escolha explicitamente a zona do dono para mover a carta.');
+      return;
+    }
     if (zone === 'battlefield') {
       const layout = battlefieldPositionAt(x, y);
       if (!layout) return;
       if (card.zone !== 'battlefield' && !await move([card.id], 'battlefield')) return;
-      await position(card.id, layout.x, layout.row);
+      const ids = card.zone === 'battlefield' && selectionIds.includes(card.id) ? [card.id, ...selectionIds.filter(id => id !== card.id)] : [card.id];
+      if (await position(ids, layout.x, layout.row)) setSelectionIds([]);
       return;
     }
     if (zone === 'library') await move([card.id], 'library', 'top');
@@ -149,9 +173,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section ref={dockRef} className="own-dock" aria-label="Sua mão e ações">
             <nav className="quick-actions" aria-label="Ações rápidas">
               <button disabled={busy || unconfirmed || !own.libraryCount} title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}>↓ Comprar</button>
-              <button className="secondary" disabled={busy || unconfirmed} title="Passar turno e ocultar todas as reveladas (N)" aria-keyshortcuts="N" onClick={() => void turn('next')}>→ Passar turno</button>
               <button className="secondary" disabled={busy || unconfirmed} title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}>↺ Desvirar todas</button>
-              <button type="button" className="actions-toggle" aria-label="Grimório" aria-expanded={libraryOpen} onClick={openLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
               <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
             </nav>
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
@@ -200,9 +222,12 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreviewId(card.id)}
       onDismiss={closeLibrary}
     />
-    <GameActions onUntapAll={() => void untapAll()} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
+    <GameActions onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
     <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
-    <CardPreview error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
+    <CardPreview players={match.players} onTransfer={(cardId, controllerId) => void transferControl(cardId, controllerId)} onMoveToOwner={(cardId, destination) => {
+      const [to, placement] = destination.split('-');
+      void move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => { if (ok) setNotice(''); });
+    }} error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
       if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
@@ -271,7 +296,8 @@ function describe(entry: { actorName: string; kind: string; from?: string; to?: 
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'move' && entry.result) return `${entry.actorName}: ${entry.result} ao mover para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
-  if (entry.kind === 'position') return `${entry.actorName} reposicionou uma carta no campo.`;
+  if (entry.kind === 'transfer_control') return `${entry.actorName} transferiu o controle de uma carta para ${entry.result}.`;
+  if (entry.kind === 'position') return `${entry.actorName} reposicionou ${entry.count || 1} carta(s) no campo.`;
   if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
   if (entry.kind === 'counter') return `${entry.actorName} alterou contadores: ${entry.result}.`;
   if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;

@@ -24,7 +24,7 @@ func zone(p *playerState, name string) *[]Card {
 	return nil
 }
 
-func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
+func moveCards(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
 	if zone(p, input.To) == nil || input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom" {
 		return actionLogPayload{}, errCardNotFound
 	}
@@ -39,7 +39,7 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 		found := false
 		for _, name := range []string{"hand", "battlefield", "graveyard", "exile", "command", "consulted", "revealed", "library"} {
 			cardsInZone := zone(p, name)
-			for i, c := range *cardsInZone {
+			for _, c := range *cardsInZone {
 				if c.ID != id {
 					continue
 				}
@@ -52,7 +52,6 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 				if from != name {
 					return actionLogPayload{}, errCardNotFound
 				}
-				*cardsInZone = append((*cardsInZone)[:i], (*cardsInZone)[i+1:]...)
 				cards = append(cards, c)
 				found = true
 				break
@@ -65,6 +64,32 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 			return actionLogPayload{}, errCardNotFound
 		}
 	}
+	// Resolve every destination before removing any card. Borrowed cards return
+	// to their original owner when they leave the battlefield.
+	destinations := make(map[*playerState][]Card)
+	for _, card := range cards {
+		destination := p
+		if from == "battlefield" && input.To != "battlefield" && card.OwnerID != p.UserID {
+			destination = playerByID(m, card.OwnerID)
+			if destination == nil {
+				return actionLogPayload{}, errCardNotFound
+			}
+			card.ControllerID = card.OwnerID
+		}
+		destinations[destination] = append(destinations[destination], card)
+	}
+	// Validate all cards before changing any source zone.
+	if len(cards) == 0 {
+		return actionLogPayload{}, errCardNotFound
+	}
+	source := zone(p, from)
+	remaining := make([]Card, 0, len(*source)-len(cards))
+	for _, card := range *source {
+		if !seen[card.ID] {
+			remaining = append(remaining, card)
+		}
+	}
+	*source = remaining
 	count := len(cards)
 	removed := 0
 	for _, card := range cards {
@@ -76,7 +101,9 @@ func moveCards(p *playerState, input matchAction) (actionLogPayload, error) {
 	if removed > 0 {
 		result = fmt.Sprintf("%d ficha(s)/cópia(s) removida(s) do jogo", removed)
 	}
-	placeCards(p, cards, from, input.To, input.LibraryPlacement)
+	for destination, moved := range destinations {
+		placeCards(destination, moved, from, input.To, input.LibraryPlacement)
+	}
 	return actionLogPayload{Kind: "move", From: from, To: input.To, Count: count, Result: result}, nil
 }
 

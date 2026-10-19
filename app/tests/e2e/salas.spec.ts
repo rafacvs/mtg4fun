@@ -193,7 +193,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(log).toContainText(/Amigo da mesa rolou D6: /);
   await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
   await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);
-  await activate(board.getByRole('button', { name: 'Avançar turno', exact: true }));
+  await activate(board.getByRole('button', { name: 'Passar turno', exact: true }));
   await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa e ocultou todas as revelações.');
   await activate(board.getByRole('button', { name: 'Corrigir turno', exact: true }));
   await expect(log).toContainText('Amigo da mesa corrigiu para o turno de Amigo da mesa.');

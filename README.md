@@ -24,8 +24,22 @@ comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
 numa carta e escolha o destino na faixa inferior. A mão própria permanece
 disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
 celular usa orientação horizontal e miniaturas à direita. A partida atualiza
-a cada segundo. A seleção múltipla no campo e as demais ações das
-specs ainda têm entregas próprias pendentes.
+a cada segundo. No campo, arraste uma área com mouse para selecionar várias
+cartas. A seleção múltipla por toque não está disponível nesta revisão.
+Arrastar uma selecionada reposiciona o conjunto preservando sua disposição.
+Clicar no espaço vazio do campo ou pressionar Escape limpa a seleção.
+Duplo clique em uma carta selecionada vira/desvira o conjunto para o estado
+oposto da carta clicada; fora da seleção, afeta somente a carta clicada.
+Não há vínculo permanente entre as cartas. Arrastar para outra zona continua
+movendo somente a carta individual; contadores coletivos permanecem pendentes.
+
+No detalhe de uma carta do seu campo, **Transferir controle para** escolhe
+outro participante. A carta vai para o campo dele sem mudar o dono original;
+só o controlador atual pode manipulá-la. Ao sair do campo, **Mover para zona
+do dono** oferece mão, cemitério, exílio, comando ou topo/fundo do grimório do
+dono. Arrastar uma carta recebida para fora do campo pede essa escolha explícita.
+As regras atuais de limpeza de estados e remoção de fichas/cópias continuam
+valendo. Veja as [tasks e a adaptação dos PRs 23 e 24](docs/decisions/26-adaptar-selecao-e-controle.md).
 
 O menu do grimório oferece comprar, embaralhar diretamente, olhar cartas do
 topo/fundo em privado, buscar no grimório inteiro e revelar cartas. Durante
@@ -67,7 +81,9 @@ seu campo e não acompanha alterações posteriores no original. Fichas e cópia
 são removidas do jogo ao mover para qualquer zona fora do campo. Atributos copiados
 e contrato: [decisão de fichas/cópias](docs/decisions/13-fichas-e-copias.md).
 
-A barra junto da mão oferece comprar uma carta, passar turno e desvirar todas.
+A barra junto da mão oferece comprar uma carta, desvirar todas e **Ações**.
+No painel **Ações** ficam **Passar turno** e **Grimório**,
+junto dos demais comandos do jogo.
 Atalhos: **D** comprar, **U** desvirar todas, **N** passar turno e **H** ocultar
 as próprias reveladas. Não atuam durante digitação, com modificadores ou com
 um diálogo aberto. Duplo clique no grimório compra uma carta; clique abre suas

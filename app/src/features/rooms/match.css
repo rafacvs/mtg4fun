@@ -236,3 +236,11 @@
 @media (min-width: 1001px) and (min-height: 551px) {
   .match-board .actions-panel { bottom: calc(var(--dock-height, 160px) + 16px); max-height: calc(100dvh - var(--dock-height, 160px) - 64px); }
 }
+
+.playing-card.is-selected { outline: 3px solid var(--gold); outline-offset: 2px; box-shadow: 0 0 0 5px var(--gold-wash); }
+.selection-rectangle { position: absolute; z-index: 2147483647; pointer-events: none; border: 2px solid var(--gold); background: var(--gold-wash); }
+
+.card-control-transfer { display: grid; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.card-control-transfer > div { display: grid; gap: 6px; }
+.card-control-transfer label { color: var(--muted); font-size: .8rem; }
+.card-control-transfer select { min-width: 0; width: 100%; }

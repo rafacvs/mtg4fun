@@ -41,7 +41,7 @@ func TestConsultationMovesSelectedCardWithoutDuplication(t *testing.T) {
 	if _, err := consultCards(p, matchAction{ConsultFrom: "all", Count: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := moveCards(p, matchAction{CardIDs: []string{"commander"}, To: "command"}); err != nil {
+	if _, err := moveCards(&matchState{}, p, matchAction{CardIDs: []string{"commander"}, To: "command"}); err != nil {
 		t.Fatal(err)
 	}
 	if len(p.Library) != 0 || len(p.Consulted) != 0 || len(p.Command) != 1 || p.Command[0].Zone != "command" {

@@ -4,12 +4,13 @@ import { cardImageURL } from './cardImage';
 import { CardStateControls, type CardStateChange } from './CardStateControls';
 import { MarkerRows, PowerToughnessAdjust, type CounterOperation } from './CounterControls';
 import { CardStats } from './CounterValues';
-import type { Card, MarkerColor } from './roomsApi';
+import { CardControlTransfer, type OwnerDestination } from './CardControlTransfer';
+import type { Card, Match, MarkerColor } from './roomsApi';
 
 type Step = 'view' | 'markers';
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry }: {
+export function CardPreview({ card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner }: {
   card: Card | null;
   editable?: boolean;
   disabled?: boolean;
@@ -23,6 +24,9 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
   error?: string;
   unconfirmed?: boolean;
   onRetry?: () => Promise<boolean>;
+  players?: Match['players'];
+  onTransfer?: (cardId: string, controllerId: number) => void;
+  onMoveToOwner?: (cardId: string, destination: OwnerDestination) => void;
 }) {
   const imageName = card?.faces?.[card.faceIndex ?? 0] || card?.imageName || card?.name || '';
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -77,6 +81,7 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
         </div>}
         {viewerId && onStateChange && <CardStateControls card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
         {card.revealed && card.controllerId === viewerId && onHide && <label className="keep-revealed"><input type="checkbox" checked={keepRevealed} onChange={event => setKeepRevealed(event.target.checked)} />Manter revelada ao fechar (até passar o turno)</label>}
+        {viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
         {onCopy && card.id && <button type="button" disabled={busy || disabled} onClick={() => onCopy(card.id)}>Criar cópia independente</button>}
       </>}
       {step === 'markers' && editable && onCounter && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}

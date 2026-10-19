@@ -8,6 +8,7 @@ const dragThreshold = 8;
 type Props = {
   card: Card;
   draggable: boolean;
+  selected?: boolean;
   onInspect: (card: Card) => void;
   onHover?: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
@@ -16,7 +17,7 @@ type Props = {
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, onDragEnd, onDragCancel, onToggleTapped }: Props) {
+export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected }: Props) {
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
   const clickTimer = useRef<number | null>(null);
@@ -69,8 +70,9 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, o
 
   return <button
     type="button"
-    className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''}`}
+    className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''} ${selected ? 'is-selected' : ''}`}
     aria-label={card.name || 'Carta face para baixo'}
+    data-card-id={card.id}
     data-tapped={Boolean(card.tapped)}
     data-face-down={Boolean(card.faceDown)}
     onPointerDown={pointerDown}

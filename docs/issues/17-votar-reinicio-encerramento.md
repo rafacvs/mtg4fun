@@ -24,6 +24,24 @@ de conexão continuam pendentes. Não considerar a issue inteira concluída.
 
 ## Regras de execução
 
+### Retorno manual de 19/10/2026
+
+O usuário informou que colocou uma lógica de reinício por maioria dos votos,
+com finalização em solo, e pediu registrar a necessidade de testar com mais
+jogadores. Esse é o comportamento relatado; a validação manual multiplayer
+continua pendente.
+
+Na revisão deste checkout, `api/internal/rooms/finish.go` e o botão Finalizar
+implementam encerramento por pelo menos metade dos participantes, arredondada
+para cima, incluindo solo. Não foi localizado um fluxo de reinício. Metade
+arredondada para cima não é maioria estrita em salas com quantidade par de
+jogadores. O relato não é apresentado como evidência de implementação ou teste
+do reinício; os critérios acima e as specs precisam ser conciliados com essa
+atualização antes de implementar o restante. Esta revisão apenas documenta
+o retorno, sem alterar regras ou contratos.
+
+### Instruções
+
 - Seguir as specs locais de acesso/salas/decks, mesa/interface e servidor/persistência e seu vocabulário; não alterar o escopo para reproduzir a arquitetura do Cockatrice.
 - Entregar comportamento completo com armazenamento, contrato público, interface e testes pertinentes; preferir testes de comportamento na API pública e fluxos de navegador para interação.
 - Toda nova ação compartilhada deve validar permissão, filtrar informação privada e preservar estado/log após reinício. Não deixar segurança ou persistência para uma etapa posterior.
