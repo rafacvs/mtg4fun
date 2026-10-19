@@ -20,6 +20,11 @@ As tasks, autorização, compatibilidade e verificações estão no
 A implementação usa a paleta e os fluxos atuais; a validação dos PRs antigos
 permanece histórica.
 
+Em 19/10/2026, o usuário informou que ainda precisa de mais jogadores para
+simular manualmente tomada de posse, transferência/devolução de controle,
+permissões e sincronização. Essa validação manual multiplayer permanece
+pendente, independentemente dos testes automatizados já registrados.
+
 ## Regras de execução
 
 - Seguir as specs locais de acesso/salas/decks, mesa/interface e servidor/persistência e seu vocabulário; não alterar o escopo para reproduzir a arquitetura do Cockatrice.

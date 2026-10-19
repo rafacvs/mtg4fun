@@ -6,6 +6,14 @@
 
 **Status:** ready-for-agent
 
+**Entrega parcial validada manualmente em 19/10/2026:** o usuário confirmou
+que o ajuste está funcionando corretamente. Duplo clique com mouse em uma
+carta selecionada vira/desvira o conjunto em uma única ação; a seleção é
+preservada. Consulte o [registro da correção](../decisions/27-duplo-clique-na-selecao.md).
+Movimentos coletivos entre zonas, contadores coletivos e seleção por toque
+continuam pendentes no código desta branch; os critérios abaixo abrangem a
+issue inteira, além desse ajuste.
+
 - [ ] Usar seleção por área e modo de seleção por toque já existentes, mantendo feedback claro das cartas afetadas.
 - [ ] Oferecer movimentos entre zonas com topo/fundo quando pertinente, virar/desvirar e alterações de contadores aplicáveis à seleção.
 - [ ] Definir/documentar ordem das cartas ao mover seleção para zona ordenada, sem descartar ou duplicar instâncias.
