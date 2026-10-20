@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { MenuItem, PanelHeader, TablePanel, usePanelFocus } from './TablePanel';
 import type { CatalogToken, CustomToken } from './roomsApi';
 import { cardImageURL } from './cardImage';
 import { useCatalogTokens } from './useCatalogTokens';
@@ -24,17 +25,6 @@ export function CreateInstances({ open, roomId, busy, error, onCreateToken, onCr
   const [token, setToken] = useState<CustomToken>({ name: '', description: '', power: '', toughness: '' });
   const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState<CatalogToken | null>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('.card-preview')) onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   async function create(operation: () => Promise<boolean>) {
     setNotice('');
@@ -43,24 +33,18 @@ export function CreateInstances({ open, roomId, busy, error, onCreateToken, onCr
   if (!open) return null;
   const title = view === 'catalog' ? 'Ficha do catálogo' : view === 'custom' ? 'Ficha personalizada' : 'Fichas';
   return <>
-    <div className="actions-panel creations-panel" role="dialog" aria-modal="true" aria-label="Fichas">
-      <header>
-        <div className="creations-heading">
-          {view !== 'menu' && <button type="button" className="text-button" onClick={() => { setPreview(null); setView('menu'); }}>Voltar</button>}
-          <div><p className="actions-kicker">Ações</p><h2>{title}</h2></div>
-        </div>
-        <button ref={closeRef} type="button" className="secondary" aria-label="Fechar fichas" onClick={() => { setPreview(null); onClose(); }}>×</button>
-      </header>
-      {error && <p role="alert">{error}</p>}
-      {notice && <p role="status">{notice}</p>}
-      {view === 'menu' && <div className="library-menu">
-        <button type="button" onClick={() => setView('catalog')}><strong>Ficha do catálogo</strong><span>Buscar uma ficha que já existe.</span></button>
-        <button type="button" onClick={() => setView('custom')}><strong>Ficha personalizada</strong><span>Nome, texto e poder/resistência.</span></button>
+    <TablePanel open={open} label="Fichas" className="creations-panel" onClose={onClose}>
+      <PanelHeader title={title} subtitle={view === 'menu' ? 'Criar no seu campo' : 'Fichas'} closeLabel="Fechar fichas" onClose={() => { setPreview(null); onClose(); }} onBack={view !== 'menu' ? () => { setPreview(null); setView('menu'); } : undefined} />
+      {error && <p role="alert" className="error">{error}</p>}
+      {notice && <p role="status" className="panel-result">{notice}</p>}
+      {view === 'menu' && <div className="table-menu">
+        <MenuItem icon="search" title="Ficha do catálogo" description="Buscar uma ficha que já existe" onClick={() => setView('catalog')} />
+        <MenuItem icon="token" title="Ficha personalizada" description="Nome, texto e poder/resistência" onClick={() => setView('custom')} />
       </div>}
       {view === 'catalog' && <section className="creations-catalog" aria-label="Fichas do catálogo">
         <label className="library-search">Buscar ficha do catálogo<input value={query} onChange={event => setQuery(event.target.value)} /></label>
-        {catalog.error && <p role="alert">{catalog.error}</p>}
-        {catalog.loading && <p role="status">Buscando fichas…</p>}
+        {catalog.error && <p role="alert" className="error">{catalog.error}</p>}
+        {catalog.loading && <p role="status" className="panel-hint">Buscando fichas…</p>}
         {!catalog.loading && !catalog.error && catalog.tokens.length === 0 && <p className="library-empty">Nenhuma ficha encontrada.</p>}
         <ul className="token-list">{catalog.tokens.map(result => <li key={result.name}>
           <TokenThumb token={result} onInspect={setPreview} />
@@ -81,15 +65,23 @@ export function CreateInstances({ open, roomId, busy, error, onCreateToken, onCr
         </div>
         <button type="submit" disabled={busy || !token.name.trim()}>Criar ficha personalizada</button>
       </form>}
-    </div>
-    {preview && <div className="card-preview-backdrop" onClick={() => setPreview(null)}>
-      <div className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${preview.name}`} onClick={event => event.stopPropagation()}>
-        <header><h2>{preview.name}</h2><button type="button" onClick={() => setPreview(null)}>Fechar</button></header>
-        <img src={cardImageURL({ name: preview.name, imageName: preview.imageName })} alt={`Imagem ampliada de ${preview.name}`} />
-        {(preview.power || preview.toughness) && <p>{preview.power || '—'} / {preview.toughness || '—'}</p>}
-      </div>
-    </div>}
+    </TablePanel>
+    {preview && <CatalogTokenPreview token={preview} onClose={() => setPreview(null)} />}
   </>;
+}
+
+function CatalogTokenPreview({ token, onClose }: { token: CatalogToken; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  usePanelFocus(ref, true, onClose);
+  return <div className="card-preview-backdrop" onClick={onClose}>
+    <div ref={ref} className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${token.name}`} onClick={event => event.stopPropagation()}>
+      <div className="card-preview-image"><img src={cardImageURL(token)} alt={`Imagem ampliada de ${token.name}`} /></div>
+      <div className="card-preview-actions">
+        <PanelHeader title={token.name} subtitle="Ficha do catálogo" closeLabel="Fechar" onClose={onClose} />
+        {(token.power || token.toughness) && <p className="panel-readout">{token.power || '—'} / {token.toughness || '—'}</p>}
+      </div>
+    </div>
+  </div>;
 }
 
 function TokenThumb({ token, onInspect }: { token: CatalogToken; onInspect: (token: CatalogToken) => void }) {

@@ -1,5 +1,8 @@
 # Vida e marcadores
 
+> A navegação passa ao menu do jogador e ao detalhe agrupado de carta conforme
+> a [decisão 28](28-ui-mesa-responsiva.md), preservando a semântica dos valores.
+
 > Ajustes posteriores: [regras e interface da mesa](22-ajustes-da-mesa.md).
 
 Issue: [12](../issues/12-modificar-vida-e-contadores.md).

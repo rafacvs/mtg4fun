@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail } from './fixtures';
 import type { BrowserContext, Locator } from '@playwright/test';
 
 const cardImage = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64');
@@ -60,14 +60,14 @@ test('indica a atividade do participante certo quando nomes se repetem', async (
     await page.goto(`/#/salas/${roomId}`);
     await other.goto(`/#/salas/${roomId}`);
     await openMatchRail(page);
-    const thumbnails = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button');
+    const thumbnails = page.getByRole('navigation', { name: 'Foco da mesa' }).locator('.player-card');
     await expect(thumbnails).toHaveCount(2);
     await other.getByRole('button', { name: 'Ações', exact: true }).click();
     await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
     await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
     await expect(thumbnails.nth(1).getByText('Atividade recente', { exact: true })).toBeVisible();
     await expect(thumbnails.nth(0).getByText('Atividade recente', { exact: true })).toHaveCount(0);
-    await expect(thumbnails.nth(0)).toHaveAttribute('aria-pressed', 'true');
+    await expect(thumbnails.nth(0).getByRole('button', { name: 'Ver campo de Amigo da mesa' })).toHaveAttribute('aria-pressed', 'true');
   } finally {
     await Promise.all(contexts.map(context => context.close()));
   }
@@ -112,16 +112,12 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       if (!(await page.getByRole('dialog', { name: 'Ações do jogo' }).isVisible())) await activate(page.getByRole('button', { name: 'Ações', exact: true }));
     };
     const closeActions = () => activate(page.getByRole('button', { name: 'Fechar ações', exact: true }));
-    await openActions();
-    await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
-    await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
-    await closeActions();
+    await activate(page.getByRole('button', { name: 'Comprar', exact: true }));
     const drawn = hand.getByRole('button', { name: 'Island', exact: true });
     await expect(drawn).toHaveCount(1);
     if (testInfo.project.name === 'celular') {
       await page.setViewportSize({ width: 390, height: 844 });
-      await expect(page.getByText('Gire o celular para jogar', { exact: true })).toBeVisible();
-      await expect(hand).toBeHidden();
+      await expect(hand).toBeVisible();
       await activate(other.getByRole('button', { name: 'Ações', exact: true }));
       await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
       await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
@@ -139,12 +135,15 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await expect(preview).toHaveCount(0);
     await openMatchRail(page);
     for (const name of ['Segundo amigo', 'Amigo 3', 'Amigo 4', 'Amigo 5', 'Amigo 6']) {
-      await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: new RegExp(name) }));
+      await openMatchRail(page);
+      await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: `Ver campo de ${name}`, exact: true }));
       await expect(page.getByRole('article', { name: `Mesa de ${name}`, exact: true })).toBeVisible();
       await expect(drawn).toBeVisible();
     }
     await openActions();
-    const secondThumbnail = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Segundo amigo/ });
+    await closeActions();
+    await openMatchRail(page);
+    const secondThumbnail = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Segundo amigo$/ });
     if (testInfo.project.name === 'celular') {
       await expect(page.locator('.activity-indicator')).toHaveCount(0);
       await scrollThumbnailOutOfFocusNav(secondThumbnail);
@@ -153,18 +152,18 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await activate(other.getByRole('button', { name: 'Ações', exact: true }));
     await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
     await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
-    const recentActivity = secondThumbnail.getByText('Atividade recente', { exact: true });
+    const recentActivity = secondThumbnail.locator('..').getByText('Atividade recente', { exact: true });
     if (testInfo.project.name === 'celular') await expect.poll(() => intersectsVisibleFocusNav(recentActivity)).toBe(true);
     else await expect(recentActivity).toBeVisible();
     await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
     await expect(page.getByText('Observando:', { exact: false })).toContainText('Amigo 6');
-    await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
-    await activate(page.getByRole('button', { name: 'Comprar cartas', exact: true }));
-    await closeActions();
+    await closeMatchRail(page);
+    await activate(page.getByRole('button', { name: 'Comprar', exact: true }));
     await expect(drawn).toHaveCount(2);
     await expect(page.getByRole('article', { name: 'Mesa de Amigo 6', exact: true })).toBeVisible();
     await expect(other.getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
-    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
+    await openMatchRail(page);
+    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }));
     const ownTable = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const field = ownTable.getByRole('region', { name: 'Campo', exact: true });
     const library = ownTable.getByRole('region', { name: 'Grimório', exact: true });
@@ -177,18 +176,19 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     const exileBox = await exile.boundingBox();
     const commandBox = await command.boundingBox();
     expect(fieldBox!.x).toBeGreaterThan(libraryBox!.x + libraryBox!.width - 4);
+    await openMatchRail(page);
     const logBox = await page.getByRole('region', { name: 'Registro da partida', exact: true }).boundingBox();
     const handBox = await hand.boundingBox();
     expect(logBox!.x).toBeGreaterThan(fieldBox!.x + fieldBox!.width * 0.45);
-    expect(handBox!.x + handBox!.width).toBeLessThanOrEqual(logBox!.x + 12);
+    if (testInfo.project.name === 'desktop') expect(handBox!.x + handBox!.width).toBeLessThanOrEqual(logBox!.x + 12);
     expect(libraryBox!.y).toBeGreaterThan(commandBox!.y + commandBox!.height * 0.5);
     expect(graveyardBox!.y).toBeGreaterThan(libraryBox!.y + libraryBox!.height * 0.5);
     expect(exileBox!.y).toBeGreaterThan(graveyardBox!.y + graveyardBox!.height * 0.5);
     const players = page.getByRole('navigation', { name: 'Foco da mesa' });
-    await expect(players.getByRole('button')).toHaveCount(6);
+    await expect(players.locator('.player-focus')).toHaveCount(6);
     const playersBox = await players.boundingBox();
     expect(logBox!.y).toBeGreaterThan(playersBox!.y + playersBox!.height);
-    expect(logBox!.height).toBeLessThanOrEqual(190);
+    expect(logBox!.height).toBeGreaterThan(60);
     const stageBox = await page.locator('.table-stage').boundingBox();
     expect(Math.abs(logBox!.y + logBox!.height - (stageBox!.y + stageBox!.height))).toBeLessThan(20);
     for (const slot of [graveyardBox, exileBox, commandBox]) expect(slot!.height / slot!.width).toBeGreaterThan(1.2);
@@ -196,11 +196,12 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await expect(library.locator('.library-stack span')).toHaveCount(3);
     await expect(library).not.toContainText('Island');
     await expect(command).toContainText('Comandante');
+    await closeMatchRail(page);
     await drawn.first().dragTo(field, { steps: 8 });
     await expect(field.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
     await expect(drawn).toHaveCount(1);
     await openMatchRail(other);
-    await activate(other.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
+    await activate(other.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }));
     const observed = other.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const publicCard = observed.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });
     await expect(publicCard).toBeVisible();
@@ -211,7 +212,8 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await expect(publicCard).toBeVisible();
     await expect(observed.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button')).toHaveCount(0);
     await expect(other.getByRole('region', { name: 'Mão', exact: true }).getByRole('button')).toHaveCount(0);
-    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo 6/ }));
+    await openMatchRail(page);
+    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo 6$/ }));
     const hiddenCard = drawn;
     const start = await hiddenCard.boundingBox();
     await page.mouse.move(start!.x + start!.width / 2, start!.y + start!.height / 2);
@@ -222,12 +224,13 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     const drop = await column.getByRole('region', { name: 'Cemitério', exact: true }).boundingBox();
     await page.mouse.move(drop!.x + drop!.width / 2, drop!.y + drop!.height / 2, { steps: 8 });
     await page.mouse.up();
-    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }));
+    await openMatchRail(page);
+    await activate(page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }));
     await expect(ownTable.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button', { name: 'Island', exact: true })).toBeVisible();
     await expect(drawn).toHaveCount(0);
     if (testInfo.project.name === 'desktop') {
-      await activate(page.getByRole('button', { name: 'Ver todas as mesas' }));
-      await expect(page.getByRole('article', { name: /^Mesa de/ })).toHaveCount(6);
+      await activate(page.getByRole('button', { name: 'Voltar à visão geral' }));
+      await expect(page.locator('.overview-player')).toHaveCount(6);
       await activate(page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }));
       await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toBeHidden();
     }

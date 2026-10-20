@@ -1,5 +1,8 @@
 # Ajustes de regras e interface da mesa
 
+> O layout e a orientação foram refinados na [decisão 28](28-ui-mesa-responsiva.md).
+> As validações desta página são históricas.
+
 ## Autorização e escopo
 
 Em 13/10/2026, o usuário solicitou os ajustes de revelação, movimentos,

@@ -1,5 +1,8 @@
 # Interface e operações manuais do grimório
 
+> O acesso e a apresentação dos menus foram refinados posteriormente na
+> [decisão 28](28-ui-mesa-responsiva.md). As validações abaixo são históricas.
+
 Issues relacionadas: [10](../issues/10-consultar-e-embaralhar-grimorio.md) e
 [11](../issues/11-alterar-estados-e-revelar-cartas.md), somente no escopo de
 revelação do grimório. Referência: [mesa manual](../specs/02-mesa-e-interface.md).

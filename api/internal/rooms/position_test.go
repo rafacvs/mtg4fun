@@ -56,6 +56,20 @@ func TestMovingSeveralCardsLeavesAllInPlaceWhenOneIsForbidden(t *testing.T) {
 	}
 }
 
+func TestCollectivePositionRejectsADestinationPastTheEdge(t *testing.T) {
+	m := &matchState{}
+	p := &playerState{UserID: 1, Battlefield: []Card{
+		{ID: "a", ControllerID: 1, Zone: "battlefield", PositionX: 0, Row: 0},
+		{ID: "b", ControllerID: 1, Zone: "battlefield", PositionX: 2, Row: 0},
+	}}
+	if _, err := positionCard(m, p, matchAction{CardIDs: []string{"a", "b"}, PositionX: 19999, Row: 0}); err != errInvalidPosition {
+		t.Fatalf("limite: %v", err)
+	}
+	if p.Battlefield[0].PositionX != 0 || p.Battlefield[1].PositionX != 2 {
+		t.Fatalf("falha moveu: %+v", p.Battlefield)
+	}
+}
+
 func TestCollectivePositionPreservesStackOrderWhenTopCardIsAnchor(t *testing.T) {
 	m := &matchState{NextStackOrder: 2}
 	p := &playerState{UserID: 1, Battlefield: []Card{

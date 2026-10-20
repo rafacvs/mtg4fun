@@ -82,6 +82,20 @@ func moveCards(m *matchState, p *playerState, input matchAction) (actionLogPaylo
 	if len(cards) == 0 {
 		return actionLogPayload{}, errCardNotFound
 	}
+	if input.To == "battlefield" && from != "battlefield" {
+		for destination, moved := range destinations {
+			positions, err := planBattlefieldEntry(destination.Battlefield, len(moved), input.HasPosition, input.PositionX, input.Row)
+			if err != nil {
+				return actionLogPayload{}, err
+			}
+			for i := range moved {
+				moved[i].PositionX = positions[i][0]
+				moved[i].Row = positions[i][1]
+				m.NextStackOrder++
+				moved[i].StackOrder = m.NextStackOrder
+			}
+		}
+	}
 	source := zone(p, from)
 	remaining := make([]Card, 0, len(*source)-len(cards))
 	for _, card := range *source {
@@ -122,10 +136,6 @@ func placeCards(p *playerState, cards []Card, from, to, placement string) {
 			card.Tapped, card.FaceDown = false, false
 		}
 		card.Zone = to
-		if to == "battlefield" && from != to {
-			card.PositionX = (len(p.Battlefield) + len(kept)) * 120
-			card.Row = 0
-		}
 		kept = append(kept, card)
 	}
 	if to == "library" && placement == "top" {
@@ -133,6 +143,59 @@ func placeCards(p *playerState, cards []Card, from, to, placement string) {
 	} else {
 		*destination = append(*destination, kept...)
 	}
+}
+
+// firstFreeCell is the leftmost stack on row 0 with fewer than three cards.
+func firstFreeCell(cards []Card) (int, int) {
+	counts := map[int]int{}
+	maxCol := -1
+	for _, card := range cards {
+		if card.Row != 0 {
+			continue
+		}
+		counts[card.PositionX]++
+		if card.PositionX > maxCol {
+			maxCol = card.PositionX
+		}
+	}
+	for column := 0; column <= maxCol; column++ {
+		if counts[column] < 3 {
+			return column, 0
+		}
+	}
+	return maxCol + 1, 0
+}
+
+func planBattlefieldEntry(existing []Card, count int, explicit bool, column, row int) ([][2]int, error) {
+	plan := make([][2]int, count)
+	if explicit {
+		if column < 0 || column > 20000 || row < 0 || row > 2000 {
+			return nil, errInvalidPosition
+		}
+		occupied := 0
+		for _, card := range existing {
+			if card.PositionX == column && card.Row == row {
+				occupied++
+			}
+		}
+		if occupied+count > 3 {
+			return nil, errStackFull
+		}
+		for i := range plan {
+			plan[i] = [2]int{column, row}
+		}
+		return plan, nil
+	}
+	virtual := append([]Card{}, existing...)
+	for i := 0; i < count; i++ {
+		x, y := firstFreeCell(virtual)
+		if x > 20000 || y > 2000 {
+			return nil, errInvalidPosition
+		}
+		plan[i] = [2]int{x, y}
+		virtual = append(virtual, Card{PositionX: x, Row: y})
+	}
+	return plan, nil
 }
 
 func isToken(card Card) bool {

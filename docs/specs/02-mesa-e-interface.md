@@ -6,7 +6,7 @@ A interface atual dificulta ações simples para quem sabe jogar Magic, mas não
 
 ## Solução
 
-Mesa virtual manual com ações genéricas, posicionamento em fileiras e seleção múltipla. Desktop permite observar todos os campos quando há espaço; celular horizontal usa campo em foco e miniaturas dos outros jogadores.
+Mesa virtual manual com ações genéricas, posicionamento em fileiras e seleção múltipla. Desktop permite observar todos os campos quando há espaço; celular vertical ou horizontal usa campo em foco e visão geral com miniaturas dos jogadores.
 
 ## Histórias de usuário
 
@@ -17,7 +17,7 @@ Mesa virtual manual com ações genéricas, posicionamento em fileiras e seleç�
 5. Como jogador, quero manter minha mão e ações ao observar outro campo, para continuar jogando.
 6. Como jogador no desktop, quero ver todos os campos quando houver espaço, para acompanhar a mesa.
 7. Como jogador, quero ampliar um campo, para examinar suas cartas.
-8. Como jogador, quero posicionar cartas livremente na horizontal, para organizar meu campo.
+8. Como jogador, quero posicionar cartas em colunas, para organizar o campo sem deixar as cartas tortas.
 9. Como jogador, quero alinhamento automático em fileiras, para evitar desalinhamento vertical involuntário.
 10. Como jogador, quero sobrepor cartas, para organizar terrenos ou representar anexos visualmente.
 11. Como jogador no desktop, quero selecionar várias cartas por arraste de área, para movê-las ou agir em conjunto.
@@ -50,14 +50,23 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 
 ### Layout e interação
 
+O refinamento posterior de vida/P/R diretos e acabamento premium está
+[especificado separadamente](04-refinamento-ui-mesa.md), com aprovação
+registrada na [decisão 29](../decisions/29-refinamento-ui-mesa.md) e
+implementação pendente. Ele simplifica apenas as etapas de edição indicadas;
+demais regras e fluxos abaixo permanecem.
+
 - Interface PT-BR, excluindo o conteúdo das cartas/dataset.
-- Celular plenamente jogável desde a primeira versão, projetado para orientação horizontal.
-- Em vertical, cobrir a interface da partida com orientação para girar; manter conexão e estado. Login, decks e salas continuam utilizáveis na vertical.
-- No celular, campo principal no centro, próprio por padrão; miniaturas dos demais à direita; mão própria e menu de ações/configurações na faixa inferior.
-- Botão inferior/flutuante abre opções de jogo. As referências visuais da conversa definem organização, não medidas ou cores finais.
+- Celular plenamente jogável nas orientações vertical e horizontal, sem bloqueio para girar o aparelho. Alterar orientação mantém conexão, estado e acesso à mão.
+- No celular, campo principal no centro, próprio por padrão; Visão geral abre uma grade de até seis campos reduzidos. Tocar numa miniatura amplia o campo; as miniaturas não manipulam cartas.
+- Mão própria permanece na faixa inferior, com Comprar, Desvirar todas e Ações ao lado, em botões com ícones e alvos confortáveis de toque.
+- Menus seguem dimensões, cabeçalho e linhas verticais de ícone/texto compartilhados. Desktop ancora o menu no elemento de origem, ajustando às bordas; telas estreitas usam painel inferior. Consultas de várias cartas usam espaço maior com o mesmo padrão visual.
+- Grimório concentra comprar, embaralhar, olhar, buscar e revelar. Ações contém turno, dado, moeda, correção de turno e fichas. Card/cabeçalho do jogador abre vida e marcadores, com edição apenas do próprio jogador e consulta pública dos demais; Ver campo é um acesso separado.
+- Detalhe de carta organiza imagem, identificação, estados, ações rápidas, ajustes e outras ações. P/R é rotulado como modificador manual e continua universal. Destinos explícitos oferecem movimento sem depender de arrastar.
+- Visual restrito à mesa e seus fluxos: playmat escuro, texturas/detalhes arcanos discretos, dourado e cores funcionais. Turno/foco claros, prévia vazia compacta e registro que não interrompe quem lê entradas anteriores. Animações curtas respeitam movimento reduzido. Aprovação: [decisão 28](../decisions/28-ui-mesa-responsiva.md).
 - Foco só muda observação. Mão, ações próprias e permissões permanecem iguais; identificar claramente o jogador observado.
 - Desktop mostra todos os campos quando há espaço, com opção de ampliar um jogador.
-- Fileiras fixas invisíveis ajustam a posição vertical da carta; posição horizontal livre. A quantidade/espaçamento final das fileiras será definida na implementação.
+- Cartas encaixam em colunas e fileiras. A célula tem o tamanho da própria pilha: carta deitada e pilha de até três cartas ocupam mais espaço, e só empurram as cartas à direita na mesma fileira e as fileiras abaixo. O campo cresce para a direita e para baixo. Detalhe: [decisão 30](../decisions/30-grade-do-campo.md).
 - Sobreposição é apenas visual: não cria grupo, vínculo ou propagação automática de ações.
 - Seleção por área no desktop; modo explícito de seleção múltipla no celular, adicionando cartas por toque.
 - Cartas selecionadas podem ser movidas juntas e receber ações coletivas aplicáveis.
@@ -102,7 +111,7 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 - Não há aprovação automática por tempo nem exceção para desconectados; partida pode aguardar indefinidamente.
 - Reinício aprovado volta à preparação, mantendo participantes e decks selecionados, permitindo troca.
 - Novo início limpa mesa e contadores, restaura vida inicial, carrega/embaralha decks e sorteia novamente a ordem.
-- Qualquer participante pode solicitar encerramento pelo botão vermelho **Finalizar**, à direita de **Ocultar prévia**. Confirmar registra concordância; pelo menos metade dos participantes, arredondando para cima, encerra a partida e fecha a sala. Uma pessoa sozinha pode confirmar e encerrar. A sala sai do lobby e todos voltam ao lobby, preservando snapshot e log. Votos persistem e a partida continua enquanto faltam concordâncias. Detalhes e autorização: [decisão de encerramento](../decisions/24-finalizar-partida.md).
+- Qualquer participante pode solicitar encerramento pelo botão **Finalizar**, com destaque discreto em vermelho na barra superior. Confirmar registra concordância; pelo menos metade dos participantes, arredondando para cima, encerra a partida e fecha a sala. Uma pessoa sozinha pode confirmar e encerrar. A sala sai do lobby e todos voltam ao lobby, preservando snapshot e log. Votos persistem e a partida continua enquanto faltam concordâncias. Detalhes e autorização: [decisão de encerramento](../decisions/24-finalizar-partida.md); apresentação refinada na [decisão 28](../decisions/28-ui-mesa-responsiva.md).
 
 ## Decisões de teste
 
@@ -111,8 +120,8 @@ Proposta: testar operações/permissões pela interface pública do servidor; te
 Critérios observáveis:
 
 - Foco em oponente preserva mão e ações próprias.
-- Celular horizontal permite consultar seis jogadores pelas miniaturas; vertical bloqueia somente a partida.
-- Movimento preserva posição horizontal e alinha à fileira; sobreposição não cria vínculo.
+- Celular vertical/horizontal permite consultar seis jogadores pela visão geral e ampliar qualquer campo, mantendo mão e ações próprias.
+- Movimento encaixa a carta na coluna e na fileira; sobreposição de até três cartas não cria vínculo.
 - Seleção múltipla move cartas juntas sem impedir manipulação individual posterior.
 - Consulta privada e cartas viradas para baixo não expõem identidade a oponentes.
 - Comprar X, consultar topo/fundo, reordenar e retornar cartas preservam quantidades e ordem esperada.
@@ -126,7 +135,7 @@ Testar comportamento observável, evitando snapshots de CSS ou testes que apenas
 
 ## Fora do escopo
 
-Motor de regras, formatos, fases, agrupamento permanente de cartas, desfazer genérico, chat/voz integrados, jogo na vertical e tela de histórico.
+Motor de regras, formatos, fases, agrupamento permanente de cartas, desfazer genérico, chat/voz integrados e tela de histórico.
 
 ## Notas adicionais
 

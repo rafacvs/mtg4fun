@@ -23,23 +23,22 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   }
   await page.getByRole('button', { name: 'Ações', exact: true }).click();
   const menu = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
-  for (const name of ['Passar turno', 'Grimório']) {
+  for (const name of ['Passar turno', 'Rolar dado']) {
     await expect(menu.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  for (const name of [/^Selecionar cartas$/, /^Limpar seleção/, /^Desvirar todas$/]) {
+  for (const name of [/^Selecionar cartas$/, /^Limpar seleção/, /^Desvirar todas$/, /^Grimório$/, /^Comprar cartas$/]) {
     await expect(menu.getByRole('button', { name })).toHaveCount(0);
   }
   await page.screenshot({ path: testInfo.outputPath('comandos-dentro-de-acoes.png'), fullPage: true });
-  await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
-  await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
-  await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await page.getByRole('button', { name: 'Fechar ações', exact: true }).click();
+  await page.getByRole('button', { name: 'Comprar', exact: true }).click();
+  await page.getByRole('button', { name: 'Comprar', exact: true }).click();
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   await expect(cards).toHaveCount(2);
   await cards.nth(0).dragTo(field, { steps: 8 });
   const fieldCards = field.getByRole('button', { name: 'Island', exact: true });
   await expect(fieldCards).toHaveCount(1);
-  await expect.poll(async () => (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.log.at(-1)?.kind).toBe('position');
+  await expect.poll(async () => (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.log.at(-1)?.kind).toBe('move');
   const confirmed = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
   const placed = confirmed.players.find((player: { userId: number }) => player.userId === confirmed.viewerId).battlefield[0];
   await expect(field.locator(`[data-pos-x="${placed.positionX}"][data-row="${placed.row}"]`)).toHaveCount(1);
@@ -75,6 +74,13 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     base = await fieldCards.nth(0).boundingBox();
     stacked = await fieldCards.nth(1).boundingBox();
   }
+  if (testInfo.project.use.hasTouch) {
+    // Two full rows need vertical room. Rotation is now supported without losing the stack.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await fieldCards.nth(1).scrollIntoViewIfNeeded();
+    base = await fieldCards.nth(0).boundingBox();
+    stacked = await fieldCards.nth(1).boundingBox();
+  }
   const target = { x: base!.x + 8, y: base!.y + base!.height + 45 };
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, stacked!, target);
   else {
@@ -91,8 +97,10 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     expect(Math.abs(stayed!.y - base!.y)).toBeLessThanOrEqual(2);
     expect(Math.hypot(moved!.x - stacked!.x, moved!.y - stacked!.y)).toBeGreaterThan(2);
     const gap = moved!.y - (stayed!.y + stayed!.height);
-    expect(gap).toBeGreaterThanOrEqual(41);
-    expect(gap).toBeLessThanOrEqual(43);
+    const cardWidth = await field.evaluate(node => Number.parseFloat(getComputedStyle(node).getPropertyValue('--card-width')));
+    const expectedGap = cardWidth * 10 / 72;
+    expect(gap).toBeGreaterThanOrEqual(expectedGap - 2);
+    expect(gap).toBeLessThanOrEqual(expectedGap + 2);
   }).toPass();
   if (testInfo.project.use.hasTouch) return;
   await selectFieldArea(page, field);
@@ -169,6 +177,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
 async function dragWithTouch(page: Page, source: { x: number; y: number; width: number; height: number }, target: { x: number; y: number }) {
   const session = await page.context().newCDPSession(page);
   const start = { x: source.x + source.width / 2, y: source.y + source.height / 2, id: 1 };
+  expect(await page.evaluate(point => Boolean(document.elementFromPoint(point.x, point.y)?.closest('.playing-card')), start), 'origem do gesto deve ser uma carta visível').toBe(true);
   await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
   for (let step = 1; step <= 8; step += 1) {
     await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (target.x - start.x) * step / 8, y: start.y + (target.y - start.y) * step / 8, id: 1 }] });

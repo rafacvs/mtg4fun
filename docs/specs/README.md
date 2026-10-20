@@ -10,6 +10,11 @@ Estas especificações consolidam o esboço inicial e as decisões da conversa d
 
 As três especificações formam uma única primeira versão, incluindo jogo completo no celular desde o início.
 
+Refinamentos aprovados posteriores à primeira reformulação da mesa:
+[interface premium da mesa](04-refinamento-ui-mesa.md), com implementação
+pendente nos [cards locais](../issues/refactor-game-ui/README.md). A spec
+complementar não declara essas entregas concluídas.
+
 ## Objetivo e direção
 
 Criar uma aplicação web própria para jogar Magic online entre amigos que conhecem o jogo, reduzindo as dificuldades da interface do Cockatrice. O resultado esperado é código organizado e mantível e partidas efetivamente jogáveis.

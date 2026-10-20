@@ -35,7 +35,7 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
     const ownId = drawn.viewerId;
     const ids = drawn.players.find(player => player.userId === ownId)!.hand!.map(card => card.id);
     await action({ kind: 'move', cardIds: ids, to: 'battlefield' });
-    for (const [index, id] of ids.entries()) await action({ kind: 'position', cardId: id, x: 80 + index * 120, row: 0 });
+    for (const [index, id] of ids.entries()) await action({ kind: 'position', cardId: id, x: 1 + index, row: 0 });
     // Mixed initial states must all follow the clicked card's target state.
     await action({ kind: 'set_tapped', cardIds: [ids[1]], tapped: true });
     const otherDrawn = await action({ kind: 'draw', count: 1 }, observer.request);

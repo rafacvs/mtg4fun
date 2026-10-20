@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, openLibrary } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -87,32 +87,34 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
     return match.players.find((player: { userId: number }) => player.userId === match.viewerId).hand || [];
   };
   if (testInfo.project.name === 'celular') {
-    await expect(page.getByText('Gire o celular para jogar')).toBeVisible();
-    await expect(board.getByRole('button', { name: 'Comprar cartas', exact: true })).toBeHidden();
-    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(board.getByRole('button', { name: 'Comprar', exact: true })).toBeVisible();
   }
-  await expect(board.getByText('Vida: 40', { exact: true })).toBeVisible();
+  await expect(board.getByLabel('Vida: 40', { exact: true })).toBeVisible();
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Campo');
   const hand = board.getByRole('region', { name: 'Mão', exact: true });
   const buy = async (amount: string) => {
-    if (!(await board.getByRole('dialog', { name: 'Ações do jogo' }).isVisible())) await activate(board.getByRole('button', { name: 'Ações', exact: true }));
-    const quantity = board.getByLabel('Quantidade para comprar');
+    await closeMatchRail(page);
+    const library = await openLibrary(page);
+    const quantity = library.getByLabel('Quantidade de cartas');
     if (!(await quantity.isVisible())) {
       const back = board.getByRole('button', { name: 'Voltar', exact: true });
       if (await back.isVisible()) await activate(back);
       await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
     }
     await quantity.fill(amount);
-    await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
+    await activate(library.getByRole('button', { name: /^Comprar \d+ carta/ }));
   };
   const closeActions = async () => {
-    const close = board.getByRole('button', { name: 'Fechar ações', exact: true });
+    const close = board.getByRole('button', { name: 'Fechar painel do grimório', exact: true });
     if (await close.isVisible()) await activate(close);
   };
-  await buy('1000');
-  await expect(board.getByRole('alert')).toContainText('Não há cartas suficientes');
-  await board.getByLabel('Quantidade para comprar').fill('1');
+  const library = await openLibrary(page);
+  await library.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
+  await library.getByLabel('Quantidade de cartas').fill('1000');
+  await expect(library.getByRole('button', { name: 'Comprar 1000 carta(s)', exact: true })).toBeDisabled();
+  expect(await ownHand()).toHaveLength(0);
+  await library.getByLabel('Quantidade de cartas').fill('1');
   let lostResponses = 0;
   await page.route('**/match/actions', async route => {
     if (lostResponses < 2) {
@@ -122,10 +124,10 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
       await route.abort('failed');
     } else await route.continue();
   });
-  await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
-  await expect(board.getByRole('alert')).toContainText('Não foi possível confirmar');
-  await expect(board.getByRole('button', { name: 'Comprar cartas', exact: true })).toBeDisabled();
-  await activate(board.getByRole('button', { name: 'Tentar novamente', exact: true }));
+  await activate(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true }));
+  await expect(library.getByRole('alert')).toContainText('Não foi possível confirmar');
+  await expect(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true })).toBeDisabled();
+  await activate(library.getByRole('button', { name: 'Tentar novamente', exact: true }));
   await page.unroute('**/match/actions');
   await expect(board.getByRole('alert')).toHaveCount(0);
   expect(await ownHand()).toHaveLength(1);
@@ -155,16 +157,16 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   }
   const returnedId = (await ownHand())[0].id;
   await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), board.getByRole('button', { name: 'Abrir ações do grimório' }));
-  await expect(hand.getByRole('button')).toHaveCount(0);
+  await expect(hand.locator('.playing-card')).toHaveCount(0);
   await buy('1');
   await closeActions();
-  await expect(hand.getByRole('button')).toHaveCount(1);
+  await expect(hand.locator('.playing-card')).toHaveCount(1);
   expect((await ownHand())[0].id).toBe(returnedId);
   await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), board.getByRole('button', { name: 'Fundo do grimório', exact: true }));
-  await expect(hand.getByRole('button')).toHaveCount(0);
+  await expect(hand.locator('.playing-card')).toHaveCount(0);
   await buy('1');
   await closeActions();
-  await expect(hand.getByRole('button')).toHaveCount(1);
+  await expect(hand.locator('.playing-card')).toHaveCount(1);
   expect((await ownHand())[0].id).not.toBe(returnedId);
   await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), board.getByRole('region', { name: 'Campo', exact: true }));
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
@@ -179,23 +181,34 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await openMatchRail(page);
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
   await buy('3');
-  await expect(hand.getByRole('button')).toHaveCount(3);
+  await expect(hand.locator('.playing-card')).toHaveCount(3);
   expect((await ownHand()).map(card => card.id)).not.toContain(returnedId);
   await buy('1');
-  await expect(hand.getByRole('button')).toHaveCount(4);
+  await expect(hand.locator('.playing-card')).toHaveCount(4);
   expect((await ownHand()).at(-1)?.id).toBe(returnedId);
   const log = board.getByRole('region', { name: 'Registro da partida', exact: true });
-  await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
+  await closeActions();
+  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await board.getByLabel('Faces do dado').fill('6');
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
+  await openMatchRail(page);
   await expect(log).toContainText(/Amigo da mesa rolou D6: /);
+  await closeMatchRail(page);
+  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
   await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
+  await openMatchRail(page);
   await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);
+  await closeMatchRail(page);
+  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
   await activate(board.getByRole('button', { name: 'Passar turno', exact: true }));
+  await openMatchRail(page);
   await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa e ocultou todas as revelações.');
+  await closeMatchRail(page);
+  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
   await activate(board.getByRole('button', { name: 'Corrigir turno', exact: true }));
+  await openMatchRail(page);
   await expect(log).toContainText('Amigo da mesa corrigiu para o turno de Amigo da mesa.');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('mesa.png'), fullPage: true });

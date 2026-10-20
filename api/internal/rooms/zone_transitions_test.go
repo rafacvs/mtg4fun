@@ -35,6 +35,37 @@ func TestMoveClearsBattlefieldStateAndRemovesTokens(t *testing.T) {
 	}
 }
 
+func TestMoveOntoBattlefieldUsesTheCellOrTheFirstOpenStack(t *testing.T) {
+	p := &playerState{UserID: 1, Hand: []Card{{ID: "a", ControllerID: 1, Zone: "hand"}, {ID: "b", ControllerID: 1, Zone: "hand"}}, Battlefield: []Card{
+		{ID: "1", PositionX: 0, Row: 0}, {ID: "2", PositionX: 0, Row: 0}, {ID: "3", PositionX: 0, Row: 0},
+		{ID: "4", PositionX: 1, Row: 2}, {ID: "5", PositionX: 1, Row: 2}, {ID: "6", PositionX: 1, Row: 2},
+	}}
+	m := &matchState{}
+	if _, err := moveCards(m, p, matchAction{CardIDs: []string{"a"}, To: "battlefield", HasPosition: true, PositionX: 1, Row: 2}); err != errStackFull {
+		t.Fatalf("pilha cheia: %v", err)
+	}
+	if len(p.Hand) != 2 || len(p.Battlefield) != 6 {
+		t.Fatalf("recusa alterou as zonas: %+v", p)
+	}
+	if _, err := moveCards(m, p, matchAction{CardIDs: []string{"a", "b"}, To: "battlefield"}); err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]Card{}
+	for _, card := range p.Battlefield {
+		got[card.ID] = card
+	}
+	if got["a"].PositionX != 1 || got["a"].Row != 0 || got["b"].PositionX != 1 || got["b"].Row != 0 || got["a"].StackOrder == 0 || got["a"].StackOrder >= got["b"].StackOrder {
+		t.Fatalf("entrada sem ponto: %+v %+v", got["a"], got["b"])
+	}
+	p.Hand = []Card{{ID: "c", ControllerID: 1, Zone: "hand"}}
+	if _, err := moveCards(m, p, matchAction{CardIDs: []string{"c"}, To: "battlefield", HasPosition: true, PositionX: 4, Row: 3}); err != nil {
+		t.Fatal(err)
+	}
+	if p.Battlefield[len(p.Battlefield)-1].PositionX != 4 || p.Battlefield[len(p.Battlefield)-1].Row != 3 {
+		t.Fatalf("célula pedida: %+v", p.Battlefield[len(p.Battlefield)-1])
+	}
+}
+
 func TestNextTurnClearsEveryDisclosureWithoutMovingCards(t *testing.T) {
 	m := matchState{TurnOrder: []Turn{{UserID: 1}, {UserID: 2}}, Players: []playerState{{UserID: 1}, {UserID: 2}}}
 	zones := []string{"battlefield", "hand", "graveyard", "exile", "command", "consulted", "revealed", "library"}

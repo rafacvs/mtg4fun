@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { MenuItem, PanelFeedback, PanelHeader, TablePanel } from './TablePanel';
 import { LibraryCards } from './LibraryCards';
 import type { Card } from './roomsApi';
 import {
@@ -10,6 +10,7 @@ import './library.css';
 
 type Props = LibraryOperations & {
   open: boolean;
+  anchor: HTMLElement | null;
   cards: Card[];
   revealed: Card[];
   consultationFrom?: LibrarySource;
@@ -26,7 +27,6 @@ export function LibraryConsultation(props: Props) {
   const { open, cards, revealed, consultationFrom, libraryCount, error, onInspect, onDismiss } =
     props;
   const busy = props.busy || props.unconfirmed;
-  const closeRef = useRef<HTMLButtonElement>(null);
   const pool = [
     ...cards,
     ...revealed.filter((card) => !cards.some((consulted) => consulted.id === card.id)),
@@ -51,104 +51,42 @@ export function LibraryConsultation(props: Props) {
           ? 'Comprar cartas'
           : 'Grimório';
 
-  useEffect(() => {
-    if (!open) return;
-    closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('.card-preview')) {
-        event.stopImmediatePropagation();
-        onDismiss();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onDismiss]);
   if (!open) return null;
 
   const selectedCount = state.selectedIDs.length;
   const validCount =
     Number.isInteger(state.count) && state.count >= 1 && state.count <= libraryCount;
   return (
-    <div
-      className={`actions-panel library-consultation ${active ? 'library-active' : ''}`}
-      role="dialog"
-      aria-label="Grimório"
+    <TablePanel
+      open={open}
+      anchor={props.anchor}
+      wide={active}
+      onClose={onDismiss}
+      label="Grimório"
+      className={`library-consultation ${active ? 'library-active' : ''}`}
     >
-      <header>
-        <div>
-          <p className="actions-kicker">Grimório · {libraryCount} carta(s) disponível(is)</p>
-          <h2>{title}</h2>
-          {active && (
+      <PanelHeader title={title} subtitle={libraryCount === 1 ? '1 carta' : `${libraryCount} cartas`} onClose={onDismiss} closeLabel="Fechar painel do grimório" onBack={!active && state.view !== 'menu' ? () => state.choose('menu') : undefined}>
+      {active && (
             <p className={`library-visibility ${publicCount ? 'public' : ''}`}>
               {publicCount
-                ? `◉ ${publicCount} carta(s) visível(is) para todos`
-                : '◈ Só você vê estas cartas'}
+                ? `${publicCount} carta(s) visível(is) para todos`
+                : 'Só você vê estas cartas'}
             </p>
           )}
-        </div>
-        <button
-          ref={closeRef}
-          type="button"
-          className="secondary"
-          aria-label="Fechar painel do grimório"
-          onClick={onDismiss}
-        >
-          ×
-        </button>
-      </header>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-          {props.unconfirmed && (
-            <button disabled={props.busy} onClick={() => void props.onRetry()}>
-              Tentar novamente
-            </button>
-          )}
-        </p>
-      )}
+      </PanelHeader>
+      <PanelFeedback error={error} busy={props.busy} unconfirmed={props.unconfirmed} onRetry={props.onRetry} />
       {state.notice && (
-        <p role="status" className="library-notice">
+        <p role="status" className="panel-result">
           {state.notice}
         </p>
       )}
       {!active && state.view === 'menu' && (
-        <div className="library-menu">
-          <button
-            className="secondary"
-            disabled={busy || !libraryCount}
-            onClick={() => state.choose('draw')}
-          >
-            <strong>Comprar cartas</strong>
-            <span>Do topo para sua mão</span>
-          </button>
-          <button className="secondary" disabled={busy} onClick={() => void state.finish(true)}>
-            <strong>Embaralhar</strong>
-            <span>Embaralhar apenas o grimório</span>
-          </button>
-          <button
-            className="secondary"
-            disabled={busy || !libraryCount}
-            onClick={() => state.choose('look')}
-          >
-            <strong>Olhar cartas</strong>
-            <span>Topo ou fundo · Em privado</span>
-          </button>
-          <button
-            className="secondary"
-            disabled={busy || !libraryCount}
-            onClick={() => void state.searchLibrary()}
-          >
-            <strong>Buscar no grimório</strong>
-            <span>Consultar todas · Em privado</span>
-          </button>
-          <button
-            className="secondary"
-            disabled={busy || !libraryCount}
-            onClick={() => state.choose('reveal')}
-          >
-            <strong>Revelar cartas</strong>
-            <span>Do topo · Todos veem</span>
-          </button>
+        <div className="table-menu library-menu">
+          <MenuItem icon="draw" title="Comprar cartas" description="Do topo para sua mão" disabled={busy || !libraryCount} onClick={() => state.choose('draw')} />
+          <MenuItem icon="shuffle" title="Embaralhar" description="Embaralhar apenas o grimório" disabled={busy} onClick={() => void state.finish(true)} />
+          <MenuItem icon="eye" title="Olhar cartas" description="Topo ou fundo · Em privado" disabled={busy || !libraryCount} onClick={() => state.choose('look')} />
+          <MenuItem icon="search" title="Buscar no grimório" description="Consultar todas · Em privado" disabled={busy || !libraryCount} onClick={() => void state.searchLibrary()} />
+          <MenuItem icon="reveal" title="Revelar cartas" description="Do topo · Todos veem" disabled={busy || !libraryCount} onClick={() => state.choose('reveal')} />
         </div>
       )}
       {!active && state.view !== 'menu' && (
@@ -206,9 +144,6 @@ export function LibraryConsultation(props: Props) {
             </label>
           </div>
           <div className="library-setup-actions">
-            <button className="secondary" disabled={busy} onClick={() => state.choose('menu')}>
-              Voltar
-            </button>
             <button disabled={busy || !validCount} onClick={() => void state.begin()}>
               {state.view === 'look' ? 'Olhar' : state.view === 'reveal' ? 'Revelar' : 'Comprar'}{' '}
               {state.count || ''} carta(s)
@@ -218,6 +153,7 @@ export function LibraryConsultation(props: Props) {
       )}
       {active && (
         <>
+          <div className="library-body">
           <div className="grimorio-workspace">
             {searching && (
               <div className="library-search">
@@ -301,6 +237,7 @@ export function LibraryConsultation(props: Props) {
               )}
             </div>
           )}
+          </div>
           <footer className="library-finish">
             <div>
               <label>
@@ -336,6 +273,6 @@ export function LibraryConsultation(props: Props) {
           </footer>
         </>
       )}
-    </div>
+    </TablePanel>
   );
 }

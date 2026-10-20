@@ -3,14 +3,18 @@ import type { Card, Match } from './roomsApi';
 import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
-import { HoverCardPreview } from './HoverCardPreview';
+import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
 import { MatchLogCards } from './MatchLogCards';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
+import { PlayerMenu } from './PlayerMenu';
+import { TableIcon } from './TableIcon';
+import { TableOverview } from './TableOverview';
 import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
+import { dropCell, firstFreeCell, layoutFromCanvas } from './battlefieldLayout';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
 import './counters.css';
@@ -18,17 +22,37 @@ import './counters.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const { match: synced, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const [pendingPlacement, setPendingPlacement] = useState<{ ids: string[]; column: number; row: number } | null>(null);
+  const match = synced && pendingPlacement ? withPendingPlacement(synced, pendingPlacement) : synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
-  const [count, setCount] = useState(1);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1000px)').matches);
+  const [overview, setOverview] = useState(false);
+  const [menuPlayerId, setMenuPlayerId] = useState<number | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [libraryAnchor, setLibraryAnchor] = useState<HTMLElement | null>(null);
+  const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
+  const [unreadLog, setUnreadLog] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [creationOpen, setCreationOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [railOpen, setRailOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
-  const [hoverPreviewOpen, setHoverPreviewOpen] = useState(true);
+  const [hoverPreviewOpen, setHoverPreviewOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
+  const [playersOpen, setPlayersOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
+  const [logOpen, setLogOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
+  const toggleRailPanel = (panel: 'preview' | 'players' | 'log') => {
+    if (window.matchMedia('(max-width: 1000px)').matches) {
+      if (panel !== 'preview') setHoverPreviewOpen(false);
+      if (panel !== 'players') setPlayersOpen(false);
+      if (panel !== 'log') setLogOpen(false);
+    }
+    if (panel === 'preview') setHoverPreviewOpen(value => !value);
+    if (panel === 'players') setPlayersOpen(value => !value);
+    if (panel === 'log') setLogOpen(value => !value);
+  };
   const [hoverCardId, setHoverCardId] = useState<string | null>(null);
+  const [zoomCardId, setZoomCardId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -36,13 +60,27 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const dockRef = useRef<HTMLElement>(null);
-  const thumbnailsRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
+  const followingLog = useRef(true);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1000px)');
+    const update = () => setCompact(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const closePreview = useCallback(() => setPreviewId(null), []);
   const closeCreation = useCallback(() => setCreationOpen(false), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
-  const openLibrary = () => { setLibraryOpen(true); setActionsOpen(false); setNotice(''); };
+  const closePlayer = useCallback(() => setMenuPlayerId(null), []);
+  const openPlayer = (id: number, anchor: HTMLElement) => {
+    setMenuAnchor(anchor); setMenuPlayerId(id); setLibraryOpen(false); setActionsOpen(false);
+  };
+  const openLibrary = () => {
+    setLibraryAnchor(document.querySelector<HTMLElement>('.focused-table .library-open') ?? document.querySelector<HTMLElement>('.library-open'));
+    setLibraryOpen(true); setActionsOpen(false); setMenuPlayerId(null); setNotice('');
+  };
+  const focusPlayer = (id: number) => { setFocusId(id); setOverview(false); if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); } };
   useEffect(() => {
     const dock = dockRef.current;
     const board = dock?.closest<HTMLElement>('.match-board');
@@ -55,8 +93,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   }, [Boolean(match)]);
   useEffect(() => {
     const list = logRef.current;
-    if (list) list.scrollTop = list.scrollHeight;
-  }, [match?.log.length]);
+    if (!list) return;
+    if (followingLog.current) { list.scrollTop = list.scrollHeight; setUnreadLog(false); }
+    else setUnreadLog(true);
+  }, [match?.log.length, logOpen]);
   useEffect(() => {
     if (!match) return;
     const previousLength = knownLogEntries.current;
@@ -64,8 +104,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     if (previousLength === 0 || match.log.length <= previousLength) return;
     const actorId = match.log.at(-1)?.actorId;
     if (!actorId) return;
-    const index = match.players.findIndex(player => player.userId === actorId);
-    thumbnailsRef.current?.querySelectorAll('button')?.[index]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     setActivePlayerId(actorId);
     const timeout = window.setTimeout(() => setActivePlayerId(null), 3_000);
     return () => window.clearTimeout(timeout);
@@ -102,7 +140,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const gesture: CardGesture = {
     selectedIds: selectionIds,
     onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
-    onHover: card => { if (!drag && railOpen && hoverPreviewOpen) setHoverCardId(card.id); },
+    onHover: card => { if (!drag && hoverPreviewOpen) setHoverCardId(card.id); },
+    onZoom: card => setZoomCardId(card?.id ?? null),
     onToggleTapped: card => {
       if (busy || unconfirmed) return;
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
@@ -130,11 +169,21 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       return;
     }
     if (zone === 'battlefield') {
-      const layout = battlefieldPositionAt(x, y);
-      if (!layout) return;
-      if (card.zone !== 'battlefield' && !await move([card.id], 'battlefield')) return;
-      const ids = card.zone === 'battlefield' && selectionIds.includes(card.id) ? [card.id, ...selectionIds.filter(id => id !== card.id)] : [card.id];
-      if (await position(ids, layout.x, layout.row)) setSelectionIds([]);
+      const battlefield = synced?.players.find(player => player.userId === synced.viewerId)?.battlefield ?? [];
+      const cell = locateBattlefieldCell(x, y, battlefield);
+      if (!cell || !synced) return;
+      if (card.zone !== 'battlefield') {
+        setPendingPlacement({ ids: [card.id], column: cell.column, row: cell.row });
+        const ok = await move([card.id], 'battlefield', undefined, { x: cell.column, row: cell.row });
+        setPendingPlacement(null);
+        if (ok) setSelectionIds([]);
+        return;
+      }
+      const ids = selectionIds.includes(card.id) ? [card.id, ...selectionIds.filter(id => id !== card.id)] : [card.id];
+      setPendingPlacement({ ids, column: cell.column, row: cell.row });
+      const ok = await position(ids, cell.column, cell.row);
+      setPendingPlacement(null);
+      if (ok) setSelectionIds([]);
       return;
     }
     if (zone === 'library') await move([card.id], 'library', 'top');
@@ -146,20 +195,25 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const own = match.players.find(player => player.userId === match.viewerId)!;
   const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
-  const consultationActive = Boolean(own.consultationFrom || own.consulted?.length || own.revealed?.length);
   const preview = previewId ? findCard(match, previewId) : null;
+  const lastAction = match.log.at(-1);
+  const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describe(lastAction) : undefined;
+  const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
+  const showingOverview = compact ? overview : focusId === null;
+  const showOverview = () => {
+    setFocusId(null); setOverview(true);
+    if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+  };
+  const togglePlayerFocus = (id: number) => {
+    if (!showingOverview && focused.userId === id) showOverview();
+    else focusPlayer(id);
+  };
+  const miniatureOverview = showingOverview && (compact || match.players.length > 2);
   return <section className={`match-board ${drag ? 'dragging' : ''}`} aria-label="Mesa da partida">
-    <div className="rotate-device" role="status"><strong>Gire o celular para jogar</strong><p>A mesa funciona na horizontal. Sua partida continua conectada.</p><a href="/#/salas">Voltar ao lobby</a></div>
     <div className="match-content">
-      <div className="table-toolbar"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby">← Lobby</a><strong>Sala {roomId}</strong><span>Observando: <strong>{focused.name}</strong></span>
-        {focusId !== null && <button className="secondary show-all" onClick={() => setFocusId(null)}>Ver todas as mesas</button>}
-        <span>Turno atual: <strong>{match.currentTurn.name}</strong></span>
+      <div className="table-toolbar"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span>
+        <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
         <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
-        <button className="secondary rail-toggle" aria-expanded={railOpen} aria-controls="match-rail" onClick={() => setRailOpen(value => !value)} title="Jogadores e registro">{railOpen ? 'Recolher registro' : 'Jogadores / Registro'}</button>
-        <button className="secondary" aria-expanded={railOpen && hoverPreviewOpen} aria-controls="hover-card-preview" onClick={() => {
-          if (railOpen && hoverPreviewOpen) setHoverPreviewOpen(false);
-          else { setHoverPreviewOpen(true); setRailOpen(true); }
-        }}>{railOpen && hoverPreviewOpen ? 'Ocultar prévia' : 'Mostrar prévia'}</button>
         <FinishMatch match={match} busy={busy} unconfirmed={unconfirmed} error={error} onConfirm={finish} onRetry={retry} />
       </div>
       {match.finishVotes.length > 0 && <p className="finish-vote-notice" role="status">Encerramento solicitado: {match.finishVotes.length} de {match.finishRequired} concordância(s). Use Finalizar para acompanhar ou concordar.</p>}
@@ -167,31 +221,48 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
-          <div className={`match-players ${focusId !== null ? 'has-focus' : ''}`}>{match.players.map(player =>
-            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} onFocus={() => setFocusId(player.userId)} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
-          )}</div>
+          {miniatureOverview ? <TableOverview match={match} onFocus={focusPlayer} /> : <div className={`match-players ${focusId !== null || compact ? 'has-focus' : ''}`}>{match.players.map(player =>
+            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} expanded={!showingOverview} onFocus={() => togglePlayerFocus(player.userId)} onReturnToOwn={!showingOverview && player.userId !== match.viewerId && player.userId === focused.userId ? () => focusPlayer(match.viewerId) : undefined} onPlayerMenu={anchor => openPlayer(player.userId, anchor)} currentTurn={player.userId === match.currentTurn.userId} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
+          )}</div>}
           <section ref={dockRef} className="own-dock" aria-label="Sua mão e ações">
             <nav className="quick-actions" aria-label="Ações rápidas">
-              <button disabled={busy || unconfirmed || !own.libraryCount} title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}>↓ Comprar</button>
-              <button className="secondary" disabled={busy || unconfirmed} title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}>↺ Desvirar todas</button>
-              <button type="button" className="actions-toggle" aria-expanded={actionsOpen} onClick={() => { setActionsOpen(true); setLibraryOpen(false); }}>Ações</button>
+              <button disabled={busy || unconfirmed || !own.libraryCount} aria-label="Comprar" title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}><TableIcon name="draw" /><span>Comprar</span><kbd aria-hidden="true">D</kbd></button>
+              <button className="secondary" disabled={busy || unconfirmed} aria-label="Desvirar todas" title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}><TableIcon name="untap" /><span>Desvirar todas</span><kbd aria-hidden="true">U</kbd></button>
+              <button type="button" className="actions-toggle secondary" aria-expanded={actionsOpen} onClick={event => { setActionsAnchor(event.currentTarget); setActionsOpen(value => !value); setLibraryOpen(false); setMenuPlayerId(null); }}><TableIcon name="actions" /><span>Ações</span></button>
             </nav>
             <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
           </section>
         </div>
-        <aside id="match-rail" className={`side-rail ${railOpen ? '' : 'is-collapsed'}`}>
-          {hoverPreviewOpen && <HoverCardPreview card={hoverCardId ? findCard(match, hoverCardId) : null} />}
-          <nav ref={thumbnailsRef} className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
-            <button key={player.userId} className="secondary" aria-pressed={player.userId === focused.userId} onClick={() => setFocusId(player.userId)}>
-              <strong title={player.userId === match.viewerId ? `${player.name} · Sua mesa` : player.name}>{player.name}</strong><span title="Vida" aria-label={`Vida ${player.life}`}>♥ {player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}>C {player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}>M {player.handCount}</span>{player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}
-            </button>
-          )}</nav>
-          <section className="match-log" aria-label="Registro da partida">
-            <h2>Registro</h2>
-            <ol ref={logRef}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}<MatchLogCards cards={entry.cards} onPreview={id => {
-              const card = findCard(match, id);
-              if (card) gesture.onHover?.(card);
-            }} /></li>)}</ol>
+        <aside id="match-rail" className="side-rail" aria-label="Painéis da mesa">
+          <section className={`rail-panel preview-panel ${hoverPreviewOpen ? 'is-open' : ''}`}>
+            <button className="rail-tab secondary" aria-expanded={hoverPreviewOpen} aria-controls="preview-panel-content" onClick={() => toggleRailPanel('preview')}><TableIcon name="eye" /><span>Prévia</span><TableIcon name="chevron" /></button>
+            <div id="preview-panel-content" className="rail-panel-content" hidden={!hoverPreviewOpen}><HoverCardPreview card={hoverCardId ? findCard(match, hoverCardId) : null} /></div>
+          </section>
+          <section className={`rail-panel players-panel ${playersOpen ? 'is-open' : ''}`}>
+            <button className="rail-tab secondary" aria-label="Jogadores" aria-expanded={playersOpen} aria-controls="players-panel-content" onClick={() => toggleRailPanel('players')}><TableIcon name="grid" /><span>Jogadores</span><small>{match.players.length}</small><TableIcon name="chevron" /></button>
+            <div id="players-panel-content" className="rail-panel-content" hidden={!playersOpen}>
+              <nav className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
+                <div key={player.userId} className={`player-card ${!showingOverview && player.userId === focused.userId ? 'is-observed' : ''} ${player.userId === match.currentTurn.userId ? 'is-current-turn' : ''}`}>
+                  <button className="secondary player-summary" aria-label={`Abrir jogador ${player.name}`} onClick={event => openPlayer(player.userId, event.currentTarget.querySelector<HTMLElement>('[data-life-anchor]') ?? event.currentTarget)}>
+                    <strong>{player.name}{player.userId === match.viewerId && <small>Você</small>}</strong><span data-life-anchor title="Vida" aria-label={`Vida ${player.life}`}><TableIcon name="heart" />{player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}><TableIcon name="focus" />{player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}><TableIcon name="hand" />{player.handCount}</span>
+                  </button>
+                  <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={!showingOverview && player.userId === focused.userId} title={!showingOverview && player.userId === focused.userId ? "Voltar à visão geral" : "Ver campo"} onClick={() => togglePlayerFocus(player.userId)}><TableIcon name={!showingOverview && player.userId === focused.userId ? "grid" : "focus"} /></button>
+                  {player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}
+                </div>
+              )}</nav>
+            </div>
+          </section>
+          <section className={`rail-panel log-panel ${logOpen ? 'is-open' : ''}`}>
+            <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>
+            <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
+              <section className="match-log" aria-label="Registro da partida">
+                <ol ref={logRef} onScroll={event => { const list = event.currentTarget; followingLog.current = list.scrollHeight - list.scrollTop - list.clientHeight < 32; if (followingLog.current) setUnreadLog(false); }}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}<MatchLogCards cards={entry.cards} onPreview={id => {
+                  const card = findCard(match, id);
+                  if (card) gesture.onHover?.(card);
+                }} /></li>)}</ol>
+                {unreadLog && <button className="new-log-entries secondary" onClick={() => { followingLog.current = true; if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; setUnreadLog(false); }}><TableIcon name="draw" />Novas ações</button>}
+              </section>
+            </div>
           </section>
         </aside>
         {drag && ownHidden && <aside className="drag-own-column" aria-label="Suas zonas">
@@ -204,6 +275,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     </div>
     <LibraryConsultation
       open={libraryOpen}
+      anchor={libraryAnchor}
       cards={own.consulted ?? []}
       revealed={own.revealed ?? []}
       consultationFrom={own.consultationFrom}
@@ -222,17 +294,44 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreviewId(card.id)}
       onDismiss={closeLibrary}
     />
-    <GameActions onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} count={count} sides={sides} busy={busy} unconfirmed={unconfirmed} consultationActive={consultationActive} life={own.life} markers={own.markers} playerId={own.userId} onCount={setCount} onSides={setSides} onDraw={() => void draw(count)} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onShuffle={() => void closeConsultation('top', true).then(ok => { if (ok) { setNotice('Grimório embaralhado.'); setActionsOpen(false); } })} onLibrary={openLibrary} onCounter={counter} onClose={closeActions} />
-    <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
-    <CardPreview players={match.players} onTransfer={(cardId, controllerId) => void transferControl(cardId, controllerId)} onMoveToOwner={(cardId, destination) => {
+    <GameActions anchor={actionsAnchor} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
+    <PlayerMenu player={match.players.find(player => player.userId === menuPlayerId)} viewerId={match.viewerId} anchor={menuAnchor} disabled={busy || unconfirmed} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onCounter={counter} onClose={closePlayer} />
+    <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={async name => {
+      const cell = firstFreeCell(own.battlefield ?? []);
+      const ok = await createToken(name);
+      if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+      return ok;
+    }} onCreateCustom={async token => {
+      const cell = firstFreeCell(own.battlefield ?? []);
+      const ok = await createCustomToken(token);
+      if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+      return ok;
+    }} onClose={closeCreation} />
+    <CardPreview players={match.players} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
-      void move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => { if (ok) setNotice(''); });
-    }} error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
+      const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
+      return move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {
+        if (ok && cell) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+        return ok;
+      });
+    }} onTransfer={(cardId, controllerId) => void transferControl(cardId, controllerId)} onMoveToOwner={(cardId, destination) => {
+      const [to, placement] = destination.split('-');
+      const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
+      void move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {
+        if (ok && cell) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+        if (ok) setNotice('');
+      });
+    }} error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={async id => {
+      const cell = firstFreeCell(own.battlefield ?? []);
+      const ok = await copyCard(id);
+      if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+    }} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
       if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
       return Promise.resolve(false);
     }} onClose={closePreview} />
+    {zoomCard && <CardHoverZoom card={zoomCard} />}
   </section>;
 }
 
@@ -257,29 +356,71 @@ function dropZoneAt(x: number, y: number) {
   return null;
 }
 
-function battlefieldPositionAt(x: number, y: number) {
-  const elements = document.elementsFromPoint(x, y);
-  for (const element of elements) {
-    const stack = element.closest<HTMLElement>('[data-stack-size]');
-    if (!stack) continue;
-    const size = Number(stack.dataset.stackSize);
-    const anchorX = Number(stack.dataset.posX);
-    const row = Number(stack.dataset.row);
-    if (size < 3) return { x: anchorX, row };
-    return { x: anchorX + 160, row };
-  }
-  for (const element of elements) {
+function locateBattlefieldCell(x: number, y: number, cards: Card[]) {
+  for (const element of document.elementsFromPoint(x, y)) {
     const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
     if (!canvas) continue;
-    const zoom = Number(canvas.dataset.zoom || '1');
-    const box = canvas.getBoundingClientRect();
-    const cardWidth = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--card-width')) || 72;
-    const localX = (x - box.left) / zoom;
-    const localY = (y - box.top) / zoom;
-    const pitch = cardWidth * 88 / 63 + 42;
-    return { x: Math.max(0, Math.round(localX / cardWidth * 72)), row: Math.max(0, Math.floor(localY / pitch)) };
+    const { layout, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
+    return dropCell(layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
   }
   return null;
+}
+
+function scrollBattlefieldCell(userId: number, column: number, row: number) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const scroll = document.querySelector<HTMLElement>(`[data-field-owner="${userId}"] .battlefield-scroll`);
+    const card = scroll?.querySelector<HTMLElement>(`[data-pos-x="${column}"][data-row="${row}"]`);
+    if (!scroll || !card) return;
+    const view = scroll.getBoundingClientRect();
+    const box = card.getBoundingClientRect();
+    if (box.left < view.left) scroll.scrollLeft -= view.left - box.left;
+    else if (box.right > view.right) scroll.scrollLeft += box.right - view.right;
+    if (box.top < view.top) scroll.scrollTop -= view.top - box.top;
+    else if (box.bottom > view.bottom) scroll.scrollTop += box.bottom - view.bottom;
+  }));
+}
+
+function withPendingPlacement(match: Match, pending: { ids: string[]; column: number; row: number }): Match {
+  const anchor = findCard(match, pending.ids[0]);
+  if (!anchor) return match;
+  const targets = new Map<string, { column: number; row: number }>();
+  for (const id of pending.ids) {
+    const card = findCard(match, id);
+    if (!card || card.controllerId !== match.viewerId) continue;
+    if (card.zone === 'battlefield') targets.set(id, { column: card.positionX + pending.column - anchor.positionX, row: card.row + pending.row - anchor.row });
+    else if (id === anchor.id) targets.set(id, { column: pending.column, row: pending.row });
+  }
+  if (targets.size === 0) return match;
+  const zones = ['hand', 'graveyard', 'exile', 'command', 'consulted', 'revealed'] as const;
+  return {
+    ...match,
+    players: match.players.map(player => {
+      const entering: Card[] = [];
+      let next = { ...player };
+      for (const zone of zones) {
+        const cards = player[zone];
+        if (!cards) continue;
+        const staying = cards.filter(card => {
+          const target = targets.get(card.id);
+          if (!target) return true;
+          entering.push({ ...card, zone: 'battlefield', positionX: target.column, row: target.row, stackOrder: 1_000_000 + entering.length });
+          return false;
+        });
+        next = { ...next, [zone]: staying };
+        if (zone === 'hand') next.handCount = staying.length;
+        if (zone === 'graveyard') next.graveyardCount = staying.length;
+        if (zone === 'exile') next.exileCount = staying.length;
+        if (zone === 'command') next.commandCount = staying.length;
+      }
+      const battlefield = (player.battlefield ?? []).map(card => {
+        const target = targets.get(card.id);
+        return target ? { ...card, positionX: target.column, row: target.row } : card;
+      });
+      next.battlefield = [...battlefield, ...entering];
+      next.battlefieldCount = next.battlefield.length;
+      return next;
+    }),
+  };
 }
 
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {

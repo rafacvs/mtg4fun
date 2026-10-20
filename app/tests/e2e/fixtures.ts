@@ -57,11 +57,25 @@ export const test = base.extend<{}, { appURL: string }>({
 
 export { expect };
 
-// The new compact rail starts collapsed on smaller viewports.
+// The panels are controlled by their own tabs; compact screens show one at a time.
 export async function openMatchRail(page: Page) {
-  const toggle = page.locator('.rail-toggle');
-  await expect(toggle).toBeVisible();
-  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+  const players = page.getByRole('button', { name: 'Jogadores', exact: true });
+  await expect(players).toBeVisible();
+  if (await players.getAttribute('aria-expanded') === 'false') await players.click();
+}
+
+export async function closeMatchRail(page: Page) {
+  for (const label of ['Prévia', 'Jogadores', 'Registro']) {
+    const tab = page.getByRole('button', { name: label, exact: true });
+    if (await tab.getAttribute('aria-expanded') === 'true') await tab.click();
+  }
+}
+
+export async function openLibrary(page: Page) {
+  const library = page.getByRole('dialog', { name: 'Grimório', exact: true });
+  if (!await library.isVisible()) await page.getByRole('button', { name: 'Abrir ações do grimório' }).click();
+  await expect(library).toBeVisible();
+  return library;
 }
 
 export async function openGameActions(page: Page) {

@@ -25,7 +25,7 @@ test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', 
   const drawn = await action({ kind: 'draw', count: 4 });
   const ids = drawn.players[0].hand!.map(card => card.id);
   await action({ kind: 'move', cardIds: ids, to: 'battlefield' });
-  for (const [index, id] of ids.entries()) await action({ kind: 'position', cardId: id, x: 80 + index * 120, row: 0 });
+  for (const [index, id] of ids.entries()) await action({ kind: 'position', cardId: id, x: 1 + index, row: 0 });
   await page.route('**/api/cards/image?*', route => route.fulfill({ status: 502, body: 'Imagem indisponível' }));
   await page.goto(`/#/salas/${room.id}`);
   const field = page.getByRole('region', { name: 'Campo', exact: true });

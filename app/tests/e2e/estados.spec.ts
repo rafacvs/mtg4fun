@@ -3,7 +3,7 @@ import type { BrowserContext } from '@playwright/test';
 
 // Images are unrelated to state permissions; all state requests use the real server.
 test('faces, ocultação, revelação e virar funcionam com mouse e toque', async ({ browser, baseURL }, testInfo) => {
-  test.skip(testInfo.project.name === 'celular', 'A partida exige orientação horizontal.');
+
   const contexts: BrowserContext[] = [];
   const savedDecks: { context: BrowserContext; id: number }[] = [];
   try {
@@ -61,6 +61,7 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
       await preview.getByRole('button', { name: 'Virar', exact: true }).tap();
       await expect(button).toHaveAttribute('data-tapped', 'true');
     }
+    await preview.getByRole('button', { name: 'Outras ações', exact: true }).click();
     await preview.getByLabel('Face da carta').selectOption('1');
     await expect.poll(() => imageNames.includes('Night Test')).toBe(true);
     await preview.getByRole('button', { name: 'Colocar face para baixo', exact: true }).click();
@@ -68,23 +69,25 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
     await preview.getByRole('button', { name: 'Fechar', exact: true }).click();
     const otherField = other.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true }).getByRole('region', { name: 'Campo', exact: true });
     await openMatchRail(other);
-    if (testInfo.project.name !== 'desktop') await other.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ }).tap();
+    if (testInfo.project.name !== 'desktop') await other.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }).tap();
     await expect(otherField.getByRole('button', { name: 'Carta face para baixo', exact: true })).toBeVisible();
     await expect(otherField.getByRole('button', { name: 'Day Test', exact: true })).toHaveCount(0);
     await button.click();
+    await preview.getByRole('button', { name: 'Outras ações', exact: true }).click();
     await preview.getByRole('button', { name: 'Revelar para todos', exact: true }).click();
     await expect(otherField.getByRole('button', { name: 'Day Test', exact: true })).toBeVisible();
     await preview.getByRole('button', { name: 'Colocar face para cima', exact: true }).click();
     await preview.getByLabel('Manter revelada ao fechar (até passar o turno)').check();
     await expect(preview.getByLabel('Face da carta')).toHaveValue('1');
     await preview.getByRole('button', { name: 'Fechar', exact: true }).click();
-    await page.getByRole('button', { name: '↺ Desvirar todas', exact: true }).click();
+    await page.getByRole('button', { name: 'Desvirar todas', exact: true }).click();
     await expect(button).toHaveAttribute('data-tapped', 'false');
     await action({ kind: 'move', cardIds: [card.id], to: 'library', libraryPlacement: 'bottom' });
     const exposed = page.getByRole('region', { name: 'Cartas reveladas de Amigo da mesa', exact: true });
     await expect(exposed.getByRole('button', { name: 'Day Test', exact: true })).toBeVisible();
     await page.reload();
     await exposed.getByRole('button', { name: 'Day Test', exact: true }).click();
+    await preview.getByRole('button', { name: 'Outras ações', exact: true }).click();
     await preview.getByRole('button', { name: 'Ocultar revelação', exact: true }).click();
     await expect(other.getByRole('region', { name: 'Cartas reveladas de Amigo da mesa', exact: true })).toHaveCount(0);
   } finally {

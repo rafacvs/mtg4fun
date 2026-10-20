@@ -11,28 +11,51 @@ type Props = {
   selected?: boolean;
   onInspect: (card: Card) => void;
   onHover?: (card: Card) => void;
+  onZoom?: (card: Card | null) => void;
   onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected }: Props) {
+export function PlayingCard({ card, draggable, onInspect, onHover, onZoom, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected }: Props) {
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
   const clickTimer = useRef<number | null>(null);
+  const holdTimer = useRef<number | null>(null);
+  const holdShown = useRef(false);
   const pointerType = useRef('mouse');
   const suppressClick = useRef(false);
   const stopTracking = useRef<(() => void) | null>(null);
-  const handlers = useRef({ onInspect, onDragMove, onDragEnd, onDragCancel });
-  handlers.current = { onInspect, onDragMove, onDragEnd, onDragCancel };
+  const handlers = useRef({ onInspect, onDragMove, onDragEnd, onDragCancel, onZoom });
+  handlers.current = { onInspect, onDragMove, onDragEnd, onDragCancel, onZoom };
 
-  useEffect(() => () => { stopTracking.current?.(); if (clickTimer.current) window.clearTimeout(clickTimer.current); }, []);
+  const clearHold = () => {
+    if (holdTimer.current) window.clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  };
+  const scheduleZoom = () => {
+    clearHold();
+    holdShown.current = false;
+    holdTimer.current = window.setTimeout(() => {
+      if (dragging.current) return;
+      holdShown.current = true;
+      handlers.current.onZoom?.(card);
+    }, 750);
+  };
+  const cancelZoom = () => {
+    clearHold();
+    holdShown.current = false;
+    handlers.current.onZoom?.(null);
+  };
+  useEffect(() => () => { stopTracking.current?.(); clearHold(); if (clickTimer.current) window.clearTimeout(clickTimer.current); }, []);
   useEffect(() => setFailed(false), [card.imageName, card.name, card.faceIndex]);
 
   function pointerDown(event: React.PointerEvent<HTMLButtonElement>) {
     pointerType.current = event.pointerType;
-    if (!draggable || event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.pointerType !== 'mouse') scheduleZoom();
+    if (!draggable) return;
     stopTracking.current?.();
     suppressClick.current = false;
     dragging.current = false;
@@ -43,11 +66,14 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, o
       if (pointer.pointerId !== pointerId) return;
       if (!dragging.current && Math.hypot(pointer.clientX - origin.x, pointer.clientY - origin.y) < dragThreshold) return;
       dragging.current = true;
+      cancelZoom();
       handlers.current.onDragMove(card, pointer.clientX, pointer.clientY);
     };
     const up = (pointer: PointerEvent) => {
       if (pointer.pointerId !== pointerId) return;
       cleanup();
+      if (holdShown.current) suppressClick.current = true;
+      cancelZoom();
       const moved = dragging.current || Math.hypot(pointer.clientX - origin.x, pointer.clientY - origin.y) >= dragThreshold;
       dragging.current = false;
       if (!moved) return;
@@ -76,8 +102,16 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onDragMove, o
     data-tapped={Boolean(card.tapped)}
     data-face-down={Boolean(card.faceDown)}
     onPointerDown={pointerDown}
-    onPointerEnter={event => { if (event.pointerType === 'mouse') onHover?.(card); }}
+    onPointerEnter={event => { if (event.pointerType === 'mouse') { onHover?.(card); scheduleZoom(); } }}
+    onPointerLeave={event => { if (event.pointerType === 'mouse') cancelZoom(); }}
+    onPointerUp={() => {
+      if (!holdShown.current) { clearHold(); return; }
+      suppressClick.current = true;
+      cancelZoom();
+    }}
+    onPointerCancel={cancelZoom}
     onFocus={() => onHover?.(card)}
+    onBlur={cancelZoom}
     onDoubleClick={() => {
       if (clickTimer.current) window.clearTimeout(clickTimer.current);
       if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse') onToggleTapped?.(card);
