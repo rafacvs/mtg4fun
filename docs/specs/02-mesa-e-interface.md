@@ -17,7 +17,7 @@ Mesa virtual manual com ações genéricas, posicionamento em fileiras e seleç�
 5. Como jogador, quero manter minha mão e ações ao observar outro campo, para continuar jogando.
 6. Como jogador no desktop, quero ver todos os campos quando houver espaço, para acompanhar a mesa.
 7. Como jogador, quero ampliar um campo, para examinar suas cartas.
-8. Como jogador, quero posicionar cartas livremente na horizontal, para organizar meu campo.
+8. Como jogador, quero posicionar cartas em colunas, para organizar o campo sem deixar as cartas tortas.
 9. Como jogador, quero alinhamento automático em fileiras, para evitar desalinhamento vertical involuntário.
 10. Como jogador, quero sobrepor cartas, para organizar terrenos ou representar anexos visualmente.
 11. Como jogador no desktop, quero selecionar várias cartas por arraste de área, para movê-las ou agir em conjunto.
@@ -66,7 +66,7 @@ demais regras e fluxos abaixo permanecem.
 - Visual restrito à mesa e seus fluxos: playmat escuro, texturas/detalhes arcanos discretos, dourado e cores funcionais. Turno/foco claros, prévia vazia compacta e registro que não interrompe quem lê entradas anteriores. Animações curtas respeitam movimento reduzido. Aprovação: [decisão 28](../decisions/28-ui-mesa-responsiva.md).
 - Foco só muda observação. Mão, ações próprias e permissões permanecem iguais; identificar claramente o jogador observado.
 - Desktop mostra todos os campos quando há espaço, com opção de ampliar um jogador.
-- Fileiras fixas invisíveis ajustam a posição vertical da carta; posição horizontal livre. A quantidade/espaçamento final das fileiras será definida na implementação.
+- Cartas encaixam em colunas e fileiras. A célula tem o tamanho da própria pilha: carta deitada e pilha de até três cartas ocupam mais espaço, e só empurram as cartas à direita na mesma fileira e as fileiras abaixo. O campo cresce para a direita e para baixo. Detalhe: [decisão 30](../decisions/30-grade-do-campo.md).
 - Sobreposição é apenas visual: não cria grupo, vínculo ou propagação automática de ações.
 - Seleção por área no desktop; modo explícito de seleção múltipla no celular, adicionando cartas por toque.
 - Cartas selecionadas podem ser movidas juntas e receber ações coletivas aplicáveis.
@@ -121,7 +121,7 @@ Critérios observáveis:
 
 - Foco em oponente preserva mão e ações próprias.
 - Celular vertical/horizontal permite consultar seis jogadores pela visão geral e ampliar qualquer campo, mantendo mão e ações próprias.
-- Movimento preserva posição horizontal e alinha à fileira; sobreposição não cria vínculo.
+- Movimento encaixa a carta na coluna e na fileira; sobreposição de até três cartas não cria vínculo.
 - Seleção múltipla move cartas juntas sem impedir manipulação individual posterior.
 - Consulta privada e cartas viradas para baixo não expõem identidade a oponentes.
 - Comprar X, consultar topo/fundo, reordenar e retornar cartas preservam quantidades e ordem esperada.
