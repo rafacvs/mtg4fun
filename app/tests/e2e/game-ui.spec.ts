@@ -115,11 +115,9 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     const inspector = page.getByRole('dialog', { name: 'Imagem de Island' });
     await withinViewport(inspector);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('05-carta.png'), fullPage: true });
-    await inspector.getByRole('button', { name: 'Ajustes', exact: true }).click();
     await inspector.getByLabel('Poder', { exact: true }).fill('2');
     await inspector.getByLabel('Poder', { exact: true }).press('Enter');
     await expect(hand.getByText('+2/+0', { exact: true })).toBeVisible();
-    await inspector.getByRole('button', { name: 'Voltar', exact: true }).click();
     await inspector.getByRole('button', { name: 'Mover para…', exact: true }).click();
     await inspector.getByRole('button', { name: 'Campo', exact: true }).click();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);

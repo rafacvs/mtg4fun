@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { deckApi } from '../decks/deckApi';
 import { cardImageURL } from './cardImage';
 import { CardStateControls, type CardStateChange } from './CardStateControls';
-import { MarkerRows, PowerToughnessAdjust, type CounterOperation } from './CounterControls';
+import { MarkerRows, PowerToughnessAdjust, type CounterOperation, type OwedPair } from './CounterControls';
 import { CardStats } from './CounterValues';
 import { CardControlTransfer, type OwnerDestination } from './CardControlTransfer';
 import type { Card, Match, MarkerColor } from './roomsApi';
 import { MenuItem, PanelHeader, usePanelFocus } from './TablePanel';
 import { TableIcon, type TableIconName } from './TableIcon';
 
-type Step = 'view' | 'markers' | 'stats' | 'move' | 'more';
+type Step = 'view' | 'markers' | 'move' | 'more';
 const destinations: { value: string; title: string; icon: TableIconName }[] = [
   { value: 'battlefield', title: 'Campo', icon: 'focus' },
   { value: 'hand', title: 'Mão', icon: 'hand' },
@@ -46,6 +46,12 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
   const [failed, setFailed] = useState(false);
   const [keepRevealed, setKeepRevealed] = useState(false);
   const [step, setStep] = useState<Step>('view');
+  const owedPair = useRef<OwedPair | null>(null);
+  const owedCard = useRef(card?.id ?? null);
+  if (owedCard.current !== (card?.id ?? null)) {
+    owedCard.current = card?.id ?? null;
+    owedPair.current = null;
+  }
   onCloseRef.current = () => {
     if (busy) return;
     if (card?.revealed && card.controllerId === viewerId && !keepRevealed && onHide) {
@@ -63,7 +69,7 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
   }, [cardId, step]);
 
   if (!card) return null;
-  const title = { view: card.name || 'Carta face para baixo', markers: 'Marcadores', stats: 'Ajustes da carta', move: 'Mover para…', more: 'Outras ações' }[step];
+  const title = { view: card.name || 'Carta face para baixo', markers: 'Marcadores', move: 'Mover para…', more: 'Outras ações' }[step];
   const zone = destinations.find(destination => destination.value === card.zone)?.title ?? 'Consulta do grimório';
   const controlled = card.controllerId === viewerId;
   const image = card.instanceKind || card.imageName ? cardImageURL(card) : deckApi.imageURL(imageName);
@@ -81,17 +87,16 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
         <div className="card-status-chips"><span>{zone}</span>{card.tapped && <span>Virada</span>}{card.faceDown && <span>Face para baixo</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}</div>
         {card.text && <p className="instance-text">{card.text}</p>}
         <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
+        {editable && onCounter && <PowerToughnessAdjust key={card.id} power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} owed={owedPair} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
         {controlled && <div className="card-quick-actions">
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
           {onMove && <button className="secondary" disabled={disabled} onClick={() => setStep('move')}><TableIcon name="move" />Mover para…</button>}
         </div>}
         <div className="table-menu">
-          {editable && onCounter && <MenuItem icon="adjust" title="Ajustes" description={`Modificadores de P/R · ${(card.power ?? 0) >= 0 ? '+' : ''}${card.power ?? 0} / ${(card.toughness ?? 0) >= 0 ? '+' : ''}${card.toughness ?? 0}`} disabled={disabled} onClick={() => setStep('stats')} />}
           {editable && onCounter && <MenuItem icon="markers" title="Marcadores" description="Marcadores de cor desta carta" disabled={disabled} onClick={() => setStep('markers')} />}
           {(controlled || onCopy) && <MenuItem icon="actions" title="Outras ações" description="Revelação, faces, controle e cópias" onClick={() => setStep('more')} />}
         </div>
       </>}
-      {step === 'stats' && editable && onCounter && <section className="panel-form"><h3>Modificadores de P/R</h3><p>Ajustes manuais sobre os valores impressos na carta.</p><PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} /></section>}
       {step === 'markers' && editable && onCounter && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
       {step === 'move' && controlled && <div className="table-menu">
         {card.ownerId === viewerId && destinations.filter(destination => destination.value !== card.zone).map(destination => <MenuItem key={destination.value} icon={destination.icon} title={destination.title} disabled={disabled} onClick={() => { void onMove?.(card.id, destination.value).then(ok => { if (ok) setStep('view'); }); }} />)}

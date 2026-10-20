@@ -241,8 +241,8 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         expect(await page.locator('.table-toolbar').evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
         await field.getByRole('button', { name: 'Island', exact: true }).first().click({ position: { x: 4, y: 4 } });
         await expect(preview).toBeVisible();
-        await preview.getByRole('button', { name: 'Ajustes', exact: true }).click();
         const input = preview.getByLabel('Poder', { exact: true });
+        await input.click();
         await expect(input).toBeFocused();
         await input.fill('-3'); await input.press('Enter');
         await expect.poll(async () => own(await read()).battlefield!.find(c => c.id === fieldCards[0].id)?.power).toBe(-3);
@@ -254,7 +254,6 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await input.press('Enter');
         expect(own(await read()).battlefield![0].power).toBe(-3);
         await input.fill('-3');
-        await preview.getByRole('button', { name: 'Voltar', exact: true }).click();
         await preview.getByRole('button', { name: 'Marcadores', exact: true }).click();
         const red = preview.getByRole('spinbutton', { name: 'marcador vermelho', exact: true });
         await expect(red).toBeFocused();

@@ -36,8 +36,12 @@
 .match-board .numeric-counter input::-webkit-inner-spin-button { appearance: none; }
 .match-board .numeric-counter button { min-width: 44px; min-height: 44px; padding: 0; }
 .match-board .marker-row { grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #ffffff02; }
-.match-board .pt-line { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.pt-control > span { display: block; margin-bottom: 6px; color: var(--text); }
+.card-preview .pt-pair-block { display: flex; flex-direction: column; gap: 8px; min-width: 0; max-width: 100%; }
+.card-preview .pt-pair { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+.card-preview .pt-pair > button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; font-size: 1.25rem; line-height: 1; }
+.card-preview .pt-pair input { flex: 1 1 0; width: 0; min-width: 44px; height: 44px; min-height: 44px; padding: 4px; text-align: center; font-variant-numeric: tabular-nums; }
+.card-preview .pt-pair .pt-slash { flex: 0 0 auto; margin: 0; color: var(--text); font-size: 1.25rem; font-weight: 750; line-height: 1; }
+.card-preview .pt-pair-block .error { margin: 0; }
 
 /* Library workspaces need room for cards; their command menu stays compact. */
 .match-board .table-panel.library-consultation:not(.library-active) { width: min(320px, calc(100vw - 24px)); height: auto; padding: 16px; }

@@ -1,4 +1,4 @@
-import type { Locator } from '@playwright/test';
+import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { test, expect, openMatchRail } from './fixtures';
 
 async function expectLifeBesideName(table: Locator, life: number) {
@@ -136,7 +136,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await press('Fechar jogador');
     await press('Island');
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
-    await preview.getByRole('button', { name: 'Ajustes', exact: true }).click();
+    await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
     await preview.getByLabel('Poder', { exact: true }).fill('-1');
     await preview.getByLabel('Poder', { exact: true }).press('Enter');
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+0', { exact: true })).toBeVisible();
@@ -178,4 +178,268 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await expect(table.getByLabel('marcador vermelho')).toHaveText('2');
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+4', { exact: true })).toBeVisible();
   } finally { await observer.close(); }
+});
+
+const deckFile = {
+  name: 'par.cod',
+  mimeType: 'application/xml',
+  buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Par</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>'),
+};
+
+async function islandStats(request: APIRequestContext, roomId: number) {
+  const match = (await (await request.get(`/api/rooms/${roomId}/match`)).json()).match;
+  const player = match.players.find((item: { userId: number }) => item.userId === match.viewerId);
+  const card = [...player.hand ?? [], ...player.battlefield ?? []].find((item: { name: string }) => item.name === 'Island');
+  const changes = (match.log as { kind: string; result?: string }[]).filter(entry => entry.kind === 'counter' && entry.result === 'contador de carta alterado').length;
+  return { power: card?.power ?? 0, toughness: card?.toughness ?? 0, changes, id: card?.id as string };
+}
+
+async function prepareIsland(page: Page, partner?: APIRequestContext) {
+  const api = page.request;
+  expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+  const upload = await api.post('/api/decks', { multipart: { file: deckFile } });
+  expect(upload.status()).toBe(201);
+  const deckId = (await upload.json()).deck.id;
+  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId } })).ok()).toBe(true);
+  if (partner) {
+    expect((await partner.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+    const otherUpload = await partner.post('/api/decks', { multipart: { file: { ...deckFile, name: 'outro-par.cod' } } });
+    expect(otherUpload.status()).toBe(201);
+    const otherDeckId = (await otherUpload.json()).deck.id;
+    expect((await partner.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
+    expect((await partner.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: otherDeckId } })).ok()).toBe(true);
+    expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    expect((await partner.delete(`/api/decks/${otherDeckId}`)).status()).toBe(204);
+  } else expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  expect((await api.delete(`/api/decks/${deckId}`)).status()).toBe(204);
+  expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);
+  await page.goto(`/#/salas/${room.id}`);
+  await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
+  const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
+  await expect(preview).toBeVisible();
+  return { roomId: room.id as number, api, preview };
+}
+
+test('edita poder e resistência direto no detalhe, em par e com permissão', async ({ page, browser, baseURL }, info) => {
+  test.setTimeout(90_000);
+  const observer = await browser.newContext({ baseURL, viewport: info.project.use.viewport, isMobile: info.project.use.isMobile, hasTouch: info.project.use.hasTouch });
+  try {
+    const { roomId, api, preview } = await prepareIsland(page, observer.request);
+    const read = () => islandStats(api, roomId);
+    const power = preview.getByLabel('Poder', { exact: true });
+    const toughness = preview.getByLabel('Resistência', { exact: true });
+    const minus = preview.getByRole('button', { name: 'Diminuir poder e resistência', exact: true });
+    const plus = preview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true });
+    await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
+    await expect(preview.getByRole('button', { name: 'Marcadores', exact: true })).toBeVisible();
+    await expect(power).toHaveCount(1);
+    await expect(toughness).toHaveCount(1);
+    await expect(preview.getByRole('button', { name: 'Diminuir Poder', exact: true })).toHaveCount(0);
+    await expect(preview.getByRole('button', { name: 'Aumentar Poder', exact: true })).toHaveCount(0);
+    await expect(preview.getByRole('button', { name: 'Diminuir Resistência', exact: true })).toHaveCount(0);
+    await expect(preview.getByRole('button', { name: 'Aumentar Resistência', exact: true })).toHaveCount(0);
+    const viewport = page.viewportSize();
+    await page.setViewportSize({ width: 320, height: 568 });
+    await plus.scrollIntoViewIfNeeded();
+    const dialog = (await preview.boundingBox())!;
+    const boxes = await Promise.all([minus, power, toughness, plus].map(async control => (await control.boundingBox())!));
+    for (const box of boxes) {
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.x).toBeGreaterThanOrEqual(dialog.x - 1);
+      expect(box.x + box.width).toBeLessThanOrEqual(dialog.x + dialog.width + 1);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height).toBeLessThanOrEqual(568);
+    }
+    expect(boxes[0].x).toBeLessThan(boxes[1].x);
+    expect(boxes[1].x).toBeLessThan(boxes[2].x);
+    expect(boxes[2].x).toBeLessThan(boxes[3].x);
+    expect(Math.abs((boxes[0].y + boxes[0].height / 2) - (boxes[3].y + boxes[3].height / 2))).toBeLessThan(8);
+    if (viewport) await page.setViewportSize(viewport);
+
+    await power.fill('9');
+    await page.waitForTimeout(1_300);
+    await expect(power).toBeFocused();
+    await expect(power).toHaveValue('9');
+    expect(await read()).toMatchObject({ power: 0, toughness: 0, changes: 0 });
+    for (const invalid of ['1.5', '', '-', '+']) {
+      await power.fill(invalid);
+      await power.blur();
+      await expect(power).toHaveValue('0');
+    }
+    await page.waitForTimeout(400);
+    expect(await read()).toMatchObject({ power: 0, toughness: 0, changes: 0 });
+    await power.fill('-1');
+    await power.press('Enter');
+    await power.blur();
+    await expect.poll(read).toMatchObject({ power: -1, toughness: 0, changes: 1 });
+    await power.fill('-1');
+    await power.press('Enter');
+    await power.blur();
+    await page.waitForTimeout(400);
+    expect(await read()).toMatchObject({ power: -1, changes: 1 });
+    await toughness.fill('4');
+    await toughness.blur();
+    await expect.poll(read).toMatchObject({ power: -1, toughness: 4, changes: 2 });
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+4', { exact: true })).toBeVisible();
+
+    await power.fill('2');
+    await power.press('Enter');
+    await toughness.fill('-1');
+    await toughness.blur();
+    await expect.poll(read).toMatchObject({ power: 2, toughness: -1, changes: 4 });
+    const activate = async (locator: Locator) => { if (info.project.use.hasTouch) await locator.tap(); else await locator.click(); };
+    await activate(plus);
+    await expect.poll(read).toMatchObject({ power: 3, toughness: 0, changes: 6 });
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('+3/+0', { exact: true })).toBeVisible();
+    await activate(minus);
+    await expect.poll(read).toMatchObject({ power: 2, toughness: -1, changes: 8 });
+    await power.fill('0');
+    await power.press('Enter');
+    await toughness.fill('0');
+    await toughness.blur();
+    await expect.poll(read).toMatchObject({ power: 0, toughness: 0, changes: 10 });
+    await activate(plus);
+    await expect.poll(read).toMatchObject({ power: 1, toughness: 1, changes: 12 });
+    await activate(minus);
+    await expect.poll(read).toMatchObject({ power: 0, toughness: 0, changes: 14 });
+    await power.fill(String(Number.MAX_SAFE_INTEGER));
+    await power.press('Enter');
+    await expect.poll(read).toMatchObject({ power: Number.MAX_SAFE_INTEGER, toughness: 0 });
+    await power.fill(String(Number.MAX_SAFE_INTEGER + 1));
+    await power.blur();
+    await expect(power).toHaveValue(String(Number.MAX_SAFE_INTEGER));
+    await page.waitForTimeout(400);
+    expect((await read()).power).toBe(Number.MAX_SAFE_INTEGER);
+    await power.fill('2');
+    await power.press('Enter');
+    await toughness.fill('-1');
+    await toughness.blur();
+    await expect.poll(read).toMatchObject({ power: 2, toughness: -1 });
+
+    await page.reload();
+    await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
+    const restored = page.getByRole('dialog', { name: 'Imagem de Island' });
+    await expect(restored.getByLabel('Poder', { exact: true })).toHaveValue('2');
+    await expect(restored.getByLabel('Resistência', { exact: true })).toHaveValue('-1');
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('+2/-1', { exact: true })).toBeVisible();
+    await restored.getByRole('button', { name: 'Mover para…', exact: true }).click();
+    await restored.getByRole('button', { name: 'Campo', exact: true }).click();
+    await expect.poll(async () => (await read()).power).toBe(2);
+
+    const otherPage = await observer.newPage();
+    await otherPage.goto(`/#/salas/${roomId}`);
+    await openMatchRail(otherPage);
+    const focus = otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ });
+    if (info.project.use.hasTouch) await focus.tap(); else await focus.click();
+    const otherTable = otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' });
+    await expect(otherTable.getByText('+2/-1', { exact: true })).toBeVisible();
+    await otherTable.getByRole('button', { name: 'Island', exact: true }).click();
+    const readOnly = otherPage.getByRole('dialog', { name: 'Imagem de Island' });
+    await expect(readOnly.getByLabel('Poder', { exact: true })).toHaveCount(0);
+    await expect(readOnly.getByLabel('Resistência', { exact: true })).toHaveCount(0);
+    await expect(readOnly.getByRole('button', { name: 'Aumentar poder e resistência', exact: true })).toHaveCount(0);
+    await expect(readOnly.getByRole('button', { name: 'Diminuir poder e resistência', exact: true })).toHaveCount(0);
+    const island = await read();
+    expect((await observer.request.post(`/api/rooms/${roomId}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'card', cardId: island.id, subject: 'power', operation: 'set', value: 99 } })).status()).toBe(409);
+    expect(await read()).toMatchObject({ power: 2, toughness: -1 });
+  } finally { await observer.close(); }
+});
+
+test('falha parcial de resistência não repete o poder já confirmado', async ({ page }) => {
+  test.setTimeout(60_000);
+  const { roomId, api, preview } = await prepareIsland(page);
+  const read = () => islandStats(api, roomId);
+  const seen: { subject: string; intentId: string }[] = [];
+  let failToughness = true;
+  await page.route('**/match/actions', async route => {
+    const body = route.request().postDataJSON() as { kind?: string; subject?: string; intentId?: string };
+    if (body.kind === 'counter' && (body.subject === 'power' || body.subject === 'toughness')) {
+      seen.push({ subject: body.subject, intentId: body.intentId ?? '' });
+      if (failToughness && body.subject === 'toughness') {
+        await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'falha controlada da resistência' }) });
+        return;
+      }
+    }
+    await route.continue();
+  });
+  await preview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true }).click();
+  await expect(preview.getByText('Poder confirmado. Resistência ficou pendente.')).toBeVisible();
+  await expect.poll(read).toMatchObject({ power: 1, toughness: 0, changes: 1 });
+  expect(seen.map(item => item.subject)).toEqual(['power', 'toughness']);
+  await expect(preview.getByRole('button', { name: 'Tentar novamente', exact: true })).toHaveCount(0);
+  failToughness = false;
+  await preview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true }).click();
+  await expect.poll(read).toMatchObject({ power: 1, toughness: 1, changes: 2 });
+  expect(seen.map(item => item.subject)).toEqual(['power', 'toughness', 'toughness']);
+  await expect(preview.getByText('Poder confirmado. Resistência ficou pendente.')).toHaveCount(0);
+});
+
+test('confirmação incerta reenvia só a etapa pendente do par', async ({ page }) => {
+  test.setTimeout(60_000);
+  const { roomId, api, preview } = await prepareIsland(page);
+  const read = () => islandStats(api, roomId);
+  const seen: { subject: string; intentId: string }[] = [];
+  let failToughness = true;
+  await page.route('**/match/actions', async route => {
+    const body = route.request().postDataJSON() as { kind?: string; subject?: string; intentId?: string };
+    if (body.kind === 'counter' && (body.subject === 'power' || body.subject === 'toughness')) {
+      seen.push({ subject: body.subject, intentId: body.intentId ?? '' });
+      if (failToughness && body.subject === 'toughness') {
+        await route.abort('failed');
+        return;
+      }
+    }
+    await route.continue();
+  });
+  const plus = preview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true });
+  await plus.click();
+  await expect(preview.getByText('Poder confirmado. Resistência ficou pendente.')).toBeVisible();
+  await expect(preview.getByRole('alert').filter({ hasText: 'Não foi possível confirmar' })).toBeVisible();
+  await expect.poll(read).toMatchObject({ power: 1, toughness: 0, changes: 1 });
+  expect(seen.filter(item => item.subject === 'power').map(item => item.intentId)).toHaveLength(1);
+  const toughnessIntents = () => seen.filter(item => item.subject === 'toughness').map(item => item.intentId);
+  expect(toughnessIntents()).toHaveLength(2);
+  expect(new Set(toughnessIntents()).size).toBe(1);
+  const sent = seen.length;
+  await plus.click({ force: true });
+  await page.waitForTimeout(300);
+  expect(seen).toHaveLength(sent);
+  expect((await read()).power).toBe(1);
+  failToughness = false;
+  await preview.getByRole('button', { name: 'Tentar novamente', exact: true }).click();
+  await expect.poll(read).toMatchObject({ power: 1, toughness: 1, changes: 2 });
+  expect(seen.filter(item => item.subject === 'power')).toHaveLength(1);
+  expect(new Set(toughnessIntents()).size).toBe(1);
+  expect(toughnessIntents().length).toBe(3);
+
+  await preview.getByRole('button', { name: 'Fechar', exact: true }).click();
+  await expect(preview).toHaveCount(0);
+  let failPower = true;
+  await page.unroute('**/match/actions');
+  const retried: { subject: string; intentId: string }[] = [];
+  await page.route('**/match/actions', async route => {
+    const body = route.request().postDataJSON() as { kind?: string; subject?: string; intentId?: string };
+    if (body.kind === 'counter' && (body.subject === 'power' || body.subject === 'toughness')) {
+      retried.push({ subject: body.subject, intentId: body.intentId ?? '' });
+      if (failPower && body.subject === 'power') {
+        await route.abort('failed');
+        return;
+      }
+    }
+    await route.continue();
+  });
+  await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
+  const fieldPreview = page.getByRole('dialog', { name: 'Imagem de Island' });
+  await fieldPreview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true }).click();
+  await expect(fieldPreview.getByRole('alert')).toContainText('Não foi possível confirmar');
+  await expect(fieldPreview.getByText('Poder confirmado. Resistência ficou pendente.')).toHaveCount(0);
+  expect(retried.map(item => item.subject)).toEqual(['power', 'power']);
+  expect((await read()).power).toBe(1);
+  failPower = false;
+  await fieldPreview.getByRole('button', { name: 'Tentar novamente', exact: true }).click();
+  await expect.poll(read).toMatchObject({ power: 2, toughness: 1 });
+  expect(retried.filter(item => item.subject === 'toughness')).toEqual([]);
+  expect(new Set(retried.map(item => item.intentId)).size).toBe(1);
 });
