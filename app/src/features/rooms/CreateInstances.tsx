@@ -33,18 +33,18 @@ export function CreateInstances({ open, roomId, busy, error, onCreateToken, onCr
   if (!open) return null;
   const title = view === 'catalog' ? 'Ficha do catálogo' : view === 'custom' ? 'Ficha personalizada' : 'Fichas';
   return <>
-    <TablePanel open={open} label="Fichas" wide={view !== 'menu'} className="creations-panel" onClose={onClose}>
-      <PanelHeader title={title} subtitle="Criar ficha" closeLabel="Fechar fichas" onClose={() => { setPreview(null); onClose(); }} onBack={view !== 'menu' ? () => { setPreview(null); setView('menu'); } : undefined} />
-      {error && <p role="alert">{error}</p>}
-      {notice && <p role="status">{notice}</p>}
+    <TablePanel open={open} label="Fichas" className="creations-panel" onClose={onClose}>
+      <PanelHeader title={title} subtitle={view === 'menu' ? 'Criar no seu campo' : 'Fichas'} closeLabel="Fechar fichas" onClose={() => { setPreview(null); onClose(); }} onBack={view !== 'menu' ? () => { setPreview(null); setView('menu'); } : undefined} />
+      {error && <p role="alert" className="error">{error}</p>}
+      {notice && <p role="status" className="panel-result">{notice}</p>}
       {view === 'menu' && <div className="table-menu">
         <MenuItem icon="search" title="Ficha do catálogo" description="Buscar uma ficha que já existe" onClick={() => setView('catalog')} />
         <MenuItem icon="token" title="Ficha personalizada" description="Nome, texto e poder/resistência" onClick={() => setView('custom')} />
       </div>}
       {view === 'catalog' && <section className="creations-catalog" aria-label="Fichas do catálogo">
         <label className="library-search">Buscar ficha do catálogo<input value={query} onChange={event => setQuery(event.target.value)} /></label>
-        {catalog.error && <p role="alert">{catalog.error}</p>}
-        {catalog.loading && <p role="status">Buscando fichas…</p>}
+        {catalog.error && <p role="alert" className="error">{catalog.error}</p>}
+        {catalog.loading && <p role="status" className="panel-hint">Buscando fichas…</p>}
         {!catalog.loading && !catalog.error && catalog.tokens.length === 0 && <p className="library-empty">Nenhuma ficha encontrada.</p>}
         <ul className="token-list">{catalog.tokens.map(result => <li key={result.name}>
           <TokenThumb token={result} onInspect={setPreview} />
@@ -78,7 +78,7 @@ function CatalogTokenPreview({ token, onClose }: { token: CatalogToken; onClose:
       <div className="card-preview-image"><img src={cardImageURL(token)} alt={`Imagem ampliada de ${token.name}`} /></div>
       <div className="card-preview-actions">
         <PanelHeader title={token.name} subtitle="Ficha do catálogo" closeLabel="Fechar" onClose={onClose} />
-        {(token.power || token.toughness) && <p>{token.power || '—'} / {token.toughness || '—'}</p>}
+        {(token.power || token.toughness) && <p className="panel-readout">{token.power || '—'} / {token.toughness || '—'}</p>}
       </div>
     </div>
   </div>;

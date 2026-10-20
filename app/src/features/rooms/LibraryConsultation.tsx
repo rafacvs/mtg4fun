@@ -1,4 +1,4 @@
-import { MenuItem, PanelHeader, TablePanel } from './TablePanel';
+import { MenuItem, PanelFeedback, PanelHeader, TablePanel } from './TablePanel';
 import { LibraryCards } from './LibraryCards';
 import type { Card } from './roomsApi';
 import {
@@ -63,29 +63,20 @@ export function LibraryConsultation(props: Props) {
       wide={active}
       onClose={onDismiss}
       label="Grimório"
-      className={`actions-panel library-consultation ${active ? 'library-active' : ''}`}
+      className={`library-consultation ${active ? 'library-active' : ''}`}
     >
-      <PanelHeader title={title} subtitle={`Grimório · ${libraryCount} cartas`} onClose={onDismiss} closeLabel="Fechar painel do grimório">
+      <PanelHeader title={title} subtitle={libraryCount === 1 ? '1 carta' : `${libraryCount} cartas`} onClose={onDismiss} closeLabel="Fechar painel do grimório" onBack={!active && state.view !== 'menu' ? () => state.choose('menu') : undefined}>
       {active && (
             <p className={`library-visibility ${publicCount ? 'public' : ''}`}>
               {publicCount
-                ? `◉ ${publicCount} carta(s) visível(is) para todos`
-                : '◈ Só você vê estas cartas'}
+                ? `${publicCount} carta(s) visível(is) para todos`
+                : 'Só você vê estas cartas'}
             </p>
           )}
       </PanelHeader>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-          {props.unconfirmed && (
-            <button disabled={props.busy} onClick={() => void props.onRetry()}>
-              Tentar novamente
-            </button>
-          )}
-        </p>
-      )}
+      <PanelFeedback error={error} busy={props.busy} unconfirmed={props.unconfirmed} onRetry={props.onRetry} />
       {state.notice && (
-        <p role="status" className="library-notice">
+        <p role="status" className="panel-result">
           {state.notice}
         </p>
       )}
@@ -153,9 +144,6 @@ export function LibraryConsultation(props: Props) {
             </label>
           </div>
           <div className="library-setup-actions">
-            <button className="secondary" disabled={busy} onClick={() => state.choose('menu')}>
-              Voltar
-            </button>
             <button disabled={busy || !validCount} onClick={() => void state.begin()}>
               {state.view === 'look' ? 'Olhar' : state.view === 'reveal' ? 'Revelar' : 'Comprar'}{' '}
               {state.count || ''} carta(s)

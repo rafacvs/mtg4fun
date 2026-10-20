@@ -3,10 +3,10 @@ import { deckApi } from '../decks/deckApi';
 import { cardImageURL } from './cardImage';
 import { CardStateControls, type CardStateChange } from './CardStateControls';
 import { MarkerRows, PowerToughnessAdjust, type CounterOperation, type OwedPair } from './CounterControls';
-import { CardStats } from './CounterValues';
+import { CardStats, MarkerReadout } from './CounterValues';
 import { CardControlTransfer, type OwnerDestination } from './CardControlTransfer';
 import type { Card, Match, MarkerColor } from './roomsApi';
-import { MenuItem, PanelHeader, usePanelFocus } from './TablePanel';
+import { MenuItem, PanelFeedback, PanelHeader, usePanelFocus } from './TablePanel';
 import { TableIcon, type TableIconName } from './TableIcon';
 
 type Step = 'view' | 'markers' | 'move' | 'more';
@@ -82,11 +82,11 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
       </div>
       <div className="card-preview-actions">
       <PanelHeader title={title} subtitle={step === 'view' ? zone : card.name || 'Carta face para baixo'} onClose={() => onCloseRef.current()} closeLabel="Fechar" onBack={step !== 'view' ? () => setStep('view') : undefined} />
-      {error && <p role="alert" className="error">{error}{unconfirmed && onRetry && <button disabled={busy} onClick={() => void onRetry()}>Tentar novamente</button>}</p>}
+      <PanelFeedback error={error} busy={busy} unconfirmed={Boolean(unconfirmed && onRetry)} onRetry={onRetry ?? (async () => false)} />
       {step === 'view' && <>
-        <div className="card-status-chips"><span>{zone}</span>{card.tapped && <span>Virada</span>}{card.faceDown && <span>Face para baixo</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}</div>
+        {(card.tapped || (card.faceDown && Boolean(card.name)) || card.revealed) && <div className="card-status-chips">{card.tapped && <span>Virada</span>}{card.faceDown && card.name && <span>Face para baixo</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}</div>}
         {card.text && <p className="instance-text">{card.text}</p>}
-        <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
+        {editable && onCounter ? <MarkerReadout markers={card.markers} /> : <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />}
         {editable && onCounter && <PowerToughnessAdjust key={card.id} power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} owed={owedPair} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
         {controlled && <div className="card-quick-actions">
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}

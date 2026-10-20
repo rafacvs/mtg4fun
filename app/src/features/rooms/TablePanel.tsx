@@ -113,5 +113,5 @@ export type PanelFeedbackProps = { error: string; busy: boolean; unconfirmed: bo
 
 export function PanelFeedback({ error, busy, unconfirmed, onRetry }: PanelFeedbackProps) {
   if (!error) return null;
-  return <p role="alert" className="error">{error}{unconfirmed && <button type="button" disabled={busy} onClick={() => void onRetry()}>Tentar novamente</button>}</p>;
+  return <p role="alert" className="error">{error}{unconfirmed && <button type="button" className="secondary" disabled={busy} onClick={() => void onRetry()}>Tentar novamente</button>}</p>;
 }

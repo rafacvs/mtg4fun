@@ -15,8 +15,7 @@ Entrega anterior, sem alteração de status:
 | [03](03-mesa-premium-mobile-first.md) | Mesa: composição premium mobile-first | Nenhum |
 | [04](04-paineis-padronizacao-premium.md) | Painéis: padronização e acabamento premium | 01 e 02 |
 
-**Status:** 01, 02 e 03 implementados; 04 segue `ready-for-agent` e já pode
-começar. O card 03 não é pré-requisito de 04.
+**Status:** os quatro cards estão implementados nesta branch.
 As verificações fazem parte de cada entrega, não de um card final isolado.
 
 Seguir [AGENTS.md](../../../AGENTS.md) e a
