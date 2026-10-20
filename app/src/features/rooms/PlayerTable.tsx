@@ -5,6 +5,7 @@ import { battlefieldLayout } from './battlefieldLayout';
 import { createLibraryGesture } from './libraryGesture';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
+import { TableIcon } from './TableIcon';
 
 export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando', consulted: 'consulta', revealed: 'cartas reveladas' };
 
@@ -41,9 +42,12 @@ function canDrag(card: Card, viewerId: number) {
   return card.controllerId === viewerId;
 }
 
-export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture, onFocus, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
-  return <article className={`player-table ${focused ? 'focused-table' : ''}`} aria-label={`Mesa de ${player.name}`}>
-    <header className="player-heading"><h2>{player.name}{own && <small> · Você</small>}</h2><span>Vida: {player.life}</span><MarkerReadout markers={player.markers} /><button className="secondary" onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`}>Ampliar</button></header>
+export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture, onFocus, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
+  return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
+    <header className="player-heading">
+      <button className="player-identity secondary" onClick={event => onPlayerMenu(event.currentTarget)} aria-label={`Abrir jogador ${player.name}`}><span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><h2>{player.name}{own && <small> · Você</small>}</h2><span className="heading-life" aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span><TableIcon name="chevron" /></button>
+      <MarkerReadout markers={player.markers} />{currentTurn && <span className="turn-badge">Turno atual</span>}<button className="secondary icon-button" onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`} title="Ampliar mesa"><TableIcon name="focus" /></button>
+    </header>
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
         <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={onDraw} disabled={disabled} />
@@ -56,12 +60,30 @@ export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture
 }
 
 export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
+  const row = useRef<HTMLDivElement>(null);
+  const [scroll, setScroll] = useState({ before: false, after: false });
+  const updateScroll = () => {
+    const node = row.current;
+    if (node) setScroll({ before: node.scrollLeft > 2, after: node.scrollLeft + node.clientWidth < node.scrollWidth - 2 });
+  };
+  useEffect(() => {
+    if (!row.current) return;
+    updateScroll();
+    const observer = new ResizeObserver(updateScroll);
+    observer.observe(row.current);
+    return () => observer.disconnect();
+  }, [cards.length]);
+  const scrollHand = (direction: number) => row.current?.scrollBy({ left: direction * row.current.clientWidth * .75, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
   return <section className={`table-zone zone-hand ${hoverZone === 'hand' ? 'drop-hover' : ''}`} aria-label="Mão" data-drop-zone="hand">
     <header><span>Mão</span><strong aria-label={`${count} cartas`}>{count}</strong></header>
-    <div className="zone-cards">
+    <div ref={row} className="zone-cards" onScroll={updateScroll}>
       {cards.map(card => <PlayingCard key={card.id} card={card} draggable={canDrag(card, viewerId)} {...gesture} />)}
       {cards.length === 0 && <span className="zone-placeholder">Mão</span>}
     </div>
+    {(scroll.before || scroll.after) && <nav className="hand-scroll-controls" aria-label="Navegar pela mão">
+      <button type="button" className="secondary icon-button" disabled={!scroll.before} aria-label="Cartas anteriores na mão" onClick={() => scrollHand(-1)}><TableIcon name="back" /></button>
+      <button type="button" className="secondary icon-button" disabled={!scroll.after} aria-label="Próximas cartas na mão" onClick={() => scrollHand(1)}><TableIcon name="next" /></button>
+    </nav>}
   </section>;
 }
 

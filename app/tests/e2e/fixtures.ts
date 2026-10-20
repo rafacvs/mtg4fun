@@ -64,6 +64,18 @@ export async function openMatchRail(page: Page) {
   if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
 }
 
+export async function closeMatchRail(page: Page) {
+  const toggle = page.locator('.rail-toggle');
+  if (await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+}
+
+export async function openLibrary(page: Page) {
+  const library = page.getByRole('dialog', { name: 'Grimório', exact: true });
+  if (!await library.isVisible()) await page.getByRole('button', { name: 'Abrir ações do grimório' }).click();
+  await expect(library).toBeVisible();
+  return library;
+}
+
 export async function openGameActions(page: Page) {
   const actions = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
   if (!await actions.isVisible()) await page.getByRole('button', { name: 'Ações', exact: true }).click();

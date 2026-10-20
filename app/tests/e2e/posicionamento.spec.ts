@@ -23,17 +23,16 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   }
   await page.getByRole('button', { name: 'Ações', exact: true }).click();
   const menu = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
-  for (const name of ['Passar turno', 'Grimório']) {
+  for (const name of ['Passar turno', 'Rolar dado']) {
     await expect(menu.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  for (const name of [/^Selecionar cartas$/, /^Limpar seleção/, /^Desvirar todas$/]) {
+  for (const name of [/^Selecionar cartas$/, /^Limpar seleção/, /^Desvirar todas$/, /^Grimório$/, /^Comprar cartas$/]) {
     await expect(menu.getByRole('button', { name })).toHaveCount(0);
   }
   await page.screenshot({ path: testInfo.outputPath('comandos-dentro-de-acoes.png'), fullPage: true });
-  await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
-  await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
-  await page.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await page.getByRole('button', { name: 'Fechar ações', exact: true }).click();
+  await page.getByRole('button', { name: 'Comprar', exact: true }).click();
+  await page.getByRole('button', { name: 'Comprar', exact: true }).click();
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   await expect(cards).toHaveCount(2);
   await cards.nth(0).dragTo(field, { steps: 8 });
@@ -72,6 +71,13 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
       expect(upper.y - lower.y).toBeGreaterThanOrEqual(8);
       expect(Math.abs(lower.x - beforeStackMove.x)).toBeGreaterThan(2);
     }).toPass();
+    base = await fieldCards.nth(0).boundingBox();
+    stacked = await fieldCards.nth(1).boundingBox();
+  }
+  if (testInfo.project.use.hasTouch) {
+    // Two full rows need vertical room. Rotation is now supported without losing the stack.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await fieldCards.nth(1).scrollIntoViewIfNeeded();
     base = await fieldCards.nth(0).boundingBox();
     stacked = await fieldCards.nth(1).boundingBox();
   }
@@ -169,6 +175,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
 async function dragWithTouch(page: Page, source: { x: number; y: number; width: number; height: number }, target: { x: number; y: number }) {
   const session = await page.context().newCDPSession(page);
   const start = { x: source.x + source.width / 2, y: source.y + source.height / 2, id: 1 };
+  expect(await page.evaluate(point => Boolean(document.elementFromPoint(point.x, point.y)?.closest('.playing-card')), start), 'origem do gesto deve ser uma carta visível').toBe(true);
   await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
   for (let step = 1; step <= 8; step += 1) {
     await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (target.x - start.x) * step / 8, y: start.y + (target.y - start.y) * step / 8, id: 1 }] });

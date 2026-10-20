@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, openGameActions } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail } from './fixtures';
 import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 
 async function expectVerticalList(library: Locator) {
@@ -109,15 +109,11 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
     }
     await own.goto(`/#/salas/${roomId}`);
     await opponent.goto(`/#/salas/${roomId}`);
-    await openMatchRail(own);
-    await openMatchRail(opponent);
     const activate = async (button: Locator) =>
       info.project.use.hasTouch ? button.tap() : button.click();
     const library = own.getByRole('dialog', { name: 'Grimório', exact: true });
     const open = async () => {
-      const actions = await openGameActions(own);
-      await activate(actions.getByRole('button', { name: 'Grimório', exact: true }));
-      await expect(actions).toHaveCount(0);
+      if (!await library.isVisible()) await activate(own.getByRole('button', { name: 'Abrir ações do grimório' }));
     };
     const readOwn = async () => {
       const { match } = await (await contexts[0].request.get(`/api/rooms/${roomId}/match`)).json();
@@ -134,7 +130,7 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
   browser,
   baseURL,
 }, info) => {
-  test.skip(info.project.name === 'celular', 'a partida bloqueia orientação vertical');
+
   const game = await prepare(browser, baseURL, info);
   const { own, opponent, library, activate, open, readOwn } = game;
   try {
@@ -143,19 +139,18 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
     if (info.project.name === 'desktop') {
       const panel = await library.boundingBox();
       const bar = await own.getByRole('navigation', { name: 'Ações rápidas' }).boundingBox();
-      expect(panel!.y + panel!.height).toBeLessThanOrEqual(bar!.y);
+      expect(panel!.width).toBeLessThanOrEqual(320);
+      expect(panel!.x + panel!.width).toBeLessThanOrEqual(bar!.x + bar!.width);
     }
     await own.screenshot({ path: info.outputPath('grimorio-menu.png') });
     await activate(library.getByRole('button', { name: /^Embaralhar/ }));
     await expect(library.getByRole('status')).toHaveText('Grimório embaralhado.');
     expect((await readOwn()).libraryCount).toBe(3);
     const log = own.getByRole('region', { name: 'Registro da partida' });
+    await openMatchRail(own);
     await expect(log).toContainText('embaralhou o grimório');
     await expect(log).not.toContainText('consultou');
-    await activate(own.getByRole('button', { name: 'Ações', exact: true }));
-    await expect(library).toHaveCount(0);
-    await activate(own.getByRole('button', { name: 'Embaralhar grimório', exact: true }));
-    await expect(own.getByRole('dialog', { name: 'Ações do jogo' })).toHaveCount(0);
+    await closeMatchRail(own);
     await open();
     await activate(library.getByRole('button', { name: /^Buscar no grimório/ }));
     await library.getByLabel('Buscar no grimório').fill('Fire');
@@ -171,7 +166,7 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
     await activate(
       opponent
         .getByRole('navigation', { name: 'Foco da mesa' })
-        .getByRole('button', { name: /Amigo da mesa/ }),
+        .getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }),
     );
     await expect(
       opponent
@@ -189,7 +184,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
   browser,
   baseURL,
 }, info) => {
-  test.skip(info.project.name === 'celular', 'a partida bloqueia orientação vertical');
+
   const game = await prepare(browser, baseURL, info);
   const { own, opponent, library, activate, open, readOwn } = game;
   try {
@@ -262,8 +257,10 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     const footer = (await library.locator('.library-finish').boundingBox())!;
     expect(footer.y + footer.height).toBeLessThanOrEqual(box.y + box.height);
     await activate(library.getByRole('button', { name: 'Fechar painel do grimório' }));
-    await openGameActions(own);
-    await expect(own.getByRole('dialog', { name: 'Ações do jogo' }).getByText('Consulta em andamento')).toBeVisible();
+    await open();
+    await expect(library.locator('.library-card')).not.toHaveCount(0);
+    await activate(library.getByRole('button', { name: 'Fechar painel do grimório' }));
+    await openMatchRail(opponent);
     await expect(opponent.getByRole('region', { name: 'Registro da partida' })).toContainText(
       'consultou o grimório',
     );
@@ -285,6 +282,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
       .toEqual(reordered);
     await library.getByLabel('Destino das restantes').selectOption('top');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
+    await openMatchRail(own);
     await expect(own.getByRole('region', { name: 'Registro da partida' })).not.toContainText(
       'embaralhou',
     );
@@ -298,7 +296,7 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
   browser,
   baseURL,
 }, info) => {
-  test.skip(info.project.name === 'celular', 'a partida bloqueia orientação vertical');
+
   const game = await prepare(browser, baseURL, info, 10);
   const { own, library, activate, open, readOwn } = game;
   const session = info.project.use.hasTouch ? await own.context().newCDPSession(own) : null;
@@ -358,7 +356,7 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
   browser,
   baseURL,
 }, info) => {
-  test.skip(info.project.name === 'celular', 'a partida bloqueia orientação vertical');
+
   const game = await prepare(browser, baseURL, info);
   const { own, opponent, library, activate, open, readOwn } = game;
   try {
@@ -382,7 +380,7 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     await activate(
       opponent
         .getByRole('navigation', { name: 'Foco da mesa' })
-        .getByRole('button', { name: /Amigo da mesa/ }),
+        .getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }),
     );
     const publicArea = opponent.getByRole('region', {
       name: 'Cartas reveladas de Amigo da mesa',
@@ -428,7 +426,7 @@ test('recupera a confirmação perdida no painel sem aplicar a consulta duas vez
   browser,
   baseURL,
 }, info) => {
-  test.skip(info.project.name === 'celular', 'a partida bloqueia orientação vertical');
+
   const game = await prepare(browser, baseURL, info);
   const { own, library, activate, open, readOwn } = game;
   try {

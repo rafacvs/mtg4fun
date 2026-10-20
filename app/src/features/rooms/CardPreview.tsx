@@ -6,11 +6,22 @@ import { MarkerRows, PowerToughnessAdjust, type CounterOperation } from './Count
 import { CardStats } from './CounterValues';
 import { CardControlTransfer, type OwnerDestination } from './CardControlTransfer';
 import type { Card, Match, MarkerColor } from './roomsApi';
+import { MenuItem, PanelHeader, usePanelFocus } from './TablePanel';
+import { TableIcon, type TableIconName } from './TableIcon';
 
-type Step = 'view' | 'markers';
+type Step = 'view' | 'markers' | 'stats' | 'move' | 'more';
+const destinations: { value: string; title: string; icon: TableIconName }[] = [
+  { value: 'battlefield', title: 'Campo', icon: 'focus' },
+  { value: 'hand', title: 'Mão', icon: 'hand' },
+  { value: 'graveyard', title: 'Cemitério', icon: 'graveyard' },
+  { value: 'exile', title: 'Exílio', icon: 'exile' },
+  { value: 'command', title: 'Comando', icon: 'crown' },
+  { value: 'library-top', title: 'Grimório — topo', icon: 'library' },
+  { value: 'library-bottom', title: 'Grimório — fundo', icon: 'library' },
+];
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner }: {
+export function CardPreview({ card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
   card: Card | null;
   editable?: boolean;
   disabled?: boolean;
@@ -27,9 +38,10 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
   players?: Match['players'];
   onTransfer?: (cardId: string, controllerId: number) => void;
   onMoveToOwner?: (cardId: string, destination: OwnerDestination) => void;
+  onMove?: (cardId: string, destination: string) => Promise<boolean>;
 }) {
   const imageName = card?.faces?.[card.faceIndex ?? 0] || card?.imageName || card?.name || '';
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const [failed, setFailed] = useState(false);
   const [keepRevealed, setKeepRevealed] = useState(false);
@@ -41,50 +53,56 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
     } else onClose();
   };
   const cardId = card?.id ?? null;
-  const opened = cardId ? `${cardId}:${step}` : '';
+  usePanelFocus(panelRef, Boolean(cardId), () => onCloseRef.current());
 
   useEffect(() => { setFailed(false); }, [imageName]);
   useEffect(() => { setStep('view'); setKeepRevealed(false); }, [cardId]);
-
   useEffect(() => {
-    if (!opened) return;
-    const input = closeRef.current?.closest('[role="dialog"]')?.querySelector<HTMLInputElement>('input');
-    if (input) input.focus(); else closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCloseRef.current(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [opened]);
+    if (!cardId || step === 'view') return;
+    (panelRef.current?.querySelector<HTMLElement>('input, select') ?? panelRef.current?.querySelector<HTMLElement>('[aria-label="Voltar"]'))?.focus({ preventScroll: true });
+  }, [cardId, step]);
 
   if (!card) return null;
-  const title = step === 'markers' ? 'Marcador' : (card.name || 'Carta face para baixo');
+  const title = { view: card.name || 'Carta face para baixo', markers: 'Marcadores', stats: 'Ajustes da carta', move: 'Mover para…', more: 'Outras ações' }[step];
+  const zone = destinations.find(destination => destination.value === card.zone)?.title ?? 'Consulta do grimório';
+  const controlled = card.controllerId === viewerId;
   const image = card.instanceKind || card.imageName ? cardImageURL(card) : deckApi.imageURL(imageName);
   return <div className="card-preview-backdrop" onClick={() => onCloseRef.current()}>
-    <div className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${card.name || 'Carta face para baixo'}`} onClick={event => event.stopPropagation()}>
+    <div ref={panelRef} className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${card.name || 'Carta face para baixo'}`} onClick={event => event.stopPropagation()}>
       <div className="card-preview-image">
         {!card.name ? <p>Face para baixo · identidade oculta.</p> : failed
           ? <p role="status">A imagem não está disponível agora.</p>
           : <img src={image} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
       </div>
       <div className="card-preview-actions">
-      <header>
-        {step !== 'view' && <button type="button" className="secondary panel-back" onClick={() => setStep('view')}>Voltar</button>}
-        <h2>{title}</h2>
-        <button ref={closeRef} type="button" disabled={busy} className="panel-close" onClick={() => onCloseRef.current()}>Fechar</button>
-      </header>
+      <PanelHeader title={title} subtitle={step === 'view' ? zone : card.name || 'Carta face para baixo'} onClose={() => onCloseRef.current()} closeLabel="Fechar" onBack={step !== 'view' ? () => setStep('view') : undefined} />
       {error && <p role="alert" className="error">{error}{unconfirmed && onRetry && <button disabled={busy} onClick={() => void onRetry()}>Tentar novamente</button>}</p>}
       {step === 'view' && <>
+        <div className="card-status-chips"><span>{zone}</span>{card.tapped && <span>Virada</span>}{card.faceDown && <span>Face para baixo</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}</div>
         {card.text && <p className="instance-text">{card.text}</p>}
-        {!editable && <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />}
-        {editable && onCounter && <div className="card-toolbar">
-          <PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />
-          <button type="button" className="secondary" disabled={disabled} onClick={() => setStep('markers')}>Marcador</button>
+        <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
+        {controlled && <div className="card-quick-actions">
+          {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
+          {onMove && <button className="secondary" disabled={disabled} onClick={() => setStep('move')}><TableIcon name="move" />Mover para…</button>}
         </div>}
-        {viewerId && onStateChange && <CardStateControls card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
-        {card.revealed && card.controllerId === viewerId && onHide && <label className="keep-revealed"><input type="checkbox" checked={keepRevealed} onChange={event => setKeepRevealed(event.target.checked)} />Manter revelada ao fechar (até passar o turno)</label>}
-        {viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
-        {onCopy && card.id && <button type="button" disabled={busy || disabled} onClick={() => onCopy(card.id)}>Criar cópia independente</button>}
+        <div className="table-menu">
+          {editable && onCounter && <MenuItem icon="adjust" title="Ajustes" description={`Modificadores de P/R · ${(card.power ?? 0) >= 0 ? '+' : ''}${card.power ?? 0} / ${(card.toughness ?? 0) >= 0 ? '+' : ''}${card.toughness ?? 0}`} disabled={disabled} onClick={() => setStep('stats')} />}
+          {editable && onCounter && <MenuItem icon="markers" title="Marcadores" description="Marcadores de cor desta carta" disabled={disabled} onClick={() => setStep('markers')} />}
+          {(controlled || onCopy) && <MenuItem icon="actions" title="Outras ações" description="Revelação, faces, controle e cópias" onClick={() => setStep('more')} />}
+        </div>
       </>}
+      {step === 'stats' && editable && onCounter && <section className="panel-form"><h3>Modificadores de P/R</h3><p>Ajustes manuais sobre os valores impressos na carta.</p><PowerToughnessAdjust power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} onApply={(subject, operation, value) => onCounter(subject, operation, value)} /></section>}
       {step === 'markers' && editable && onCounter && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
+      {step === 'move' && controlled && <div className="table-menu">
+        {card.ownerId === viewerId && destinations.filter(destination => destination.value !== card.zone).map(destination => <MenuItem key={destination.value} icon={destination.icon} title={destination.title} disabled={disabled} onClick={() => { void onMove?.(card.id, destination.value).then(ok => { if (ok) setStep('view'); }); }} />)}
+        {card.ownerId !== viewerId && viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
+      </div>}
+      {step === 'more' && <div className="panel-form">
+        {viewerId && onStateChange && <CardStateControls mode="other" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
+        {card.revealed && controlled && onHide && <label className="keep-revealed"><input type="checkbox" checked={keepRevealed} onChange={event => setKeepRevealed(event.target.checked)} />Manter revelada ao fechar (até passar o turno)</label>}
+        {viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
+        {onCopy && card.id && <MenuItem icon="copy" title="Criar cópia independente" description="Criar uma nova instância no seu campo" disabled={busy || disabled} onClick={() => onCopy(card.id)} />}
+      </div>}
       </div>
     </div>
   </div>;

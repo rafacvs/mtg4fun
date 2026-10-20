@@ -1,97 +1,36 @@
-import { useEffect, useRef, useState } from 'react';
-import { MarkerRows, QuantityAdjust } from './CounterControls';
-import type { CounterAction, Markers } from './roomsApi';
+import { useEffect, useState } from 'react';
+import { MenuItem, PanelFeedback, PanelHeader, TablePanel, type PanelFeedbackProps } from './TablePanel';
 
-type Screen = 'menu' | 'draw' | 'roll' | 'life' | 'markers';
-
-type Props = {
-  open: boolean;
-  count: number;
-  sides: number;
-  busy: boolean;
-  unconfirmed: boolean;
-  consultationActive: boolean;
-  life: number;
-  markers?: Markers;
-  playerId: number;
-  onCount: (count: number) => void;
-  onSides: (sides: number) => void;
-  onDraw: () => void;
-  onRoll: () => void;
-  onCoin: () => void;
-  onTurn: (direction: 'next' | 'previous') => void;
-  onShuffle: () => void;
-  onLibrary: () => void;
-  onCounter: (input: CounterAction) => Promise<boolean>;
-  onClose: () => void;
-  onCreate: () => void;
+type Props = PanelFeedbackProps & {
+  open: boolean; anchor: HTMLElement | null; sides: number; busy: boolean; unconfirmed: boolean;
+  onSides: (sides: number) => void; onRoll: () => void; onCoin: () => void;
+  onTurn: (direction: 'next' | 'previous') => void; onClose: () => void; onCreate: () => void;
+  result?: string;
 };
 
-export function GameActions({ open, count, sides, busy, unconfirmed, consultationActive, life, markers, playerId, onCount, onSides, onDraw, onRoll, onCoin, onTurn, onShuffle, onLibrary, onCounter, onClose, onCreate }: Props) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-  const [screen, setScreen] = useState<Screen>('menu');
+export function GameActions({ open, anchor, sides, busy, unconfirmed, onSides, onRoll, onCoin, onTurn, onClose, onCreate, result, error, onRetry }: Props) {
+  const [screen, setScreen] = useState<'menu' | 'roll'>('menu');
   const canAct = !busy && !unconfirmed;
-  const canDraw = canAct && Number.isInteger(count) && count >= 1;
-  const canRoll = canAct && Number.isInteger(sides) && sides >= 2 && sides <= 100;
-  const opened = open ? screen : '';
-  const title = { menu: 'Ações do jogo', draw: 'Comprar cartas', roll: 'Rolar dado', life: 'Vida', markers: 'Marcadores' }[screen];
-
-  useEffect(() => {
-    if (open) return;
-    setScreen('menu');
-  }, [open]);
-
-  // Foca o fechar só quando a tela abre. O polling e uma nova identidade de onClose não recentram o foco.
-  useEffect(() => {
-    if (!opened) return;
-    const input = closeRef.current?.closest('[role="dialog"]')?.querySelector<HTMLInputElement>('input');
-    if (input) input.focus(); else closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCloseRef.current(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [opened]);
-
-  if (!open) return null;
-  const back = () => setScreen('menu');
-  return <div className="actions-panel" role="dialog" aria-label="Ações do jogo">
-    <header>
-      {screen !== 'menu' && <button type="button" className="secondary panel-back" onClick={back}>Voltar</button>}
-      <h2>{title}</h2>
-      <button ref={closeRef} type="button" className="secondary panel-close" aria-label="Fechar ações" onClick={onClose}>×</button>
-    </header>
-    {screen === 'menu' && <div className="actions-grid">
-      <button type="button" disabled={!canAct} onClick={() => setScreen('draw')}>Comprar cartas</button>
-      <button type="button" disabled={!canAct} onClick={() => setScreen('roll')}>Rolar dado</button>
-      <button type="button" disabled={!canAct} onClick={onCoin}>Jogar moeda</button>
-      <button type="button" disabled={!canAct} title="Passar turno e ocultar todas as reveladas (N)" aria-keyshortcuts="N" onClick={() => onTurn('next')}>Passar turno</button>
-      <button type="button" disabled={!canAct} onClick={() => onTurn('previous')}>Corrigir turno</button>
-      <button type="button" aria-label="Grimório" onClick={onLibrary}>Grimório{consultationActive && <small className="consultation-pending" aria-hidden="true">Consulta em andamento</small>}</button>
-      {!consultationActive && <button type="button" disabled={!canAct} onClick={onShuffle}>Embaralhar grimório</button>}
-      <button type="button" disabled={!canAct} onClick={() => setScreen('life')}>Vida</button>
-      <button type="button" disabled={!canAct} onClick={() => setScreen('markers')}>Marcadores</button>
-      <button type="button" disabled={!canAct} onClick={onCreate}>Criar ficha</button>
+  useEffect(() => { if (!open) setScreen('menu'); }, [open]);
+  return <TablePanel open={open} anchor={anchor} label="Ações do jogo" onClose={onClose}>
+    <PanelHeader title={screen === 'roll' ? 'Rolar dado' : 'Ações do jogo'} subtitle="Mesa manual" onClose={onClose} closeLabel="Fechar ações" onBack={screen !== 'menu' ? () => setScreen('menu') : undefined} />
+    <PanelFeedback error={error} busy={busy} unconfirmed={unconfirmed} onRetry={onRetry} />
+    {screen === 'menu' && <div className="table-menu actions-grid">
+      <MenuItem icon="next" title="Passar turno" description="Avançar e ocultar suas reveladas · N" disabled={!canAct} onClick={() => onTurn('next')} />
+      <MenuItem icon="dice" title="Rolar dado" description="Escolher o número de faces" disabled={!canAct} onClick={() => setScreen('roll')} />
+      <MenuItem icon="coin" title="Jogar moeda" description="Cara ou coroa" disabled={!canAct} onClick={onCoin} />
+      <MenuItem icon="token" title="Criar ficha" description="Do catálogo ou personalizada" disabled={!canAct} onClick={onCreate} />
+      <MenuItem icon="previous" title="Corrigir turno" description="Voltar ao jogador anterior" disabled={!canAct} onClick={() => onTurn('previous')} />
     </div>}
-    {screen === 'draw' && <div className="draw-row">
-      <span>Comprar cartas</span>
+    {screen === 'roll' && <div className="panel-form">
+      <label htmlFor="dice-sides">Faces do dado</label>
       <div className="draw-stepper">
-        <button type="button" className="secondary" aria-label="Diminuir quantidade" disabled={count <= 1} onClick={() => onCount(count - 1)}>−</button>
-        <input aria-label="Quantidade para comprar" type="number" min="1" value={count} onChange={event => onCount(Number(event.target.value))} />
-        <button type="button" className="secondary" aria-label="Aumentar quantidade" onClick={() => onCount(count + 1)}>+</button>
+        <button type="button" className="secondary" aria-label="Diminuir faces" disabled={!canAct || sides <= 2} onClick={() => onSides(sides - 1)}>−</button>
+        <input id="dice-sides" aria-label="Faces do dado" type="number" min="2" max="100" value={sides} onChange={event => onSides(Number(event.target.value))} />
+        <button type="button" className="secondary" aria-label="Aumentar faces" disabled={!canAct || sides >= 100} onClick={() => onSides(sides + 1)}>+</button>
       </div>
-      <button type="button" disabled={!canDraw} onClick={onDraw}>Comprar cartas</button>
+      <button type="button" disabled={!canAct || !Number.isInteger(sides) || sides < 2 || sides > 100} onClick={onRoll}>Rolar dado</button>
     </div>}
-    {screen === 'roll' && <div className="draw-row">
-      <span>Rolar dado</span>
-      <div className="draw-stepper">
-        <button type="button" className="secondary" aria-label="Diminuir faces" disabled={sides <= 2} onClick={() => onSides(sides - 1)}>−</button>
-        <input aria-label="Faces do dado" type="number" min="2" max="100" value={sides} onChange={event => onSides(Number(event.target.value))} />
-        <button type="button" className="secondary" aria-label="Aumentar faces" disabled={sides >= 100} onClick={() => onSides(sides + 1)}>+</button>
-      </div>
-      <button type="button" disabled={!canRoll} onClick={onRoll}>Rolar dado</button>
-    </div>}
-    {screen === 'life' && <QuantityAdjust label="vida" value={life} disabled={!canAct} onApply={(operation, value) => onCounter({ target: 'player', playerId, subject: 'life', operation, value })} />}
-    {screen === 'markers' && <MarkerRows markers={markers} disabled={!canAct} onApply={(color, operation, value) => onCounter({ target: 'player', playerId, subject: 'marker', color, operation, value })} />}
-  </div>;
+    {result && <p role="status" className="panel-result">{result}</p>}
+  </TablePanel>;
 }

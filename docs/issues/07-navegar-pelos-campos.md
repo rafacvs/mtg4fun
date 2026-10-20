@@ -7,11 +7,11 @@
 **Status:** ready-for-agent
 
 - [ ] Desktop mostra campos conjuntamente quando há espaço e permite ampliar um jogador.
-- [ ] Celular horizontal mostra campo principal próprio por padrão, miniaturas dos demais à direita e mão/menu próprios na faixa inferior.
+- [ ] Celular vertical/horizontal mostra campo principal próprio por padrão, visão geral em grade para escolher outro campo e mão/ações próprias na faixa inferior.
 - [ ] Botão inferior/flutuante abre ações/configurações; menu e controles em PT-BR.
 - [ ] Trocar foco identifica o jogador observado e preserva mão, identidade, permissões e ações próprias.
 - [ ] Miniaturas indicam atividade sem trocar foco automaticamente; navegação atende seis participantes.
-- [ ] Na vertical, cobrir somente interface da partida com orientação para girar, mantendo conexão e estado; login, decks e salas continuam utilizáveis.
+- [ ] Ambas as orientações mantêm a partida jogável, sem bloqueio para girar o aparelho, preservando conexão e estado. Mudança aprovada na [decisão 28](../decisions/28-ui-mesa-responsiva.md).
 - [ ] Fluxos de navegador com mouse/toque verificam foco, acesso às ações, seis campos e troca de orientação sem perda de partida.
 
 ## Regras de execução

@@ -2,7 +2,6 @@ import { test, expect, openMatchRail } from './fixtures';
 
 // The page uses the actual executable and MySQL; no application routes are mocked.
 test('cria fichas e cópias com mouse/toque e recupera atributos após recarga', async ({ page }, info) => {
-  if (info.project.name === 'celular') await page.setViewportSize({ width: 844, height: 390 });
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
   const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'fichas.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="1" name="Island"/></zone></cockatrice_deck>') } } });
@@ -42,9 +41,12 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await click(page.locator('.playing-card[aria-label="Dragão amigo"]'));
   const preview = page.getByRole('dialog', { name: 'Imagem de Dragão amigo' });
   await expect(preview.getByText('Voa sobre a mesa.')).toBeVisible();
+  await click(preview.getByRole('button', { name: 'Ajustes', exact: true }));
   await expect(preview.getByLabel('Poder', { exact: true })).toHaveValue('-1');
   await expect(preview.getByLabel('Resistência', { exact: true })).toHaveValue('4');
   await expect(preview.locator('img')).toHaveAttribute('src', '/token-default.svg');
+  await click(preview.getByRole('button', { name: 'Voltar', exact: true }));
+  await click(preview.getByRole('button', { name: 'Outras ações', exact: true }));
   await click(preview.getByRole('button', { name: 'Criar cópia independente' }));
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(2);
   await click(preview.getByRole('button', { name: 'Fechar', exact: true }));
@@ -52,6 +54,7 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(2);
   await click(page.locator('.playing-card[aria-label="Dragão amigo"]').last());
   await expect(page.getByRole('dialog').getByText('Voa sobre a mesa.')).toBeVisible();
+  await click(page.getByRole('dialog').getByRole('button', { name: 'Ajustes', exact: true }));
   await expect(page.getByRole('dialog').getByLabel('Poder', { exact: true })).toHaveValue('-1');
   await expect(page.getByRole('dialog').getByLabel('Resistência', { exact: true })).toHaveValue('4');
   await click(page.getByRole('dialog').getByRole('button', { name: 'Fechar', exact: true }));

@@ -21,9 +21,10 @@ confirmarem prontidão.
 
 A mesa permite comprar cartas e movê-las entre mão, campo, cemitério, exílio,
 comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
-numa carta e escolha o destino na faixa inferior. A mão própria permanece
+numa carta e escolha **Mover para…** no detalhe. A mão própria permanece
 disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
-celular usa orientação horizontal e miniaturas à direita. A partida atualiza
+celular funciona na vertical e horizontal, com **Visão geral** em grade e toque
+para ampliar um campo. A partida atualiza
 a cada segundo. No campo, arraste uma área com mouse para selecionar várias
 cartas. A seleção múltipla por toque não está disponível nesta revisão.
 Arrastar uma selecionada reposiciona o conjunto preservando sua disposição.
@@ -57,15 +58,19 @@ texto de cartas.
 
 Clique/toque na carta abre controles de virar/desvirar no campo, face para
 baixo/cima, escolha entre faces preservadas do catálogo e revelar/ocultar.
-Duplo clique no próprio campo vira/desvira; **Desvirar todas** fica no menu
-**Ações**. Escolher um lado da carta e colocá-la face para baixo são estados
+Duplo clique no próprio campo vira/desvira; **Desvirar todas** fica ao lado da
+mão. **Outras ações**, no detalhe, reúne revelação, faces, controle e cópias.
+Escolher um lado da carta e colocá-la face para baixo são estados
 independentes. Ao sair do campo para cemitério/exílio, a carta perde marcadores, modificadores
 de poder/resistência, virado e face para baixo. A face escolhida permanece.
 
-Em **Ações**, a grade abre uma tela para vida, marcadores, compra e dado.
+O card do jogador na lateral ou seu nome no cabeçalho do campo abre o menu
+de **Vida** e **Marcadores**; o botão **Ver campo** muda a mesa observada.
 **Vida** altera o total do próprio jogador. **Marcadores** usa cinco cores
 neutras, sem significado de regra. Na carta, poder e resistência ficam no
-diálogo da imagem, e as cores abrem em seguida. Valores negativos são aceitos
+detalhe em **Ajustes**, identificados como modificadores de P/R; **Marcadores**
+abre as cinco cores. **Mover para…** oferece os destinos sem exigir arraste.
+Valores negativos são aceitos
 sem interpretar derrota. Vida e marcadores do jogador são públicos;
 modificador e marcador de carta na mão não aparecem para o oponente. Digite um
 inteiro e confirme com Enter, ou use os botões −/+ para alterar uma unidade.
@@ -76,14 +81,17 @@ e registro persistem após reinício. Veja a
 Em **Ações → Criar ficha**, busque uma ficha do catálogo compartilhado ou
 preencha nome, descrição e poder/resistência numéricos, inclusive negativos.
 Fichas personalizadas usam uma imagem padrão. Clique/toque em uma carta
-identificada e escolha **Criar cópia independente**: a nova instância entra no
+identificada e escolha **Outras ações → Criar cópia independente**: a nova instância entra no
 seu campo e não acompanha alterações posteriores no original. Fichas e cópias
 são removidas do jogo ao mover para qualquer zona fora do campo. Atributos copiados
 e contrato: [decisão de fichas/cópias](docs/decisions/13-fichas-e-copias.md).
 
-A barra junto da mão oferece comprar uma carta, desvirar todas e **Ações**.
-No painel **Ações** ficam **Passar turno** e **Grimório**,
-junto dos demais comandos do jogo.
+A faixa ao lado da mão oferece comprar uma carta, desvirar todas e **Ações**,
+em botões maiores com ícones. **Ações** reúne passar/corrigir turno, dado,
+moeda e fichas. O próprio grimório concentra suas operações, incluindo comprar
+várias cartas. Menus verticais têm padrão compartilhado: no desktop abrem junto
+ao elemento clicado, ajustados às bordas; em telas estreitas abrem como painel
+inferior. Consultas de várias cartas usam um espaço maior.
 Atalhos: **D** comprar, **U** desvirar todas, **N** passar turno e **H** ocultar
 as próprias reveladas. Não atuam durante digitação, com modificadores ou com
 um diálogo aberto. Duplo clique no grimório compra uma carta; clique abre suas
@@ -96,9 +104,11 @@ essa seção; **Recolher registro** recolhe toda a lateral, incluindo a prévia.
 Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
 por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas
 antigas sem referência de carta continuam como texto.
+O registro acompanha novas ações enquanto você está no final; ao ler entradas
+anteriores, mantém a posição e oferece **Novas ações** para voltar ao fim.
 Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).
 
-**Finalizar**, em vermelho à direita de **Ocultar prévia**, abre a confirmação
+O botão **Finalizar**, na barra superior com destaque discreto em vermelho, abre a confirmação
 de encerramento. Qualquer jogador pode concordar; pelo menos metade dos
 participantes, arredondando para cima, encerra a partida e fecha a sala para
 todos. Sozinho, basta confirmar. Enquanto faltam concordâncias, a mesa continua

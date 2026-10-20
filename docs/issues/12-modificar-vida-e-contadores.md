@@ -8,7 +8,7 @@
 
 A escolha de contadores nomeados foi substituída pelo modelo aprovado em [vida e marcadores](../decisions/12-vida-e-contadores.md).
 
-- [ ] Menu de ações permite alterar vida inicializada pela configuração do banco durante o jogo.
+- [ ] Menu do próprio jogador permite alterar vida inicializada pela configuração do banco durante o jogo. A navegação substitui o menu Ações conforme a [decisão 28](../decisions/28-ui-mesa-responsiva.md).
 - [ ] Alterar marcadores de cinco cores em jogadores e cartas, e modificadores de poder/resistência nas cartas, sem interpretar regras ou condições de derrota.
 - [ ] Aplicar permissões adequadas por jogador/controlador e filtrar dados ligados a cartas privadas.
 - [ ] Alterações concorrentes resultam em valores consistentes; documentar semântica de definir/incrementar usada.

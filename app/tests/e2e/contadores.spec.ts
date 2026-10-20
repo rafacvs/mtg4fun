@@ -2,7 +2,7 @@ import type { Locator } from '@playwright/test';
 import { test, expect, openMatchRail } from './fixtures';
 
 test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', async ({ page, browser, baseURL }, info) => {
-  test.skip(info.project.name === 'celular', 'Mesa exige orientação horizontal.');
+
   test.setTimeout(45_000);
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
@@ -28,8 +28,8 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
       if (info.project.use.hasTouch) await locator.tap(); else await locator.click();
     };
     const press = (name: string) => activate(page.getByRole('button', { name, exact: true }));
-    await press('Ações');
-    const panel = page.getByRole('dialog', { name: 'Ações do jogo' });
+    await page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true }).getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).click();
+    const panel = page.getByRole('dialog', { name: 'Jogador Amigo da mesa' });
     await press('Vida');
     const lifeAmount = panel.getByLabel('Quantidade de vida');
     await lifeAmount.fill('3');
@@ -37,16 +37,17 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await expect(lifeAmount).toBeFocused();
     await press('Subtrair');
     const table = page.getByRole('article', { name: 'Mesa de Amigo da mesa' });
-    await expect(table.getByText('Vida: 37', { exact: true })).toBeVisible();
+    await expect(table.getByLabel('Vida: 37', { exact: true })).toBeVisible();
     await press('Voltar');
     await press('Marcadores');
     const addRed = panel.getByRole('button', { name: 'Aumentar marcador vermelho', exact: true });
     await activate(addRed);
     await activate(addRed);
     await expect(table.getByLabel('marcador vermelho')).toHaveText('2');
-    await press('Fechar ações');
+    await press('Fechar jogador');
     await press('Island');
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
+    await preview.getByRole('button', { name: 'Ajustes', exact: true }).click();
     await preview.getByLabel('Poder', { exact: true }).fill('-1');
     await preview.getByLabel('Poder', { exact: true }).press('Enter');
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+0', { exact: true })).toBeVisible();
@@ -59,21 +60,21 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     const otherPage = await observer.newPage();
     await otherPage.goto(`/#/salas/${room.id}`);
     await openMatchRail(otherPage);
-    const focus = otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /Amigo da mesa/ });
+    const focus = otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ });
     if (info.project.use.hasTouch) await focus.tap(); else await focus.click();
     const otherTable = otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' });
-    await expect(otherTable.getByText('Vida: 37', { exact: true })).toBeVisible();
+    await expect(otherTable.getByLabel('Vida: 37', { exact: true })).toBeVisible();
     await expect(otherTable.getByLabel('marcador vermelho')).toHaveText('2');
     const view = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
     const own = view.players.find((player: { userId: number }) => player.userId === view.viewerId);
     expect((await observer.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'card', cardId: own.hand[0].id, subject: 'power', operation: 'set', value: 99 } })).status()).toBe(409);
     await otherPage.getByRole('button', { name: 'Ações', exact: true }).click();
     const otherPanel = otherPage.getByRole('dialog', { name: 'Ações do jogo' });
-    await expect(otherPanel.getByRole('button', { name: 'Vida', exact: true })).toBeVisible();
-    await expect(otherPanel.getByRole('button', { name: 'Marcadores', exact: true })).toBeVisible();
+    await expect(otherPanel.getByRole('button', { name: 'Vida', exact: true })).toHaveCount(0);
+    await expect(otherPanel.getByRole('button', { name: 'Marcadores', exact: true })).toHaveCount(0);
     await expect(otherPage.getByText('-1/+4', { exact: true })).toHaveCount(0);
     await page.reload();
-    await expect(table.getByText('Vida: 37', { exact: true })).toBeVisible();
+    await expect(table.getByLabel('Vida: 37', { exact: true })).toBeVisible();
     await expect(table.getByLabel('marcador vermelho')).toHaveText('2');
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+4', { exact: true })).toBeVisible();
   } finally { await observer.close(); }

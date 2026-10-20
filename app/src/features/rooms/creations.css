@@ -1,7 +1,4 @@
 .creations-panel > header { align-items: center; }
-.creations-heading { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-.creations-heading h2 { min-width: 0; }
-.creations-panel > header .text-button { flex: 0 0 auto; width: auto; min-width: 0; padding: 0 2px; font-size: .85rem; line-height: 1.2; white-space: nowrap; }
 .creations-panel > p,
 .creations-panel .library-search,
 .creations-panel .library-order { margin: 0; }
