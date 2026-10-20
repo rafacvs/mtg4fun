@@ -48,12 +48,17 @@ func ConfigFromEnvironment() (*mysql.Config, time.Duration, error) {
 		return nil, 0, err
 	}
 	secure := value("DB_TLS", "false")
-	if secure != "true" && secure != "false" {
-		return nil, 0, errors.New("DB_TLS deve ser true ou false")
+	if secure != "true" && secure != "false" && secure != "required" {
+		return nil, 0, errors.New("DB_TLS deve ser true, false ou required")
 	}
 	caPath := os.Getenv("DB_TLS_CA")
 	if caPath != "" && secure != "true" {
 		return nil, 0, errors.New("DB_TLS_CA requer DB_TLS=true")
+	}
+	if secure == "required" {
+		// Encrypt the connection without validating the server certificate.
+		// Unlike "preferred", this driver mode never falls back to plaintext.
+		config.TLSConfig = "skip-verify"
 	}
 	if secure == "true" {
 		config.TLSConfig = "true"
