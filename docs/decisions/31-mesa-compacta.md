@@ -107,3 +107,27 @@ com 16 px livres até as bordas da área de rolagem; desktop 1440×900 e
 horizontal 844×390. Celular com toque 390×844 mantém alvos de 44 px.
 Capturas `app/test-results/zoom-compact-*.png`, incluindo detalhe das barras
 visíveis. Sem build ou suíte completa para este ajuste de CSS.
+
+## Padronização das zonas laterais
+
+O usuário pediu explicitamente padronizar comandante, grimório, cemitério e
+exílio: quantidade no canto superior direito com fundo escurecido, nome
+somente na faixa inferior e ícones nas zonas vazias. As referências pedidas
+foram crown, book-open, skull e orbit, respectivamente, preferindo o sistema
+de ícones existente.
+
+As quatro zonas usam o mesmo componente de rótulo/contador. O grimório não
+tem mais cabeçalho com nome e quantidade acima da pilha; sua faixa inferior
+segue o mesmo padrão. O destino “Fundo” permanece separado e funcional.
+Zonas vazias mostram o ícone, sem o texto “Vazio”; o grimório vazio mostra
+livro aberto em vez de uma pilha fictícia. Os ícones foram adicionados ao
+`TableIcon` SVG existente, reutilizando a coroa, sem nova dependência.
+Os nomes acessíveis das zonas e contagens foram preservados.
+
+Validação desta alteração: TypeScript passou. Chromium com a aplicação local
+em 1440×900, 390×844 e 844×390; conferidos quatro contadores, posição no canto,
+nomes inferiores, ausência do cabeçalho do grimório, pilha com três imagens
+e abertura de suas ações. Sem alteração da partida. Para revisar visualmente
+todos os ícones vazios, foi usado um snapshot controlado somente no navegador,
+sem gravação no servidor; essa captura não comprova esvaziamento pela API.
+Capturas em `app/test-results/zones-standard-*.png`. Sem build ou suíte completa.

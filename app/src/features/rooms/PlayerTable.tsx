@@ -5,7 +5,7 @@ import { fitBattlefield } from './battlefieldLayout';
 import { createLibraryGesture } from './libraryGesture';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
-import { TableIcon } from './TableIcon';
+import { TableIcon, type TableIconName } from './TableIcon';
 
 export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando', consulted: 'consulta', revealed: 'cartas reveladas' };
 
@@ -184,20 +184,33 @@ function LibraryPile({ count, droppable, hoverZone, onOpen, onDraw, disabled }: 
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => { gesture.current.cancel(); clearTimeout(feedbackTimer.current); }, []);
   return <section className={`table-zone zone-library ${feedback ? 'draw-feedback' : ''} ${droppable && hoverZone === 'library' ? 'drop-hover' : ''}`} aria-label="Grimório" data-drop-zone={droppable ? 'library' : undefined}>
-    <header><span>Grimório</span><strong aria-label={`${count} cartas`}>{count}</strong></header>
-    <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}>{[0, 1, 2].map(layer => <span key={layer}><img src="/library-back.png" alt="" draggable={false} /></span>)}{onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title="Clique: ações · Duplo clique: comprar uma carta (D)" onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
-      gesture.current.doubleClick();
-      if (disabled || !count) return;
-      setFeedback(true); clearTimeout(feedbackTimer.current);
-      feedbackTimer.current = setTimeout(() => setFeedback(false), 450);
-    }} />}</div>
+    <div className="card-slot library-pile">
+      <ZoneLabel title="Grimório" count={count} />
+      {count > 0 ? <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}>{[0, 1, 2].map(layer => <span key={layer}><img src="/library-back.png" alt="" draggable={false} /></span>)}</div>
+        : <span className="slot-empty" aria-hidden="true"><TableIcon name="book-open" /></span>}
+      {onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title="Clique: ações · Duplo clique: comprar uma carta (D)" onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
+        gesture.current.doubleClick();
+        if (disabled || !count) return;
+        setFeedback(true); clearTimeout(feedbackTimer.current);
+        feedbackTimer.current = setTimeout(() => setFeedback(false), 450);
+      }} />}
+    </div>
     {droppable && <button type="button" className={`library-bottom ${hoverZone === 'library-bottom' ? 'drop-hover' : ''}`} data-drop-zone="library-bottom" aria-label="Fundo do grimório">Fundo</button>}
   </section>;
 }
 
-function CardSlot({ zone, title, count, card, viewerId, droppable, hoverZone, gesture }: { zone: string; title: string; count: number; card?: Card; viewerId: number; droppable: boolean; hoverZone: string | null; gesture: CardGesture }) {
+const emptyZoneIcons = { command: 'crown', graveyard: 'skull', exile: 'orbit' } satisfies Record<string, TableIconName>;
+
+function ZoneLabel({ title, count }: { title: string; count: number }) {
+  return <>
+    <strong className="zone-count" aria-label={`${count} cartas`}>{count}</strong>
+    <span className="slot-label">{title}</span>
+  </>;
+}
+
+function CardSlot({ zone, title, count, card, viewerId, droppable, hoverZone, gesture }: { zone: keyof typeof emptyZoneIcons; title: string; count: number; card?: Card; viewerId: number; droppable: boolean; hoverZone: string | null; gesture: CardGesture }) {
   return <section className={`card-slot zone-${zone} ${droppable && hoverZone === zone ? 'drop-hover' : ''}`} aria-label={zoneNames[zone]} data-drop-zone={droppable ? zone : undefined}>
-    <span className="slot-label"><span>{title}</span><strong aria-label={`${count} cartas`}>{count}</strong></span>
-    {card ? <PlayingCard card={card} draggable={canDrag(card, viewerId)} {...gesture} /> : <span className="slot-empty" aria-hidden="true">Vazio</span>}
+    <ZoneLabel title={title} count={count} />
+    {card ? <PlayingCard card={card} draggable={canDrag(card, viewerId)} {...gesture} /> : <span className="slot-empty" aria-hidden="true"><TableIcon name={emptyZoneIcons[zone]} /></span>}
   </section>;
 }

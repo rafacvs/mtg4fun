@@ -66,9 +66,9 @@
 .positioned-card.tapped-slot .playing-card { margin-left: calc((var(--card-width) * 88 / 63 - var(--card-width)) / 2); margin-top: calc((var(--card-width) - var(--card-width) * 88 / 63) / 2); }
 .zone-cards { display: flex; gap: 8px; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; padding-top: 5px; }
 .zone-placeholder { width: 100%; text-align: center; color: var(--muted); padding: 12px 0; font-size: .72rem; }
-.zone-library { flex-shrink: 0; padding: 4px; border-color: color-mix(in srgb, var(--gold) 30%, transparent); background: var(--gold-wash); }
-.zone-library > header { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 2px; text-align: center; font-size: .62rem; }
-.library-stack { position: relative; width: 100%; aspect-ratio: 63 / 88; margin-top: 4px; }
+.zone-library { flex-shrink: 0; padding: 0; border: 0; background: transparent; }
+.library-pile { border-color: color-mix(in srgb, var(--gold) 30%, transparent); background: var(--gold-wash); }
+.library-stack { position: absolute; inset: 3px; }
 .library-stack span { position: absolute; width: 90%; height: 90%; border-radius: 5px; border: 1px solid #956238; background: #080705; overflow: hidden; box-shadow: 0 2px 4px #0009; }
 .library-stack img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
 .library-stack span:nth-child(1) { left: 0; top: 0; }
@@ -79,12 +79,15 @@
 .zone-command { border-color: var(--gold); box-shadow: inset 0 0 20px var(--gold-wash); }
 .zone-graveyard { border-color: #8a82974d; background: #211e2a70; }
 .zone-exile { border-color: #6397b54d; background: #12273170; }
-.slot-label { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 1px; padding: 3px; background: var(--label-bg); color: var(--text); font-size: .6rem; line-height: 1.2; text-align: center; pointer-events: none; }
+.slot-label { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: block; padding: 4px 2px; background: var(--label-bg); color: var(--text); font-size: .6rem; line-height: 1.2; text-align: center; pointer-events: none; }
 .zone-command .slot-label { color: var(--gold); }
-.slot-label > span { max-width: 100%; overflow-wrap: anywhere; }
+.slot-label { overflow-wrap: anywhere; }
 .zone-column .slot-label { font-size: clamp(.44rem, calc(var(--card-width) / 9), .6rem); }
-.slot-label strong, .zone-library > header > strong { min-width: 1.6em; font-variant-numeric: tabular-nums; }
-.slot-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .62rem; }
+.zone-count { position: absolute; z-index: 2; top: 3px; right: 3px; min-width: 18px; padding: 3px 4px; border: 1px solid #ffffff14; border-radius: 4px; background: #08090de6; color: var(--text); font-size: .62rem; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 1px 4px #0006; pointer-events: none; }
+.slot-empty { position: absolute; inset: 0 0 16px; display: grid; place-items: center; color: var(--muted); pointer-events: none; }
+.slot-empty .table-icon { width: clamp(20px, calc(var(--card-width) * .38), 28px); height: auto; opacity: .65; }
+.zone-command .slot-empty { color: var(--gold); }
+.zone-exile .slot-empty { color: #91b7cc; }
 .playing-card { flex: 0 0 auto; width: var(--card-width); aspect-ratio: 63 / 88; height: auto; min-height: 0; padding: 0; border: 2px solid var(--line-strong); border-radius: 6px; background: var(--panel); color: var(--text); font-size: .68rem; line-height: 1.2; overflow: hidden; box-shadow: 0 1px 0 rgba(243, 236, 218, .14), 0 8px 14px rgba(0, 0, 0, .42); touch-action: none; user-select: none; }
 .playing-card:hover:not(:disabled) { background: var(--hover); border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-glow), 0 5px 12px #0008; }
 .playing-card img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
