@@ -66,3 +66,34 @@ quatro miniaturas em 1440×900, 390×844 e 844×390, com dimensões mínimas de
 miniatura e campo funcionando. Snapshot público e log iguais antes/depois,
 sem erro JavaScript. Capturas `app/test-results/overview-fixed-*.png`.
 Sem build ou suíte completa.
+
+## Reajuste pontual autorizado da sala 4
+
+Depois da consulta do banco, foi explicado ao usuário que a sala 4 tinha
+8/7/5/7 cartas no campo, separadas da mão, e que várias estavam fora da tela
+por ainda usarem posições antigas. A proposta foi reorganizar somente as
+posições dessa sala, preservando cartas, zonas e estados. O usuário autorizou
+explicitamente: “reajuste essas cartas antigas para a mesa nova, consegue?”.
+Essa autorização é pontual para a sala 4; não cria conversão automática de
+outras partidas nem altera o contrato de posicionamento.
+
+Foi salvo um backup completo do snapshot antes da alteração em
+`~/mtg4fun-backups/room-4-before-grid-adjustment-20261020T211709Z.json`, com
+permissão 0600. O ajuste atualizou 20 `positionX` antigos (120 a 720, incluindo
+251), dentro de cada fileira, preservando sua ordem e suas pilhas. Colunas
+recentes menores que 120 foram mantidas; as antigas foram colocadas em
+colunas consecutivas após as já utilizadas na mesma fileira, sem colisões.
+As posições finais usam colunas 1–4 para rafa, 0–6 para rafa2/rafa4 e 0–4 para
+rafa3. Nenhuma carta mudou de zona, fileira, ordem de pilha ou estado.
+
+A escrita foi feita em transação no MySQL, restrita a `matches.room_id=4`,
+com comparação SHA-256 do snapshot original na condição do UPDATE para
+não sobrescrever ações concorrentes. A leitura após o commit coincidiu com
+o snapshot esperado; uma comparação integral confirmou alterações somente
+nos 20 campos `positionX`. O log de ações não foi reescrito.
+
+Verificação pela API e Chromium em 1440×900: posições persistidas conferidas,
+27 cartas nas miniaturas e todas as 8/7/5/7 cartas dentro da área visível dos
+respectivos campos em foco. Capturas locais
+`app/test-results/room4-adjusted-overview.png` e `room4-adjusted-rafa.png`.
+Não houve alteração do código da aplicação nem execução de build/suítes.
