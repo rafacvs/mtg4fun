@@ -56,8 +56,8 @@
 .zone-battlefield::before { content: ''; position: absolute; width: min(220px, 42%); height: min(220px, 42%); left: 50%; top: 46%; transform: translate(-50%, -50%) rotate(45deg); border: 1px solid rgba(224, 181, 82, .13); border-radius: 50%; outline: 1px solid rgba(224, 181, 82, .07); outline-offset: 10px; pointer-events: none; }
 .zone-battlefield > header { z-index: 1; padding: 0 2px 6px; }
 .zone-battlefield > header > span:first-child { text-transform: uppercase; letter-spacing: .14em; font-size: .6rem; }
-.field-zoom { position: absolute; z-index: 3; right: 10px; bottom: 10px; display: flex; flex-direction: column-reverse; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-overlay); box-shadow: 0 4px 16px #0006; }
-.field-zoom button { min-height: 44px; min-width: 44px; padding: 0; border: 0; background: var(--panel); color: var(--gold); border-color: var(--line); }
+.field-zoom { position: absolute; z-index: 3; right: 24px; bottom: 24px; display: flex; flex-direction: column-reverse; gap: 1px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-overlay); box-shadow: 0 4px 16px #0006; }
+.field-zoom button { min-height: 44px; min-width: 44px; padding: 0; border: 0; border-radius: 5px; font-size: .9rem; background: var(--panel); color: var(--gold); border-color: var(--line); }
 .battlefield-scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--line-strong) 70%, transparent) transparent; z-index: 1; }
 .battlefield-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); }
 .battlefield-canvas { position: relative; width: calc(var(--mat-width) * var(--card-width)); height: calc(var(--mat-height) * var(--card-width)); transform: scale(var(--mat-zoom)); transform-origin: 0 0; }
@@ -196,6 +196,7 @@
   .quick-actions { gap: 4px; }
   .table-toolbar button, .table-toolbar a { min-height: 36px; }
   .table-toolbar { min-height: 42px; }
+  .match-board .field-zoom button { min-height: 28px; min-width: 28px; }
   .player-heading .player-identity { min-height: 28px; padding: 0 4px; }
   .match-board .player-view-actions button { min-height: 28px; padding: 3px 6px; }
   .match-board .player-view-actions .icon-button { min-width: 28px; }

@@ -93,3 +93,17 @@ clique inerte no espaço vazio, retorno à própria mesa disponível no oponente
 e ausência de rolagem horizontal da página ou erro JavaScript.
 Altura preservada em 28 px com mouse no desktop e 44 px no celular.
 `npm run typecheck --prefix app` passou. Sem build ou suíte completa.
+
+## Zoom compacto e afastado das barras de rolagem
+
+O usuário pediu reduzir os botões de zoom e movê-los para dentro do campo,
+liberando a barra de rolagem. Os botões passam a 28×28 px para mouse, com
+contêiner menor e afastamento de 24 px das bordas inferior e direita do campo.
+Para toque, mantêm 44×44 px. O zoom e seus limites permanecem iguais.
+
+Verificado em Chromium com a aplicação local: aumentar/diminuir zoom,
+rolagem horizontal e vertical presentes no campo a 250%, botões de 28 px
+com 16 px livres até as bordas da área de rolagem; desktop 1440×900 e
+horizontal 844×390. Celular com toque 390×844 mantém alvos de 44 px.
+Capturas `app/test-results/zoom-compact-*.png`, incluindo detalhe das barras
+visíveis. Sem build ou suíte completa para este ajuste de CSS.
