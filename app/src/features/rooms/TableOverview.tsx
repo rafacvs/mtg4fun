@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { CARD_ASPECT, battlefieldLayout } from './battlefieldLayout';
+import { CARD_ASPECT } from './battlefieldLayout';
+import { overviewLayout } from './overviewLayout';
 import { cardImageURL } from './cardImage';
 import { TableIcon } from './TableIcon';
 import type { Match } from './roomsApi';
@@ -12,7 +13,7 @@ function OverviewPlayer({ player, own, currentTurn, onFocus }: { player: Match['
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(.15);
   const cards = player.battlefield ?? [];
-  const layout = battlefieldLayout(cards, 0, 0);
+  const layout = overviewLayout(cards);
   const unit = 72;
   const width = Math.max(unit, layout.width * unit);
   const height = Math.max(unit * CARD_ASPECT, layout.height * unit);

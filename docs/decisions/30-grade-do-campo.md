@@ -34,3 +34,35 @@ Essa autorização substitui, para o posicionamento, a posição horizontal livr
 descrita na spec [02](../specs/02-mesa-e-interface.md) e o espaçamento fixo
 registrado na [decisão 22](22-ajustes-da-mesa.md). Não muda banco, permissões,
 limite de três cartas na pilha nem o restante das regras da mesa.
+
+## Correção das miniaturas da visão geral
+
+Após os refinamentos visuais, o usuário informou que a visão geral mostrava
+mesas vazias e pediu corrigir a prévia. A inspeção da partida local confirmou
+que as cartas estavam presentes, mas posições salvas como 120, 240 e 720
+ganhavam centenas de células vazias após a troca para índices de coluna.
+A miniatura ajustava toda essa largura ao painel, deixando cartas menores que
+um pixel (medidos entre 0,43 e 1,21 px na tela desktop de 1440×900).
+
+A correção é somente na projeção da miniatura: retira espaços vazios iniciais
+e limita intervalos entre grupos ocupados a uma célula vazia, por fileira;
+fileiras afastadas também são compactadas. Mantém a ordem dos grupos,
+pilhas, sobreposição, cartas deitadas e o mesmo cálculo de dimensões da grade.
+Não converte dados, não grava coordenadas e não muda o campo em foco nem as
+regras de posicionamento aprovadas. Essa correção de apresentação foi feita
+no escopo do pedido explícito do usuário, na mesma branch e sem push.
+
+Verificação: TypeScript passou. Três testes unitários específicos de
+`overviewLayout.test.ts` passaram com Node no serviço `app` (o Node do host
+não suporta `--experimental-strip-types`). Cobrem coordenadas esparsas sem
+mutação, geometria de grade compacta com pilha mista/cartas deitadas e campo
+vazio. O cenário de navegador existente ganhou regressão com posições
+120/720 pela API real e verificação de dimensões visíveis, foco e ausência
+de alteração do snapshot; essa suíte não foi executada nesta correção.
+
+Chromium contra a aplicação/API local existente: 27 cartas visíveis nas
+quatro miniaturas em 1440×900, 390×844 e 844×390, com dimensões mínimas de
+24,20 px, 10,91 px e 10,29 px de largura, respectivamente; alternância entre
+miniatura e campo funcionando. Snapshot público e log iguais antes/depois,
+sem erro JavaScript. Capturas `app/test-results/overview-fixed-*.png`.
+Sem build ou suíte completa.

@@ -272,3 +272,39 @@ test('mesa e painéis cabem de 320 px ao tablet e desktop sem rolagem da página
     }
   } finally { await other.close(); }
 });
+
+test('visão geral mantém cartas visíveis com posições esparsas, pilhas e cartas viradas', async ({ page, browser, baseURL }, info) => {
+  test.setTimeout(90_000);
+  const contexts = await Promise.all(Array.from({ length: 2 }, () => browser.newContext({ baseURL })));
+  try {
+    const { roomId, action } = await seed([page.request, ...contexts.map(context => context.request)]);
+    const read = async (): Promise<Match> => (await (await page.request.get(`/api/rooms/${roomId}/match`)).json()).match;
+    const initial = await read();
+    const cards = initial.players.find(player => player.userId === initial.viewerId)!.battlefield!;
+    for (const [index, card] of cards.entries()) {
+      await action({ kind: 'position', cardId: card.id, x: [120, 120, 720, 240][index], row: index === 3 ? 2 : 0 });
+    }
+    const before = await read();
+    await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: fallbackArt }));
+    await page.goto(`/#/salas/${roomId}`);
+    if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
+    const miniature = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
+    await expect(miniature.locator('.overview-card')).toHaveCount(4);
+    await expect(miniature.locator('.overview-card.is-tapped')).toHaveCount(1);
+    await expect.poll(() => miniature.locator('.overview-card').evaluateAll(nodes => nodes.every(node => {
+      const box = node.getBoundingClientRect();
+      const field = node.closest('.overview-field')!.getBoundingClientRect();
+      return box.width > 8 && box.height > 8 && box.left >= field.left && box.top >= field.top && box.right <= field.right + 1 && box.bottom <= field.bottom + 1;
+    }))).toBe(true);
+    await page.screenshot({ path: info.outputPath('visao-geral-posicoes-esparsas.png'), fullPage: true });
+    await miniature.click();
+    const field = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+    await expect(field.locator('[data-pos-x="120"][data-row="0"]')).toHaveCount(2);
+    await expect(field.locator('[data-pos-x="720"][data-row="0"]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
+    await expect(miniature.locator('.overview-card')).toHaveCount(4);
+    const after = await read();
+    expect(after.players.find(player => player.userId === after.viewerId)!.battlefield).toEqual(before.players.find(player => player.userId === before.viewerId)!.battlefield);
+    expect(after.log).toEqual(before.log);
+  } finally { await Promise.all(contexts.map(context => context.close())); }
+});
