@@ -15,9 +15,10 @@ Entrega anterior, sem alteração de status:
 | [03](03-mesa-premium-mobile-first.md) | Mesa: composição premium mobile-first | Nenhum |
 | [04](04-paineis-padronizacao-premium.md) | Painéis: padronização e acabamento premium | 01 e 02 |
 
-**Status inicial dos quatro cards:** `ready-for-agent`. O status não elimina
-bloqueios: 01, 02 e 03 podem começar; 04 aguarda 01 e 02. O card 03 não é
-pré-requisito de 04, pois trata da composição da mesa, não dos novos editores.
+**Status:** 01 implementado; 02, 03 e 04 seguem `ready-for-agent`. O status não
+elimina bloqueios: 02 e 03 podem começar; 04 aguarda 01 e 02, e 01 já está
+entregue. O card 03 não é pré-requisito de 04, pois trata da composição da
+mesa, não dos novos editores.
 As verificações fazem parte de cada entrega, não de um card final isolado.
 
 Seguir [AGENTS.md](../../../AGENTS.md) e a

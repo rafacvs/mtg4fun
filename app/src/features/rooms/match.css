@@ -31,11 +31,12 @@
 .player-table { min-width: 0; min-height: 0; height: 100%; overflow: hidden; display: flex; flex-direction: column; background: linear-gradient(150deg, var(--panel2), var(--panel)); border: 1px solid var(--table-edge); border-radius: 16px; padding: 10px; box-shadow: inset 0 1px var(--gold-glow), 0 8px 25px #0003; }
 .player-table.is-current-turn { border-color: var(--gold); box-shadow: inset 0 1px var(--gold-glow), 0 0 24px var(--gold-wash); }
 .player-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; }
-.player-heading .player-identity { display: flex; flex: 1; justify-content: flex-start !important; min-width: 0; min-height: 44px; padding: 3px 6px; border-color: transparent; background: transparent; text-align: left; }
-.player-heading h2 { font-size: .88rem; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-heading .player-identity { display: flex; flex: 1; align-items: center; justify-content: flex-start !important; min-width: 0; min-height: 44px; padding: 3px 6px; border-color: transparent; background: transparent; text-align: left; }
+.player-name-life { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
+.player-heading h2 { font-size: .88rem; margin: 0; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-heading small { color: var(--gold); font-size: .7rem; }
 .player-avatar { display: inline-grid !important; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); border-radius: 10px; color: var(--gold); background: linear-gradient(135deg, #594a2d, var(--panel2)); font-family: Georgia, serif; font-size: 1rem; }
-.heading-life { display: inline-flex; align-items: center; gap: 5px; font-size: 1rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+.heading-life { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; white-space: nowrap; font-size: 1rem; color: var(--gold); font-variant-numeric: tabular-nums; }
 .heading-life .table-icon { width: 16px; height: 16px; flex-basis: 16px; }
 .turn-badge { font-size: .58rem; color: var(--gold); text-transform: uppercase; letter-spacing: .08em; padding: 4px 7px; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); border-radius: 5px; white-space: nowrap; background: var(--gold-wash); }
 .table-zones { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -203,7 +204,7 @@
   .table-stage { padding: 5px 8px; }
   .player-table { padding: 4px; }
   .player-heading { margin-bottom: 3px; }
-  .player-heading .player-identity { min-height: 36px; }
+  .player-heading .player-identity { min-height: 44px; }
   .player-heading h2 { font-size: .75rem; }
   .zone-column { --card-width: 48px; gap: 5px; }
   .zone-column .slot-label { font-size: .44rem; }

@@ -25,13 +25,16 @@
 .match-board .draw-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #ffffff03; }
 .match-board .draw-row label { display: flex; flex-direction: column; width: 100%; gap: 4px; font-size: .7rem; }
 .match-board .draw-row button { min-height: 44px; padding: 8px 10px; flex: 1; font-size: .7rem; }
+.player-life-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.player-life-label { flex: 0 0 auto; color: var(--gold); font-size: .75rem; font-weight: 600; }
+.player-life-line .numeric-counter { flex: 1; min-width: 0; }
 .player-life-readout { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 10px; background: var(--gold-wash); color: var(--muted); font-size: .75rem; }
 .player-life-readout strong { color: var(--gold); font-size: 2rem; font-variant-numeric: tabular-nums; }
 .player-public-markers p { font-size: .7rem; }
-.match-board .numeric-counter { grid-template-columns: 44px minmax(40px, 1fr) 44px; gap: 6px; }
-.match-board .numeric-counter input { min-height: 44px; padding: 6px; appearance: textfield; }
+.match-board .numeric-counter { grid-template-columns: 44px minmax(44px, 1fr) 44px; gap: 6px; }
+.match-board .numeric-counter input { min-width: 44px; min-height: 44px; padding: 6px; appearance: textfield; }
 .match-board .numeric-counter input::-webkit-inner-spin-button { appearance: none; }
-.match-board .numeric-counter button { min-height: 44px; }
+.match-board .numeric-counter button { min-width: 44px; min-height: 44px; padding: 0; }
 .match-board .marker-row { grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #ffffff02; }
 .match-board .pt-line { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .pt-control > span { display: block; margin-bottom: 6px; color: var(--text); }

@@ -102,10 +102,9 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
 
     await own.getByRole('button', { name: 'Abrir jogador Amigo da mesa' }).click();
     const playerMenu = page.getByRole('dialog', { name: 'Jogador Amigo da mesa' });
-    await playerMenu.getByRole('button', { name: 'Vida', exact: true }).click();
-    await playerMenu.getByRole('button', { name: 'Diminuir vida' }).click();
+    await expect(playerMenu.getByRole('button', { name: 'Vida', exact: true })).toHaveCount(0);
+    await playerMenu.getByRole('button', { name: 'Diminuir vida', exact: true }).click();
     await expect(own.getByLabel('Vida: 39')).toBeVisible();
-    await playerMenu.getByRole('button', { name: 'Voltar', exact: true }).click();
     await playerMenu.getByRole('button', { name: 'Marcadores', exact: true }).click();
     await playerMenu.getByRole('button', { name: 'Aumentar marcador vermelho' }).click();
     await expect(own.getByLabel('marcador vermelho', { exact: true })).toHaveText('1');

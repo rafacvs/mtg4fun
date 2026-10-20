@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { MarkerColor, Markers } from './roomsApi';
 
 export type CounterOperation = 'set' | 'increment';
@@ -20,53 +20,54 @@ export function markerName(color: MarkerColor) {
   return markerColors.find(item => item.color === color)?.name ?? color;
 }
 
-export function QuantityAdjust({ label, value, disabled, onApply }: { label: string; value: number; disabled: boolean; onApply: Apply }) {
-  const [amount, setAmount] = useState('1');
-  const numeric = Number(amount);
-  const integer = amount.trim() !== '' && Number.isSafeInteger(numeric);
-  const positive = integer && numeric > 0;
-  const apply = (operation: CounterOperation, next: number) => void onApply(operation, next);
-  return <div className="adjust-block">
-    <div className="draw-stepper">
-      <button type="button" className="secondary" aria-label={`Diminuir ${label}`} disabled={disabled} onClick={() => apply('increment', -1)}>−</button>
-      <strong className={label === 'vida' ? 'life-figure' : 'adjust-value'}>{value}</strong>
-      <button type="button" className="secondary" aria-label={`Aumentar ${label}`} disabled={disabled} onClick={() => apply('increment', 1)}>+</button>
-    </div>
-    <div className="draw-row">
-      <label>Quantidade<input aria-label={`Quantidade de ${label}`} type="number" step="1" value={amount} aria-invalid={!integer} onChange={event => setAmount(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && integer && !disabled) { event.preventDefault(); apply('set', numeric); } }} /></label>
-      <button type="button" disabled={disabled || !integer} onClick={() => apply('set', numeric)}>Definir</button>
-      <button type="button" disabled={disabled || !positive} onClick={() => apply('increment', numeric)}>Adicionar</button>
-      <button type="button" disabled={disabled || !positive} onClick={() => apply('increment', -numeric)}>Subtrair</button>
-    </div>
-  </div>;
-}
-
 function integerText(raw: string) {
   if (raw.trim() === '' || raw === '-' || raw === '+') return null;
   const numeric = Number(raw);
   return Number.isSafeInteger(numeric) ? numeric : null;
 }
 
-function NumericCounter({ label, value, disabled, onApply }: { label: string; value: number; disabled: boolean; onApply: Apply }) {
+export function NumericCounter({ label, inputLabel = label, value, disabled, onApply, textual = false }: {
+  label: string; inputLabel?: string; value: number; disabled: boolean; onApply: Apply; textual?: boolean;
+}) {
   const [draft, setDraft] = useState(String(value));
   const inputRef = useRef<HTMLInputElement>(null);
   const pending = useRef<number | null>(null);
+  const submitted = useRef<number | null>(null);
+  const restoreFocus = useRef(false);
   const numeric = integerText(draft);
   useEffect(() => { if (document.activeElement !== inputRef.current) setDraft(String(value)); }, [value]);
+  useEffect(() => { if (submitted.current === value) submitted.current = null; }, [value]);
   useEffect(() => {
     if (disabled || pending.current === null) return;
     const next = pending.current;
     pending.current = null;
-    if (next !== value) void onApply('set', next);
+    if (next === value || submitted.current === next) return;
+    submitted.current = next;
+    void onApply('set', next);
   }, [disabled, value, onApply]);
+  useLayoutEffect(() => {
+    if (disabled || !restoreFocus.current) return;
+    restoreFocus.current = false;
+    const active = document.activeElement;
+    if (active === document.body || active === document.documentElement) inputRef.current?.focus({ preventScroll: true });
+  }, [disabled]);
   const confirm = () => {
-    if (numeric === null || numeric === value) return;
-    if (disabled) pending.current = numeric;
-    else void onApply('set', numeric);
+    if (numeric === null || numeric === value || submitted.current === numeric || pending.current === numeric) return;
+    if (disabled) { pending.current = numeric; return; }
+    submitted.current = numeric;
+    void onApply('set', numeric);
   };
   return <div className="numeric-counter">
     <button type="button" className="secondary" aria-label={`Diminuir ${label}`} disabled={disabled} onClick={() => void onApply('increment', -1)}>−</button>
-    <input ref={inputRef} aria-label={label} title="Digite um inteiro e pressione Enter" type="number" step="1" value={draft} aria-invalid={numeric === null} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); confirm(); } }} onBlur={() => { if (numeric === null) setDraft(String(value)); else confirm(); }} />
+    <input ref={inputRef} aria-label={inputLabel} title="Digite um inteiro e pressione Enter" type={textual ? 'text' : 'number'} inputMode={textual ? 'decimal' : undefined} autoComplete="off" spellCheck={false} step={textual ? undefined : 1} value={draft} aria-invalid={numeric === null} disabled={disabled} onChange={event => {
+      const next = event.target.value;
+      setDraft(next);
+      if (integerText(next) !== submitted.current) submitted.current = null;
+    }} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); confirm(); } }} onBlur={event => {
+      if (disabled || event.currentTarget.disabled) restoreFocus.current = true;
+      if (numeric === null) setDraft(String(value));
+      else confirm();
+    }} />
     <button type="button" className="secondary" aria-label={`Aumentar ${label}`} disabled={disabled} onClick={() => void onApply('increment', 1)}>+</button>
   </div>;
 }
