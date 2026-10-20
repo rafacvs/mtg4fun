@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
-import { battlefieldLayout } from './battlefieldLayout';
+import { fitBattlefield } from './battlefieldLayout';
 import { createLibraryGesture } from './libraryGesture';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
@@ -104,9 +104,30 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, on
 function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps) {
   const cards = player.battlefield ?? [];
   const [zoom, setZoom] = useState(1);
-  const maxRow = cards.reduce((max, card) => Math.max(max, card.row), 0);
-  const layout = battlefieldLayout(cards);
-  const maxX = Math.max(0, ...[...layout.values()].map(item => item.x));
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState({ width: 0, height: 0 });
+  const layout = fitBattlefield(cards, visible.width, visible.height);
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const measure = () => {
+      const cardWidth = Number.parseFloat(getComputedStyle(node).getPropertyValue('--card-width')) || 76;
+      const width = node.clientWidth / (cardWidth * zoom);
+      const height = node.clientHeight / (cardWidth * zoom);
+      // Ignore the small shrink caused by a scrollbar appearing, so the grid
+      // does not grow and shrink forever. A real resize still updates.
+      setVisible(current => {
+        if (current.width === 0) return { width, height };
+        const grew = width > current.width + 0.2 || height > current.height + 0.2;
+        const shrank = width < current.width - 1 || height < current.height - 1;
+        return grew || shrank ? { width, height } : current;
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [zoom, cards.length]);
   useEffect(() => {
     const node = document.querySelector<HTMLElement>(`[data-field-owner="${player.userId}"] .battlefield-scroll`);
     if (!node) return;
@@ -127,12 +148,13 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZonePr
       </span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
     </header>
-    <div className="battlefield-scroll">
-      <div className="battlefield-zoom-space" style={{ '--mat-cols': Math.max(14, Math.ceil(maxX / 72) + 6), '--mat-rows': maxRow + 8, '--mat-zoom': zoom } as CSSProperties}>
+    <div className="battlefield-scroll" ref={scrollRef}>
+      <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': zoom } as CSSProperties}>
         <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
           {cards.map(card => {
-            const { x, index, size } = layout.get(card.id)!;
-            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={size} style={{ left: `calc(${x + index * 14} * var(--card-width) / 72)`, top: `calc(${card.row} * (var(--card-width) * 88 / 63 + 42px) + ${index * 16} * var(--card-width) / 72)`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} selected={gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
+            const place = layout.cards.get(card.id);
+            if (!place) return null;
+            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={place.size} style={{ left: `calc(${place.x} * var(--card-width))`, top: `calc(${place.y} * var(--card-width))`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} selected={gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
           })}
         </BattlefieldCanvas>
       </div>

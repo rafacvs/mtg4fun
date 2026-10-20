@@ -38,7 +38,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await cards.nth(0).dragTo(field, { steps: 8 });
   const fieldCards = field.getByRole('button', { name: 'Island', exact: true });
   await expect(fieldCards).toHaveCount(1);
-  await expect.poll(async () => (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.log.at(-1)?.kind).toBe('position');
+  await expect.poll(async () => (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.log.at(-1)?.kind).toBe('move');
   const confirmed = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
   const placed = confirmed.players.find((player: { userId: number }) => player.userId === confirmed.viewerId).battlefield[0];
   await expect(field.locator(`[data-pos-x="${placed.positionX}"][data-row="${placed.row}"]`)).toHaveCount(1);
@@ -97,8 +97,10 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     expect(Math.abs(stayed!.y - base!.y)).toBeLessThanOrEqual(2);
     expect(Math.hypot(moved!.x - stacked!.x, moved!.y - stacked!.y)).toBeGreaterThan(2);
     const gap = moved!.y - (stayed!.y + stayed!.height);
-    expect(gap).toBeGreaterThanOrEqual(41);
-    expect(gap).toBeLessThanOrEqual(43);
+    const cardWidth = await field.evaluate(node => Number.parseFloat(getComputedStyle(node).getPropertyValue('--card-width')));
+    const expectedGap = cardWidth * 10 / 72;
+    expect(gap).toBeGreaterThanOrEqual(expectedGap - 2);
+    expect(gap).toBeLessThanOrEqual(expectedGap + 2);
   }).toPass();
   if (testInfo.project.use.hasTouch) return;
   await selectFieldArea(page, field);

@@ -111,7 +111,7 @@ export const roomsApi = {
   copyCard: (id: number, cardId: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'copy-card', cardId }),
   counter: (id: number, input: CounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter', ...input }),
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
-  move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom') => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}) }),
+  move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom', at?: { x: number; row: number }) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}), ...(at ? { x: at.x, row: at.row } : {}) }),
   transferControl: (id: number, cardId: string, controllerId: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'transfer_control', cardId, controllerId }),
   position: (id: number, cardIds: string[], x: number, row: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'position', ...(cardIds.length === 1 ? { cardId: cardIds[0] } : { cardIds }), x, row }),
   roll: (id: number, sides: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'roll', sides }),

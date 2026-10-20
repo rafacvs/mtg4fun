@@ -1031,16 +1031,33 @@ func TestCollectivePositionIsAtomicAndSurvivesRestart(t *testing.T) {
 	for _, card := range unchanged.Match.Players[0].Battlefield {
 		before[card.ID] = [2]int{card.X, card.Row}
 	}
-	if before[ids[0]] != [2]int{0, 0} || before[ids[1]] != [2]int{120, 0} {
-		t.Fatalf("posição coletiva inválida alterou cartas: %s", view.body)
+	if before[ids[0]] != [2]int{0, 0} || before[ids[1]] != [2]int{0, 0} {
+		t.Fatalf("entrada no campo: %s", view.body)
+	}
+	requireStatus(t, e.request("POST", actionPath, `{"intentId":"40666666-6666-4666-8666-666666666666","kind":"draw","count":1}`, ana, nil), 200)
+	view = e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", ana, nil)
+	requireStatus(t, view, 200)
+	var extra struct {
+		Match struct {
+			Players []struct {
+				Hand []struct {
+					ID string `json:"id"`
+				} `json:"hand"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(view.body, &extra); err != nil || len(extra.Match.Players[0].Hand) != 1 {
+		t.Fatalf("carta para a célula pedida: %v %s", err, view.body)
+	}
+	placedID := extra.Match.Players[0].Hand[0].ID
+	placed := e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40777777-7777-4777-8777-777777777777","kind":"move","cardIds":[%q],"to":"battlefield","x":2,"row":1}`, placedID), ana, nil)
+	requireStatus(t, placed, 200)
+	if !bytes.Contains(placed.body, []byte(`"positionX":2`)) || !bytes.Contains(placed.body, []byte(`"row":1`)) {
+		t.Fatalf("movimento não gravou a célula: %s", placed.body)
 	}
 	// Invalid collective selections cannot change any card or append a log.
-	for index, body := range []string{
-		fmt.Sprintf(`"cardIds":[%q,%q],"x":300,"row":3`, ids[0], ids[0]),
-		fmt.Sprintf(`"cardIds":[%q,%q],"x":19999,"row":3`, ids[0], ids[1]),
-	} {
-		requireStatus(t, e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40000000-0000-4000-8000-%012d","kind":"position",%s}`, index, body), ana, nil), 409)
-	}
+	requireStatus(t, e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40000000-0000-4000-8000-000000000000","kind":"position","cardIds":[%q,%q],"x":300,"row":3}`, ids[0], ids[0]), ana, nil), 409)
+	requireStatus(t, e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40000000-0000-4000-8000-000000000001","kind":"position","cardIds":[%q,%q],"x":20001,"row":3}`, ids[0], ids[1]), ana, nil), 400)
 	requireStatus(t, e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40555555-5555-4555-8555-555555555555","kind":"position","cardId":%q,"cardIds":[%q],"x":300,"row":3}`, ids[0], ids[1]), ana, nil), 400)
 	requireStatus(t, e.request("POST", actionPath, fmt.Sprintf(`{"intentId":"40444444-4444-4444-8444-444444444444","kind":"position","cardIds":[%q,%q],"x":300,"row":3}`, ids[0], ids[1]), ana, nil), 200)
 	// A lost confirmation can be retried with the same intent.
@@ -1071,7 +1088,7 @@ func TestCollectivePositionIsAtomicAndSurvivesRestart(t *testing.T) {
 	for _, card := range restored.Match.Players[0].Battlefield {
 		positions[card.ID] = [2]int{card.X, card.Row}
 	}
-	if positions[ids[0]] != [2]int{300, 3} || positions[ids[1]] != [2]int{420, 3} || len(restored.Match.Log) == 0 || restored.Match.Log[len(restored.Match.Log)-1].Kind != "position" || restored.Match.Log[len(restored.Match.Log)-1].Count != 2 {
+	if positions[ids[0]] != [2]int{300, 3} || positions[ids[1]] != [2]int{300, 3} || len(restored.Match.Log) == 0 || restored.Match.Log[len(restored.Match.Log)-1].Kind != "position" || restored.Match.Log[len(restored.Match.Log)-1].Count != 2 {
 		t.Fatalf("posição coletiva persistida: %s", view.body)
 	}
 }

@@ -14,6 +14,7 @@ import { TableOverview } from './TableOverview';
 import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
+import { dropCell, firstFreeCell, layoutFromCanvas } from './battlefieldLayout';
 import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
 import './counters.css';
@@ -21,7 +22,9 @@ import './counters.css';
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const { match: synced, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const [pendingPlacement, setPendingPlacement] = useState<{ ids: string[]; column: number; row: number } | null>(null);
+  const match = synced && pendingPlacement ? withPendingPlacement(synced, pendingPlacement) : synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -158,11 +161,21 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       return;
     }
     if (zone === 'battlefield') {
-      const layout = battlefieldPositionAt(x, y);
-      if (!layout) return;
-      if (card.zone !== 'battlefield' && !await move([card.id], 'battlefield')) return;
-      const ids = card.zone === 'battlefield' && selectionIds.includes(card.id) ? [card.id, ...selectionIds.filter(id => id !== card.id)] : [card.id];
-      if (await position(ids, layout.x, layout.row)) setSelectionIds([]);
+      const battlefield = synced?.players.find(player => player.userId === synced.viewerId)?.battlefield ?? [];
+      const cell = locateBattlefieldCell(x, y, battlefield);
+      if (!cell || !synced) return;
+      if (card.zone !== 'battlefield') {
+        setPendingPlacement({ ids: [card.id], column: cell.column, row: cell.row });
+        const ok = await move([card.id], 'battlefield', undefined, { x: cell.column, row: cell.row });
+        setPendingPlacement(null);
+        if (ok) setSelectionIds([]);
+        return;
+      }
+      const ids = selectionIds.includes(card.id) ? [card.id, ...selectionIds.filter(id => id !== card.id)] : [card.id];
+      setPendingPlacement({ ids, column: cell.column, row: cell.row });
+      const ok = await position(ids, cell.column, cell.row);
+      setPendingPlacement(null);
+      if (ok) setSelectionIds([]);
       return;
     }
     if (zone === 'library') await move([card.id], 'library', 'top');
@@ -261,14 +274,36 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     />
     <GameActions anchor={actionsAnchor} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
     <PlayerMenu player={match.players.find(player => player.userId === menuPlayerId)} viewerId={match.viewerId} anchor={menuAnchor} disabled={busy || unconfirmed} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onCounter={counter} onClose={closePlayer} />
-    <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={createToken} onCreateCustom={createCustomToken} onClose={closeCreation} />
+    <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={async name => {
+      const cell = firstFreeCell(own.battlefield ?? []);
+      const ok = await createToken(name);
+      if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+      return ok;
+    }} onCreateCustom={async token => {
+      const cell = firstFreeCell(own.battlefield ?? []);
+      const ok = await createCustomToken(token);
+      if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+      return ok;
+    }} onClose={closeCreation} />
     <CardPreview players={match.players} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
-      return move([cardId], to, placement as 'top' | 'bottom' | undefined);
+      const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
+      return move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {
+        if (ok && cell) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+        return ok;
+      });
     }} onTransfer={(cardId, controllerId) => void transferControl(cardId, controllerId)} onMoveToOwner={(cardId, destination) => {
       const [to, placement] = destination.split('-');
-      void move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => { if (ok) setNotice(''); });
-    }} error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={id => void copyCard(id)} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
+      const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
+      void move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {
+        if (ok && cell) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+        if (ok) setNotice('');
+      });
+    }} error={error} unconfirmed={unconfirmed} onRetry={retry} onHide={id => revealCards([id], false)} card={preview} editable={Boolean(preview && canEditCounter(preview, match.viewerId))} disabled={busy || unconfirmed} viewerId={match.viewerId} busy={busy} onCopy={async id => {
+      const cell = firstFreeCell(own.battlefield ?? []);
+      const ok = await copyCard(id);
+      if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+    }} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
       if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
@@ -299,29 +334,71 @@ function dropZoneAt(x: number, y: number) {
   return null;
 }
 
-function battlefieldPositionAt(x: number, y: number) {
-  const elements = document.elementsFromPoint(x, y);
-  for (const element of elements) {
-    const stack = element.closest<HTMLElement>('[data-stack-size]');
-    if (!stack) continue;
-    const size = Number(stack.dataset.stackSize);
-    const anchorX = Number(stack.dataset.posX);
-    const row = Number(stack.dataset.row);
-    if (size < 3) return { x: anchorX, row };
-    return { x: anchorX + 160, row };
-  }
-  for (const element of elements) {
+function locateBattlefieldCell(x: number, y: number, cards: Card[]) {
+  for (const element of document.elementsFromPoint(x, y)) {
     const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
     if (!canvas) continue;
-    const zoom = Number(canvas.dataset.zoom || '1');
-    const box = canvas.getBoundingClientRect();
-    const cardWidth = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--card-width')) || 72;
-    const localX = (x - box.left) / zoom;
-    const localY = (y - box.top) / zoom;
-    const pitch = cardWidth * 88 / 63 + 42;
-    return { x: Math.max(0, Math.round(localX / cardWidth * 72)), row: Math.max(0, Math.floor(localY / pitch)) };
+    const { layout, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
+    return dropCell(layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
   }
   return null;
+}
+
+function scrollBattlefieldCell(userId: number, column: number, row: number) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const scroll = document.querySelector<HTMLElement>(`[data-field-owner="${userId}"] .battlefield-scroll`);
+    const card = scroll?.querySelector<HTMLElement>(`[data-pos-x="${column}"][data-row="${row}"]`);
+    if (!scroll || !card) return;
+    const view = scroll.getBoundingClientRect();
+    const box = card.getBoundingClientRect();
+    if (box.left < view.left) scroll.scrollLeft -= view.left - box.left;
+    else if (box.right > view.right) scroll.scrollLeft += box.right - view.right;
+    if (box.top < view.top) scroll.scrollTop -= view.top - box.top;
+    else if (box.bottom > view.bottom) scroll.scrollTop += box.bottom - view.bottom;
+  }));
+}
+
+function withPendingPlacement(match: Match, pending: { ids: string[]; column: number; row: number }): Match {
+  const anchor = findCard(match, pending.ids[0]);
+  if (!anchor) return match;
+  const targets = new Map<string, { column: number; row: number }>();
+  for (const id of pending.ids) {
+    const card = findCard(match, id);
+    if (!card || card.controllerId !== match.viewerId) continue;
+    if (card.zone === 'battlefield') targets.set(id, { column: card.positionX + pending.column - anchor.positionX, row: card.row + pending.row - anchor.row });
+    else if (id === anchor.id) targets.set(id, { column: pending.column, row: pending.row });
+  }
+  if (targets.size === 0) return match;
+  const zones = ['hand', 'graveyard', 'exile', 'command', 'consulted', 'revealed'] as const;
+  return {
+    ...match,
+    players: match.players.map(player => {
+      const entering: Card[] = [];
+      let next = { ...player };
+      for (const zone of zones) {
+        const cards = player[zone];
+        if (!cards) continue;
+        const staying = cards.filter(card => {
+          const target = targets.get(card.id);
+          if (!target) return true;
+          entering.push({ ...card, zone: 'battlefield', positionX: target.column, row: target.row, stackOrder: 1_000_000 + entering.length });
+          return false;
+        });
+        next = { ...next, [zone]: staying };
+        if (zone === 'hand') next.handCount = staying.length;
+        if (zone === 'graveyard') next.graveyardCount = staying.length;
+        if (zone === 'exile') next.exileCount = staying.length;
+        if (zone === 'command') next.commandCount = staying.length;
+      }
+      const battlefield = (player.battlefield ?? []).map(card => {
+        const target = targets.get(card.id);
+        return target ? { ...card, positionX: target.column, row: target.row } : card;
+      });
+      next.battlefield = [...battlefield, ...entering];
+      next.battlefieldCount = next.battlefield.length;
+      return next;
+    }),
+  };
 }
 
 function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {

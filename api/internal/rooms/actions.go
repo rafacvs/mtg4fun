@@ -33,6 +33,7 @@ type matchAction struct {
 	CardID           string
 	PositionX        int
 	Row              int
+	HasPosition      bool
 	TokenName        string
 	CustomName       string
 	Description      string
@@ -393,11 +394,11 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	case "create-custom-token":
 		power, _ := modifierFromText(input.Power)
 		toughness, _ := modifierFromText(input.Toughness)
-		payload, err = addCreatedCard(p, Card{Name: input.CustomName, Text: input.Description, Power: power, Toughness: toughness, InstanceKind: "custom-token"}, input.Kind)
+		payload, err = addCreatedCard(&m, p, Card{Name: input.CustomName, Text: input.Description, Power: power, Toughness: toughness, InstanceKind: "custom-token"}, input.Kind)
 	case "copy-card":
 		payload, err = s.copyCard(&m, p, input.CardID)
 	case "create-token":
-		payload, err = s.createCatalogToken(p, input.TokenName)
+		payload, err = s.createCatalogToken(&m, p, input.TokenName)
 	case "counter":
 		payload, err = changeCounter(&m, p, input)
 	case "hide_all_revealed":

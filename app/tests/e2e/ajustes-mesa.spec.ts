@@ -223,7 +223,7 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         // Seed: 2 stacked, 3 stacked, 1 upright + 2 tapped, neighbor and full row.
         for (const [index, card] of fieldCards.entries()) {
           const row = index < 5 ? 0 : index < 9 ? 1 : 2;
-          const x = index < 2 ? 0 : index < 5 ? 160 : index < 8 ? 0 : index === 8 ? 120 : (index - 9) * 120;
+          const x = index < 2 ? 0 : index < 5 ? 1 : index < 8 ? 0 : index === 8 ? 1 : index - 9;
           await action({ kind: 'position', cardId: card.id, x, row });
         }
         await action({ kind: 'set_tapped', cardIds: [fieldCards[6].id, fieldCards[7].id], tapped: true });
@@ -234,7 +234,7 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await expect(field.locator('[data-row="0"][data-stack-size="3"]')).toHaveCount(3);
         await expect(field.locator('[data-row="1"] .playing-card[data-tapped="true"]')).toHaveCount(2);
         const mixed = await field.locator('[data-row="1"][data-pos-x="0"] .playing-card').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }));
-        const neighbor = await field.locator('[data-row="1"][data-pos-x="120"] .playing-card').boundingBox();
+        const neighbor = await field.locator('[data-row="1"][data-pos-x="1"] .playing-card').boundingBox();
         expect(neighbor!.x).toBeGreaterThan(Math.max(...mixed.map(r => r.right)));
         const dimensions = await field.locator('.battlefield-scroll').evaluate(node => ({ content: node.scrollWidth, visible: node.clientWidth }));
         expect(dimensions.content).toBeGreaterThan(dimensions.visible);

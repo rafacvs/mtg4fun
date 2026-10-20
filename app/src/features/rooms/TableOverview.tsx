@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { battlefieldLayout } from './battlefieldLayout';
+import { CARD_ASPECT, battlefieldLayout } from './battlefieldLayout';
 import { cardImageURL } from './cardImage';
 import { TableIcon } from './TableIcon';
 import type { Match } from './roomsApi';
@@ -12,9 +12,10 @@ function OverviewPlayer({ player, own, currentTurn, onFocus }: { player: Match['
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(.15);
   const cards = player.battlefield ?? [];
-  const layout = battlefieldLayout(cards);
-  const width = Math.max(600, ...[...layout.values()].map(item => item.x + 160));
-  const height = Math.max(300, ...cards.map(card => (card.row + 1) * 143 + 60));
+  const layout = battlefieldLayout(cards, 0, 0);
+  const unit = 72;
+  const width = Math.max(unit, layout.width * unit);
+  const height = Math.max(unit * CARD_ASPECT, layout.height * unit);
   useLayoutEffect(() => {
     if (!ref.current) return;
     const node = ref.current;
@@ -28,8 +29,9 @@ function OverviewPlayer({ player, own, currentTurn, onFocus }: { player: Match['
     <header><span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><strong>{player.name}{own && <small> · Você</small>}</strong><span aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span></header>
     <div ref={ref} className="overview-field">
       {cards.length ? <div style={{ width, height, transform: `scale(${scale})` }} className="overview-canvas">{cards.map(card => {
-        const item = layout.get(card.id)!;
-        return <div key={card.id} className="overview-card" style={{ left: item.x + item.index * 14, top: card.row * 143 + item.index * 16, transform: card.tapped ? 'rotate(90deg)' : undefined, zIndex: card.stackOrder } as CSSProperties}>{card.name && !card.faceDown ? <img src={cardImageURL(card)} alt="" draggable={false} /> : <span className="card-back" />}</div>;
+        const item = layout.cards.get(card.id);
+        if (!item) return null;
+        return <div key={card.id} className={`overview-card ${card.tapped ? 'is-tapped' : ''}`} style={{ left: item.x * unit, top: item.y * unit, width: (card.tapped ? CARD_ASPECT : 1) * unit, height: (card.tapped ? 1 : CARD_ASPECT) * unit, zIndex: card.stackOrder } as CSSProperties}>{card.name && !card.faceDown ? <img src={cardImageURL(card)} alt="" draggable={false} /> : <span className="card-back" />}</div>;
       })}</div> : <div className="overview-empty"><TableIcon name="crown" /><span>Campo livre</span></div>}
     </div>
     <footer><span><TableIcon name="hand" />{player.handCount}</span><span><TableIcon name="library" />{player.libraryCount}</span><span>{player.battlefieldCount} no campo</span>{currentTurn && <span className="turn-badge">Turno</span>}</footer>

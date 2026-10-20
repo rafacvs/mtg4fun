@@ -20,7 +20,7 @@ func modifierFromText(raw string) (int64, bool) {
 	return value, true
 }
 
-func (s *Service) createCatalogToken(p *playerState, name string) (actionLogPayload, error) {
+func (s *Service) createCatalogToken(m *matchState, p *playerState, name string) (actionLogPayload, error) {
 	if s.catalog == nil {
 		return actionLogPayload{}, errCardNotFound
 	}
@@ -34,10 +34,10 @@ func (s *Service) createCatalogToken(p *playerState, name string) (actionLogPayl
 		Name: name, Text: definition.Text, Power: power,
 		Toughness: toughness, ImageName: name, InstanceKind: "token",
 	}
-	return addCreatedCard(p, card, "create-token")
+	return addCreatedCard(m, p, card, "create-token")
 }
 
-func addCreatedCard(p *playerState, card Card, kind string) (actionLogPayload, error) {
+func addCreatedCard(m *matchState, p *playerState, card Card, kind string) (actionLogPayload, error) {
 	var identifier [16]byte
 	if _, err := rand.Read(identifier[:]); err != nil {
 		return actionLogPayload{}, err
@@ -46,8 +46,15 @@ func addCreatedCard(p *playerState, card Card, kind string) (actionLogPayload, e
 	card.OwnerID = p.UserID
 	card.ControllerID = p.UserID
 	card.IsToken = true
+	x, row := firstFreeCell(p.Battlefield)
+	if x > 20000 || row > 2000 {
+		return actionLogPayload{}, errInvalidPosition
+	}
 	card.Zone = "battlefield"
-	card.PositionX = len(p.Battlefield) * 120
+	card.PositionX = x
+	card.Row = row
+	m.NextStackOrder++
+	card.StackOrder = m.NextStackOrder
 	p.Battlefield = append(p.Battlefield, card)
 	return actionLogPayload{Kind: kind, To: "battlefield", Count: 1, Result: card.Name, Cards: referencesForCards([]Card{card})}, nil
 }
@@ -88,7 +95,7 @@ func (s *Service) copyCard(m *matchState, p *playerState, id string) (actionLogP
 						}
 					}
 				}
-				return addCreatedCard(p, card, "copy-card")
+				return addCreatedCard(m, p, card, "copy-card")
 			}
 		}
 	}

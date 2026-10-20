@@ -27,7 +27,7 @@ async function seed(requests: APIRequestContext[]) {
     const hand = match.players.find(player => player.userId === match.viewerId)!.hand!;
     await action({ kind: 'move', cardIds: [hand[0].id], to: 'command' }, api);
     await action({ kind: 'move', cardIds: hand.slice(1, 5).map(card => card.id), to: 'battlefield' }, api);
-    for (const [index, card] of hand.slice(1, 5).entries()) await action({ kind: 'position', cardIds: [card.id], x: 20 + index * 108, row: 0 }, api);
+    for (const [index, card] of hand.slice(1, 5).entries()) await action({ kind: 'position', cardIds: [card.id], x: index, row: 0 }, api);
     await action({ kind: 'set_tapped', cardIds: [hand[2].id], tapped: true }, api);
   }
   return { roomId, action };
