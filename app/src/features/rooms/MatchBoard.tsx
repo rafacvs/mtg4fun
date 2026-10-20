@@ -3,7 +3,7 @@ import type { Card, Match } from './roomsApi';
 import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
-import { HoverCardPreview } from './HoverCardPreview';
+import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
 import { MatchLogCards } from './MatchLogCards';
 import { GameActions } from './GameActions';
@@ -38,6 +38,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [railOpen, setRailOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
   const [hoverPreviewOpen, setHoverPreviewOpen] = useState(true);
   const [hoverCardId, setHoverCardId] = useState<string | null>(null);
+  const [zoomCardId, setZoomCardId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -129,6 +130,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     selectedIds: selectionIds,
     onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
     onHover: card => { if (!drag && railOpen && hoverPreviewOpen) setHoverCardId(card.id); },
+    onZoom: card => setZoomCardId(card?.id ?? null),
     onToggleTapped: card => {
       if (busy || unconfirmed) return;
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
@@ -175,6 +177,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
   const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describe(lastAction) : undefined;
+  const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
   const showingOverview = compact ? overview : focusId === null;
   const miniatureOverview = showingOverview && (compact || match.players.length > 2);
   return <section className={`match-board ${drag ? 'dragging' : ''}`} aria-label="Mesa da partida">
@@ -211,8 +214,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           {hoverPreviewOpen && <HoverCardPreview card={hoverCardId ? findCard(match, hoverCardId) : null} />}
           <nav ref={thumbnailsRef} className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
             <div key={player.userId} className={`player-card ${player.userId === focused.userId ? 'is-observed' : ''} ${player.userId === match.currentTurn.userId ? 'is-current-turn' : ''}`}>
-              <button className="secondary player-summary" aria-label={`Abrir jogador ${player.name}`} onClick={event => openPlayer(player.userId, event.currentTarget)}>
-                <span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><strong>{player.name}{player.userId === match.viewerId && <small>Você</small>}</strong><span title="Vida" aria-label={`Vida ${player.life}`}><TableIcon name="heart" />{player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}><TableIcon name="focus" />{player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}><TableIcon name="hand" />{player.handCount}</span>
+              <button className="secondary player-summary" aria-label={`Abrir jogador ${player.name}`} onClick={event => openPlayer(player.userId, event.currentTarget.querySelector<HTMLElement>('[data-life-anchor]') ?? event.currentTarget)}>
+                <span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><strong>{player.name}{player.userId === match.viewerId && <small>Você</small>}</strong><span data-life-anchor title="Vida" aria-label={`Vida ${player.life}`}><TableIcon name="heart" />{player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}><TableIcon name="focus" />{player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}><TableIcon name="hand" />{player.handCount}</span>
               </button>
               <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={player.userId === focused.userId} title="Ver campo" onClick={() => focusPlayer(player.userId)}><TableIcon name="focus" /></button>
               {player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}
@@ -271,6 +274,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
       return Promise.resolve(false);
     }} onClose={closePreview} />
+    {zoomCard && <CardHoverZoom card={zoomCard} />}
   </section>;
 }
 

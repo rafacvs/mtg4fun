@@ -30,8 +30,8 @@ export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean,
   }, [open, ref]);
 }
 
-export function TablePanel({ open, label, anchor, wide = false, className = '', children, onClose }: {
-  open: boolean; label: string; anchor?: HTMLElement | null; wide?: boolean;
+export function TablePanel({ open, label, anchor, wide = false, align = 'end', className = '', children, onClose }: {
+  open: boolean; label: string; anchor?: HTMLElement | null; wide?: boolean; align?: 'start' | 'end';
   className?: string; children: ReactNode; onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -53,10 +53,16 @@ export function TablePanel({ open, label, anchor, wide = false, className = '', 
       let left = (width - box.width) / 2;
       let top = offsetY + (height - box.height) / 2;
       if (origin && !wide) {
-        left = origin.right + 10;
-        if (left + box.width > width - 12) left = origin.left - box.width - 10;
-        if (left < 12) left = origin.left;
-        top = origin.top;
+        if (align === 'start') {
+          left = origin.left;
+          top = origin.bottom + 8;
+          if (top + box.height > offsetY + height - 12) top = origin.top - box.height - 8;
+        } else {
+          left = origin.right + 10;
+          if (left + box.width > width - 12) left = origin.left - box.width - 10;
+          if (left < 12) left = origin.left;
+          top = origin.top;
+        }
       }
       setPlacement({ left: Math.max(12, Math.min(left, width - box.width - 12)), top: Math.max(minimumTop, Math.min(top, offsetY + height - box.height - 12)), maxHeight: maximumHeight });
     };
@@ -74,7 +80,7 @@ export function TablePanel({ open, label, anchor, wide = false, className = '', 
       window.visualViewport?.removeEventListener('resize', position);
       window.visualViewport?.removeEventListener('scroll', position);
     };
-  }, [open, anchor, wide]);
+  }, [open, anchor, wide, align]);
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => {

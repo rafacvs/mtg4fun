@@ -13,6 +13,7 @@ export type CardGesture = {
   selectedIds?: string[];
   onSelectArea?: (cards: Card[]) => void;
   onHover?: (card: Card) => void;
+  onZoom?: (card: Card | null) => void;
   onInspect: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
@@ -34,6 +35,10 @@ type ZoneProps = {
   disabled?: boolean;
 };
 
+function lifeAnchor(source: HTMLElement) {
+  return source.querySelector<HTMLElement>('[data-life-anchor]') ?? source;
+}
+
 function topCard(cards?: Card[]) {
   return cards?.at(-1);
 }
@@ -45,7 +50,7 @@ function canDrag(card: Card, viewerId: number) {
 export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture, onFocus, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
     <header className="player-heading">
-      <button className="player-identity secondary" onClick={event => onPlayerMenu(event.currentTarget)} aria-label={`Abrir jogador ${player.name}`}><span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><span className="player-name-life"><h2>{player.name}{own && <small> · Você</small>}</h2><span className="heading-life" aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span></span><TableIcon name="chevron" /></button>
+      <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}><span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><span className="player-name-life"><h2>{player.name}{own && <small> · Você</small>}</h2><span className="heading-life" data-life-anchor aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span></span><TableIcon name="chevron" /></button>
       <MarkerReadout markers={player.markers} />{currentTurn && <span className="turn-badge">Turno atual</span>}<button className="secondary icon-button" onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`} title="Ampliar mesa"><TableIcon name="focus" /></button>
     </header>
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>

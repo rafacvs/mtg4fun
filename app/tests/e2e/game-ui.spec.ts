@@ -102,6 +102,13 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
 
     await own.getByRole('button', { name: 'Abrir jogador Amigo da mesa' }).click();
     const playerMenu = page.getByRole('dialog', { name: 'Jogador Amigo da mesa' });
+    if (info.project.name === 'desktop') {
+      const life = own.getByLabel(/^Vida:/);
+      const menuBox = (await playerMenu.boundingBox())!;
+      const lifeBox = (await life.boundingBox())!;
+      expect(Math.abs(menuBox.x - lifeBox.x)).toBeLessThan(48);
+      expect(menuBox.y).toBeGreaterThanOrEqual(lifeBox.y);
+    }
     await expect(playerMenu.getByRole('button', { name: 'Vida', exact: true })).toHaveCount(0);
     await playerMenu.getByRole('button', { name: 'Diminuir vida', exact: true }).click();
     await expect(own.getByLabel('Vida: 39')).toBeVisible();

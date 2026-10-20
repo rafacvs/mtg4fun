@@ -12,6 +12,17 @@ export function HoverCardPreview({ card }: { card: Card | null }) {
   </section>;
 }
 
+export function CardHoverZoom({ card }: { card: Card }) {
+  const image = card.name ? cardImageURL(card) : '';
+  const [failed, setFailed] = useState(false);
+  return <div className="card-hover-zoom" aria-hidden="true">
+    {!card.name ? <p>Face para baixo</p>
+      : failed || !image ? <p>{card.name}</p>
+        : <img src={image} alt="" draggable={false} onError={() => setFailed(true)} />}
+    {card.name && <p>{card.name}</p>}
+  </div>;
+}
+
 function HoverImage({ image, card }: { image: string; card: Card }) {
   const [failed, setFailed] = useState(false);
   return failed ? <div className="hover-card-fallback"><p>A imagem não está disponível agora.</p>{card.text && <p>{card.text}</p>}</div>
