@@ -98,10 +98,14 @@ um diálogo aberto. Duplo clique no grimório compra uma carta; clique abre suas
 ações. As linhas do campo aceitam agrupamento manual de até três cartas, com
 espaço para cartas viradas e scroll horizontal. Os controles de zoom ficam
 empilhados no canto inferior direito do campo. O botão de ampliar no cabeçalho
-alterna entre campo em foco e visão geral.
+alterna entre campo em foco e visão geral. Ao observar um oponente, **Minha
+mesa** retorna ao seu campo em foco. Clicar em **Ver campo** do jogador já
+focado na lateral também retorna à visão geral.
 **Prévia**, **Jogadores** e **Registro** têm abas próprias para expandir ou
 recolher cada painel. Em telas compactas, as abas ficam acima do campo e abrem
-um painel por vez sobre a mesa. Passar o mouse sobre uma carta mostra sua
+um painel por vez sobre a mesa. A coluna tem rolagem própria, com prévia e
+lista completa de jogadores sem scroll interno. O registro mantém altura
+mínima para leitura e rolagem independente das entradas. Passar o mouse sobre uma carta mostra sua
 imagem ampliada quando a prévia está aberta.
 Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
 por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas

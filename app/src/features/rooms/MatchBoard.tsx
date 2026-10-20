@@ -60,7 +60,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const dockRef = useRef<HTMLElement>(null);
-  const thumbnailsRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
   const followingLog = useRef(true);
   useEffect(() => {
@@ -105,8 +104,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     if (previousLength === 0 || match.log.length <= previousLength) return;
     const actorId = match.log.at(-1)?.actorId;
     if (!actorId) return;
-    const index = match.players.findIndex(player => player.userId === actorId);
-    thumbnailsRef.current?.querySelectorAll('.player-card')?.[index]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     setActivePlayerId(actorId);
     const timeout = window.setTimeout(() => setActivePlayerId(null), 3_000);
     return () => window.clearTimeout(timeout);
@@ -203,6 +200,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describe(lastAction) : undefined;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
   const showingOverview = compact ? overview : focusId === null;
+  const showOverview = () => {
+    setFocusId(null); setOverview(true);
+    if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+  };
+  const togglePlayerFocus = (id: number) => {
+    if (!showingOverview && focused.userId === id) showOverview();
+    else focusPlayer(id);
+  };
   const miniatureOverview = showingOverview && (compact || match.players.length > 2);
   return <section className={`match-board ${drag ? 'dragging' : ''}`} aria-label="Mesa da partida">
     <div className="match-content">
@@ -217,7 +222,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       <div className="table-stage">
         <div className="table-main">
           {miniatureOverview ? <TableOverview match={match} onFocus={focusPlayer} /> : <div className={`match-players ${focusId !== null || compact ? 'has-focus' : ''}`}>{match.players.map(player =>
-            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} expanded={!showingOverview} onFocus={() => { if (!showingOverview) { setFocusId(null); setOverview(true); } else focusPlayer(player.userId); }} onPlayerMenu={anchor => openPlayer(player.userId, anchor)} currentTurn={player.userId === match.currentTurn.userId} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
+            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} expanded={!showingOverview} onFocus={() => togglePlayerFocus(player.userId)} onReturnToOwn={!showingOverview && player.userId !== match.viewerId && player.userId === focused.userId ? () => focusPlayer(match.viewerId) : undefined} onPlayerMenu={anchor => openPlayer(player.userId, anchor)} currentTurn={player.userId === match.currentTurn.userId} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
           )}</div>}
           <section ref={dockRef} className="own-dock" aria-label="Sua mão e ações">
             <nav className="quick-actions" aria-label="Ações rápidas">
@@ -236,12 +241,12 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section className={`rail-panel players-panel ${playersOpen ? 'is-open' : ''}`}>
             <button className="rail-tab secondary" aria-label="Jogadores" aria-expanded={playersOpen} aria-controls="players-panel-content" onClick={() => toggleRailPanel('players')}><TableIcon name="grid" /><span>Jogadores</span><small>{match.players.length}</small><TableIcon name="chevron" /></button>
             <div id="players-panel-content" className="rail-panel-content" hidden={!playersOpen}>
-              <nav ref={thumbnailsRef} className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
+              <nav className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
                 <div key={player.userId} className={`player-card ${!showingOverview && player.userId === focused.userId ? 'is-observed' : ''} ${player.userId === match.currentTurn.userId ? 'is-current-turn' : ''}`}>
                   <button className="secondary player-summary" aria-label={`Abrir jogador ${player.name}`} onClick={event => openPlayer(player.userId, event.currentTarget.querySelector<HTMLElement>('[data-life-anchor]') ?? event.currentTarget)}>
                     <strong>{player.name}{player.userId === match.viewerId && <small>Você</small>}</strong><span data-life-anchor title="Vida" aria-label={`Vida ${player.life}`}><TableIcon name="heart" />{player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}><TableIcon name="focus" />{player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}><TableIcon name="hand" />{player.handCount}</span>
                   </button>
-                  <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={!showingOverview && player.userId === focused.userId} title="Ver campo" onClick={() => focusPlayer(player.userId)}><TableIcon name="focus" /></button>
+                  <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={!showingOverview && player.userId === focused.userId} title={!showingOverview && player.userId === focused.userId ? "Voltar à visão geral" : "Ver campo"} onClick={() => togglePlayerFocus(player.userId)}><TableIcon name={!showingOverview && player.userId === focused.userId ? "grid" : "focus"} /></button>
                   {player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}
                 </div>
               )}</nav>

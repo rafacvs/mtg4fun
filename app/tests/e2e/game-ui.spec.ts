@@ -140,6 +140,35 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await nav.getByRole('button', { name: 'Ver campo de Segundo amigo' }).click();
     await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toBeVisible();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
+    await page.getByRole('button', { name: 'Voltar para minha mesa', exact: true }).click();
+    await expect(own).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Voltar para minha mesa', exact: true })).toHaveCount(0);
+    await openMatchRail(page);
+    await nav.getByRole('button', { name: 'Ver campo de Amigo da mesa', exact: true }).click();
+    await expect(page.locator('.overview-player')).toHaveCount(6);
+    await openMatchRail(page);
+    await nav.getByRole('button', { name: 'Ver campo de Segundo amigo', exact: true }).click();
+    if (info.project.name === 'desktop') {
+      await hand.getByRole('button', { name: 'Island', exact: true }).first().hover();
+      await expect(page.locator('.hover-card-preview img')).toBeVisible();
+      for (const label of ['Prévia', 'Jogadores', 'Registro']) {
+        const tab = page.getByRole('button', { name: label, exact: true });
+        if (await tab.getAttribute('aria-expanded') === 'false') await tab.click();
+      }
+      const dimensions = await page.locator('.side-rail').evaluate(rail => {
+        const players = rail.querySelector<HTMLElement>('.player-thumbnails')!;
+        const preview = rail.querySelector<HTMLElement>('.hover-card-preview')!;
+        const log = rail.querySelector<HTMLElement>('.match-log ol')!;
+        return { railHeight: rail.clientHeight, railContent: rail.scrollHeight, playersHeight: players.clientHeight, playersContent: players.scrollHeight, previewHeight: preview.clientHeight, previewContent: preview.scrollHeight, logHeight: log.clientHeight, logContent: log.scrollHeight };
+      });
+      expect(dimensions.playersContent).toBeLessThanOrEqual(dimensions.playersHeight + 1);
+      expect(dimensions.previewContent).toBeLessThanOrEqual(dimensions.previewHeight + 1);
+      expect(dimensions.logHeight).toBeGreaterThanOrEqual(220);
+      expect(dimensions.logContent).toBeGreaterThan(dimensions.logHeight);
+      expect(dimensions.railContent).toBeGreaterThan(dimensions.railHeight);
+      await page.locator('.side-rail').evaluate(rail => { rail.scrollTop = rail.scrollHeight; });
+      await page.screenshot({ animations: 'disabled', path: info.outputPath('paineis-scroll-externo.png'), fullPage: true });
+    }
     await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     await expect(page.locator('.overview-player')).toHaveCount(6);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('06-visao-geral.png'), fullPage: true });
