@@ -50,6 +50,12 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 
 ### Layout e interação
 
+O refinamento posterior de vida/P/R diretos e acabamento premium está
+[especificado separadamente](04-refinamento-ui-mesa.md), com aprovação
+registrada na [decisão 29](../decisions/29-refinamento-ui-mesa.md) e
+implementação pendente. Ele simplifica apenas as etapas de edição indicadas;
+demais regras e fluxos abaixo permanecem.
+
 - Interface PT-BR, excluindo o conteúdo das cartas/dataset.
 - Celular plenamente jogável nas orientações vertical e horizontal, sem bloqueio para girar o aparelho. Alterar orientação mantém conexão, estado e acesso à mão.
 - No celular, campo principal no centro, próprio por padrão; Visão geral abre uma grade de até seis campos reduzidos. Tocar numa miniatura amplia o campo; as miniaturas não manipulam cartas.
