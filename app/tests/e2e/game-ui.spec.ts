@@ -211,7 +211,15 @@ test('mesa e painéis cabem de 320 px ao tablet e desktop sem rolagem da página
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: fallbackArt }));
     await page.goto(`/#/salas/${roomId}`);
-    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 820, height: 1180 }, { width: 1440, height: 900 }]) {
+    for (const viewport of [
+      { width: 320, height: 568 },
+      { width: 390, height: 844 },
+      { width: 768, height: 1024 },
+      { width: 1024, height: 768 },
+      { width: 1280, height: 800 },
+      { width: 1920, height: 1080 },
+      { width: 844, height: 390 },
+    ]) {
       await page.setViewportSize(viewport);
       const quick = page.getByRole('navigation', { name: 'Ações rápidas' });
       await expect(quick.getByRole('button', { name: 'Comprar', exact: true })).toBeInViewport();
