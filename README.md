@@ -96,11 +96,13 @@ Atalhos: **D** comprar, **U** desvirar todas, **N** passar turno e **H** ocultar
 as próprias reveladas. Não atuam durante digitação, com modificadores ou com
 um diálogo aberto. Duplo clique no grimório compra uma carta; clique abre suas
 ações. As linhas do campo aceitam agrupamento manual de até três cartas, com
-espaço para cartas viradas e scroll horizontal. **Jogadores / Registro** abre
-ou recolhe a coluna lateral; ela começa recolhida em telas menores.
-Na lateral direita, acima dos jogadores/registro, passar o mouse sobre uma
-carta mostra sua prévia ampliada. **Ocultar prévia / Mostrar prévia** controla
-essa seção; **Recolher registro** recolhe toda a lateral, incluindo a prévia.
+espaço para cartas viradas e scroll horizontal. Os controles de zoom ficam
+empilhados no canto inferior direito do campo. O botão de ampliar no cabeçalho
+alterna entre campo em foco e visão geral.
+**Prévia**, **Jogadores** e **Registro** têm abas próprias para expandir ou
+recolher cada painel. Em telas compactas, as abas ficam acima do campo e abrem
+um painel por vez sobre a mesa. Passar o mouse sobre uma carta mostra sua
+imagem ampliada quando a prévia está aberta.
 Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
 por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas
 antigas sem referência de carta continuam como texto.

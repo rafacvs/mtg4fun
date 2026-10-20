@@ -21,3 +21,8 @@ As verificações fazem parte de cada entrega, não de um card final isolado.
 Seguir [AGENTS.md](../../../AGENTS.md) e a
 [estratégia de testes](../../testing.md). A branch atual é
 `refactor/game-ui`; o usuário pediu manter o trabalho local, sem push.
+
+Refinamento posterior solicitado em 20/10/2026: [mesa compacta e painéis
+recolhíveis](../../decisions/31-mesa-compacta.md), implementado na mesma branch
+com validação visual local. Esse registro distingue a nova verificação dos
+resultados anteriores dos quatro cards.

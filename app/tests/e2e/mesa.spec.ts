@@ -229,7 +229,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await expect(ownTable.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button', { name: 'Island', exact: true })).toBeVisible();
     await expect(drawn).toHaveCount(0);
     if (testInfo.project.name === 'desktop') {
-      await activate(page.getByRole('button', { name: 'Visão geral' }));
+      await activate(page.getByRole('button', { name: 'Voltar à visão geral' }));
       await expect(page.locator('.overview-player')).toHaveCount(6);
       await activate(page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }));
       await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toBeHidden();

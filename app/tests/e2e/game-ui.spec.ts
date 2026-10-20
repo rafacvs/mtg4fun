@@ -140,7 +140,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await nav.getByRole('button', { name: 'Ver campo de Segundo amigo' }).click();
     await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toBeVisible();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
-    await page.getByRole('button', { name: 'Visão geral', exact: true }).click();
+    await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     await expect(page.locator('.overview-player')).toHaveCount(6);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('06-visao-geral.png'), fullPage: true });
     await page.getByRole('button', { name: 'Ampliar mesa de Amigo 6', exact: true }).click();

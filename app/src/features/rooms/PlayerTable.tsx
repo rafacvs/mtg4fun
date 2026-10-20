@@ -47,11 +47,11 @@ function canDrag(card: Card, viewerId: number) {
   return card.controllerId === viewerId;
 }
 
-export function PlayerTable({ player, focused, own, viewerId, hoverZone, gesture, onFocus, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
+export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZone, gesture, onFocus, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
     <header className="player-heading">
-      <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}><span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><span className="player-name-life"><h2>{player.name}{own && <small> · Você</small>}</h2><span className="heading-life" data-life-anchor aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span></span><TableIcon name="chevron" /></button>
-      <MarkerReadout markers={player.markers} />{currentTurn && <span className="turn-badge">Turno atual</span>}<button className="secondary icon-button" onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`} title="Ampliar mesa"><TableIcon name="focus" /></button>
+      <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}><span className="player-name-life"><h2>{player.name}{own && <small> · Você</small>}</h2><span className="heading-life" data-life-anchor aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span></span><TableIcon name="chevron" /></button>
+      <MarkerReadout markers={player.markers} />{currentTurn && <span className="turn-badge">Turno atual</span>}<button className="secondary icon-button" onClick={onFocus} aria-label={expanded ? "Voltar à visão geral" : `Ampliar mesa de ${player.name}`} title={expanded ? "Voltar à visão geral" : "Ampliar mesa"}><TableIcon name={expanded ? "grid" : "focus"} /></button>
     </header>
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
@@ -142,10 +142,6 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZonePr
   return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
     <header>
       <span>Campo</span>
-      <span className="field-zoom">
-        <button type="button" aria-label="Diminuir zoom" onClick={() => setZoom(current => Math.max(0.5, Math.round((current - 0.25) * 100) / 100))}>−</button>
-        <button type="button" aria-label="Aumentar zoom" onClick={() => setZoom(current => Math.min(2.5, Math.round((current + 0.25) * 100) / 100))}>+</button>
-      </span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
     </header>
     <div className="battlefield-scroll" ref={scrollRef}>
@@ -158,6 +154,10 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZonePr
           })}
         </BattlefieldCanvas>
       </div>
+    </div>
+    <div className="field-zoom" role="group" aria-label="Zoom do campo">
+      <button type="button" aria-label="Diminuir zoom" onClick={() => setZoom(current => Math.max(0.5, Math.round((current - 0.25) * 100) / 100))}>−</button>
+      <button type="button" aria-label="Aumentar zoom" onClick={() => setZoom(current => Math.min(2.5, Math.round((current + 0.25) * 100) / 100))}>+</button>
     </div>
   </section>;
 }

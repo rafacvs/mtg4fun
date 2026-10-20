@@ -29,7 +29,7 @@ async function prepare(api: APIRequestContext, other: APIRequestContext) {
   return { roomId, action, read, cards: cards.slice(1) };
 }
 
-test('prévia lateral por hover e recolhimento completo', async ({ page, browser, baseURL }, info) => {
+test('prévia lateral por hover e painéis recolhidos individualmente', async ({ page, browser, baseURL }, info) => {
   test.skip(info.project.name !== 'desktop', 'Hover usa mouse no desktop.');
   test.setTimeout(90_000);
   const observer = await browser.newContext({ baseURL });
@@ -59,17 +59,17 @@ test('prévia lateral por hover e recolhimento completo', async ({ page, browser
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.mouse.move(8, 8);
     await expect(zoom).toHaveCount(0);
-    await page.getByRole('button', { name: 'Ocultar prévia', exact: true }).click();
-    await expect(panel).toHaveCount(0);
-    await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeVisible();
-    await page.getByRole('button', { name: 'Mostrar prévia', exact: true }).click();
-    await expect(panel).toBeVisible();
-    await page.getByRole('button', { name: 'Recolher registro', exact: true }).click();
+    await page.getByRole('button', { name: 'Prévia', exact: true }).click();
     await expect(panel).toBeHidden();
-    await expect(page.getByRole('navigation', { name: 'Foco da mesa' })).toBeHidden();
-    await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeHidden();
-    await page.getByRole('button', { name: 'Jogadores / Registro', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeVisible();
+    await page.getByRole('button', { name: 'Prévia', exact: true }).click();
     await expect(panel).toBeVisible();
+    await page.getByRole('button', { name: 'Registro', exact: true }).click();
+    await expect(panel).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Foco da mesa' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeHidden();
+    await page.getByRole('button', { name: 'Registro', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeVisible();
 
     const drawn = await action({ kind: 'draw', count: 1 }, observer.request);
     const otherCard = drawn.players.find(p => p.userId === drawn.viewerId)!.hand![0];
@@ -242,12 +242,12 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await expect(field.locator('[data-row="2"]').last()).toBeInViewport();
         await field.locator('.battlefield-scroll').evaluate(node => { node.scrollLeft = 0; node.scrollTop = 0; });
         await page.screenshot({ path: info.outputPath('campo-cenarios.png'), fullPage: true });
-        const railToggle = page.getByRole('button', { name: /Recolher registro|Jogadores \/ Registro/ });
+        const railToggle = page.getByRole('button', { name: 'Registro', exact: true });
         if (await railToggle.getAttribute('aria-expanded') === 'false') await railToggle.click();
         await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeVisible();
         await railToggle.click();
         await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeHidden();
-        expect(await page.locator('.table-toolbar').evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+        expect(await page.locator('.table-toolbar').evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(40);
         await field.getByRole('button', { name: 'Island', exact: true }).first().click({ position: { x: 4, y: 4 } });
         await expect(preview).toBeVisible();
         const input = preview.getByLabel('Poder', { exact: true });
