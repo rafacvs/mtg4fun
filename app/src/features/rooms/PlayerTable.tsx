@@ -50,7 +50,14 @@ function canDrag(card: Card, viewerId: number) {
 export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZone, gesture, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; onFocus: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
     <header className="player-heading">
-      <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}><span className="player-name-life"><h2>{player.name}{own && <small> · Você</small>}</h2><span className="heading-life" data-life-anchor aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span></span><TableIcon name="chevron" /></button>
+      <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}>
+        <span className="player-name-life">
+          <h2>{player.name}</h2>
+          {own && <small className="player-ownership">Você</small>}
+          <span className="heading-life" data-life-anchor aria-label={`Vida: ${player.life}`}><TableIcon name="heart" /><span>{player.life}</span></span>
+        </span>
+        <TableIcon name="chevron" />
+      </button>
       <MarkerReadout markers={player.markers} />
       {currentTurn && <span className="turn-badge">Turno atual</span>}
       <div className="player-view-actions">

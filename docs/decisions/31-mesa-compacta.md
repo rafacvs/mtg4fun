@@ -76,3 +76,20 @@ externa presente com os três painéis abertos. TypeScript passou.
 O cenário existente de navegador com seis participantes foi ampliado para
 cobrir os novos controles e a geometria das rolagens; essa suíte não foi
 executada neste feedback, preservando o foco na revisão visual solicitado.
+
+## Acabamento do bloco de identidade
+
+Após aprovar os ajustes anteriores, o usuário pediu deixar especificamente o
+nome, a indicação de mesa própria e a vida mais organizados, minimalistas e
+premium. O cabeçalho agora separa o nome da etiqueta discreta “Você”, usa um
+divisor sutil antes da vida, número com maior peso e coração dourado menor.
+A seta do menu foi reduzida e aponta para baixo; o turno usa ponto dourado e
+texto secundário. O clique continua restrito ao bloco de identidade.
+
+Revisão visual desta alteração em Chromium com a aplicação local existente:
+1440×900, 390×844 e 320×740; capturas `app/test-results/header-polish-*.png`.
+Conferidos cabeçalho próprio e de oponente, abertura do menu pelo bloco,
+clique inerte no espaço vazio, retorno à própria mesa disponível no oponente
+e ausência de rolagem horizontal da página ou erro JavaScript.
+Altura preservada em 28 px com mouse no desktop e 44 px no celular.
+`npm run typecheck --prefix app` passou. Sem build ou suíte completa.
