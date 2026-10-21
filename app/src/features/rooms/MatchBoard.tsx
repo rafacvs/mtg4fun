@@ -15,7 +15,8 @@ import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
 import { dropCell, firstFreeCell, layoutFromCanvas } from './battlefieldLayout';
-import { OwnHand, PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
+import { OwnHand } from './OwnHand';
+import { PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
 import './match.css';
 import './counters.css';
 
@@ -30,6 +31,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [focusId, setFocusId] = useState<number | null>(null);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1000px)').matches);
   const [overview, setOverview] = useState(false);
+  const [dockHidden, setDockHidden] = useState(false);
   const [menuPlayerId, setMenuPlayerId] = useState<number | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [libraryAnchor, setLibraryAnchor] = useState<HTMLElement | null>(null);
@@ -140,14 +142,15 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const gesture: CardGesture = {
     selectedIds: selectionIds,
     onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
-    onHover: card => { if (!drag && hoverPreviewOpen) setHoverCardId(card.id); },
+    onHover: card => { if (!drag) setHoverCardId(card.id); },
+    onPreview: card => { setHoverCardId(card.id); setHoverPreviewOpen(true); if (compact) { setPlayersOpen(false); setLogOpen(false); } },
     onZoom: card => setZoomCardId(card?.id ?? null),
     onToggleTapped: card => {
       if (busy || unconfirmed) return;
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
       void setTapped(ids, !card.tapped);
     },
-    onInspect: card => { if (!drag) setPreviewId(card.id); },
+    onInspect: card => { if (!drag) { setHoverCardId(card.id); setPreviewId(card.id); } },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
     onDragCancel: () => setDrag(null),
@@ -224,13 +227,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           {miniatureOverview ? <TableOverview match={match} onFocus={focusPlayer} /> : <div className={`match-players ${focusId !== null || compact ? 'has-focus' : ''}`}>{match.players.map(player =>
             <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} expanded={!showingOverview} onFocus={() => togglePlayerFocus(player.userId)} onReturnToOwn={!showingOverview && player.userId !== match.viewerId && player.userId === focused.userId ? () => focusPlayer(match.viewerId) : undefined} onPlayerMenu={anchor => openPlayer(player.userId, anchor)} currentTurn={player.userId === match.currentTurn.userId} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
           )}</div>}
-          <section ref={dockRef} className="own-dock" aria-label="Sua mão e ações">
+          <section ref={dockRef} className={`own-dock ${dockHidden ? 'is-collapsed' : ''}`} aria-label="Sua mão e ações">
+            <button className="dock-toggle secondary" aria-expanded={!dockHidden} aria-controls="own-dock-content" onClick={() => setDockHidden(value => !value)}><TableIcon name="hand" /><span>{dockHidden ? `Mostrar mão (${own.handCount}) e ações` : 'Ocultar mão e ações'}</span><TableIcon name="chevron" /></button>
+            <div id="own-dock-content" className="dock-content" hidden={dockHidden}>
             <nav className="quick-actions" aria-label="Ações rápidas">
               <button disabled={busy || unconfirmed || !own.libraryCount} aria-label="Comprar" title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}><TableIcon name="draw" /><span>Comprar</span><kbd aria-hidden="true">D</kbd></button>
               <button className="secondary" disabled={busy || unconfirmed} aria-label="Desvirar todas" title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}><TableIcon name="untap" /><span>Desvirar todas</span><kbd aria-hidden="true">U</kbd></button>
               <button type="button" className="actions-toggle secondary" aria-expanded={actionsOpen} onClick={event => { setActionsAnchor(event.currentTarget); setActionsOpen(value => !value); setLibraryOpen(false); setMenuPlayerId(null); }}><TableIcon name="actions" /><span>Ações</span></button>
             </nav>
-            <OwnHand cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+            <OwnHand key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+            </div>
           </section>
         </div>
         <aside id="match-rail" className="side-rail" aria-label="Painéis da mesa">
@@ -258,7 +264,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
               <section className="match-log" aria-label="Registro da partida">
                 <ol ref={logRef} onScroll={event => { const list = event.currentTarget; followingLog.current = list.scrollHeight - list.scrollTop - list.clientHeight < 32; if (followingLog.current) setUnreadLog(false); }}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}<MatchLogCards cards={entry.cards} onPreview={id => {
                   const card = findCard(match, id);
-                  if (card) gesture.onHover?.(card);
+                  if (card) gesture.onPreview?.(card);
                 }} /></li>)}</ol>
                 {unreadLog && <button className="new-log-entries secondary" onClick={() => { followingLog.current = true; if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; setUnreadLog(false); }}><TableIcon name="draw" />Novas ações</button>}
               </section>

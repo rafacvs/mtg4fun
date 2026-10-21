@@ -6,9 +6,9 @@ export function HoverCardPreview({ card }: { card: Card | null }) {
   const image = card?.name ? cardImageURL(card) : '';
   return <section id="hover-card-preview" className={`hover-card-preview ${!card ? 'is-empty' : ''}`} aria-label="Prévia da carta">
     <h2>{card ? card.name || 'Carta face para baixo' : 'Prévia da carta'}</h2>
-    {!card ? <p>Passe o mouse sobre uma carta para ampliá-la.</p>
+    {!card ? <p>Segure uma carta para ler. No computador, passe o mouse sobre ela.</p>
       : !card.name ? <p>Face para baixo · identidade oculta.</p>
-        : <HoverImage key={image} image={image} card={card} />}
+        : <><HoverImage key={image} image={image} card={card} />{card.text && <p className="preview-rules">{card.text}</p>}</>}
   </section>;
 }
 

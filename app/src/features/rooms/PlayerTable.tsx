@@ -13,6 +13,7 @@ export type CardGesture = {
   selectedIds?: string[];
   onSelectArea?: (cards: Card[]) => void;
   onHover?: (card: Card) => void;
+  onPreview?: (card: Card) => void;
   onZoom?: (card: Card | null) => void;
   onInspect: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
@@ -74,34 +75,6 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
       {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} title="Ocultar todas reveladas (H)" aria-keyshortcuts="H" onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
-}
-
-export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
-  const row = useRef<HTMLDivElement>(null);
-  const [scroll, setScroll] = useState({ before: false, after: false });
-  const updateScroll = () => {
-    const node = row.current;
-    if (node) setScroll({ before: node.scrollLeft > 2, after: node.scrollLeft + node.clientWidth < node.scrollWidth - 2 });
-  };
-  useEffect(() => {
-    if (!row.current) return;
-    updateScroll();
-    const observer = new ResizeObserver(updateScroll);
-    observer.observe(row.current);
-    return () => observer.disconnect();
-  }, [cards.length]);
-  const scrollHand = (direction: number) => row.current?.scrollBy({ left: direction * row.current.clientWidth * .75, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-  return <section className={`table-zone zone-hand ${hoverZone === 'hand' ? 'drop-hover' : ''}`} aria-label="Mão" data-drop-zone="hand">
-    <header><span>Mão</span><strong aria-label={`${count} cartas`}>{count}</strong></header>
-    <div ref={row} className="zone-cards" onScroll={updateScroll}>
-      {cards.map(card => <PlayingCard key={card.id} card={card} draggable={canDrag(card, viewerId)} {...gesture} />)}
-      {cards.length === 0 && <span className="zone-placeholder">Mão</span>}
-    </div>
-    {(scroll.before || scroll.after) && <nav className="hand-scroll-controls" aria-label="Navegar pela mão">
-      <button type="button" className="secondary icon-button" disabled={!scroll.before} aria-label="Cartas anteriores na mão" onClick={() => scrollHand(-1)}><TableIcon name="back" /></button>
-      <button type="button" className="secondary icon-button" disabled={!scroll.after} aria-label="Próximas cartas na mão" onClick={() => scrollHand(1)}><TableIcon name="next" /></button>
-    </nav>}
-  </section>;
 }
 
 export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, disabled }: ZoneProps) {
