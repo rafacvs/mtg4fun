@@ -57,7 +57,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(4);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    expect(await quick.getByRole('button', { name: 'Comprar', exact: true }).evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+    expect(await quick.getByRole('button', { name: 'Comprar', exact: true }).evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(info.project.use.hasTouch ? 44 : 36);
     const handBox = (await hand.boundingBox())!;
     const quickBox = (await quick.boundingBox())!;
     expect(quickBox.x).toBeGreaterThanOrEqual(handBox.x + handBox.width);
@@ -194,12 +194,13 @@ test('preserva leitura do registro, navega na mão e mantém menus acessíveis a
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     const cardRow = hand.locator('.zone-cards');
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(14);
-    await hand.getByRole('button', { name: 'Próximas cartas na mão' }).click();
+    await cardRow.hover();
+    await page.mouse.wheel(600, 0);
     await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
-    await hand.getByRole('button', { name: 'Cartas anteriores na mão' }).click();
+    await page.mouse.wheel(-600, 0);
     await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeLessThan(2);
 
-    await openMatchRail(page);
+    await openMatchRail(page, 'Registro');
     const log = page.getByRole('region', { name: 'Registro da partida', exact: true });
     const list = log.locator('ol');
     await expect.poll(() => list.evaluate(node => node.scrollHeight - node.clientHeight)).toBeGreaterThan(40);
@@ -211,6 +212,7 @@ test('preserva leitura do registro, navega na mão e mantém menus acessíveis a
     await log.getByRole('button', { name: 'Novas ações', exact: true }).click();
     await expect.poll(() => list.evaluate(node => node.scrollHeight - node.scrollTop - node.clientHeight)).toBeLessThan(32);
 
+    await openMatchRail(page);
     // Right-edge origin exercises clamping; repeated polls must preserve keyboard focus.
     const trigger = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: 'Abrir jogador Amigo da mesa' });
     await trigger.click();

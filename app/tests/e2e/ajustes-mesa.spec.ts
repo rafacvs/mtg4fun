@@ -40,7 +40,7 @@ test('prévia lateral por hover e painéis recolhidos individualmente', async ({
     await page.route('**/api/cards/image?*', route => failImage ? route.fulfill({ status: 502, body: 'Imagem indisponível' }) : route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#31573e"/></svg>' }));
     await page.goto(`/#/salas/${roomId}`);
     const panel = page.getByRole('region', { name: 'Prévia da carta', exact: true });
-    await expect(panel).toContainText('Passe o mouse');
+    await expect(panel).toContainText('passe o mouse');
     const before = (await read()).log.length;
     const zoom = page.locator('.card-hover-zoom');
     await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first().hover();
@@ -104,7 +104,7 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     for (const current of [page, other]) {
       await current.route('**/api/cards/image?*', route => route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#31573e"/></svg>' }));
       await current.goto(`/#/salas/${roomId}`);
-      await openMatchRail(current);
+      await openMatchRail(current, 'Registro');
     }
     const log = page.getByRole('region', { name: 'Registro da partida' });
     const otherLog = other.getByRole('region', { name: 'Registro da partida' });
@@ -123,7 +123,7 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     await expect(otherLog.locator('li').filter({ hasText: 'de Cemitério para Mão' }).getByRole('button')).toHaveCount(0);
     await expect(otherPanel.getByRole('img')).toHaveCount(0);
     await page.reload();
-    await openMatchRail(page);
+    await openMatchRail(page, 'Registro');
     const ownMove = log.locator('li').filter({ hasText: 'de Cemitério para Mão' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
     await ownMove.focus();
     await expect(panel.getByRole('img')).toBeVisible();
@@ -219,16 +219,15 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await expect.poll(async () => (await read()).log.at(-1)?.kind).toBe('turn');
       } else {
         const fieldCards = cards.slice(0, 18);
-        await action({ kind: 'move', cardIds: fieldCards.map(c => c.id), to: 'battlefield' });
         // Seed: 2 stacked, 3 stacked, 1 upright + 2 tapped, neighbor and full row.
         for (const [index, card] of fieldCards.entries()) {
           const row = index < 5 ? 0 : index < 9 ? 1 : 2;
           const x = index < 2 ? 0 : index < 5 ? 1 : index < 8 ? 0 : index === 8 ? 1 : index - 9;
-          await action({ kind: 'position', cardId: card.id, x, row });
+          await action({ kind: 'move', cardIds: [card.id], to: 'battlefield', x, row });
         }
         await action({ kind: 'set_tapped', cardIds: [fieldCards[6].id, fieldCards[7].id], tapped: true });
         await page.goto(`/#/salas/${roomId}`);
-        await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
+        if (info.project.name === 'desktop') await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
         const field = article.getByRole('region', { name: 'Campo', exact: true });
         await expect(field.locator('[data-row="0"][data-stack-size="2"]')).toHaveCount(2);
         await expect(field.locator('[data-row="0"][data-stack-size="3"]')).toHaveCount(3);

@@ -43,7 +43,11 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   const placed = confirmed.players.find((player: { userId: number }) => player.userId === confirmed.viewerId).battlefield[0];
   await expect(field.locator(`[data-pos-x="${placed.positionX}"][data-row="${placed.row}"]`)).toHaveCount(1);
   let base = await fieldCards.nth(0).boundingBox();
-  if (testInfo.project.use.hasTouch) await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: base!.x + base!.width / 2, y: base!.y + base!.height / 2 });
+  if (testInfo.project.use.hasTouch) {
+    await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
+    await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: base!.x + base!.width / 2, y: base!.y + base!.height / 2 });
+    await hand.getByRole('button', { name: 'Concluir', exact: true }).tap();
+  }
   else await cards.nth(0).dragTo(fieldCards.nth(0), { targetPosition: { x: base!.width / 2, y: base!.height / 2 }, steps: 8 });
   await expect(fieldCards).toHaveCount(2);
   await expect(field.locator('[data-stack-size="2"]')).toHaveCount(2);

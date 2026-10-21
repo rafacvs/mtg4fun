@@ -58,10 +58,10 @@ export const test = base.extend<{}, { appURL: string }>({
 export { expect };
 
 // The panels are controlled by their own tabs; compact screens show one at a time.
-export async function openMatchRail(page: Page) {
-  const players = page.getByRole('button', { name: 'Jogadores', exact: true });
-  await expect(players).toBeVisible();
-  if (await players.getAttribute('aria-expanded') === 'false') await players.click();
+export async function openMatchRail(page: Page, panel = 'Jogadores') {
+  const tab = page.getByRole('button', { name: panel, exact: true });
+  await expect(tab).toBeVisible();
+  if (await tab.getAttribute('aria-expanded') === 'false') await tab.click();
 }
 
 export async function closeMatchRail(page: Page) {
