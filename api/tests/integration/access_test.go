@@ -325,3 +325,24 @@ func TestMalformedLoginRequestsAndPublicProvisioningRoutesAreRejected(t *testing
 	requireStatus(t, e.request("GET", "/api/inexistente", "", nil, nil), 404)
 	requireStatus(t, e.request("POST", "/", "{}", nil, nil), 405)
 }
+
+func TestTLSRequiredConnectsWithUntrustedCertificateAndPersistsAccount(t *testing.T) {
+	e := newEnvironment(t)
+	// A successful write for an account that requires SSL proves that the
+	// executable uses an encrypted connection to the real MySQL server.
+	e.sql("ALTER USER '" + e.db + "'@'%' REQUIRE SSL")
+	command := e.command("create-user", "--name", "tls-required", "--password", "senha-segura")
+	command.Env = append(command.Env, "DB_TLS=required", "DB_CONNECT_TIMEOUT=1s")
+	output, err := command.CombinedOutput()
+	if err != nil || !bytes.Contains(output, []byte("Conta criada.")) {
+		t.Fatalf("TLS obrigatório não aceitou certificado de teste: %v; %s", err, output)
+	}
+	if got := strings.TrimSpace(string(e.sql("SELECT COUNT(*) FROM " + e.db + ".users WHERE login='tls-required'"))); got != "1" {
+		t.Fatalf("conta não persistida: %s", got)
+	}
+	plain := e.command("create-user", "--name", "sem-tls", "--password", "senha-segura")
+	plain.Env = append(plain.Env, "DB_TLS=false", "DB_CONNECT_TIMEOUT=1s")
+	if output, err := plain.CombinedOutput(); err == nil || bytes.Contains(output, []byte("Conta criada.")) {
+		t.Fatalf("conta que exige SSL aceitou conexão aberta: %v; %s", err, output)
+	}
+}

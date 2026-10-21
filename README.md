@@ -271,7 +271,7 @@ O Go lê variáveis de ambiente; o Compose lê o `.env` e fornece essas variáve
 | `DB_PASSWORD` | obrigatório | Senha da aplicação. |
 | `MYSQL_ROOT_PASSWORD` | obrigatório para banco local | Senha administrativa do MySQL local. |
 | `MYSQL_PORT` | `3307` | Porta do banco publicada somente em loopback no host. |
-| `DB_TLS` | `false` | `true` exige TLS com validação do certificado do banco. |
+| `DB_TLS` | `false` | `true` exige TLS e valida certificado/hostname; `required` exige TLS sem validar o certificado, sem fallback para conexão aberta. |
 | `DB_TLS_CA` | vazio | Arquivo PEM de CA própria, dentro do container; requer TLS. |
 | `DB_CONNECT_TIMEOUT` | `120s` | Espera máxima inicial pelo banco; tentativas têm limites próprios. |
 | `PORT` | `8080` | Porta HTTP publicada no host. |
@@ -283,6 +283,11 @@ Para um banco externo futuro, configure `DB_HOST`, `DB_PORT`, `DB_NAME`,
 Esvazie `COMPOSE_PROFILES=` no arquivo de ambiente para desabilitar o MySQL
 local. `docker compose up -d api app` sobe então somente API e frontend.
 A dependência local da API é opcional para permitir esse modo externo.
+Para o HeatWave com certificado autoassinado, o modo `DB_TLS=required` foi
+[aprovado para o deploy simples](docs/decisions/32-heatwave-tls-required.md).
+Ele mantém a conexão criptografada e recusa servidores sem TLS, mas não
+valida a identidade do servidor. Nesse modo, deixe `DB_TLS_CA` vazio;
+a CA própria é exclusiva do modo `true`.
 Nenhuma conexão externa foi configurada ou executada nesta entrega.
 Se precisar de CA própria, monte o PEM como somente leitura em um override
 Compose e indique seu caminho em `DB_TLS_CA`. Crie o banco externo e execute
