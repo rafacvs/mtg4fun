@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createActionIntent } from './actionIntent';
 import { roomsApi, UnconfirmedActionError, type CounterAction, type CustomToken, type Match } from './roomsApi';
 
 export function useMatch(roomId: number) {
@@ -55,96 +56,96 @@ export function useMatch(roomId: number) {
   return {
     match, error: error || syncError, busy, unconfirmed,
     finish: () => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.finish(roomId, intentId));
     },
     setTapped: (cardIds: string[], tapped: boolean) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.setTapped(roomId, cardIds, tapped, intentId));
     },
     hideAllRevealed: () => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.hideAllRevealed(roomId, intentId));
     },
     untapAll: () => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.untapAll(roomId, intentId));
     },
     setFace: (cardId: string, faceIndex: number) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.setFace(roomId, cardId, faceIndex, intentId));
     },
     setFaceDown: (cardIds: string[], faceDown: boolean) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.setFaceDown(roomId, cardIds, faceDown, intentId));
     },
     revealCards: (cardIds: string[], revealed: boolean) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.revealCards(roomId, cardIds, revealed, intentId));
     },
     retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
     createToken: (name: string) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.createToken(roomId, name, intentId));
     },
     createCustomToken: (token: CustomToken) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.createCustomToken(roomId, token, intentId));
     },
     copyCard: (cardId: string) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.copyCard(roomId, cardId, intentId));
     },
     counter: (input: CounterAction) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.counter(roomId, input, intentId));
     },
     draw: (count: number) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.draw(roomId, count, intentId));
     },
     move: (ids: string[], to: string, placement?: 'top' | 'bottom', at?: { x: number; row: number }) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.move(roomId, ids, to, intentId, placement, at));
     },
     transferControl: (cardId: string, controllerId: number) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.transferControl(roomId, cardId, controllerId, intentId));
     },
     position: (ids: string[], x: number, row: number) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.position(roomId, ids, x, row, intentId));
     },
     roll: (sides: number) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.roll(roomId, sides, intentId));
     },
     coin: () => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.coin(roomId, intentId));
     },
     turn: (direction: 'next' | 'previous') => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.turn(roomId, direction, intentId));
     },
     consult: (from: 'all' | 'top' | 'bottom', count: number) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.consult(roomId, from, count, intentId));
     },
     reorder: (ids: string[]) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.reorder(roomId, ids, intentId));
     },
     closeConsultation: (placement: 'top' | 'bottom', shuffle: boolean) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.closeConsultation(roomId, placement, shuffle, intentId));
     },
     reveal: (count: number) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.reveal(roomId, count, intentId));
     },
     revealSelection: (ids: string[]) => {
-      const intentId = crypto.randomUUID();
+      const intentId = createActionIntent();
       return act(() => roomsApi.revealSelection(roomId, ids, intentId));
     },
   };
