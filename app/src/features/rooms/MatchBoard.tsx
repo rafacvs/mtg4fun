@@ -66,7 +66,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const followingLog = useRef(true);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1000px)');
-    const update = () => setCompact(media.matches);
+    const update = () => {
+      setCompact(media.matches);
+      if (media.matches) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+    };
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
@@ -134,7 +137,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   }, [match]);
   useEffect(() => {
     const clear = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) { setSelectionIds([]); }
+      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) {
+        setSelectionIds([]);
+        if (window.matchMedia('(max-width: 1000px)').matches) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+      }
     };
     window.addEventListener('keydown', clear);
     return () => window.removeEventListener('keydown', clear);
@@ -228,14 +234,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} expanded={!showingOverview} onFocus={() => togglePlayerFocus(player.userId)} onReturnToOwn={!showingOverview && player.userId !== match.viewerId && player.userId === focused.userId ? () => focusPlayer(match.viewerId) : undefined} onPlayerMenu={anchor => openPlayer(player.userId, anchor)} currentTurn={player.userId === match.currentTurn.userId} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
           )}</div>}
           <section ref={dockRef} className={`own-dock ${dockHidden ? 'is-collapsed' : ''}`} aria-label="Sua mão e ações">
-            <button className="dock-toggle secondary" aria-expanded={!dockHidden} aria-controls="own-dock-content" onClick={() => setDockHidden(value => !value)}><TableIcon name="hand" /><span>{dockHidden ? `Mostrar mão (${own.handCount}) e ações` : 'Ocultar mão e ações'}</span><TableIcon name="chevron" /></button>
+            <button className="dock-toggle secondary" aria-label={dockHidden ? `Mostrar mão (${own.handCount}) e ações` : 'Ocultar mão e ações'} aria-expanded={!dockHidden} aria-controls="own-dock-content" onClick={() => setDockHidden(value => !value)}><TableIcon name="hand" /><span>{dockHidden ? `Mostrar mão (${own.handCount}) e ações` : `Mão · ${own.handCount}`}</span><small hidden={dockHidden}>Ocultar</small><TableIcon name="chevron" /></button>
             <div id="own-dock-content" className="dock-content" hidden={dockHidden}>
-            <nav className="quick-actions" aria-label="Ações rápidas">
-              <button disabled={busy || unconfirmed || !own.libraryCount} aria-label="Comprar" title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}><TableIcon name="draw" /><span>Comprar</span><kbd aria-hidden="true">D</kbd></button>
-              <button className="secondary" disabled={busy || unconfirmed} aria-label="Desvirar todas" title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}><TableIcon name="untap" /><span>Desvirar todas</span><kbd aria-hidden="true">U</kbd></button>
-              <button type="button" className="actions-toggle secondary" aria-expanded={actionsOpen} onClick={event => { setActionsAnchor(event.currentTarget); setActionsOpen(value => !value); setLibraryOpen(false); setMenuPlayerId(null); }}><TableIcon name="actions" /><span>Ações</span></button>
-            </nav>
-            <OwnHand key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+              <nav className="quick-actions" aria-label="Ações rápidas">
+                <button disabled={busy || unconfirmed || !own.libraryCount} aria-label="Comprar" title="Comprar uma carta (D)" aria-keyshortcuts="D" onClick={drawOne}><TableIcon name="draw" /><span>Comprar</span><kbd aria-hidden="true">D</kbd></button>
+                <button className="secondary" disabled={busy || unconfirmed} aria-label="Desvirar todas" title="Desvirar todas as permanentes (U)" aria-keyshortcuts="U" onClick={() => void untapAll()}><TableIcon name="untap" /><span>Desvirar todas</span><kbd aria-hidden="true">U</kbd></button>
+                <button type="button" className="actions-toggle secondary" aria-expanded={actionsOpen} onClick={event => { setActionsAnchor(event.currentTarget); setActionsOpen(value => !value); setLibraryOpen(false); setMenuPlayerId(null); }}><TableIcon name="actions" /><span>Ações</span></button>
+              </nav>
+              <OwnHand key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             </div>
           </section>
         </div>

@@ -335,9 +335,33 @@
 }
 
 @media (max-width: 1000px) {
-  .own-dock:not(.is-collapsed) .dock-toggle { padding-right: 88px; }
-  .dock-content > .zone-hand { position: static; }
-  .dock-content > .zone-hand > header { position: absolute; top: 0; right: 8px; }
-  .dock-content > .zone-hand > header > span { display: none; }
   .own-dock .zone-hand .zone-cards { min-width: 0; }
+}
+
+.dock-toggle small { margin-left: auto; font: inherit; color: var(--muted); }
+.dock-toggle > small + .table-icon:last-child { margin-left: 0; }
+.dock-toggle small[hidden] + .table-icon:last-child { margin-left: auto; }
+.own-dock { position: relative; }
+.own-dock:not(.is-collapsed) .dock-toggle { padding-right: 88px; }
+.dock-content > .zone-hand { position: static; }
+.dock-content > .zone-hand > header { position: absolute; top: 0; right: 8px; }
+.dock-content > .zone-hand > header > span { display: none; }
+@media (max-width: 1000px) {
+  .side-rail .players-panel .rail-panel-content:not([hidden]) { bottom: auto; max-height: calc(100% - 64px); }
+}
+@media (max-width: 1000px) and (max-height: 520px) and (orientation: landscape) {
+  .own-dock { flex-direction: row; align-items: stretch; }
+  .own-dock:not(.is-collapsed) .dock-toggle { padding: 0; }
+  .own-dock .dock-toggle { flex: 0 0 44px; width: 44px; padding: 0; flex-direction: column; gap: 4px; }
+  .own-dock .dock-toggle span, .own-dock .dock-toggle small { display: none; }
+  .own-dock .dock-toggle > .table-icon:last-child { margin: 0; }
+  .dock-content { flex: 1; }
+  .dock-content > .zone-hand > header { position: static; }
+  .field-zoom { flex-direction: row-reverse; right: 16px; bottom: 12px; }
+  .own-dock.is-collapsed .dock-toggle { flex: 1; flex-direction: row; width: auto; justify-content: flex-start; }
+  .own-dock.is-collapsed .dock-toggle span { display: inline; }
+  .own-dock.is-collapsed .dock-toggle > .table-icon:last-child { margin-left: auto; }
+}
+@media (min-width: 1001px) and (hover: hover) and (pointer: fine) {
+  .match-board .dock-toggle, .match-board .hand-organize { min-height: 36px; }
 }

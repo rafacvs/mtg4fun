@@ -18,7 +18,7 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
   };
   return <section className={`table-zone zone-hand ${organizing ? 'is-organizing' : ''} ${hoverZone === 'hand' ? 'drop-hover' : ''}`} aria-label="Mão" data-drop-zone="hand">
     <header><span>Mão · {count}</span><button className="hand-organize secondary" aria-pressed={organizing} onClick={() => setOrganizing(value => !value)}>{organizing ? 'Concluir' : 'Organizar'}</button></header>
-    <div ref={row} className="zone-cards" tabIndex={0} aria-label="Cartas da mão" onKeyDown={event => {
+    <div ref={row} className="zone-cards" tabIndex={0} aria-label="Cartas da mão" title={organizing ? 'Arraste ou use Alt + setas para ordenar uma carta focada' : undefined} onKeyDown={event => {
       if (!organizing || !event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
       const id = (event.target as HTMLElement).closest('[data-card-id]')?.getAttribute('data-card-id');
       const index = ordered.findIndex(card => card.id === id);
@@ -44,7 +44,7 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
       }} />)}
       {cards.length === 0 && <span className="zone-placeholder">Sua mão está vazia</span>}
     </div>
-    <p className="hand-hint">{organizing ? 'Arraste para ordenar · Alt + ← / → no teclado' : 'Deslize para navegar · Segure para ler'}</p>
+    <p className="hand-hint">{organizing ? 'Arraste para ordenar ou jogar' : 'Deslize para navegar · Segure para ler'}</p>
   </section>;
 }
 
