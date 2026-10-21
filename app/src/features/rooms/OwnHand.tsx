@@ -47,4 +47,3 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
     <p className="hand-hint">{organizing ? 'Arraste para ordenar ou jogar' : 'Deslize para navegar · Segure para ler'}</p>
   </section>;
 }
-
