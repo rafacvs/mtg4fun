@@ -1,0 +1,56 @@
+/* Compact controls overlay the board; none of these surfaces reserve field space. */
+@media (max-width: 1000px) {
+  .match-board { --floating-right: max(12px, env(safe-area-inset-right)); --floating-bottom: max(12px, env(safe-area-inset-bottom)); --floating-gutter: calc(var(--floating-right) + 60px); }
+  .table-stage { display: block; }
+  .table-main { height: 100%; }
+  .side-rail[hidden], .own-dock[hidden] { display: none; }
+  .floating-table-controls { position: absolute; z-index: 18; right: var(--floating-right); bottom: var(--floating-bottom); display: flex; flex-direction: column-reverse; gap: 8px; }
+  .match-board .floating-table-controls button { position: relative; width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 16px; background: linear-gradient(145deg, var(--panel2), var(--panel) 70%); border: 1px solid var(--line-strong); box-shadow: 0 6px 18px #0008, inset 0 1px #ffffff0c; color: var(--text); }
+  .match-board .floating-table-controls button[aria-expanded="true"] { border-color: var(--gold); color: var(--gold); background: var(--panel2); }
+  .floating-table-controls small { position: absolute; right: -4px; top: -4px; min-width: 19px; padding: 2px 4px; border-radius: 8px; background: var(--gold); color: var(--bg); font-size: .65rem; font-weight: 700; }
+  .floating-table-controls .unread-dot { position: absolute; right: 7px; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+  .floating-panel-scrim { position: absolute; inset: 0; z-index: 15; background: #0003; }
+  .own-dock { position: absolute; z-index: 14; left: max(8px, env(safe-area-inset-left)); right: var(--floating-gutter); bottom: var(--floating-bottom); max-height: 45dvh; padding: 0 10px 8px; display: flex; flex-direction: column; gap: 0; overflow: auto; overscroll-behavior: contain; background: linear-gradient(145deg, var(--panel2), var(--panel) 70%); }
+  .own-dock .dock-toggle, .own-dock:not(.is-collapsed) .dock-toggle { flex: 0 0 auto; width: 100%; min-height: 44px; padding: 4px 84px 4px 0; flex-direction: row; gap: 6px; }
+  .own-dock .dock-toggle span { display: inline; }
+  .own-dock .dock-toggle small { display: none; }
+  .own-dock .dock-toggle > .table-icon:last-child { transform: none; margin-left: auto; width: 16px; height: 16px; }
+  .own-dock .dock-content { display: block; flex: 0 0 auto; }
+  .own-dock .dock-content[hidden] { display: none; }
+  .own-dock .zone-hand { display: block; }
+  .own-dock .zone-hand > header { position: absolute; top: 0; right: 8px; min-height: 44px; }
+  .own-dock .zone-hand > header > span { display: none; }
+  .own-dock .zone-hand .zone-cards { --card-width: 76px; padding: 3px 2px 6px; }
+  .own-dock .hand-hint { display: block; font-size: .6rem; }
+  .mobile-commands { position: absolute; z-index: 17; right: var(--floating-gutter); bottom: var(--floating-bottom); width: min(290px, calc(100% - var(--floating-gutter) - 8px)); max-height: calc(100% - 24px); overflow: auto; overscroll-behavior: contain; padding: 10px; border: 1px solid var(--line-strong); border-radius: 16px; background: linear-gradient(145deg, var(--panel2), var(--panel) 70%); box-shadow: 0 12px 32px #0008; }
+  .mobile-hand-open .mobile-commands { bottom: calc(var(--floating-bottom) + var(--dock-height) + 8px); max-height: calc(100% - var(--floating-bottom) - var(--dock-height) - 16px); }
+  .mobile-commands .quick-actions { display: flex; flex-direction: column; padding: 0; gap: 6px; border: 0; }
+  .match-board .mobile-commands .quick-actions button { width: 100%; min-height: 44px; justify-content: flex-start; padding: 10px; font-size: .78rem; }
+  .mobile-commands kbd { display: none; }
+  .command-result { margin: 8px 0 0; font-size: .75rem; color: var(--gold); }
+  .side-rail { position: absolute; z-index: 17; inset: 8px var(--floating-gutter) var(--floating-bottom) max(8px, env(safe-area-inset-left)); width: auto; max-height: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: 44px 44px minmax(0, 1fr); gap: 0; padding: 8px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 16px; background: linear-gradient(145deg, var(--panel2), var(--panel) 70%); box-shadow: 0 12px 32px #0008; }
+  .side-rail > .table-panel-header { grid-column: 1 / -1; }
+  .side-rail .rail-panel, .side-rail .log-panel.is-open { display: contents; }
+  .side-rail .rail-tab { grid-row: 2; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 4px; justify-content: center; gap: 4px; font-size: .7rem; }
+  .side-rail .rail-tab > span { flex: 0 1 auto; }
+  .side-rail .rail-tab > .table-icon, .side-rail .rail-tab > small { display: none; }
+  .side-rail .rail-tab[aria-expanded="true"] { border-bottom-color: var(--gold); color: var(--gold); background: var(--gold-wash); }
+  .side-rail .rail-panel-content:not([hidden]), .side-rail .players-panel .rail-panel-content:not([hidden]) { position: absolute; inset: 104px 8px 8px; max-height: none; padding: 8px; border: 0; border-radius: 8px; box-shadow: none; background: transparent; overflow: auto; }
+  .side-rail .log-panel .rail-panel-content:not([hidden]) { display: flex; overflow: hidden; }
+  .side-rail .hover-card-preview { height: 100%; min-height: 0; }
+  .side-rail .hover-card-preview img { flex: 1 1 auto; min-height: 0; }
+  .side-rail .match-log { background: transparent; }
+  .match-board .mobile-commands .table-panel-header, .match-board .side-rail .table-panel-header { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: 0; padding: 0; gap: 8px; }
+  .mobile-commands .table-panel-header h2, .side-rail .table-panel-header h2 { margin: 0; font-size: .85rem; }
+  .mobile-commands .table-panel-header .panel-close, .side-rail .table-panel-header .panel-close { min-width: 44px; min-height: 44px; border: 0; background: transparent; }
+}
+@media (max-width: 1000px) and (max-height: 520px) and (orientation: landscape) {
+  .own-dock .zone-hand .zone-cards { --card-width: 52px; }
+  .own-dock .hand-hint { display: none; }
+  .mobile-commands { width: min(400px, calc(100% - var(--floating-gutter) - 8px)); }
+  .mobile-commands .quick-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .side-rail { grid-template-rows: 44px minmax(0, 1fr); grid-template-columns: minmax(120px, 1fr) repeat(3, minmax(80px, 1fr)); }
+  .side-rail > .table-panel-header { grid-column: 1; grid-row: 1; }
+  .side-rail .rail-tab { grid-row: 1; }
+  .side-rail .rail-panel-content:not([hidden]), .side-rail .players-panel .rail-panel-content:not([hidden]) { top: 60px; }
+}

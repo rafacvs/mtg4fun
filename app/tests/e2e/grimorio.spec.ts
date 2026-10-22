@@ -146,8 +146,9 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
     await activate(library.getByRole('button', { name: /^Embaralhar/ }));
     await expect(library.getByRole('status')).toHaveText('Grimório embaralhado.');
     expect((await readOwn()).libraryCount).toBe(3);
+    await activate(library.getByRole('button', { name: 'Fechar painel do grimório' }));
     const log = own.getByRole('region', { name: 'Registro da partida' });
-    await openMatchRail(own);
+    await openMatchRail(own, 'Registro');
     await expect(log).toContainText('embaralhou o grimório');
     await expect(log).not.toContainText('consultou');
     await closeMatchRail(own);
@@ -260,14 +261,13 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await open();
     await expect(library.locator('.library-card')).not.toHaveCount(0);
     await activate(library.getByRole('button', { name: 'Fechar painel do grimório' }));
-    await openMatchRail(opponent);
+    await openMatchRail(opponent, 'Registro');
     await expect(opponent.getByRole('region', { name: 'Registro da partida' })).toContainText(
       'consultou o grimório',
     );
     for (const card of original)
       await expect(opponent.locator('body')).not.toContainText(card.name);
     await own.reload();
-    await openMatchRail(own);
     await open();
     await expect(library.locator('.library-card')).toHaveCount(3);
     await library.getByLabel('Destino das restantes').selectOption('bottom');
@@ -282,7 +282,8 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
       .toEqual(reordered);
     await library.getByLabel('Destino das restantes').selectOption('top');
     await activate(library.getByRole('button', { name: 'Devolver sem embaralhar', exact: true }));
-    await openMatchRail(own);
+    await activate(library.getByRole('button', { name: 'Fechar painel do grimório' }));
+    await openMatchRail(own, 'Registro');
     await expect(own.getByRole('region', { name: 'Registro da partida' })).not.toContainText(
       'embaralhou',
     );

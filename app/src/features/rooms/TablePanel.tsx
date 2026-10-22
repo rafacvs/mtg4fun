@@ -3,13 +3,13 @@ import { TableIcon, type TableIconName } from './TableIcon';
 import './table-panels.css';
 
 // Only the topmost panel handles dismissal or traps focus. Polling never refocuses inputs.
-export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean, onClose: () => void) {
+export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean, onClose: () => void, returnFocus?: HTMLElement) {
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
     if (!open || !ref.current) return;
     const panel = ref.current;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previous = returnFocus ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     panel.querySelector<HTMLElement>('[data-panel-close], button, input, select')?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if ([...document.querySelectorAll('[role="dialog"], dialog[open]')].at(-1) !== panel) return;
@@ -27,7 +27,7 @@ export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean,
       document.removeEventListener('keydown', onKey, true);
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
-  }, [open, ref]);
+  }, [open, ref, returnFocus]);
 }
 
 export function TablePanel({ open, label, anchor, wide = false, align = 'end', className = '', children, onClose }: {
@@ -36,7 +36,7 @@ export function TablePanel({ open, label, anchor, wide = false, align = 'end', c
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<{ left: number; top: number; maxHeight?: number }>({ left: 12, top: 12 });
-  usePanelFocus(ref, open, onClose);
+  usePanelFocus(ref, open, onClose, anchor?.matches('button, a[href], input, select, [tabindex]') ? anchor : undefined);
   useLayoutEffect(() => {
     if (!open || !ref.current) return;
     const panel = ref.current;
@@ -92,7 +92,7 @@ export function TablePanel({ open, label, anchor, wide = false, align = 'end', c
     return () => document.removeEventListener('pointerdown', outside);
   }, [open, anchor, onClose]);
   if (!open) return null;
-  return <div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={placement}>{children}</div>;
+  return <><div className="table-panel-scrim" aria-hidden="true" onPointerDown={event => event.stopPropagation()} onClick={onClose} /><div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={placement}>{children}</div></>;
 }
 
 export function PanelHeader({ title, subtitle, onClose, onBack, closeLabel = 'Fechar menu', children }: {

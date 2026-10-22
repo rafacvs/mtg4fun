@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { APIRequestContext, Locator } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, openMatchRail, closeMatchRail } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, openHand, openQuickActions, closeQuickActions } from './fixtures';
 
 const fallbackArt = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" rx="3" fill="#adb9a1"/><rect x="3" y="3" width="57" height="7" rx="2" fill="#dedbc1"/><text x="5" y="8" font-size="4" font-family="serif">Island</text><rect x="4" y="13" width="55" height="40" fill="#406571"/><path d="M4 45 20 23 35 44 46 28 59 45v8H4Z" fill="#9ca98f"/><rect x="4" y="56" width="55" height="28" fill="#d7d9be"/><text x="6" y="65" font-size="4">Basic Land — Island</text></svg>';
 
@@ -51,16 +51,21 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     // Only artwork is controlled. Every game operation reaches the real Go API and MySQL.
     await page.route('**/api/cards/image?*', route => route.fulfill(process.env.UI_CARD_IMAGE ? { contentType: 'image/jpeg', body: readFileSync(process.env.UI_CARD_IMAGE) } : { contentType: 'image/svg+xml', body: fallbackArt }));
     await page.goto(`/#/salas/${roomId}`);
+    await expect(page.locator('.own-dock')).toBeAttached();
+    await openHand(page);
     const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     if (info.project.name === 'desktop') await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
+    await openQuickActions(page);
     const quick = page.getByRole('navigation', { name: 'Ações rápidas' });
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(4);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    expect(await quick.getByRole('button', { name: 'Comprar', exact: true }).evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+    expect(await quick.getByRole('button', { name: 'Comprar', exact: true }).evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(info.project.use.hasTouch ? 44 : 36);
     const handBox = (await hand.boundingBox())!;
     const quickBox = (await quick.boundingBox())!;
-    expect(quickBox.x).toBeGreaterThanOrEqual(handBox.x + handBox.width);
+    if (info.project.name === 'desktop') expect(quickBox.x).toBeGreaterThanOrEqual(handBox.x + handBox.width);
+    else expect(quickBox.y + quickBox.height).toBeLessThanOrEqual(handBox.y);
+    await closeQuickActions(page);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('01-mesa.png'), fullPage: true });
 
     const trigger = own.getByRole('button', { name: 'Abrir ações do grimório' });
@@ -87,18 +92,19 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await expect(library.locator('.library-card')).toHaveCount(2);
     await library.getByRole('button', { name: 'Fechar painel do grimório' }).click();
 
+    await openQuickActions(page);
     await quick.getByRole('button', { name: 'Ações', exact: true }).click();
     const actions = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
     await withinViewport(actions);
     const toolbarBox = (await page.locator('.table-toolbar').boundingBox())!;
     expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(toolbarBox.y + toolbarBox.height);
-    await expect(actions.locator('.table-menu-item')).toHaveCount(5);
+    await expect(actions.locator('.table-menu-item')).toHaveCount(4);
     for (const name of ['Comprar cartas', 'Grimório', 'Embaralhar grimório', 'Vida', 'Marcadores']) await expect(actions.getByRole('button', { name, exact: true })).toHaveCount(0);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('03-acoes.png'), fullPage: true });
     await actions.getByRole('button', { name: 'Rolar dado', exact: true }).click();
     await actions.getByRole('button', { name: 'Rolar dado', exact: true }).click();
     await actions.getByRole('button', { name: 'Fechar ações' }).click();
-    await expect(quick.getByRole('button', { name: 'Ações', exact: true })).toBeFocused();
+    await expect(info.project.name === 'desktop' ? quick.getByRole('button', { name: 'Ações', exact: true }) : page.getByRole('button', { name: 'Comandos', exact: true })).toBeFocused();
 
     await own.getByRole('button', { name: 'Abrir jogador Amigo da mesa' }).click();
     const playerMenu = page.getByRole('dialog', { name: 'Jogador Amigo da mesa' });
@@ -172,11 +178,15 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     await expect(page.locator('.overview-player')).toHaveCount(6);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('06-visao-geral.png'), fullPage: true });
+    if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Fechar mão', exact: true }).click();
     await page.getByRole('button', { name: 'Ampliar mesa de Amigo 6', exact: true }).click();
+    await openHand(page);
     await expect(page.getByRole('article', { name: 'Mesa de Amigo 6', exact: true })).toBeVisible();
     await action({ kind: 'coin' });
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
     await page.reload();
+    await expect(page.locator('.own-dock')).toBeAttached();
+    await openHand(page);
     await expect(page.getByLabel('Vida: 39')).toBeVisible();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
     expect(errors).toEqual([]);
@@ -191,15 +201,18 @@ test('preserva leitura do registro, navega na mão e mantém menus acessíveis a
     await action({ kind: 'draw', count: 10 });
     await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: fallbackArt }));
     await page.goto(`/#/salas/${roomId}`);
+    await expect(page.locator('.own-dock')).toBeAttached();
+    await openHand(page);
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     const cardRow = hand.locator('.zone-cards');
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(14);
-    await hand.getByRole('button', { name: 'Próximas cartas na mão' }).click();
+    await cardRow.hover();
+    await page.mouse.wheel(600, 0);
     await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
-    await hand.getByRole('button', { name: 'Cartas anteriores na mão' }).click();
+    await page.mouse.wheel(-600, 0);
     await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeLessThan(2);
 
-    await openMatchRail(page);
+    await openMatchRail(page, 'Registro');
     const log = page.getByRole('region', { name: 'Registro da partida', exact: true });
     const list = log.locator('ol');
     await expect.poll(() => list.evaluate(node => node.scrollHeight - node.clientHeight)).toBeGreaterThan(40);
@@ -211,6 +224,7 @@ test('preserva leitura do registro, navega na mão e mantém menus acessíveis a
     await log.getByRole('button', { name: 'Novas ações', exact: true }).click();
     await expect.poll(() => list.evaluate(node => node.scrollHeight - node.scrollTop - node.clientHeight)).toBeLessThan(32);
 
+    await openMatchRail(page);
     // Right-edge origin exercises clamping; repeated polls must preserve keyboard focus.
     const trigger = page.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: 'Abrir jogador Amigo da mesa' });
     await trigger.click();
@@ -228,13 +242,17 @@ test('preserva leitura do registro, navega na mão e mantém menus acessíveis a
       await expect(hand).toBeVisible();
       await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(14);
     }
+    await openQuickActions(page);
     const actionsTrigger = page.getByRole('button', { name: 'Ações', exact: true });
     await actionsTrigger.click();
     const actions = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
     await withinViewport(actions);
-    await page.locator('.table-toolbar').click({ position: { x: 3, y: 3 } });
+    const toolbar = (await page.locator('.table-toolbar').boundingBox())!;
+    await page.mouse.click(toolbar.x + 3, toolbar.y + 3);
     await expect(actions).toHaveCount(0);
+    await openQuickActions(page);
     await expect(actionsTrigger).toHaveAttribute('aria-expanded', 'false');
+    await closeQuickActions(page);
   } finally { await other.close(); }
 });
 
@@ -247,6 +265,8 @@ test('mesa e painéis cabem de 320 px ao tablet e desktop sem rolagem da página
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: fallbackArt }));
     await page.goto(`/#/salas/${roomId}`);
+    await expect(page.locator('.own-dock')).toBeAttached();
+    await openHand(page);
     for (const viewport of [
       { width: 320, height: 568 },
       { width: 390, height: 844 },
@@ -257,6 +277,8 @@ test('mesa e painéis cabem de 320 px ao tablet e desktop sem rolagem da página
       { width: 844, height: 390 },
     ]) {
       await page.setViewportSize(viewport);
+      await openHand(page);
+      await openQuickActions(page);
       const quick = page.getByRole('navigation', { name: 'Ações rápidas' });
       await expect(quick.getByRole('button', { name: 'Comprar', exact: true })).toBeInViewport();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight)).toBe(true);
@@ -265,6 +287,7 @@ test('mesa e painéis cabem de 320 px ao tablet e desktop sem rolagem da página
       await withinViewport(panel);
       await expect(panel).toHaveCSS('animation-name', 'none');
       await panel.getByRole('button', { name: 'Fechar ações', exact: true }).click();
+      await openHand(page);
       await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first().click();
       const inspector = page.getByRole('dialog', { name: 'Imagem de Island' });
       await withinViewport(inspector);
@@ -287,6 +310,8 @@ test('visão geral mantém cartas visíveis com posições esparsas, pilhas e ca
     const before = await read();
     await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: fallbackArt }));
     await page.goto(`/#/salas/${roomId}`);
+    await expect(page.locator('.own-dock')).toBeAttached();
+    await openHand(page);
     if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     const miniature = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
     await expect(miniature.locator('.overview-card')).toHaveCount(4);

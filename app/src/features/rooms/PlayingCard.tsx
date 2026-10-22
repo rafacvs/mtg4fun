@@ -8,6 +8,8 @@ const dragThreshold = 8;
 type Props = {
   card: Card;
   draggable: boolean;
+  scrollable?: boolean;
+  onPreview?: (card: Card) => void;
   selected?: boolean;
   onInspect: (card: Card) => void;
   onHover?: (card: Card) => void;
@@ -18,7 +20,7 @@ type Props = {
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, onInspect, onHover, onZoom, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected }: Props) {
+export function PlayingCard({ card, draggable, scrollable = false, onPreview, onInspect, onHover, onZoom, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected }: Props) {
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
   const clickTimer = useRef<number | null>(null);
@@ -27,8 +29,8 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onZoom, onDra
   const pointerType = useRef('mouse');
   const suppressClick = useRef(false);
   const stopTracking = useRef<(() => void) | null>(null);
-  const handlers = useRef({ onInspect, onDragMove, onDragEnd, onDragCancel, onZoom });
-  handlers.current = { onInspect, onDragMove, onDragEnd, onDragCancel, onZoom };
+  const handlers = useRef({ onInspect, onDragMove, onDragEnd, onDragCancel, onZoom, onPreview });
+  handlers.current = { onInspect, onDragMove, onDragEnd, onDragCancel, onZoom, onPreview };
 
   const clearHold = () => {
     if (holdTimer.current) window.clearTimeout(holdTimer.current);
@@ -40,7 +42,8 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onZoom, onDra
     holdTimer.current = window.setTimeout(() => {
       if (dragging.current) return;
       holdShown.current = true;
-      handlers.current.onZoom?.(card);
+      if (pointerType.current === 'mouse') handlers.current.onZoom?.(card);
+      else { suppressClick.current = true; handlers.current.onPreview?.(card); }
     }, 750);
   };
   const cancelZoom = () => {
@@ -54,62 +57,75 @@ export function PlayingCard({ card, draggable, onInspect, onHover, onZoom, onDra
   function pointerDown(event: React.PointerEvent<HTMLButtonElement>) {
     pointerType.current = event.pointerType;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    if (event.pointerType !== 'mouse') scheduleZoom();
-    if (!draggable) return;
     stopTracking.current?.();
     suppressClick.current = false;
     dragging.current = false;
+    holdShown.current = false;
+    if (event.pointerType !== 'mouse') scheduleZoom();
     const pointerId = event.pointerId;
     const origin = { x: event.clientX, y: event.clientY };
-
+    let scrolling = false;
     const move = (pointer: PointerEvent) => {
-      if (pointer.pointerId !== pointerId) return;
-      if (!dragging.current && Math.hypot(pointer.clientX - origin.x, pointer.clientY - origin.y) < dragThreshold) return;
+      if (pointer.pointerId !== pointerId || holdShown.current || scrolling) return;
+      const dx = pointer.clientX - origin.x;
+      const dy = pointer.clientY - origin.y;
+      if (!dragging.current && Math.hypot(dx, dy) < dragThreshold) return;
+      clearHold();
+      if (!dragging.current && scrollable && event.pointerType !== 'mouse' && Math.abs(dx) > Math.abs(dy)) {
+        scrolling = true;
+        suppressClick.current = true;
+        return;
+      }
+      if (!draggable) { suppressClick.current = true; return; }
       dragging.current = true;
-      cancelZoom();
+      handlers.current.onZoom?.(null);
       handlers.current.onDragMove(card, pointer.clientX, pointer.clientY);
     };
     const up = (pointer: PointerEvent) => {
       if (pointer.pointerId !== pointerId) return;
       cleanup();
-      if (holdShown.current) suppressClick.current = true;
-      cancelZoom();
-      const moved = dragging.current || Math.hypot(pointer.clientX - origin.x, pointer.clientY - origin.y) >= dragThreshold;
+      clearHold();
+      if (holdShown.current || scrolling) suppressClick.current = true;
+      const moved = dragging.current;
       dragging.current = false;
       if (!moved) return;
       suppressClick.current = true;
       handlers.current.onDragEnd(card, pointer.clientX, pointer.clientY);
     };
+    const cancel = (pointer: PointerEvent) => {
+      if (pointer.pointerId !== pointerId) return;
+      suppressClick.current = true;
+      stopTracking.current?.();
+    };
     const cleanup = () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
       stopTracking.current = null;
     };
     stopTracking.current = () => {
       cleanup();
+      clearHold();
       if (dragging.current) handlers.current.onDragCancel();
       dragging.current = false;
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
   }
 
   return <button
     type="button"
     className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''} ${selected ? 'is-selected' : ''}`}
+    style={{ touchAction: scrollable ? 'pan-x' : undefined }}
+    onContextMenu={event => event.preventDefault()}
     aria-label={card.name || 'Carta face para baixo'}
     data-card-id={card.id}
     data-tapped={Boolean(card.tapped)}
     data-face-down={Boolean(card.faceDown)}
     onPointerDown={pointerDown}
-    onPointerEnter={event => { if (event.pointerType === 'mouse') { onHover?.(card); scheduleZoom(); } }}
+    onPointerEnter={event => { if (event.pointerType === 'mouse') { pointerType.current = 'mouse'; onHover?.(card); scheduleZoom(); } }}
     onPointerLeave={event => { if (event.pointerType === 'mouse') cancelZoom(); }}
-    onPointerUp={() => {
-      if (!holdShown.current) { clearHold(); return; }
-      suppressClick.current = true;
-      cancelZoom();
-    }}
-    onPointerCancel={cancelZoom}
     onFocus={() => onHover?.(card)}
     onBlur={cancelZoom}
     onDoubleClick={() => {

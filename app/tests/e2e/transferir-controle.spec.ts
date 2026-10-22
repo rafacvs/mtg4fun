@@ -47,8 +47,10 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     await chosenPage.route('**/api/cards/image?*', route => route.fulfill({ status: 502, body: 'indisponível' }));
     await page.goto(`/#/salas/${room.id}`);
     await chosenPage.goto(`/#/salas/${room.id}`);
-    await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
-    await chosenPage.getByRole('button', { name: 'Ampliar mesa de Amigo 3', exact: true }).click();
+    const ownFocus = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
+    const chosenFocus = chosenPage.getByRole('button', { name: 'Ampliar mesa de Amigo 3', exact: true });
+    if (await ownFocus.isVisible()) await activate(ownFocus);
+    if (await chosenFocus.isVisible()) await activate(chosenFocus);
     const ownerTable = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const ownerCard = ownerTable.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });
     await activate(ownerCard);
@@ -112,7 +114,7 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     await expect(controlledCard).toHaveCount(0);
     await expect(chosenField.locator(`[data-card-id="${ownCardId}"]`)).toBeVisible();
     await expect(ownerTable.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button', { name: 'Island', exact: true })).toBeVisible();
-    await openMatchRail(page);
+    await openMatchRail(page, 'Registro');
     await expect(page.getByRole('region', { name: 'Registro da partida', exact: true })).toContainText('transferiu o controle de uma carta para Amigo 3');
   } finally {
     await second.close();

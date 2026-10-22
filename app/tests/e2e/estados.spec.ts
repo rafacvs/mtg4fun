@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, openQuickActions } from './fixtures';
 import type { BrowserContext } from '@playwright/test';
 
 // Images are unrelated to state permissions; all state requests use the real server.
@@ -80,6 +80,7 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
     await preview.getByLabel('Manter revelada ao fechar (até passar o turno)').check();
     await expect(preview.getByLabel('Face da carta')).toHaveValue('1');
     await preview.getByRole('button', { name: 'Fechar', exact: true }).click();
+    await openQuickActions(page);
     await page.getByRole('button', { name: 'Desvirar todas', exact: true }).click();
     await expect(button).toHaveAttribute('data-tapped', 'false');
     await action({ kind: 'move', cardIds: [card.id], to: 'library', libraryPlacement: 'bottom' });

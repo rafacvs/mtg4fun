@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, openQuickActions } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 for (const count of [1, 3]) {
@@ -64,6 +64,7 @@ for (const count of [1, 3]) {
         const pending = await read();
         expect(pending.finishRequired).toBe(2);
         expect(pending.finishVotes).toHaveLength(1);
+        await openQuickActions(page);
         await page.getByRole('button', { name: 'Comprar', exact: true }).click();
         await expect.poll(async () => (await read()).players.find(p => p.userId === pending.viewerId)!.handCount).toBe(1);
         await expect(page.getByText('Uma carta comprada.', { exact: true })).toHaveCount(0);
