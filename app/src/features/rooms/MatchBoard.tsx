@@ -230,7 +230,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const miniatureOverview = showingOverview && (compact || match.players.length > 2);
   const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
-    onActions={anchor => { setActionsAnchor(compact ? document.querySelector<HTMLElement>('.floating-table-controls button[aria-label="Comandos"]') : anchor); setActionsOpen(true); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
+    onActions={anchor => { setActionsAnchor(compact ? document.querySelector<HTMLElement>('.floating-table-controls button[aria-label="Comandos"]') : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
   return <section className={`match-board ${drag ? 'dragging' : ''} ${compact && !dockHidden ? 'mobile-hand-open' : ''}`} aria-label="Mesa da partida">
