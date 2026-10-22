@@ -18,7 +18,9 @@ Requisitos: [mesa e interface](../specs/02-mesa-e-interface.md).
 - [x] Ações sem duplicatas de grimório/compra/embaralhamento ou vida/marcadores.
 - [x] Vida/marcadores no card/cabeçalho do jogador, respeitando permissões;
   foco do campo com acesso separado.
-- [x] Comprar, Desvirar todas e Ações maiores, com ícones, ao lado da mão.
+- [x] Comandos rápidos com ícones; refinamento mobile posterior com três
+  botões flutuantes no canto inferior direito, conforme a
+  [decisão 34](../decisions/34-experiencia-mobile.md).
 - [x] Detalhe da carta padronizado, com estados, comandos agrupados,
   modificadores de P/R claros e destinos explícitos para movimento.
 - [x] Playmat, cores de zonas, foco, turno, seleção e arraste coerentes;

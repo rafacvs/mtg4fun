@@ -11,7 +11,7 @@ aberto para revisão. Essa autorização complementa a
 [mesa compacta](31-mesa-compacta.md) e a
 [especificação da mesa](../specs/02-mesa-e-interface.md).
 
-## Implementação
+## Implementação inicial em 20/10/2026
 
 - Controle explícito para recolher/restaurar mão e ações, devolvendo espaço ao
   campo sem desmontar a mão.
@@ -88,5 +88,11 @@ Passar turno sai do menu Ações e fica nos comandos rápidos também no desktop
 atalho N e operação HTTP permanecem iguais. O menu Ações conserva dado, moeda,
 fichas e correção de turno. Não há alteração de contratos, dados ou dependências.
 
-A validação deste refinamento será registrada após concluir os testes; os
-resultados de 20/10 acima são históricos da versão anterior.
+## Validação em 21/10/2026
+
+O build do frontend passou. No desktop, no celular e no celular deitado, os
+fluxos de mesa que abrem mão, comandos e registro pelos três botões passaram
+contra a API Go/MySQL real. O arraste da mão até a coluna “Suas zonas” no
+celular deitado ficou sem a repetição final: a suíte foi interrompida com a
+máquina sobrecarregada. Os resultados de 20/10 acima continuam históricos da
+versão anterior.
