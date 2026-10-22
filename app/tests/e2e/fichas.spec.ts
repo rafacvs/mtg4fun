@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, openQuickActions } from './fixtures';
 
 // The page uses the actual executable and MySQL; no application routes are mocked.
 test('cria fichas e cópias com mouse/toque e recupera atributos após recarga', async ({ page }, info) => {
@@ -12,6 +12,7 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);
   await page.goto(`/#/salas/${room.id}`);
   const click = async (locator: ReturnType<typeof page.getByRole>) => info.project.use.hasTouch ? locator.tap() : locator.click();
+  await openQuickActions(page);
   await click(page.getByRole('button', { name: 'Ações', exact: true }));
   await click(page.getByRole('button', { name: 'Criar ficha', exact: true }));
   const dialog = page.getByRole('dialog', { name: 'Fichas' });
@@ -56,6 +57,6 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await expect(page.getByRole('dialog').getByLabel('Poder', { exact: true })).toHaveValue('-1');
   await expect(page.getByRole('dialog').getByLabel('Resistência', { exact: true })).toHaveValue('4');
   await click(page.getByRole('dialog').getByRole('button', { name: 'Fechar', exact: true }));
-  await openMatchRail(page);
+  await openMatchRail(page, 'Registro');
   await expect(page.getByRole('region', { name: 'Registro da partida' })).toContainText('criou uma cópia de Dragão amigo');
 });

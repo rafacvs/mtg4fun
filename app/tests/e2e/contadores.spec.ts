@@ -1,16 +1,20 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openHand, openMatchRail, openQuickActions } from './fixtures';
 
 async function expectLifeBesideName(table: Locator, life: number) {
   const name = table.getByRole('heading', { name: /Amigo da mesa/ });
   const lifeLabel = table.getByLabel(`Vida: ${life}`, { exact: true });
   const identity = table.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true });
-  const focus = table.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
+  const focus = table.getByRole('button', { name: /^(Ampliar mesa de Amigo da mesa|Voltar à visão geral)$/ });
   await expect(lifeLabel).toBeVisible();
   const [nameBox, lifeBox, identityBox, focusBox] = await Promise.all([name.boundingBox(), lifeLabel.boundingBox(), identity.boundingBox(), focus.boundingBox()]);
   expect(nameBox && lifeBox && identityBox && focusBox).toBeTruthy();
-  expect(lifeBox!.x).toBeGreaterThanOrEqual(nameBox!.x + nameBox!.width - 1);
-  expect(lifeBox!.x - (nameBox!.x + nameBox!.width)).toBeLessThanOrEqual(20);
+  const ownership = table.locator('.player-ownership');
+  const beforeLife = (await ownership.count()) ? await ownership.boundingBox() : nameBox;
+  expect(beforeLife).toBeTruthy();
+  if (beforeLife !== nameBox) expect(beforeLife!.x - (nameBox!.x + nameBox!.width)).toBeLessThanOrEqual(20);
+  expect(lifeBox!.x).toBeGreaterThanOrEqual(beforeLife!.x + beforeLife!.width - 1);
+  expect(lifeBox!.x - (beforeLife!.x + beforeLife!.width)).toBeLessThanOrEqual(20);
   expect(Math.abs((lifeBox!.y + lifeBox!.height / 2) - (nameBox!.y + nameBox!.height / 2))).toBeLessThan(14);
   expect(lifeBox!.x).toBeGreaterThanOrEqual(identityBox!.x);
   expect(lifeBox!.x + lifeBox!.width).toBeLessThanOrEqual(identityBox!.x + identityBox!.width + 1);
@@ -66,10 +70,13 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
       node.textContent = 'Jogador com um nome muito longo para caber neste campo estreito';
       const nameBox = node.getBoundingClientRect();
       const lifeBox = life.getBoundingClientRect();
+      const ownership = node.parentElement?.querySelector('.player-ownership');
+      const beforeLife = ownership instanceof HTMLElement ? ownership.getBoundingClientRect() : nameBox;
       const fits = getComputedStyle(node).textOverflow === 'ellipsis'
         && node.scrollWidth > node.clientWidth + 1
-        && lifeBox.left >= nameBox.right - 1
-        && lifeBox.left - nameBox.right <= 20
+        && beforeLife.left - nameBox.right <= 20
+        && lifeBox.left >= beforeLife.right - 1
+        && lifeBox.left - beforeLife.right <= 20
         && lifeBox.left >= 0
         && lifeBox.right <= window.innerWidth
         && lifeBox.width > 12;
@@ -134,6 +141,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await expect(restored).toBeEnabled();
     await expect(restored).toHaveValue('16');
     await press('Fechar jogador');
+    await openHand(page);
     await press('Island');
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
     await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
@@ -168,12 +176,14 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     const view = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
     const own = view.players.find((player: { userId: number }) => player.userId === view.viewerId);
     expect((await observer.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'card', cardId: own.hand[0].id, subject: 'power', operation: 'set', value: 99 } })).status()).toBe(409);
+    await openQuickActions(otherPage);
     await otherPage.getByRole('button', { name: 'Ações', exact: true }).click();
     const otherPanel = otherPage.getByRole('dialog', { name: 'Ações do jogo' });
     await expect(otherPanel.getByRole('button', { name: 'Vida', exact: true })).toHaveCount(0);
     await expect(otherPanel.getByRole('button', { name: 'Marcadores', exact: true })).toHaveCount(0);
     await expect(otherPage.getByText('-1/+4', { exact: true })).toHaveCount(0);
     await page.reload();
+    await openHand(page);
     await expect(table.getByLabel('Vida: 16', { exact: true })).toBeVisible();
     await expect(table.getByLabel('marcador vermelho')).toHaveText('2');
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByText('-1/+4', { exact: true })).toBeVisible();
@@ -215,6 +225,7 @@ async function prepareIsland(page: Page, partner?: APIRequestContext) {
   expect((await api.delete(`/api/decks/${deckId}`)).status()).toBe(204);
   expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);
   await page.goto(`/#/salas/${room.id}`);
+  await openHand(page);
   await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
   const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
   await expect(preview).toBeVisible();
@@ -319,6 +330,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     await expect.poll(read).toMatchObject({ power: 2, toughness: -1 });
 
     await page.reload();
+    await openHand(page);
     await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
     const restored = page.getByRole('dialog', { name: 'Imagem de Island' });
     await expect(restored.getByLabel('Poder', { exact: true })).toHaveValue('2');
@@ -430,6 +442,7 @@ test('confirmação incerta reenvia só a etapa pendente do par', async ({ page 
     }
     await route.continue();
   });
+  await openHand(page);
   await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
   const fieldPreview = page.getByRole('dialog', { name: 'Imagem de Island' });
   await fieldPreview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true }).click();

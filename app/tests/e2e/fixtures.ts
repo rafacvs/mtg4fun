@@ -59,16 +59,50 @@ export { expect };
 
 // The panels are controlled by their own tabs; compact screens show one at a time.
 export async function openMatchRail(page: Page, panel = 'Jogadores') {
+  await expect(page.locator('.own-dock')).toBeAttached();
+  const information = page.getByRole('button', { name: 'Informações', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(information).toBeVisible();
+  if (await information.isVisible() && await information.getAttribute('aria-expanded') === 'false') await information.click();
   const tab = page.getByRole('button', { name: panel, exact: true });
   await expect(tab).toBeVisible();
   if (await tab.getAttribute('aria-expanded') === 'false') await tab.click();
 }
 
 export async function closeMatchRail(page: Page) {
+  const information = page.getByRole('button', { name: 'Informações', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(information).toBeVisible();
+  if (await information.isVisible()) {
+    if (await information.getAttribute('aria-expanded') === 'true') await information.click();
+    return;
+  }
   for (const label of ['Prévia', 'Jogadores', 'Registro']) {
     const tab = page.getByRole('button', { name: label, exact: true });
     if (await tab.getAttribute('aria-expanded') === 'true') await tab.click();
   }
+}
+
+export async function openHand(page: Page) {
+  await expect(page.locator('.own-dock')).toBeAttached();
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa' }).getByRole('button', { name: 'Mão', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(toggle).toBeVisible();
+  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+}
+
+export async function closeHand(page: Page) {
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa' }).getByRole('button', { name: 'Mão', exact: true });
+  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+}
+
+export async function openQuickActions(page: Page) {
+  await expect(page.locator('.own-dock')).toBeAttached();
+  const toggle = page.getByRole('button', { name: 'Comandos', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(toggle).toBeVisible();
+  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+}
+
+export async function closeQuickActions(page: Page) {
+  const toggle = page.getByRole('button', { name: 'Comandos', exact: true });
+  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
 }
 
 export async function openLibrary(page: Page) {
@@ -80,7 +114,7 @@ export async function openLibrary(page: Page) {
 
 export async function openGameActions(page: Page) {
   const actions = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
-  if (!await actions.isVisible()) await page.getByRole('button', { name: 'Ações', exact: true }).click();
+  if (!await actions.isVisible()) { await openQuickActions(page); await page.getByRole('button', { name: 'Ações', exact: true }).click(); }
   await expect(actions).toBeVisible();
   return actions;
 }

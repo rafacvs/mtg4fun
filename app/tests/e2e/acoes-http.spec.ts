@@ -1,5 +1,5 @@
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, openGameActions, openLibrary } from './fixtures';
+import { test, expect, closeQuickActions, openGameActions, openHand, openLibrary, openQuickActions } from './fixtures';
 
 // Resolve a non-loopback origin to the real test server. Chromium must expose
 // the same restricted Web Crypto API as public HTTP, without mocking crypto.
@@ -43,7 +43,9 @@ for (const remoteHTTP of [false, true]) {
       const read = async (): Promise<Match> => (await (await page.request.get(`/api/rooms/${roomId}/match`)).json()).match;
       const own = (match: Match) => match.players.find(player => player.userId === match.viewerId)!;
 
+      await openQuickActions(page);
       await page.getByRole('button', { name: 'Comprar', exact: true }).click();
+      await closeQuickActions(page);
       await expect.poll(async () => own(await read()).handCount).toBe(1);
       const library = await openLibrary(page);
       await library.getByRole('button', { name: /^Embaralhar/ }).click();
@@ -78,6 +80,7 @@ for (const remoteHTTP of [false, true]) {
       for (const { intentId } of sent) expect(intentId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
       expect(errors).toEqual([]);
       await page.reload();
+      await openHand(page);
       await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true })).toHaveCount(1);
       expect(own(await read()).consulted).toHaveLength(2);
     } finally {

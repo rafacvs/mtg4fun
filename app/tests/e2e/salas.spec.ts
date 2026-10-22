@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, closeMatchRail, openLibrary } from './fixtures';
+import { test, expect, closeHand, closeMatchRail, closeQuickActions, openHand, openLibrary, openMatchRail, openQuickActions } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -87,7 +87,9 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
     return match.players.find((player: { userId: number }) => player.userId === match.viewerId).hand || [];
   };
   if (testInfo.project.name === 'celular') {
+    await openQuickActions(page);
     await expect(board.getByRole('button', { name: 'Comprar', exact: true })).toBeVisible();
+    await closeQuickActions(page);
   }
   await expect(board.getByLabel('Vida: 40', { exact: true })).toBeVisible();
   await expect(board.getByLabel('Zonas de Amigo da mesa')).toContainText('Grimório');
@@ -133,8 +135,9 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   expect(await ownHand()).toHaveLength(1);
   const confirmed = await (await page.request.get(matchPath)).json();
   expect(confirmed.match.log.filter((entry: { kind: string }) => entry.kind === 'draw')).toHaveLength(1);
-  await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
   await closeActions();
+  await openHand(page);
+  await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
   async function dragCard(from: Locator, to: Locator) {
     await from.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
     const sourceBox = await from.boundingBox();
@@ -149,6 +152,8 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   }
   let source = hand;
   for (const destination of ['Campo', 'Cemitério', 'Exílio', 'Comando', 'Mão']) {
+    if (destination === 'Mão') await openHand(page);
+    else if (destination !== 'Campo') await closeHand(page);
     const target = board.getByRole('region', { name: destination, exact: true });
     await dragCard(source.getByRole('button', { name: 'Island', exact: true }), target);
     await expect(target.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
@@ -173,13 +178,14 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await page.reload();
   await expect(page).toHaveURL(roomURL);
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
-  await openMatchRail(page);
+  await openMatchRail(page, 'Registro');
   await expect(board.getByRole('region', { name: 'Registro da partida', exact: true }).getByText('Amigo da mesa moveu 1 carta(s) de Mão para Grimório.')).toHaveCount(2);
   await page.getByRole('link', { name: 'Voltar ao lobby' }).click();
   await expect(board).toHaveCount(0);
   await page.goto(roomURL);
   await openMatchRail(page);
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
+  await openHand(page);
   await buy('3');
   await expect(hand.locator('.playing-card')).toHaveCount(3);
   expect((await ownHand()).map(card => card.id)).not.toContain(returnedId);
@@ -188,27 +194,38 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   expect((await ownHand()).at(-1)?.id).toBe(returnedId);
   const log = board.getByRole('region', { name: 'Registro da partida', exact: true });
   await closeActions();
-  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
+  const actions = board.getByRole('dialog', { name: 'Ações do jogo', exact: true });
+  const openActions = async () => {
+    if (await actions.isVisible()) return;
+    await openQuickActions(page);
+    await activate(board.getByRole('button', { name: 'Ações', exact: true }));
+    await expect(actions).toBeVisible();
+  };
+  await openActions();
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await board.getByLabel('Faces do dado').fill('6');
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
-  await openMatchRail(page);
+  const showLog = async () => {
+    if (await actions.isVisible()) await activate(actions.getByRole('button', { name: 'Fechar ações', exact: true }));
+    await openMatchRail(page, 'Registro');
+  };
+  await showLog();
   await expect(log).toContainText(/Amigo da mesa rolou D6: /);
   await closeMatchRail(page);
-  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
+  await openActions();
   await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
-  await openMatchRail(page);
+  await showLog();
   await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);
   await closeMatchRail(page);
-  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
+  await openQuickActions(page);
   await activate(board.getByRole('button', { name: 'Passar turno', exact: true }));
-  await openMatchRail(page);
+  await showLog();
   await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa e ocultou todas as revelações.');
   await closeMatchRail(page);
-  await activate(board.getByRole('button', { name: 'Ações', exact: true }));
+  await openActions();
   await activate(board.getByRole('button', { name: 'Corrigir turno', exact: true }));
-  await openMatchRail(page);
+  await showLog();
   await expect(log).toContainText('Amigo da mesa corrigiu para o turno de Amigo da mesa.');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('mesa.png'), fullPage: true });
