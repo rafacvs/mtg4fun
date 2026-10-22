@@ -41,7 +41,11 @@ test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', 
   };
   await selectCards();
   const before = await read();
-  await field.getByRole('button', { name: 'Diminuir zoom', exact: true }).click();
+  await expect(field.getByRole('button', { name: 'Diminuir zoom', exact: true })).toHaveCount(0);
+  const readZoom = () => field.locator('.battlefield-zoom-space').evaluate(node => Number(getComputedStyle(node).getPropertyValue('--mat-zoom')));
+  expect(await readZoom()).toBe(0.5);
+  await page.locator('.table-toolbar').getByRole('button', { name: 'Diminuir zoom', exact: true }).click();
+  expect(await readZoom()).toBe(0.25);
   await expect(selected).toHaveCount(4);
   await clear();
   expect(await read()).toEqual(before);
