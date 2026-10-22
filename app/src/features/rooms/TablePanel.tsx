@@ -92,7 +92,7 @@ export function TablePanel({ open, label, anchor, wide = false, align = 'end', c
     return () => document.removeEventListener('pointerdown', outside);
   }, [open, anchor, onClose]);
   if (!open) return null;
-  return <div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={placement}>{children}</div>;
+  return <><div className="table-panel-scrim" aria-hidden="true" onPointerDown={event => event.stopPropagation()} onClick={onClose} /><div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={placement}>{children}</div></>;
 }
 
 export function PanelHeader({ title, subtitle, onClose, onBack, closeLabel = 'Fechar menu', children }: {

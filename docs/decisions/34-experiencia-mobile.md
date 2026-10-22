@@ -64,3 +64,29 @@ Sem mudanças de banco, dependências, infraestrutura, autenticação ou regras.
 A validação de navegador é Chromium com emulação mobile; não é uma execução
 em iPhone físico.
 Sem alterações de backend, não foi repetida a suíte Go nem Docker.
+
+## Refinamento aprovado em 21/10/2026: três controles flutuantes
+
+O usuário considerou a apresentação anterior ainda poluída e pediu a mão
+fechada, acessível por botão flutuante. Escolheu painel sobreposto, sem reduzir
+o campo, e depois definiu três controles separados: mão; comandos com Passar
+turno, Comprar, Desvirar todas e Ações; informações com Prévia, Jogadores e
+Registro. Confirmou mão e comandos independentes e abas dentro do painel de
+informações. Ao autorizar a implementação do plano, corrigiu explicitamente
+a posição para o **canto inferior direito**.
+
+A apresentação compacta, até 1000 px, começa com as três áreas fechadas.
+Os botões ficam empilhados de baixo para cima: Mão, Comandos e Informações.
+A mão é uma superfície inferior sobreposta e mantém ordem/rolagem ao fechar.
+Comandos fica acima dela quando aberta; comprar, desvirar e passar turno não
+fecham a mão. Informações e Comandos são mutuamente exclusivos, preservando
+a mão por trás. Informações lembra a última aba e toque longo abre Prévia.
+Menus e informações fecham por controle explícito, Escape ou toque externo
+interceptado antes de atingir o campo. O zoom fica afastado dos flutuantes.
+
+Passar turno sai do menu Ações e fica nos comandos rápidos também no desktop;
+atalho N e operação HTTP permanecem iguais. O menu Ações conserva dado, moeda,
+fichas e correção de turno. Não há alteração de contratos, dados ou dependências.
+
+A validação deste refinamento será registrada após concluir os testes; os
+resultados de 20/10 acima são históricos da versão anterior.

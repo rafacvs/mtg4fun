@@ -16,7 +16,6 @@ export function GameActions({ open, anchor, sides, busy, unconfirmed, onSides, o
     <PanelHeader title={screen === 'roll' ? 'Rolar dado' : 'Ações do jogo'} subtitle="Mesa manual" onClose={onClose} closeLabel="Fechar ações" onBack={screen !== 'menu' ? () => setScreen('menu') : undefined} />
     <PanelFeedback error={error} busy={busy} unconfirmed={unconfirmed} onRetry={onRetry} />
     {screen === 'menu' && <div className="table-menu actions-grid">
-      <MenuItem icon="next" title="Passar turno" description="Avançar e ocultar suas reveladas · N" disabled={!canAct} onClick={() => onTurn('next')} />
       <MenuItem icon="dice" title="Rolar dado" description="Escolher o número de faces" disabled={!canAct} onClick={() => setScreen('roll')} />
       <MenuItem icon="coin" title="Jogar moeda" description="Cara ou coroa" disabled={!canAct} onClick={onCoin} />
       <MenuItem icon="token" title="Criar ficha" description="Do catálogo ou personalizada" disabled={!canAct} onClick={onCreate} />
