@@ -11,16 +11,19 @@ export function TableOverview({ match, onFocus }: { match: Match; onFocus: (id: 
 
 function OverviewPlayer({ player, own, currentTurn, onFocus }: { player: Match['players'][number]; own: boolean; currentTurn: boolean; onFocus: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(.15);
+  const [scale, setScale] = useState(0);
   const cards = player.battlefield ?? [];
   const layout = overviewLayout(cards);
   const unit = 72;
   const width = Math.max(unit, layout.width * unit);
   const height = Math.max(unit * CARD_ASPECT, layout.height * unit);
   useLayoutEffect(() => {
-    if (!ref.current) return;
     const node = ref.current;
-    const update = () => setScale(Math.min(node.clientWidth / width, node.clientHeight / height));
+    if (!node) return;
+    const update = () => {
+      if (node.clientWidth < 1 || node.clientHeight < 1) return;
+      setScale(Math.min(node.clientWidth / width, node.clientHeight / height));
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(node);
@@ -29,10 +32,10 @@ function OverviewPlayer({ player, own, currentTurn, onFocus }: { player: Match['
   return <button className={`overview-player secondary ${currentTurn ? 'is-current-turn' : ''}`} onClick={onFocus} aria-label={`Ampliar mesa de ${player.name}`}>
     <header><span className="player-avatar">{player.name.slice(0, 1).toUpperCase()}</span><strong>{player.name}{own && <small> · Você</small>}</strong><span aria-label={`Vida: ${player.life}`}><TableIcon name="heart" />{player.life}</span></header>
     <div ref={ref} className="overview-field">
-      {cards.length ? <div style={{ width, height, transform: `scale(${scale})` }} className="overview-canvas">{cards.map(card => {
+      {cards.length ? <div style={{ width: width * scale, height: height * scale }} className="overview-canvas">{cards.map(card => {
         const item = layout.cards.get(card.id);
         if (!item) return null;
-        return <div key={card.id} className={`overview-card ${card.tapped ? 'is-tapped' : ''}`} style={{ left: item.x * unit, top: item.y * unit, width: (card.tapped ? CARD_ASPECT : 1) * unit, height: (card.tapped ? 1 : CARD_ASPECT) * unit, zIndex: card.stackOrder } as CSSProperties}>{card.name && !card.faceDown ? <img src={cardImageURL(card)} alt="" draggable={false} /> : <span className="card-back" />}</div>;
+        return <div key={card.id} className={`overview-card ${card.tapped ? 'is-tapped' : ''}`} style={{ left: item.x * unit * scale, top: item.y * unit * scale, width: (card.tapped ? CARD_ASPECT : 1) * unit * scale, height: (card.tapped ? 1 : CARD_ASPECT) * unit * scale, zIndex: card.stackOrder } as CSSProperties}>{card.name && !card.faceDown ? <img src={cardImageURL(card)} alt="" draggable={false} /> : <span className="card-back" />}</div>;
       })}</div> : <div className="overview-empty"><TableIcon name="crown" /><span>Campo livre</span></div>}
     </div>
     <footer><span><TableIcon name="hand" />{player.handCount}</span><span><TableIcon name="library" />{player.libraryCount}</span><span>{player.battlefieldCount} no campo</span>{currentTurn && <span className="turn-badge">Turno</span>}</footer>

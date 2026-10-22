@@ -43,8 +43,6 @@
   .match-board .mobile-commands .table-panel-header, .match-board .side-rail .table-panel-header { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: 0; padding: 0; gap: 8px; }
   .mobile-commands .table-panel-header h2, .side-rail .table-panel-header h2 { margin: 0; font-size: .85rem; }
   .mobile-commands .table-panel-header .panel-close, .side-rail .table-panel-header .panel-close { min-width: 44px; min-height: 44px; border: 0; background: transparent; }
-  .field-zoom { right: calc(var(--floating-gutter) + 8px); bottom: 16px; flex-direction: row-reverse; }
-  .mobile-hand-open .field-zoom { bottom: calc(var(--dock-height) + 24px); }
 }
 @media (max-width: 1000px) and (max-height: 520px) and (orientation: landscape) {
   .own-dock .zone-hand .zone-cards { --card-width: 52px; }
