@@ -88,6 +88,21 @@ Passar turno sai do menu Ações e fica nos comandos rápidos também no desktop
 atalho N e operação HTTP permanecem iguais. O menu Ações conserva dado, moeda,
 fichas e correção de turno. Não há alteração de contratos, dados ou dependências.
 
+## Zoom compartilhado e miniaturas, aprovado em 21/10/2026
+
+O usuário aprovou tirar o + e o − de cada campo e colocá-los no centro da
+barra de cima. Um único nível vale para todas as mesas, de 25% a 300%, de
+25% em 25%, abrindo em 50% e voltando a 50% ao recarregar, sem gravar no
+servidor. A visão geral não usa esse zoom: cada miniatura mostra a mesa
+inteira do jogador, com todas as colunas ocupadas, mesmo pequenas. A grade
+de jogadores continua com duas colunas no celular e três no desktop largo.
+
+Na sala 8 do aplicativo local, com `mesa1` a `mesa4` e seis cartas por campo,
+os prints em 1280×800, 390×844 e 844×390 mostram o zoom em 50% e em 100% no
+centro da barra, o mesmo nível nas mesas montadas, e as seis cartas dentro de
+cada miniatura. `limpar-selecao` no desktop e a visão geral no celular
+passaram no navegador com a API real.
+
 ## Validação em 21/10/2026
 
 O build do frontend passou. No desktop, no celular e no celular deitado, os
