@@ -1,4 +1,4 @@
-import { test, expect, openQuickActions, openHand } from './fixtures';
+import { test, expect, openQuickActions, openHand, roomBody } from './fixtures';
 
 test('esferas de mana renderizam e animam sem impedir entrar e sair', async ({ page }, info) => {
   const errors: string[] = [];
@@ -79,7 +79,7 @@ test('depois de entrar, reabre uma partida iniciada e compra uma carta', async (
   const upload = await api.post('/api/decks', { multipart: { file: { name: 'login.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Login</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
   expect(upload.status()).toBe(201);
   const { deck } = await upload.json();
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
   expect((await api.delete('/api/session')).status()).toBe(204);

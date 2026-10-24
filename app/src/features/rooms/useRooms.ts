@@ -32,7 +32,7 @@ export function useRooms() {
 
   return {
     rooms, connection, loading, busy, error,
-    create: () => act(roomsApi.create),
+    create: (room: Parameters<typeof roomsApi.create>[0]) => act(() => roomsApi.create(room)),
     join: (id: number) => act(() => roomsApi.join(id)),
     selectDeck: (id: number, deckId: number) => act(() => roomsApi.selectDeck(id, deckId)),
     ready: (id: number) => act(() => roomsApi.ready(id)),

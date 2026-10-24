@@ -59,7 +59,7 @@ func prepareCreationMatch(t *testing.T, decks ...string) (*environment, []*http.
 	for _, name := range []string{"criador", "oponente", "fora"} {
 		cookies = append(cookies, sessionCookie(t, e.login(name, "senha-da-mesa")))
 	}
-	room := e.request("POST", "/api/rooms", "{}", cookies[0], nil)
+	room := e.request("POST", "/api/rooms", roomJSON(), cookies[0], nil)
 	requireStatus(t, room, 201)
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, room).ID)
 	requireStatus(t, e.request("POST", path+"/participants", "{}", cookies[1], nil), 200)
@@ -220,7 +220,7 @@ func TestTokenCatalogIsBoundedSortedAndUsesExistingImageCache(t *testing.T) {
 	if err := json.Unmarshal(upload.body, &deck); err != nil {
 		t.Fatal(err)
 	}
-	room := e.request("POST", "/api/rooms", "{}", cookie, nil)
+	room := e.request("POST", "/api/rooms", roomJSON(), cookie, nil)
 	requireStatus(t, room, 201)
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, room).ID)
 	requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, deck.Deck.ID), cookie, nil), 200)

@@ -1,4 +1,4 @@
-import { test, expect, openQuickActions } from './fixtures';
+import { test, expect, openQuickActions, roomBody } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 for (const count of [1, 3]) {
@@ -20,7 +20,7 @@ for (const count of [1, 3]) {
         const upload = await api.post('/api/decks', { multipart: { file: { name: 'finalizar.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="6" name="Island"/></zone></cockatrice_deck>') } } });
         expect(upload.status()).toBe(201);
         const { deck } = await upload.json();
-        if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+        if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
         else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
         expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
       }

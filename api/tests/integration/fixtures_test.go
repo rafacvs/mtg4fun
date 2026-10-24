@@ -246,6 +246,10 @@ func (e *environment) login(login, password string) response {
 	return e.request("POST", "/api/session", string(data), nil, nil)
 }
 
+func roomJSON() string {
+	return `{"name":"Mesa de teste","format":"Commander","seats":6,"life":40}`
+}
+
 func requireStatus(t *testing.T, r response, want int) {
 	t.Helper()
 	if r.status != want {

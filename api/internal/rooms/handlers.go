@@ -467,20 +467,55 @@ func (s *Service) listRooms(w http.ResponseWriter, r *http.Request) {
 	httpserver.WriteJSON(w, 200, map[string]any{"rooms": rooms})
 }
 
+func createRoomDraft(w http.ResponseWriter, r *http.Request) (roomDraft, bool) {
+	if strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
+		httpserver.WriteError(w, 415, "Envie JSON.")
+		return roomDraft{}, false
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+	decoder.DisallowUnknownFields()
+	var input struct {
+		Name   string `json:"name"`
+		Format string `json:"format"`
+		Seats  int    `json:"seats"`
+		Life   int    `json:"life"`
+		DeckID int64  `json:"deckId"`
+	}
+	if err := decoder.Decode(&input); err != nil {
+		httpserver.WriteError(w, 400, "Dados de sala inválidos.")
+		return roomDraft{}, false
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		httpserver.WriteError(w, 400, "Dados de sala inválidos.")
+		return roomDraft{}, false
+	}
+	name := strings.TrimSpace(input.Name)
+	switch {
+	case name == "", input.Format != "Commander" && input.Format != "Livre" && input.Format != "Duelo", input.Seats < 1 || input.Seats > 6, input.Life < 1 || input.Life > 999:
+		httpserver.WriteError(w, 400, "Dados de sala inválidos.")
+		return roomDraft{}, false
+	}
+	return roomDraft{Name: name, Format: input.Format, Seats: input.Seats, Life: input.Life, DeckID: input.DeckID}, true
+}
+
 func (s *Service) createRoom(w http.ResponseWriter, r *http.Request) {
-	if !emptyJSON(w, r) {
+	draft, ok := createRoomDraft(w, r)
+	if !ok {
 		return
 	}
 	user, ok := s.requireUser(w, r)
 	if !ok {
 		return
 	}
-	room, err := s.create(r.Context(), user)
-	if err != nil {
+	room, err := s.create(r.Context(), user, draft)
+	switch {
+	case errors.Is(err, errDeckNotFound):
+		httpserver.WriteError(w, 404, err.Error())
+	case err != nil:
 		httpserver.InternalError(w, err)
-		return
+	default:
+		httpserver.WriteJSON(w, 201, map[string]Room{"room": room})
 	}
-	httpserver.WriteJSON(w, 201, map[string]Room{"room": room})
 }
 
 func (s *Service) joinRoom(w http.ResponseWriter, r *http.Request) {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, openMatchRail, closeMatchRail } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, roomBody } from './fixtures';
 import type { Page } from '@playwright/test';
 
 async function touch(page: Page, points: { x: number; y: number }[]) {
@@ -16,7 +16,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   test.setTimeout(90_000);
   expect((await page.request.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
   const { deck } = await (await page.request.post('/api/decks', { multipart: { file: { name: 'mobile.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="40" name="Island"/></zone></cockatrice_deck>') } } })).json();
-  const { room } = await (await page.request.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
   expect((await page.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
   const path = `/api/rooms/${room.id}/match`;

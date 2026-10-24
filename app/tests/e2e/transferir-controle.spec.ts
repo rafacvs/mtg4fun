@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect, inspectCard, openMatchRail, selectFieldArea } from './fixtures';
+import { test, expect, inspectCard, openMatchRail, selectFieldArea, roomBody } from './fixtures';
 
 const deckFile = {
   name: 'ilha.cod',
@@ -18,7 +18,7 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
   const ownerDeck = await owner.post('/api/decks', { multipart: { file: deckFile } });
   expect(ownerDeck.status()).toBe(201);
   const ownerDeckID = (await ownerDeck.json()).deck.id;
-  const room = (await (await owner.post('/api/rooms', { data: {} })).json()).room;
+  const room = (await (await owner.post('/api/rooms', { data: roomBody() })).json()).room;
   const context = async () => browser.newContext({ baseURL, viewport: info.project.use.viewport, isMobile: info.project.use.isMobile, hasTouch: info.project.use.hasTouch });
   const second = await context();
   const third = await context();

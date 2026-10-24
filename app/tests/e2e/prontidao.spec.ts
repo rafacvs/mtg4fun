@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, roomBody } from './fixtures';
 
 const deckFile = (name: string) => ({
   name: `${name}.cod`,
@@ -21,7 +21,7 @@ test('desfaz a prontidão, devolve o seletor e impede o início', async ({ page,
     expect((await other.request.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
     const { deck: first } = await (await other.request.post('/api/decks', { multipart: { file: deckFile('Primeiro deck') } })).json();
     const { deck: second } = await (await other.request.post('/api/decks', { multipart: { file: deckFile('Segundo deck') } })).json();
-    const { room } = await (await page.request.post('/api/rooms', { data: {} })).json();
+    const { room } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
     expect((await other.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
     const guest = await other.newPage();
     await guest.goto(`/#/salas/${room.id}`);

@@ -61,7 +61,7 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	created := e.request("POST", "/api/rooms", "{}", owner, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), owner, nil)
 	requireStatus(t, created, 201)
 	roomID := decodeRoom(t, created).ID
 	path := fmt.Sprintf("/api/rooms/%d", roomID)
