@@ -79,6 +79,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [selecting, setSelecting] = useState(false);
   const selectionControllers = useRef(new Map<string, number>());
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
+  const moreControl = useRef<HTMLButtonElement>(null);
   const dockRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
   useEffect(() => {
@@ -262,7 +263,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   };
   const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
-    onActions={anchor => { setActionsAnchor(compact ? document.querySelector<HTMLElement>('.mobile-table-controls button:last-child') : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
+    onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
   return <section className={`match-board ${drag ? 'dragging' : ''} ${compact && !dockHidden ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} data-density={density} aria-label="Mesa da partida">
@@ -294,7 +295,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         </div>
         {compact && <>
           {(commandsOpen || informationOpen) && <div className="floating-panel-scrim" aria-hidden="true" onClick={closeFloatingPanel} />}
-          <MobileTableControls handOpen={!dockHidden} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
+          <MobileTableControls moreRef={moreControl} handOpen={!dockHidden} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
             onHand={() => setDockHidden(value => !value)} onDraw={drawOne} onUntap={() => void untapAll()} onTurn={() => void turn('next')}
             onMore={() => { setCommandsOpen(value => !value); setInformationOpen(false); }} />
           {commandsOpen && <section id="mobile-commands" className="mobile-commands" aria-label="Comandos da partida">
@@ -321,7 +322,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
                   <button className="secondary player-summary" aria-label={`Abrir jogador ${player.name}`} onClick={event => openPlayer(player.userId, event.currentTarget.querySelector<HTMLElement>('[data-life-anchor]') ?? event.currentTarget)}>
                     <strong>{player.name}{player.userId === match.viewerId && <small>Você</small>}</strong><span data-life-anchor title="Vida" aria-label={`Vida ${player.life}`}><TableIcon name="heart" />{player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}><TableIcon name="focus" />{player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}><TableIcon name="hand" />{player.handCount}</span>
                   </button>
-                  <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={!showingOverview && player.userId === focused.userId} title={!showingOverview && player.userId === focused.userId ? "Voltar à visão geral" : "Ver campo"} onClick={() => togglePlayerFocus(player.userId)}><TableIcon name={!showingOverview && player.userId === focused.userId ? "grid" : "focus"} /></button>
+                  <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={!showingOverview && player.userId === focused.userId} title={!showingOverview && player.userId === focused.userId ? "Voltar à visão geral" : "Ver campo"} onClick={() => togglePlayerFocus(player.userId)}><TableIcon name={!showingOverview && player.userId === focused.userId ? "grid" : "focus"} /><span>Campo</span></button>
                   {player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}
                 </div>
               )}</nav>
@@ -387,7 +388,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
       return ok;
     }} onClose={closeCreation} />
-    <CardPreview directActions={portrait} players={match.players} onMove={(cardId, destination) => {
+    <CardPreview readingActions={portrait} players={match.players} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
       const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
       return move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {
