@@ -1,5 +1,5 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
-import { test, expect, openHand, openMatchRail, openQuickActions } from './fixtures';
+import { test, expect, inspectCard, openHand, openMatchRail, openQuickActions } from './fixtures';
 
 async function expectLifeBesideName(table: Locator, life: number) {
   await expect(table).toBeVisible();
@@ -148,7 +148,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await expect(restored).toHaveValue('16');
     await press('Fechar jogador');
     await openHand(page);
-    await press('Island');
+    await inspectCard(page, page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }));
     const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
     await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
     await preview.getByLabel('Poder', { exact: true }).fill('-1');
@@ -233,7 +233,7 @@ async function prepareIsland(page: Page, partner?: APIRequestContext) {
   expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);
   await page.goto(`/#/salas/${room.id}`);
   await openHand(page);
-  await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
+  await inspectCard(page, page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }));
   const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
   await expect(preview).toBeVisible();
   return { roomId: room.id as number, api, preview };
@@ -338,7 +338,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
 
     await page.reload();
     await openHand(page);
-    await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
+    await inspectCard(page, page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }));
     const restored = page.getByRole('dialog', { name: 'Imagem de Island' });
     await expect(restored.getByLabel('Poder', { exact: true })).toHaveValue('2');
     await expect(restored.getByLabel('Resistência', { exact: true })).toHaveValue('-1');
@@ -355,7 +355,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     }
     const otherTable = otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' });
     await expect(otherTable.getByLabel('Poder e resistência')).toHaveCount(0);
-    await otherTable.getByRole('button', { name: 'Island', exact: true }).click();
+    await inspectCard(otherPage, otherTable.getByRole('button', { name: 'Island', exact: true }));
     const readOnly = otherPage.getByRole('dialog', { name: 'Imagem de Island' });
     await expect(readOnly.getByLabel('Poder', { exact: true })).toHaveCount(0);
     await expect(readOnly.getByLabel('Resistência', { exact: true })).toHaveCount(0);
@@ -451,7 +451,7 @@ test('confirmação incerta reenvia só a etapa pendente do par', async ({ page 
     await route.continue();
   });
   await openHand(page);
-  await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
+  await inspectCard(page, page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }));
   const fieldPreview = page.getByRole('dialog', { name: 'Imagem de Island' });
   await fieldPreview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true }).click();
   await expect(fieldPreview.getByRole('alert')).toContainText('Não foi possível confirmar');

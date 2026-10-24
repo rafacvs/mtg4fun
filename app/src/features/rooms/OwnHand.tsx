@@ -26,7 +26,7 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
       event.preventDefault();
       reorderAt(ordered[index], Math.min(ordered.length - 1, index + (event.key === 'ArrowLeft' ? -1 : 1)));
     }}>
-      {ordered.map(card => <PlayingCard key={card.id} card={card} draggable={card.controllerId === viewerId} scrollable={!organizing} {...gesture} onDragMove={(card, x, y) => {
+      {ordered.map(card => <PlayingCard key={card.id} card={card} draggable={card.controllerId === viewerId} selected={gesture.selectedIds?.includes(card.id)} scrollable={!organizing} {...gesture} onDragMove={(card, x, y) => {
         const box = row.current?.getBoundingClientRect();
         if (box && organizing) {
           if (x < box.left + 32) row.current!.scrollLeft -= 12;

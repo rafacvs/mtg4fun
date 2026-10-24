@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createActionIntent } from './actionIntent';
+import { optimisticMove, optimisticPosition } from './optimisticMatch';
 import { roomsApi, UnconfirmedActionError, type CounterAction, type CustomToken, type Match } from './roomsApi';
 
 export function useMatch(roomId: number) {
@@ -8,6 +9,7 @@ export function useMatch(roomId: number) {
   const [syncError, setSyncError] = useState('');
   const [busy, setBusy] = useState(false);
   const [unconfirmed, setUnconfirmed] = useState(false);
+  const [optimisticPending, setOptimisticPending] = useState(false);
   const pending = useRef<(() => Promise<Match>) | null>(null);
   const acting = useRef(false);
   const revision = useRef(0);
@@ -33,8 +35,10 @@ export function useMatch(roomId: number) {
     return () => { active = false; mounted.current = false; window.clearInterval(polling); };
   }, [roomId]);
 
-  async function act(operation: () => Promise<Match>, retrying = false) {
+  async function act(operation: () => Promise<Match>, retrying = false, project?: (value: Match) => Match) {
     if (acting.current || pending.current && !retrying) return false;
+    const before = match;
+    if (project && before) { setMatch(project(before)); setOptimisticPending(true); }
     acting.current = true;
     revision.current += 1;
     setBusy(true);
@@ -46,15 +50,15 @@ export function useMatch(roomId: number) {
       return true;
     } catch (reason) {
       pending.current = reason instanceof UnconfirmedActionError ? operation : null;
-      if (mounted.current) { setError((reason as Error).message); setUnconfirmed(pending.current !== null); }
+      if (mounted.current) { if (project) setMatch(before); setError((reason as Error).message); setUnconfirmed(pending.current !== null); }
       return false;
     } finally {
       acting.current = false;
-      if (mounted.current) setBusy(false);
+      if (mounted.current) { setBusy(false); setOptimisticPending(false); }
     }
   }
   return {
-    match, error: error || syncError, busy, unconfirmed,
+    match, error: error || syncError, busy, unconfirmed, optimisticPending,
     finish: () => {
       const intentId = createActionIntent();
       return act(() => roomsApi.finish(roomId, intentId));
@@ -106,7 +110,7 @@ export function useMatch(roomId: number) {
     },
     move: (ids: string[], to: string, placement?: 'top' | 'bottom', at?: { x: number; row: number }) => {
       const intentId = createActionIntent();
-      return act(() => roomsApi.move(roomId, ids, to, intentId, placement, at));
+      return act(() => roomsApi.move(roomId, ids, to, intentId, placement, at), false, value => optimisticMove(value, ids, to, at));
     },
     transferControl: (cardId: string, controllerId: number) => {
       const intentId = createActionIntent();
@@ -114,7 +118,7 @@ export function useMatch(roomId: number) {
     },
     position: (ids: string[], x: number, row: number) => {
       const intentId = createActionIntent();
-      return act(() => roomsApi.position(roomId, ids, x, row, intentId));
+      return act(() => roomsApi.position(roomId, ids, x, row, intentId), false, value => optimisticPosition(value, ids, x, row));
     },
     roll: (sides: number) => {
       const intentId = createActionIntent();

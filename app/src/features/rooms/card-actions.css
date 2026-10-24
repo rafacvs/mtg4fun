@@ -1,0 +1,19 @@
+.card-action-bar { position: fixed; z-index: 45; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; width: max-content; max-width: calc(100vw - 24px); padding: 8px; background: var(--panel-overlay); border: 1px solid var(--gold); border-radius: 12px; box-shadow: 0 8px 30px #0009; }
+.card-action-bar > span { padding: 0 6px; font-size: .7rem; color: var(--muted); }
+.card-action-bar button { min-height: 36px; padding: 6px 10px; font-size: .75rem; }
+@media (pointer: coarse) { .card-action-bar button { min-height: 44px; } }
+.card-action-menu { width: min(450px, calc(100vw - 24px)); }
+.card-action-menu h3 { margin: 14px 0 8px; font-size: .85rem; }
+.card-menu-destinations { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.card-menu-destinations button { min-height: 38px; }
+.card-action-menu .card-state-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+.card-action-menu .marker-rows { margin-bottom: 12px; }
+.drag-destinations { position: fixed; z-index: 46; bottom: 82px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; width: max-content; max-width: calc(100vw - 24px); padding: 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--panel-overlay); box-shadow: 0 8px 30px #0009; }
+.drag-destinations > span { color: var(--muted); font-size: .75rem; }
+.drag-destinations button { min-height: 48px; min-width: 65px; padding: 10px; border: 2px solid var(--line); background: var(--panel2); color: var(--text); }
+.drag-destinations button[aria-current="true"] { border-color: var(--gold); background: var(--gold-wash); color: var(--gold-light); }
+.selection-mode[aria-pressed="true"] { border-color: var(--gold); color: var(--gold-light); box-shadow: inset 0 0 0 1px var(--gold); }
+.playing-card.is-pending { opacity: .7; border-style: dashed; }
+.pending-action { position: absolute; z-index: 44; top: 54px; left: 50%; transform: translateX(-50%); padding: 4px 12px; border: 1px dashed var(--gold); border-radius: 8px; background: var(--panel-overlay); color: var(--gold-light); font-size: .75rem; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) { .positioned-card { transition: left .14s, top .14s; } }
+@media (prefers-reduced-motion: reduce) { .playing-card { transition: opacity .1s; } }
