@@ -26,10 +26,10 @@ invalidam a seleção correspondente.
 D/U/N permanecem, T vira, H/G/E movem para mão/cemitério/exílio, + acrescenta
 um marcador vermelho (primeira das cinco cores manuais), R abre dado/moeda e
 F abre fichas. Ocultar reveladas fica no menu. Atalhos não agem em campos de
-texto, diálogos, com modificadores ou durante uma ação pendente.
+texto, diálogos, com Ctrl/Alt/Meta ou durante uma ação pendente.
 
 O arraste apresenta sete destinos nomeados e destaca o alvo com a cor de
- ação. O conjunto pode sair para uma zona junto. A projeção pendente de
+ação. O conjunto pode sair para uma zona junto. A projeção pendente de
 movimento/reposicionamento pertence ao cliente; a confirmação da API substitui
 essa projeção e uma recusa restaura o estado anterior. O sinal pendente está
 na carta e na mesa. Isso não é desfazer persistido nem muda as permissões.
@@ -53,3 +53,10 @@ de toque também encontrou o fechamento indevido da inspeção ao soltar o dedo.
 - Build, typecheck e `git diff --check` passaram. Nenhum backend foi alterado;
   não foi repetida a suíte Go. A experiência móvel completa pertence ao
   card 48; o contexto de toque acima não equivale aos dois projetos de celular.
+
+Após incorporar a ponta da integração com os cards 46 e 47, o build passou
+e os 11 cenários de gestos/editores/controle passaram, considerando a repetição
+focal do teste de atalhos. Esse teste passou a aguardar o controle habilitado
+e `data-pending=false` antes de encadear a próxima ação, em vez de confundir
+uma projeção imediata com a confirmação do servidor. Os conflitos resolvidos
+preservaram `MatchLog`, a descrição extraída e os metadados da folha do grimório.
