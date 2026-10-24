@@ -93,3 +93,5 @@ Editor/exportador de decks, sideboard na mesa, aprovação de entradas antes do 
 ## Notas adicionais
 
 O repositório original do Cockatrice foi consultado como referência local. Suas estruturas não determinam módulos, banco ou protocolo desta aplicação.
+
+A apresentação do login, do lobby, da preparação e de Meus decks segue a [nova experiência da mesa](05-nova-experiencia-da-mesa.md). Isso não cria formato, lugares, vida por sala, deck na criação, comandante, curva nem tipos persistidos. O que ainda não existe aparece como exemplo e não é salvo. Excluir um deck pede confirmação. O comportamento persistido desta spec permanece.

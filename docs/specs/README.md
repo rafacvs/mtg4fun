@@ -10,10 +10,11 @@ Estas especificações consolidam o esboço inicial e as decisões da conversa d
 
 As três especificações formam uma única primeira versão, incluindo jogo completo no celular desde o início.
 
-Refinamentos aprovados posteriores à primeira reformulação da mesa:
-[interface premium da mesa](04-refinamento-ui-mesa.md), com implementação
-pendente nos [cards locais](../issues/refactor-game-ui/README.md). A spec
-complementar não declara essas entregas concluídas.
+A experiência vigente da mesa é a
+[nova experiência](05-nova-experiencia-da-mesa.md), aprovada em 24/10/2026.
+Ela substitui a apresentação da [mesa](02-mesa-e-interface.md) e a direção
+visual do [refinamento premium](04-refinamento-ui-mesa.md). As regras de jogo
+da mesa permanecem, com a consulta do grimório redefinida na spec nova.
 
 ## Objetivo e direção
 

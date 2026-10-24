@@ -1,12 +1,17 @@
 # Refinamento premium da interface da mesa
 
-**Estado:** requisitos aprovados; implementação pendente nos
-[cards locais do refactor](../issues/refactor-game-ui/README.md).
+**Estado:** a direção visual e o celular vertical plenamente jogável foram
+substituídos pela [nova experiência](05-nova-experiencia-da-mesa.md). A edição
+direta de vida e do modificador de poder/resistência continua valendo dentro
+dessa superfície. Os cards locais do refactor registram a implementação
+anterior. Não revalidam a experiência nova.
 
 Esta especificação complementa a [mesa manual](02-mesa-e-interface.md), sem
 substituir suas regras de jogo, permissões ou privacidade. A autorização e o
 limite da atualização conjunta de P/R estão na
-[decisão 29](../decisions/29-refinamento-ui-mesa.md).
+[decisão 29](../decisions/29-refinamento-ui-mesa.md). Onde esta spec pede
+paleta original, zoom intocado ou celular vertical jogável, vale a nova
+experiência.
 
 ## Problema
 
