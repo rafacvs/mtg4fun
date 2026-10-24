@@ -22,6 +22,7 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }, info) => {
   await page.getByLabel('Escolher deck salvo').selectOption({ label: 'Amigos & mágicas (7 cartas)' });
   await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Excluir deck?' }).getByRole('button', { name: 'Confirmar exclusão' }).click();
   await expect(page.getByText('Nenhum deck salvo. Importe seu primeiro arquivo.')).toBeVisible();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'inválido.cod', mimeType: 'application/xml', buffer: Buffer.from('not XML') });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
@@ -52,6 +53,7 @@ test('aguarda a listagem inicial antes de importar', async ({ page }) => {
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Excluir deck?' }).getByRole('button', { name: 'Confirmar exclusão' }).click();
   await expect(page.getByText('Nenhum deck salvo. Importe seu primeiro arquivo.')).toBeVisible();
 });
 

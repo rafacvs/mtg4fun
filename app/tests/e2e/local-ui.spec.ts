@@ -52,6 +52,7 @@ for (const viewport of [
       await page.getByLabel('Escolher deck salvo').selectOption({ index: 1 });
       await expect(page.getByRole('button', { name: /^Consultar / }).first()).toBeVisible();
       await page.getByRole('button', { name: 'Excluir deck' }).click();
+      await page.getByRole('dialog', { name: 'Excluir deck?' }).getByRole('button', { name: 'Confirmar exclusão' }).click();
       await page.getByRole('link', { name: 'Salas' }).click();
       await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
       await expect(page).toHaveURL(/#\/salas$/);
