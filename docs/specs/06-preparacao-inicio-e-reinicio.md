@@ -9,7 +9,7 @@ Cards, na ordem em que podem começar:
 2. [Desfazer a prontidão](https://github.com/rafacvs/mtg4fun/issues/35), sem bloqueio.
 3. [Criar mesa com nome, formato, lugares, vida e deck](https://github.com/rafacvs/mtg4fun/issues/38), depois de 35.
 4. [Comprar 7 e pôr o comandante no comando](https://github.com/rafacvs/mtg4fun/issues/33), depois de 34.
-5. [Reinício da partida por unanimidade](https://github.com/rafacvs/mtg4fun/issues/36), depois de 35 e 38.
+5. [Reinício da partida por unanimidade](https://github.com/rafacvs/mtg4fun/issues/36), depois de 35, 38 e 33.
 
 Esta spec passa a valer sobre a criação da sala, a prontidão, o início da
 partida e o reinício votado. Substitui, nesses pontos, a compra manual e a
