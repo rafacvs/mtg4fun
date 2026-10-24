@@ -15,6 +15,9 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }, info) => {
   await chooser.setFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Amigos & mágicas' })).toBeVisible();
+  await expect(page.getByText(/estes dados são exemplos/)).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Terrenos', exact: true })).toContainText('5 × Island');
+  await expect(page.getByRole('region', { name: 'Mágicas', exact: true })).toContainText('1 × Fire // Ice');
   await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath('biblioteca-de-decks.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -28,6 +31,34 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }, info) => {
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Arquivo .cod inválido');
   await expect(page.getByRole('button', { name: 'Importar deck', exact: true })).toBeVisible();
+});
+
+test('marca e limpa o comandante depois do upload e de novo em Meus decks', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Login', { exact: true }).fill('amigo');
+  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
+  await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'hydras.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/hydras.cod')) });
+  await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Hidras' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Criaturas', exact: true })).toContainText('1 × Gargos, Vicious Watcher');
+  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true }).getByText('Nenhum', { exact: true })).toBeVisible();
+  await page.getByLabel('Buscar carta').fill('Gargos');
+  await page.getByRole('button', { name: 'Marcar comandante Gargos, Vicious Watcher', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true })).toContainText('Gargos, Vicious Watcher');
+  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true })).toContainText('Verde');
+  await expect(page.getByRole('region', { name: 'Comandante', exact: true })).toContainText('1 × Gargos, Vicious Watcher');
+  await expect(page.getByRole('region', { name: 'Criaturas', exact: true })).toHaveCount(0);
+
+  await page.reload();
+  await page.getByLabel('Escolher deck salvo').selectOption({ label: 'Hidras (7 cartas)' });
+  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true })).toContainText('Gargos, Vicious Watcher');
+  await page.getByLabel('Buscar carta').fill('Gargos');
+  await page.getByRole('button', { name: 'Limpar comandante', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true }).getByText('Nenhum', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true }).getByText('Verde', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Criaturas', exact: true })).toContainText('1 × Gargos, Vicious Watcher');
 });
 
 test('aguarda a listagem inicial antes de importar', async ({ page }) => {

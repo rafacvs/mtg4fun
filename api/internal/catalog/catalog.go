@@ -8,17 +8,22 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 type Card struct {
-	Type      string
-	Text      string
-	Token     bool
-	ImageURL  string
-	Power     string
-	Toughness string
-	Faces     []string
+	Type          string
+	Maintype      string
+	CMC           int
+	Colors        string
+	ColorIdentity string
+	Text          string
+	Token         bool
+	ImageURL      string
+	Power         string
+	Toughness     string
+	Faces         []string
 }
 
 type Catalog struct {
@@ -35,9 +40,13 @@ type datasetCard struct {
 		Attach string `xml:"attach,attr"`
 	} `xml:"related"`
 	Prop struct {
-		Type string `xml:"type"`
-		PT   string `xml:"pt"`
-		Side string `xml:"side"`
+		Type          string `xml:"type"`
+		Maintype      string `xml:"maintype"`
+		CMC           string `xml:"cmc"`
+		Colors        string `xml:"colors"`
+		ColorIdentity string `xml:"coloridentity"`
+		PT            string `xml:"pt"`
+		Side          string `xml:"side"`
 	} `xml:"prop"`
 }
 
@@ -54,7 +63,8 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 		if err := readDataset(path, func(card datasetCard) {
 			if _, ok := catalog.cards[card.Name]; !ok {
 				power, toughness, _ := strings.Cut(card.Prop.PT, "/")
-				catalog.cards[card.Name] = Card{Type: card.Prop.Type, Text: card.Text, Token: card.Token == "1", ImageURL: imageURL(card.Sets, card.Prop.Side), Power: strings.TrimSpace(power), Toughness: strings.TrimSpace(toughness)}
+				cmc, _ := strconv.Atoi(strings.TrimSpace(card.Prop.CMC))
+				catalog.cards[card.Name] = Card{Type: card.Prop.Type, Maintype: card.Prop.Maintype, CMC: cmc, Colors: card.Prop.Colors, ColorIdentity: card.Prop.ColorIdentity, Text: card.Text, Token: card.Token == "1", ImageURL: imageURL(card.Sets, card.Prop.Side), Power: strings.TrimSpace(power), Toughness: strings.TrimSpace(toughness)}
 				for _, related := range card.Related {
 					if related.Attach == "transform" {
 						relations[card.Name] = append(relations[card.Name], strings.TrimSpace(related.Name))

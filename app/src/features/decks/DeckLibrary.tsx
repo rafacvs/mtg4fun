@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useCardInspection } from './useCardInspection';
 import { useDecks } from './useDecks';
-import { DeckExamples } from './DeckExamples';
+import { DeckSummary } from './DeckSummary';
 import { DeleteDeckConfirmation } from './DeleteDeckConfirmation';
+import { GROUP_LABELS, GROUP_ORDER } from './deckDisplay';
 import './decks.css';
 
 type Props = { library: ReturnType<typeof useDecks> };
@@ -12,11 +13,13 @@ export function DeckLibrary({ library }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [importOpen, setImportOpen] = useState(true);
+  const [query, setQuery] = useState('');
   const [deleting, setDeleting] = useState<{ id: number; name: string } | null>(null);
   const chosen = library.decks.find(deck => deck.id === library.selected);
   const cardCount = chosen?.cards.reduce((sum, card) => sum + card.quantity, 0) ?? 0;
 
   useEffect(() => { if (!chosen) setImportOpen(true); }, [chosen]);
+  useEffect(() => { setQuery(''); }, [chosen?.id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -72,7 +75,7 @@ export function DeckLibrary({ library }: Props) {
           <div><p className="eyebrow">DECK SELECIONADO</p><h3>{chosen.name}</h3><p>{cardCount} cartas · {chosen.cards.length} nomes</p></div>
           <button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => { inspection.close(); setDeleting({ id: chosen.id, name: chosen.name }); }}>Excluir deck</button>
         </div>
-        <DeckExamples />
+        <DeckSummary deck={chosen} />
         <div className="deck-columns">
           <section className="deck-preview" aria-label="Preview de carta">
             {inspection.card ? <>
@@ -85,11 +88,26 @@ export function DeckLibrary({ library }: Props) {
           </section>
           <section className="deck-card-list" aria-label={`Cartas de ${chosen.name}`}>
             <div className="card-list-heading"><h4>Lista de cartas</h4><span>{chosen.cards.length} nomes</span></div>
-            <ul>{chosen.cards.map(deckCard => <li key={deckCard.name}>
-              <span className="card-quantity">{deckCard.quantity} × </span>
-              <button type="button" className="card-link" aria-label={`Consultar ${deckCard.name}`} aria-pressed={inspection.card?.name === deckCard.name} onClick={() => inspection.inspect(deckCard)}>{deckCard.name}</button>
-              {!deckCard.available && <strong>Indisponível no catálogo atual</strong>}
-            </li>)}</ul>
+            <div className="deck-card-search">
+              <label htmlFor="deck-card-search">Buscar carta</label>
+              <input id="deck-card-search" value={query} onChange={event => setQuery(event.target.value)} />
+              {chosen.commander ? <button type="button" className="text-button" disabled={library.busy} onClick={() => void library.setCommander(chosen.id, '')}>Limpar comandante</button> : null}
+            </div>
+            <div className="deck-groups">{GROUP_ORDER.map(key => {
+              const cards = chosen.groups[key].filter(card => card.name.toLowerCase().includes(query.trim().toLowerCase()));
+              if (cards.length === 0) return null;
+              return <section key={key} aria-label={GROUP_LABELS[key]}>
+                <h4>{GROUP_LABELS[key]}</h4>
+                <ul>{cards.map(deckCard => <li key={deckCard.name}>
+                  <span className="card-line">
+                    <span className="card-quantity">{deckCard.quantity} × </span>
+                    <button type="button" className="card-link" aria-label={`Consultar ${deckCard.name}`} aria-pressed={inspection.card?.name === deckCard.name} onClick={() => inspection.inspect(deckCard)}>{deckCard.name}</button>
+                  </span>
+                  {key !== 'commander' ? <button type="button" className="text-button" disabled={library.busy} aria-label={`Marcar comandante ${deckCard.name}`} onClick={() => void library.setCommander(chosen.id, deckCard.name)}>Marcar comandante</button> : null}
+                  {!deckCard.available && <strong>Indisponível no catálogo atual</strong>}
+                </li>)}</ul>
+              </section>;
+            })}</div>
           </section>
         </div>
       </article> : <div className="empty-decks"><h3>Escolha um deck para consultar.</h3><p>Os detalhes e as cartas aparecem aqui.</p></div>}
