@@ -21,13 +21,17 @@ import (
 const capacity = 6
 
 type Participant struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Ready bool   `json:"ready"`
+	ID     int64  `json:"id"`
+	Name   string `json:"name"`
+	Ready  bool   `json:"ready"`
+	DeckID int64  `json:"deckId,omitempty"`
 }
 type Room struct {
 	ID           int64         `json:"id"`
 	Title        string        `json:"title"`
+	Format       string        `json:"format,omitempty"`
+	Seats        int           `json:"seats"`
+	Life         int           `json:"life"`
 	CreatorID    int64         `json:"creatorId"`
 	Status       string        `json:"status"`
 	Participants []Participant `json:"participants"`
@@ -42,18 +46,29 @@ type participantState struct {
 type roomState struct {
 	ID           int64              `json:"id"`
 	Title        string             `json:"title"`
+	Format       string             `json:"format,omitempty"`
+	Seats        int                `json:"seats"`
+	Life         int                `json:"life"`
 	CreatorID    int64              `json:"creatorId"`
 	Status       string             `json:"status"`
 	Participants []participantState `json:"participants"`
 	Vacancies    int                `json:"vacancies"`
 }
 
+type roomDraft struct {
+	Name   string
+	Format string
+	Seats  int
+	Life   int
+	DeckID int64
+}
+
 func (r roomState) view() Room {
 	p := make([]Participant, len(r.Participants))
 	for i, v := range r.Participants {
-		p[i] = Participant{v.ID, v.Name, v.Ready}
+		p[i] = Participant{v.ID, v.Name, v.Ready, v.DeckID}
 	}
-	return Room{r.ID, r.Title, r.CreatorID, r.Status, p, r.Vacancies}
+	return Room{ID: r.ID, Title: r.Title, Format: r.Format, Seats: r.Seats, Life: r.Life, CreatorID: r.CreatorID, Status: r.Status, Participants: p, Vacancies: r.Vacancies}
 }
 
 type Turn struct {
@@ -336,6 +351,14 @@ func readRoom(row scanner) (roomState, error) {
 	if e == nil {
 		e = json.Unmarshal(b, &r)
 	}
+	if e == nil {
+		if r.Seats == 0 {
+			r.Seats = capacity
+		}
+		if r.Life == 0 {
+			r.Life = 40
+		}
+	}
 	return r, e
 }
 func (s *Service) list(ctx context.Context) ([]Room, error) {
@@ -367,7 +390,7 @@ func save(ctx context.Context, tx *sql.Tx, r roomState, actor int64, action stri
 	_, e = tx.ExecContext(ctx, "INSERT INTO room_events (room_id,actor_id,action) VALUES (?,?,?)", r.ID, actor, action)
 	return e
 }
-func (s *Service) create(ctx context.Context, u auth.User) (Room, error) {
+func (s *Service) create(ctx context.Context, u auth.User, draft roomDraft) (Room, error) {
 	tx, e := s.db.BeginTx(ctx, nil)
 	if e != nil {
 		return Room{}, e
@@ -381,7 +404,18 @@ func (s *Service) create(ctx context.Context, u auth.User) (Room, error) {
 	if e != nil {
 		return Room{}, e
 	}
-	r := roomState{ID: id, Title: fmt.Sprintf("Sala #%d", id), CreatorID: u.ID, Status: "preparing", Participants: []participantState{{ID: u.ID, Name: u.Name}}, Vacancies: capacity - 1}
+	creator := participantState{ID: u.ID, Name: u.Name}
+	if draft.DeckID > 0 {
+		var found int
+		if e = tx.QueryRowContext(ctx, "SELECT 1 FROM decks WHERE id=? AND user_id=?", draft.DeckID, u.ID).Scan(&found); e != nil {
+			if errors.Is(e, sql.ErrNoRows) {
+				return Room{}, errDeckNotFound
+			}
+			return Room{}, e
+		}
+		creator.DeckID = draft.DeckID
+	}
+	r := roomState{ID: id, Title: draft.Name, Format: draft.Format, Seats: draft.Seats, Life: draft.Life, CreatorID: u.ID, Status: "preparing", Participants: []participantState{creator}, Vacancies: draft.Seats - 1}
 	if e = save(ctx, tx, r, u.ID, "created"); e != nil {
 		return Room{}, e
 	}
@@ -394,6 +428,8 @@ var errRoomStarted = errors.New("A partida já foi iniciada.")
 var errNotCreator = errors.New("Somente o criador pode iniciar a partida.")
 var errNotReady = errors.New("Todos os participantes precisam confirmar um deck.")
 var errDeckNotFound = errors.New("Deck não encontrado.")
+var errDeckRequired = errors.New("Selecione um deck antes de confirmar.")
+var errReadyLocked = errors.New("Desfaça a prontidão para trocar de deck.")
 
 func lockedRoom(ctx context.Context, tx *sql.Tx, id int64) (roomState, error) {
 	return readRoom(tx.QueryRowContext(ctx, "SELECT snapshot FROM rooms WHERE id=? FOR UPDATE", id))
@@ -419,18 +455,18 @@ func (s *Service) join(ctx context.Context, id int64, u auth.User) (Room, error)
 	if r.Status != "preparing" {
 		return Room{}, errRoomStarted
 	}
-	if len(r.Participants) >= capacity {
+	if len(r.Participants) >= r.Seats {
 		return Room{}, errRoomFull
 	}
 	r.Participants = append(r.Participants, participantState{ID: u.ID, Name: u.Name})
-	r.Vacancies = capacity - len(r.Participants)
+	r.Vacancies = r.Seats - len(r.Participants)
 	if e = save(ctx, tx, r, u.ID, "joined"); e != nil {
 		return Room{}, e
 	}
 	e = tx.Commit()
 	return r.view(), e
 }
-func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Room, error) {
+func (s *Service) selectParticipantDeck(ctx context.Context, id, deckID int64, u auth.User) (Room, error) {
 	tx, e := s.db.BeginTx(ctx, nil)
 	if e != nil {
 		return Room{}, e
@@ -452,7 +488,53 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 	}
 	for i := range r.Participants {
 		if r.Participants[i].ID == u.ID {
+			if r.Participants[i].Ready {
+				return Room{}, errReadyLocked
+			}
 			r.Participants[i].DeckID = deckID
+			if e = save(ctx, tx, r, u.ID, "selected-deck"); e != nil {
+				return Room{}, e
+			}
+			e = tx.Commit()
+			return r.view(), e
+		}
+	}
+	return Room{}, sql.ErrNoRows
+}
+
+func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Room, error) {
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return Room{}, e
+	}
+	defer tx.Rollback()
+	r, e := lockedRoom(ctx, tx, id)
+	if e != nil {
+		return Room{}, e
+	}
+	if r.Status != "preparing" {
+		return Room{}, errRoomStarted
+	}
+	if deckID > 0 {
+		var found int
+		if e = tx.QueryRowContext(ctx, "SELECT 1 FROM decks WHERE id=? AND user_id=?", deckID, u.ID).Scan(&found); e != nil {
+			if errors.Is(e, sql.ErrNoRows) {
+				return Room{}, errDeckNotFound
+			}
+			return Room{}, e
+		}
+	}
+	for i := range r.Participants {
+		if r.Participants[i].ID == u.ID {
+			if r.Participants[i].Ready && deckID > 0 && deckID != r.Participants[i].DeckID {
+				return Room{}, errReadyLocked
+			}
+			if deckID > 0 {
+				r.Participants[i].DeckID = deckID
+			}
+			if r.Participants[i].DeckID == 0 {
+				return Room{}, errDeckRequired
+			}
 			r.Participants[i].Ready = true
 			if e = save(ctx, tx, r, u.ID, "ready"); e != nil {
 				return Room{}, e
@@ -463,6 +545,33 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 	}
 	return Room{}, sql.ErrNoRows
 }
+
+func (s *Service) unready(ctx context.Context, id int64, u auth.User) (Room, error) {
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return Room{}, e
+	}
+	defer tx.Rollback()
+	r, e := lockedRoom(ctx, tx, id)
+	if e != nil {
+		return Room{}, e
+	}
+	if r.Status != "preparing" {
+		return Room{}, errRoomStarted
+	}
+	for i := range r.Participants {
+		if r.Participants[i].ID == u.ID {
+			r.Participants[i].Ready = false
+			if e = save(ctx, tx, r, u.ID, "unready"); e != nil {
+				return Room{}, e
+			}
+			e = tx.Commit()
+			return r.view(), e
+		}
+	}
+	return Room{}, sql.ErrNoRows
+}
+
 func drawTurnOrder(participants []participantState, roll func() (int, error)) ([]Turn, error) {
 	pending := append([]participantState(nil), participants...)
 	order := []Turn{}
@@ -550,10 +659,7 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 			return Match{}, errNotReady
 		}
 	}
-	var life int
-	if e = tx.QueryRowContext(ctx, "SELECT setting_value FROM game_settings WHERE setting_key='initial_life'").Scan(&life); e != nil {
-		return Match{}, e
-	}
+	life := r.Life
 	order, e := drawTurnOrder(r.Participants, s.roll)
 	if e != nil {
 		return Match{}, e

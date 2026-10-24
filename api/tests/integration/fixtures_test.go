@@ -291,6 +291,10 @@ func returnOpeningHandsToLibrary(t *testing.T, e *environment, roomID int64, coo
 	}
 }
 
+func roomJSON() string {
+	return `{"name":"Mesa de teste","format":"Commander","seats":6,"life":40}`
+}
+
 func requireStatus(t *testing.T, r response, want int) {
 	t.Helper()
 	if r.status != want {

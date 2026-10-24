@@ -20,7 +20,9 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("POST /api/rooms", s.createRoom)
 	mux.HandleFunc("GET /api/rooms/events", s.events)
 	mux.HandleFunc("POST /api/rooms/{id}/participants", s.joinRoom)
+	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/deck", s.selectDeck)
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/ready", s.readyParticipant)
+	mux.HandleFunc("DELETE /api/rooms/{id}/participants/me/ready", s.unreadyParticipant)
 	mux.HandleFunc("POST /api/rooms/{id}/start", s.startMatch)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
 	mux.HandleFunc("GET /api/rooms/{id}/match/tokens", s.listTokens)
@@ -288,12 +290,61 @@ func deckInput(w http.ResponseWriter, r *http.Request) (int64, bool) {
 	return input.DeckID, true
 }
 
-func (s *Service) readyParticipant(w http.ResponseWriter, r *http.Request) {
+func readyInput(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	if strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
+		httpserver.WriteError(w, 415, "Envie JSON.")
+		return 0, false
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+	decoder.DisallowUnknownFields()
+	var input struct {
+		DeckID int64 `json:"deckId"`
+	}
+	if err := decoder.Decode(&input); err != nil || input.DeckID < 0 {
+		httpserver.WriteError(w, 400, "Deck inválido.")
+		return 0, false
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		httpserver.WriteError(w, 400, "Deck inválido.")
+		return 0, false
+	}
+	return input.DeckID, true
+}
+
+func (s *Service) selectDeck(w http.ResponseWriter, r *http.Request) {
 	id, ok := roomID(w, r)
 	if !ok {
 		return
 	}
 	deckID, ok := deckInput(w, r)
+	if !ok {
+		return
+	}
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	room, err := s.selectParticipantDeck(r.Context(), id, deckID, user)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		httpserver.WriteError(w, 404, "Sala não encontrada.")
+	case errors.Is(err, errDeckNotFound):
+		httpserver.WriteError(w, 404, err.Error())
+	case errors.Is(err, errRoomStarted), errors.Is(err, errReadyLocked):
+		httpserver.WriteError(w, 409, err.Error())
+	case err != nil:
+		httpserver.InternalError(w, err)
+	default:
+		httpserver.WriteJSON(w, 200, map[string]Room{"room": room})
+	}
+}
+
+func (s *Service) readyParticipant(w http.ResponseWriter, r *http.Request) {
+	id, ok := roomID(w, r)
+	if !ok {
+		return
+	}
+	deckID, ok := readyInput(w, r)
 	if !ok {
 		return
 	}
@@ -307,6 +358,31 @@ func (s *Service) readyParticipant(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Sala não encontrada.")
 	case errors.Is(err, errDeckNotFound):
 		httpserver.WriteError(w, 404, err.Error())
+	case errors.Is(err, errDeckRequired), errors.Is(err, errRoomStarted), errors.Is(err, errReadyLocked):
+		httpserver.WriteError(w, 409, err.Error())
+	case err != nil:
+		httpserver.InternalError(w, err)
+	default:
+		httpserver.WriteJSON(w, 200, map[string]Room{"room": room})
+	}
+}
+
+func (s *Service) unreadyParticipant(w http.ResponseWriter, r *http.Request) {
+	id, ok := roomID(w, r)
+	if !ok {
+		return
+	}
+	if !emptyJSON(w, r) {
+		return
+	}
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	room, err := s.unready(r.Context(), id, user)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		httpserver.WriteError(w, 404, "Sala não encontrada.")
 	case errors.Is(err, errRoomStarted):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
@@ -391,20 +467,55 @@ func (s *Service) listRooms(w http.ResponseWriter, r *http.Request) {
 	httpserver.WriteJSON(w, 200, map[string]any{"rooms": rooms})
 }
 
+func createRoomDraft(w http.ResponseWriter, r *http.Request) (roomDraft, bool) {
+	if strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
+		httpserver.WriteError(w, 415, "Envie JSON.")
+		return roomDraft{}, false
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+	decoder.DisallowUnknownFields()
+	var input struct {
+		Name   string `json:"name"`
+		Format string `json:"format"`
+		Seats  int    `json:"seats"`
+		Life   int    `json:"life"`
+		DeckID int64  `json:"deckId"`
+	}
+	if err := decoder.Decode(&input); err != nil {
+		httpserver.WriteError(w, 400, "Dados de sala inválidos.")
+		return roomDraft{}, false
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		httpserver.WriteError(w, 400, "Dados de sala inválidos.")
+		return roomDraft{}, false
+	}
+	name := strings.TrimSpace(input.Name)
+	switch {
+	case name == "", input.Format != "Commander" && input.Format != "Livre" && input.Format != "Duelo", input.Seats < 1 || input.Seats > 6, input.Life < 1 || input.Life > 999:
+		httpserver.WriteError(w, 400, "Dados de sala inválidos.")
+		return roomDraft{}, false
+	}
+	return roomDraft{Name: name, Format: input.Format, Seats: input.Seats, Life: input.Life, DeckID: input.DeckID}, true
+}
+
 func (s *Service) createRoom(w http.ResponseWriter, r *http.Request) {
-	if !emptyJSON(w, r) {
+	draft, ok := createRoomDraft(w, r)
+	if !ok {
 		return
 	}
 	user, ok := s.requireUser(w, r)
 	if !ok {
 		return
 	}
-	room, err := s.create(r.Context(), user)
-	if err != nil {
+	room, err := s.create(r.Context(), user, draft)
+	switch {
+	case errors.Is(err, errDeckNotFound):
+		httpserver.WriteError(w, 404, err.Error())
+	case err != nil:
 		httpserver.InternalError(w, err)
-		return
+	default:
+		httpserver.WriteJSON(w, 201, map[string]Room{"room": room})
 	}
-	httpserver.WriteJSON(w, 201, map[string]Room{"room": room})
 }
 
 func (s *Service) joinRoom(w http.ResponseWriter, r *http.Request) {

@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, openMatchRail, openQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { BrowserContext } from '@playwright/test';
 
 // Images are unrelated to state permissions; all state requests use the real server.
@@ -17,7 +17,7 @@ test('faces, ocultação, revelação e virar funcionam com mouse e toque', asyn
       expect(uploaded.status()).toBe(201);
       const { deck } = await uploaded.json();
       savedDecks.push({context,id:deck.id});
-      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
       expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }

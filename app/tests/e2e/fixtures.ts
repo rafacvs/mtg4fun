@@ -55,6 +55,10 @@ export const test = base.extend<{}, { appURL: string }>({
   baseURL: async ({ appURL }, use) => { await use(appURL); },
 });
 
+export function roomBody(overrides: Partial<{ name: string; format: string; seats: number; life: number; deckId: number }> = {}) {
+  return { name: 'Mesa de teste', format: 'Commander', seats: 6, life: 40, ...overrides };
+}
+
 export { expect };
 
 // The panels are controlled by their own tabs; compact screens show one at a time.

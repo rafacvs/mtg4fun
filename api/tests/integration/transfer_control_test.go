@@ -48,7 +48,7 @@ func TestTransferControlKeepsOwnerAndReturnsCardsToOwnerZones(t *testing.T) {
 	e.start(false)
 	owner := sessionCookie(t, e.login("dona", "senha-da-sala"))
 	controller := sessionCookie(t, e.login("controlador", "senha-da-sala"))
-	created := e.request("POST", "/api/rooms", "{}", owner, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), owner, nil)
 	requireStatus(t, created, 201)
 	roomID := decodeRoom(t, created).ID
 	path := fmt.Sprintf("/api/rooms/%d", roomID)

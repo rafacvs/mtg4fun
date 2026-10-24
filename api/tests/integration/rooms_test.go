@@ -17,11 +17,16 @@ import (
 type roomView struct {
 	ID           int64  `json:"id"`
 	Title        string `json:"title"`
+	Format       string `json:"format"`
+	Seats        int    `json:"seats"`
+	Life         int    `json:"life"`
 	CreatorID    int64  `json:"creatorId"`
 	Status       string `json:"status"`
 	Participants []struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
+		ID     int64  `json:"id"`
+		Name   string `json:"name"`
+		Ready  bool   `json:"ready"`
+		DeckID int64  `json:"deckId"`
 	} `json:"participants"`
 	Vacancies int `json:"vacancies"`
 }
@@ -95,17 +100,60 @@ func TestRoomCreationAndParticipationSurviveRestart(t *testing.T) {
 	if rooms := listRooms(t, e, cookie); len(rooms) != 0 {
 		t.Fatalf("lista inicial: %+v", rooms)
 	}
-	result := e.request("POST", "/api/rooms", "{}", cookie, nil)
+	result := e.request("POST", "/api/rooms", `{"name":"Sábado entre amigos","format":"Duelo","seats":2,"life":20}`, cookie, nil)
 	requireStatus(t, result, 201)
 	room := decodeRoom(t, result)
-	if room.ID <= 0 || room.Title != "Sala #1" || room.Status != "preparing" || len(room.Participants) != 1 || room.Participants[0].Name != "Criador" || room.Vacancies != 5 || room.CreatorID != room.Participants[0].ID {
+	if room.ID <= 0 || room.Title != "Sábado entre amigos" || room.Format != "Duelo" || room.Seats != 2 || room.Life != 20 || room.Status != "preparing" || len(room.Participants) != 1 || room.Participants[0].Name != "Criador" || room.Participants[0].Ready || room.Vacancies != 1 || room.CreatorID != room.Participants[0].ID {
 		t.Fatalf("sala criada: %+v", room)
 	}
 	e.stop()
 	e.start(false)
 	rooms := listRooms(t, e, cookie)
-	if len(rooms) != 1 || rooms[0].ID != room.ID || len(rooms[0].Participants) != 1 || rooms[0].Vacancies != 5 {
+	if len(rooms) != 1 || rooms[0].ID != room.ID || rooms[0].Title != "Sábado entre amigos" || rooms[0].Format != "Duelo" || rooms[0].Seats != 2 || rooms[0].Life != 20 || len(rooms[0].Participants) != 1 || rooms[0].Vacancies != 1 {
 		t.Fatalf("sala após reinício: %+v", rooms)
+	}
+}
+
+func TestRoomCreationAllowsDuplicateNames(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.mustCreate("bia", "Bia", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
+	body := `{"name":"Sábado entre amigos","format":"Commander","seats":4,"life":40}`
+	first := e.request("POST", "/api/rooms", body, ana, nil)
+	second := e.request("POST", "/api/rooms", body, bia, nil)
+	requireStatus(t, first, 201)
+	requireStatus(t, second, 201)
+	rooms := listRooms(t, e, ana)
+	if len(rooms) != 2 || rooms[0].Title != "Sábado entre amigos" || rooms[1].Title != "Sábado entre amigos" || rooms[0].ID == rooms[1].ID {
+		t.Fatalf("nomes repetidos: %+v", rooms)
+	}
+}
+
+func TestRoomVacanciesFollowConfiguredSeats(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.mustCreate("bia", "Bia", "senha-da-sala")
+	e.mustCreate("caio", "Caio", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
+	caio := sessionCookie(t, e.login("caio", "senha-da-sala"))
+	created := e.request("POST", "/api/rooms", `{"name":"Duelo da noite","format":"Duelo","seats":2,"life":20}`, ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	joined := e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil)
+	requireStatus(t, joined, 200)
+	room := decodeRoom(t, joined)
+	if room.Vacancies != 0 || len(room.Participants) != 2 || room.Seats != 2 {
+		t.Fatalf("vagas após preencher: %+v", room)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", caio, nil), 409)
+	listed := listRooms(t, e, ana)
+	if listed[0].Vacancies != 0 || len(listed[0].Participants) != 2 {
+		t.Fatalf("terceiro sentou: %+v", listed)
 	}
 }
 
@@ -119,9 +167,9 @@ func TestConcurrentRoomEntryIsLimitedIsolatedAndIdempotent(t *testing.T) {
 	for i := range cookies {
 		cookies[i] = sessionCookie(t, e.login(fmt.Sprintf("amigo%d", i), "senha-da-sala"))
 	}
-	first := e.request("POST", "/api/rooms", "{}", cookies[0], nil)
+	first := e.request("POST", "/api/rooms", roomJSON(), cookies[0], nil)
 	requireStatus(t, first, 201)
-	second := e.request("POST", "/api/rooms", "{}", cookies[7], nil)
+	second := e.request("POST", "/api/rooms", roomJSON(), cookies[7], nil)
 	requireStatus(t, second, 201)
 	id := decodeRoom(t, first).ID
 	path := fmt.Sprintf("/api/rooms/%d/participants", id)
@@ -236,19 +284,19 @@ func TestRoomEventsSynchronizeClientsAndReconnect(t *testing.T) {
 	if len(first.next(t)) != 0 || len(second.next(t)) != 0 {
 		t.Fatal("stream inicial deve ser vazio")
 	}
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", `{"name":"Mesa SSE","format":"Livre","seats":3,"life":30}`, ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	for _, stream := range []*roomStream{first, second} {
 		rooms := stream.next(t)
-		if len(rooms) != 1 || rooms[0].Vacancies != 5 {
+		if len(rooms) != 1 || rooms[0].Title != "Mesa SSE" || rooms[0].Format != "Livre" || rooms[0].Seats != 3 || rooms[0].Life != 30 || rooms[0].Vacancies != 2 {
 			t.Fatalf("criação não sincronizada: %+v", rooms)
 		}
 	}
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 200)
 	for _, stream := range []*roomStream{first, second} {
 		rooms := stream.next(t)
-		if rooms[0].Vacancies != 4 || len(rooms[0].Participants) != 2 {
+		if rooms[0].Vacancies != 1 || len(rooms[0].Participants) != 2 || rooms[0].Title != "Mesa SSE" {
 			t.Fatalf("entrada não sincronizada: %+v", rooms)
 		}
 	}
@@ -284,14 +332,14 @@ func TestRoomWritesRollbackWhenLogCannotBeSaved(t *testing.T) {
 	e.start(false)
 	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
 	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	// Deny the durable log write while allowing snapshot writes, through actual
 	// database permissions. The public API must never confirm a partial action.
 	e.sql("REVOKE INSERT ON " + e.db + ".* FROM '" + e.db + "'@'%'; GRANT INSERT ON " + e.db + ".rooms TO '" + e.db + "'@'%'")
 	e.disconnectDatabaseConnections()
-	requireStatus(t, e.request("POST", "/api/rooms", "{}", ana, nil), 500)
+	requireStatus(t, e.request("POST", "/api/rooms", roomJSON(), ana, nil), 500)
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 500)
 	rooms := listRooms(t, e, ana)
 	if len(rooms) != 1 || len(rooms[0].Participants) != 1 || rooms[0].Vacancies != 5 {
@@ -304,7 +352,7 @@ func TestRoomInputRejectsInvalidBodies(t *testing.T) {
 	e.mustCreate("ana", "Ana", "senha-da-sala")
 	e.start(false)
 	cookie := sessionCookie(t, e.login("ana", "senha-da-sala"))
-	for _, body := range []string{`null`, `{"title":"nome inesperado"}`, `{} {}`, `[]`, `{`} {
+	for _, body := range []string{`null`, `{}`, `{"title":"nome inesperado"}`, `{"name":"   ","format":"Commander","seats":4,"life":40}`, `{"name":"Mesa","format":"Standard","seats":4,"life":40}`, `{"name":"Mesa","format":"Commander","seats":0,"life":40}`, `{"name":"Mesa","format":"Commander","seats":7,"life":40}`, `{"name":"Mesa","format":"Commander","seats":4,"life":0}`, `{"name":"Mesa","format":"Commander","seats":4,"life":1000}`, `{} {}`, `[]`, `{`} {
 		requireStatus(t, e.request("POST", "/api/rooms", body, cookie, nil), 400)
 	}
 	requireStatus(t, e.request("POST", "/api/rooms", "{}", cookie, map[string]string{"Content-Type": "text/plain"}), 415)
@@ -324,7 +372,7 @@ func TestRoomEventsStayOpenAcrossIdlePeriod(t *testing.T) {
 	}
 	// The normal HTTP write timeout is 15s. An idle room stream must stay usable.
 	time.Sleep(16 * time.Second)
-	requireStatus(t, e.request("POST", "/api/rooms", "{}", cookie, nil), 201)
+	requireStatus(t, e.request("POST", "/api/rooms", roomJSON(), cookie, nil), 201)
 	if rooms := stream.next(t); len(rooms) != 1 || rooms[0].Vacancies != 5 {
 		t.Fatalf("stream ocioso: %+v", rooms)
 	}
@@ -360,7 +408,7 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	biaDeck := uploaded.Deck.ID
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", `{"name":"Duelo da tarde","format":"Duelo","seats":2,"life":20}`, ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 200)
@@ -392,7 +440,7 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 	if err := json.Unmarshal(started.body, &match); err != nil {
 		t.Fatal(err)
 	}
-	if match.Match.InitialLife != 40 || len(match.Match.Players) != 2 || len(match.Match.TurnOrder) != 2 || match.Match.TurnOrder[0].Roll < 1 || match.Match.TurnOrder[0].Roll > 20 {
+	if match.Match.InitialLife != 20 || match.Match.Players[0].Life != 20 || match.Match.Players[1].Life != 20 || len(match.Match.Players) != 2 || len(match.Match.TurnOrder) != 2 || match.Match.TurnOrder[0].Roll < 1 || match.Match.TurnOrder[0].Roll > 20 {
 		t.Fatalf("partida inicial: %s", started.body)
 	}
 	var ownHand, otherHand int
@@ -439,7 +487,7 @@ func TestStartPutsCommanderInCommandAndDrawsSeven(t *testing.T) {
 		t.Fatal(err)
 	}
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/decks/%d/commander", payload.Deck.ID), `{"name":"Gargos, Vicious Watcher"}`, ana, nil), 200)
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
@@ -477,7 +525,7 @@ func TestStartDeliversRemainingCardsWhenDeckIsShort(t *testing.T) {
 		t.Fatal(err)
 	}
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/decks/%d/commander", payload.Deck.ID), `{"name":"Gargos, Vicious Watcher"}`, ana, nil), 200)
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
@@ -505,7 +553,7 @@ func TestStartDrawsSevenWhenCommanderNameIsAbsentFromLibrary(t *testing.T) {
 		t.Fatal(err)
 	}
 	e.sql(fmt.Sprintf("UPDATE %s.decks SET commander='Gargos, Vicious Watcher' WHERE id=%d", e.db, payload.Deck.ID))
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
@@ -514,6 +562,293 @@ func TestStartDrawsSevenWhenCommanderNameIsAbsentFromLibrary(t *testing.T) {
 	own := decodeOwnStart(t, started.body)
 	if own.LibraryCount != 1 || own.HandCount != 7 || own.CommandCount != 0 || len(own.Command) != 0 {
 		t.Fatalf("nome ausente do grimório: %s", started.body)
+	}
+}
+
+func TestCreatingRoomWithOwnDeckSelectsItWithoutReady(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(ana, deck)
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", fmt.Sprintf(`{"name":"Mesa com deck","format":"Commander","seats":4,"life":40,"deckId":%d}`, payload.Deck.ID), ana, nil)
+	requireStatus(t, created, 201)
+	room := decodeRoom(t, created)
+	if len(room.Participants) != 1 || room.Participants[0].Ready || room.Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("criação com deck: %+v", room)
+	}
+	listed := listRooms(t, e, ana)
+	if listed[0].Participants[0].Ready || listed[0].Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("listagem com deck: %+v", listed)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", room.ID), "{}", ana, nil), 409)
+}
+
+func TestLegacyRoomsKeepTitleSixSeatsAndLifeForty(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	userID := strings.TrimSpace(string(e.sql("SELECT id FROM " + e.db + ".users WHERE login='ana'")))
+	e.sql("INSERT INTO " + e.db + ".rooms (creator_id, snapshot) VALUES (" + userID + ", JSON_OBJECT())")
+	id := strings.TrimSpace(string(e.sql("SELECT id FROM " + e.db + ".rooms")))
+	e.sql("UPDATE " + e.db + ".rooms SET snapshot='" + `{"id":` + id + `,"title":"Sala #` + id + `","creatorId":` + userID + `,"status":"preparing","participants":[{"id":` + userID + `,"name":"Ana","deckId":0,"ready":false}],"vacancies":5}` + "' WHERE id=" + id)
+	rooms := listRooms(t, e, ana)
+	if len(rooms) != 1 || rooms[0].Title != "Sala #"+id || rooms[0].Format != "" || rooms[0].Seats != 6 || rooms[0].Life != 40 || rooms[0].Vacancies != 5 {
+		t.Fatalf("sala antiga: %+v", rooms)
+	}
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(ana, deck)
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%s/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
+	started := e.request("POST", fmt.Sprintf("/api/rooms/%s/start", id), "{}", ana, nil)
+	requireStatus(t, started, 201)
+	var match struct {
+		Match struct {
+			InitialLife int `json:"initialLife"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(started.body, &match); err != nil {
+		t.Fatal(err)
+	}
+	if match.Match.InitialLife != 40 {
+		t.Fatalf("vida da sala antiga: %s", started.body)
+	}
+}
+
+func TestCreatingRoomRejectsForeignOrMissingDeck(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.mustCreate("bia", "Bia", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(bia, deck)
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	requireStatus(t, e.request("POST", "/api/rooms", fmt.Sprintf(`{"name":"Mesa alheia","format":"Commander","seats":4,"life":40,"deckId":%d}`, payload.Deck.ID), ana, nil), 404)
+	requireStatus(t, e.request("POST", "/api/rooms", `{"name":"Mesa fantasma","format":"Commander","seats":4,"life":40,"deckId":99999}`, ana, nil), 404)
+	if rooms := listRooms(t, e, ana); len(rooms) != 0 {
+		t.Fatalf("deck inválido criou sala: %+v", rooms)
+	}
+}
+
+func TestSelectingDeckDoesNotMarkReady(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(ana, deck)
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	selected := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/deck", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil)
+	requireStatus(t, selected, 200)
+	room := decodeRoom(t, selected)
+	if len(room.Participants) != 1 || room.Participants[0].Ready || room.Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("seleção marcou pronto: %s", selected.body)
+	}
+	listed := listRooms(t, e, ana)
+	if len(listed) != 1 || listed[0].Participants[0].Ready || listed[0].Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("listagem após seleção: %+v", listed)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 409)
+}
+
+func TestConfirmingReadyRequiresSelectedDeck(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(ana, deck)
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	missing := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), "{}", ana, nil)
+	requireStatus(t, missing, 409)
+	if !bytes.Contains(missing.body, []byte("Selecione um deck")) {
+		t.Fatalf("prontidão sem deck: %s", missing.body)
+	}
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/deck", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
+	confirmed := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), "{}", ana, nil)
+	requireStatus(t, confirmed, 200)
+	room := decodeRoom(t, confirmed)
+	if !room.Participants[0].Ready || room.Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("confirmação: %s", confirmed.body)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 201)
+}
+
+func TestUndoReadyKeepsDeckAndAllowsChangingIt(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.mustCreate("bia", "Bia", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	anaDeck := e.uploadDeck(ana, deck)
+	firstBia := e.uploadDeck(bia, deck)
+	secondBia := e.uploadDeck(bia, []byte(`<cockatrice_deck version="1"><deckname>Outro</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>`))
+	requireStatus(t, anaDeck, 201)
+	requireStatus(t, firstBia, 201)
+	requireStatus(t, secondBia, 201)
+	var uploaded struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(anaDeck.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	anaID := uploaded.Deck.ID
+	if err := json.Unmarshal(firstBia.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	biaFirst := uploaded.Deck.ID
+	if err := json.Unmarshal(secondBia.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	biaSecond := uploaded.Deck.ID
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	path := fmt.Sprintf("/api/rooms/%d/participants/me", id)
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, anaID), ana, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, biaFirst), bia, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/ready", "{}", ana, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/ready", "{}", bia, nil), 200)
+	locked := e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, biaSecond), bia, nil)
+	requireStatus(t, locked, 409)
+	undone := e.request("DELETE", path+"/ready", "{}", bia, nil)
+	requireStatus(t, undone, 200)
+	room := decodeRoom(t, undone)
+	var biaState, anaState struct {
+		Ready  bool
+		DeckID int64
+	}
+	for _, participant := range room.Participants {
+		switch participant.Name {
+		case "Bia":
+			biaState.Ready, biaState.DeckID = participant.Ready, participant.DeckID
+		case "Ana":
+			anaState.Ready, anaState.DeckID = participant.Ready, participant.DeckID
+		}
+	}
+	if biaState.Ready || biaState.DeckID != biaFirst || !anaState.Ready || anaState.DeckID != anaID {
+		t.Fatalf("desfazer prontidão: %s", undone.body)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 409)
+	changed := e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, biaSecond), bia, nil)
+	requireStatus(t, changed, 200)
+	after := decodeRoom(t, changed)
+	for _, participant := range after.Participants {
+		if participant.Name == "Bia" && (participant.Ready || participant.DeckID != biaSecond) {
+			t.Fatalf("troca após desfazer: %s", changed.body)
+		}
+	}
+}
+
+func TestReadyDoesNotChangeDeckWhileLocked(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := e.uploadDeck(ana, deck)
+	second := e.uploadDeck(ana, []byte(`<cockatrice_deck version="1"><deckname>Outro</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>`))
+	requireStatus(t, first, 201)
+	requireStatus(t, second, 201)
+	var uploaded struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(first.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	firstID := uploaded.Deck.ID
+	if err := json.Unmarshal(second.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	secondID := uploaded.Deck.ID
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, firstID), ana, nil), 200)
+	locked := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, secondID), ana, nil)
+	requireStatus(t, locked, 409)
+	listed := listRooms(t, e, ana)
+	if listed[0].Participants[0].DeckID != firstID || !listed[0].Participants[0].Ready {
+		t.Fatalf("prontidão trocou o deck: %+v", listed)
 	}
 }
 
@@ -536,7 +871,7 @@ func TestStartRollsBackWhenMatchLogCannotBeSaved(t *testing.T) {
 	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
 		t.Fatal(err)
 	}
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
@@ -568,7 +903,7 @@ func TestStartRefusesDeckDeletedAfterReadiness(t *testing.T) {
 	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
 		t.Fatal(err)
 	}
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
@@ -612,7 +947,7 @@ func TestStartReturnsControlledD20TiebreakOverHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	secondDeck := payload.Deck.ID
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 200)
@@ -695,7 +1030,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		t.Fatal(err)
 	}
 	biaDeck := uploaded.Deck.ID
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	roomID := decodeRoom(t, created).ID
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", roomID), "{}", bia, nil), 200)
@@ -1046,7 +1381,7 @@ func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	biaDeck := upload.Deck.ID
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	id := decodeRoom(t, created).ID
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 200)
@@ -1134,7 +1469,7 @@ func TestCollectivePositionIsAtomicAndSurvivesRestart(t *testing.T) {
 	if err := json.Unmarshal(uploaded.body, &upload); err != nil {
 		t.Fatal(err)
 	}
-	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
 	requireStatus(t, created, 201)
 	roomID := decodeRoom(t, created).ID
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", roomID), fmt.Sprintf(`{"deckId":%d}`, upload.Deck.ID), ana, nil), 200)

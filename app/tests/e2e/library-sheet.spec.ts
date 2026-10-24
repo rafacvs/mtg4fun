@@ -1,4 +1,4 @@
-import { test, expect, openQuickActions, closeQuickActions, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Browser, TestInfo } from '@playwright/test';
 
 async function prepare(browser: Browser, baseURL: string | undefined, info: TestInfo) {
@@ -6,7 +6,7 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
   const api = context.request;
   await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } });
   const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'folha.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Folha</deckname><zone name="main"><card number="2" name="Island"/><card number="1" name="Fire // Ice"/><card number="1" name="Urza&#39;s Saga"/></zone></cockatrice_deck>') } } })).json();
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
   await returnOpeningHandToLibrary(api, room.id);

@@ -1,5 +1,5 @@
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, closeQuickActions, openGameActions, openHand, openLibrary, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, closeQuickActions, openGameActions, openHand, openLibrary, openQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 // Resolve a non-loopback origin to the real test server. Chromium must expose
 // the same restricted Web Crypto API as public HTTP, without mocking crypto.
@@ -17,7 +17,7 @@ for (const remoteHTTP of [false, true]) {
         const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'http.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Island"/></zone></cockatrice_deck>') } } });
         expect(uploaded.status()).toBe(201);
         const { deck } = await uploaded.json();
-        if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+        if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
         else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
         expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
         decks.push({ api, id: deck.id });

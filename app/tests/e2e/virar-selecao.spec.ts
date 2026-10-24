@@ -1,4 +1,4 @@
-import { test, expect, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('duplo clique vira e desvira quatro cartas selecionadas por área', async ({ page, browser, baseURL }, info) => {
@@ -15,7 +15,7 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
       } } });
       expect(uploaded.status()).toBe(201);
       const { deck } = await uploaded.json();
-      if (!roomId) roomId = (await (await request.post('/api/rooms', { data: {} })).json()).room.id;
+      if (!roomId) roomId = (await (await request.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await request.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
       expect((await request.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }

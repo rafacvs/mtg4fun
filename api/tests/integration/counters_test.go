@@ -174,7 +174,7 @@ func counterMatch(t *testing.T) (*environment, int64, []*http.Cookie, []int64) {
 			t.Fatal(err)
 		}
 		if i == 0 {
-			created := e.request("POST", "/api/rooms", "{}", cookies[i], nil)
+			created := e.request("POST", "/api/rooms", roomJSON(), cookies[i], nil)
 			requireStatus(t, created, 201)
 			roomID = decodeRoom(t, created).ID
 		} else {

@@ -1,4 +1,4 @@
-import { test, expect, closeMatchRail, closeQuickActions, openHand, openMatchRail, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, closeMatchRail, closeQuickActions, openHand, openMatchRail, openQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { BrowserContext, Locator } from '@playwright/test';
 
 const cardImage = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64');
@@ -52,7 +52,7 @@ test('indica a atividade do participante certo quando nomes se repetem', async (
       expect((await api.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
       const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'duplicado.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Duplicado</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
       const { deck } = await uploaded.json();
-      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
       expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }
@@ -93,7 +93,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       expect(uploaded.status()).toBe(201);
       const { deck } = await uploaded.json();
       if (!roomId) {
-        const created = await api.post('/api/rooms', { data: {} });
+        const created = await api.post('/api/rooms', { data: roomBody() });
         expect(created.status()).toBe(201);
         roomId = (await created.json()).room.id;
       } else {

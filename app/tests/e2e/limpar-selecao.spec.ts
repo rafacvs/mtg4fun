@@ -1,4 +1,4 @@
-import { test, expect, selectFieldArea, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, selectFieldArea, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', async ({ page }, info) => {
@@ -10,7 +10,7 @@ test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', 
   } } });
   expect(upload.status()).toBe(201);
   const { deck } = await upload.json();
-  const created = await page.request.post('/api/rooms', { data: {} });
+  const created = await page.request.post('/api/rooms', { data: roomBody() });
   expect(created.status()).toBe(201);
   const { room } = await created.json();
   expect((await page.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
