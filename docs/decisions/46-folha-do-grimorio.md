@@ -30,3 +30,17 @@ reordenação do trecho, posição do fundo e as duas saídas. Os fluxos anterio
 do grimório foram adaptados para a faixa horizontal e os novos rótulos,
 preservando as verificações de exposição, reordem por gesto e recuperação.
 Os resultados executados acompanham o PR de integração.
+
+Em 24/10/2026, os 21 cenários de `grimorio.spec.ts` e
+`library-sheet.spec.ts` passaram nas três orientações, considerando as
+repetições focais após corrigir quatro falhas da rodada ampla (17/21
+inicialmente). A faixa horizontal excedia o painel com muitas cartas; o teste
+observou a largura fora dos limites e passou após a correção. Os outros
+ajustes foram sincronizar o fechamento, abrir os comandos recolhidos para
+observar o bloqueio e rolar a folha até o rodapé na tela baixa.
+
+O teste HTTP `TestLibrarySelectionVisibilityReturnAndRecovery`, incluindo
+tipo/posição privada e ausência de ordem na revelação pública, passou.
+`go vet ./...`, testes de `internal/catalog` e `internal/rooms`, typecheck,
+build e `git diff --check` passaram. A integração do registro por turno foi
+incorporada; a repetição horizontal final passou 3/3 após esse merge.

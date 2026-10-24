@@ -271,6 +271,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await expect(library.locator('.library-card')).not.toHaveCount(0);
     await activate(library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }));
     await openMatchRail(opponent, 'Registro');
+    await opponent.getByRole('region', { name: 'Registro da partida' }).getByRole('button', { name: 'Ajustes', exact: true }).click();
     await expect(opponent.getByRole('region', { name: 'Registro da partida' })).toContainText(
       'consultou o grimório',
     );
