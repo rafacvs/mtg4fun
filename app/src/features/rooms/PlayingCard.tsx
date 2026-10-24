@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { cardImageURL } from './cardImage';
 import { CardStats } from './CounterValues';
 import type { Card } from './roomsApi';
@@ -116,8 +116,8 @@ export function PlayingCard({ card, draggable, scrollable = false, onPreview, on
 
   return <button
     type="button"
-    className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''} ${selected ? 'is-selected' : ''}`}
-    style={{ touchAction: scrollable ? 'pan-x' : undefined }}
+    className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''} ${selected ? 'is-selected' : ''} ${card.ownerId !== card.controllerId ? 'borrowed-card' : ''} ${failed ? 'without-image' : ''}`}
+    style={{ touchAction: scrollable ? 'pan-x' : undefined, '--controller-color': `var(--seat-${card.controllerId}, var(--gold))` } as CSSProperties}
     onContextMenu={event => event.preventDefault()}
     aria-label={card.name || 'Carta face para baixo'}
     data-card-id={card.id}
@@ -143,6 +143,13 @@ export function PlayingCard({ card, draggable, scrollable = false, onPreview, on
     {card.faceDown || !card.name ? <span className="card-back">Face para baixo{card.revealed && <small>Revelada</small>}</span> : failed
       ? <span className="card-fallback">{card.name}</span>
       : <img src={cardImageURL(card)} alt="" draggable={false} onError={() => setFailed(true)} />}
+    <span className="card-state-badges">
+      {(card.isToken || card.instanceKind === 'token' || card.instanceKind === 'custom-token') && <small>Ficha</small>}
+      {card.instanceKind === 'copy' && <small>Cópia</small>}
+      {card.revealed && <small>Revelada</small>}
+      {card.ownerId !== card.controllerId && <small title="Controlada por outro jogador">Controle</small>}
+      {failed && <small>Sem imagem</small>}
+    </span>
     <CardStats {...card} />
   </button>;
 }

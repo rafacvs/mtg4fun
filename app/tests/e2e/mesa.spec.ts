@@ -70,8 +70,9 @@ test('indica a atividade do participante certo quando nomes se repetem', async (
     await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
     await expect(thumbnails.nth(1).getByText('Atividade recente', { exact: true })).toBeVisible();
     await expect(thumbnails.nth(0).getByText('Atividade recente', { exact: true })).toHaveCount(0);
-    await expect(thumbnails.nth(0).getByRole('button', { name: 'Ver campo de Amigo da mesa' })).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.getByText('Observando:', { exact: false })).toContainText('Todas as mesas');
+    await expect(thumbnails.nth(0).getByRole('button', { name: 'Ver campo de Amigo da mesa' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('article')).toHaveCount(1);
   } finally {
     await Promise.all(contexts.map(context => context.close()));
   }
@@ -145,6 +146,38 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await expect(preview.getByRole('img', { name: 'Imagem ampliada de Island' })).toBeVisible();
     await activate(preview.getByRole('button', { name: 'Fechar', exact: true }));
     await expect(preview).toHaveCount(0);
+    if (testInfo.project.name === 'desktop') {
+      const strip = page.getByRole('region', { name: 'Oponentes', exact: true });
+      await expect(strip.getByRole('article')).toHaveCount(5);
+      for (const seat of await strip.getByRole('article').all()) {
+        await seat.scrollIntoViewIfNeeded();
+        await expect(seat).toBeInViewport();
+        await expect(drawn).toBeVisible();
+      }
+      await page.getByRole('button', { name: 'Comprar', exact: true }).click();
+      await expect(drawn).toHaveCount(2);
+      await expect(other.getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
+      const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+      const field = own.getByRole('region', { name: 'Campo', exact: true });
+      await drawn.first().dragTo(field, { steps: 8 });
+      const fieldCard = field.getByRole('button', { name: 'Island', exact: true });
+      await expect(fieldCard).toBeVisible();
+      await expect(drawn).toHaveCount(1);
+      const publicField = other.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+      const publicCard = publicField.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });
+      await expect(publicCard).toBeVisible();
+      await publicCard.click();
+      await expect(other.getByRole('dialog', { name: 'Imagem de Island' })).toBeVisible();
+      await other.keyboard.press('Escape');
+      await publicCard.dragTo(publicField.getByRole('region', { name: 'Cemitério', exact: true }), { steps: 8 });
+      await expect(publicCard).toBeVisible();
+      await expect(publicField.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button')).toHaveCount(0);
+      await drawn.dragTo(own.getByRole('region', { name: 'Cemitério', exact: true }), { steps: 8 });
+      await expect(own.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+      await expect(drawn).toHaveCount(0);
+      await page.screenshot({ path: testInfo.outputPath('seis-mesas.png'), fullPage: true });
+      return;
+    }
     await openMatchRail(page);
     for (const name of ['Segundo amigo', 'Amigo 3', 'Amigo 4', 'Amigo 5', 'Amigo 6']) {
       await openMatchRail(page);

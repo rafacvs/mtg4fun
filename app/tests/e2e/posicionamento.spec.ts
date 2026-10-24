@@ -156,7 +156,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   }).toPass();
   if (!testInfo.project.use.hasTouch) {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.locator('.table-toolbar').getByRole('button', { name: 'Diminuir zoom', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Densidade', exact: true }).selectOption('compact');
     expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'set_tapped', cardIds: [beforeIndividual[0].id], tapped: true } })).ok()).toBe(true);
     await expect(field.locator('.is-tapped')).toHaveCount(1);
     const area = await page.evaluate(() => {

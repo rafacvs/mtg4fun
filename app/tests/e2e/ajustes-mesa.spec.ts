@@ -49,6 +49,7 @@ test('prévia lateral por hover e painéis recolhidos individualmente', async ({
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await read()).log.length).toBe(before);
     const box = await panel.boundingBox();
+    await openMatchRail(page);
     const players = await page.getByRole('navigation', { name: 'Foco da mesa' }).boundingBox();
     expect(box!.x).toBeGreaterThan(900);
     expect(box!.height).toBeGreaterThan(220);
@@ -232,7 +233,6 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await page.goto(`/#/salas/${roomId}`);
         await expect(article).toBeAttached();
         await openHand(page);
-        if (info.project.name === 'desktop') await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
         const field = article.getByRole('region', { name: 'Campo', exact: true });
         await expect(field.locator('[data-row="0"][data-stack-size="2"]')).toHaveCount(2);
         await expect(field.locator('[data-row="0"][data-stack-size="3"]')).toHaveCount(3);

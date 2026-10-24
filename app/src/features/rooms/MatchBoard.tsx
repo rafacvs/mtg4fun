@@ -13,6 +13,7 @@ import { FloatingTableControls } from './FloatingTableControls';
 import { TableQuickActions } from './TableQuickActions';
 import { PanelFeedback, PanelHeader } from './TablePanel';
 import { TableIcon } from './TableIcon';
+import { DesktopTable } from './DesktopTable';
 import { TableOverview } from './TableOverview';
 import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
@@ -23,6 +24,7 @@ import { PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTa
 import './match.css';
 import './counters.css';
 import './mobile-table.css';
+import './desktop-table.css';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
@@ -65,6 +67,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [hoverCardId, setHoverCardId] = useState<string | null>(null);
   const [zoomCardId, setZoomCardId] = useState<string | null>(null);
   const [fieldZoom, setFieldZoom] = useState(0.5);
+  const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
   const stepFieldZoom = (direction: -1 | 1) => setFieldZoom(current => Math.min(3, Math.max(0.25, Math.round((current + direction * 0.25) * 100) / 100)));
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -97,7 +100,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     setLibraryAnchor(document.querySelector<HTMLElement>('.focused-table .library-open') ?? document.querySelector<HTMLElement>('.library-open'));
     setLibraryOpen(true); setActionsOpen(false); setMenuPlayerId(null); setNotice('');
   };
-  const focusPlayer = (id: number) => { setFocusId(id); setOverview(false); setInformationOpen(false); if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); } };
+  const focusPlayer = (id: number) => { if (!compact) { document.querySelector<HTMLElement>(`[data-field-owner="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); return; } setFocusId(id); setOverview(false); setInformationOpen(false); if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); } };
   useEffect(() => {
     const dock = dockRef.current;
     const board = dock?.closest<HTMLElement>('.match-board');
@@ -214,13 +217,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
 
   if (!match) return <p role={error ? 'alert' : 'status'}>{error || 'Carregando mesa…'}</p>;
   const own = match.players.find(player => player.userId === match.viewerId)!;
-  const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
+  const focused = match.players.find(player => player.userId === (compact ? (focusId ?? match.viewerId) : match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
   const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describe(lastAction) : undefined;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
-  const showingOverview = compact ? overview : focusId === null;
+  const showingOverview = compact ? overview : false;
   const showOverview = () => {
     setFocusId(null); setOverview(true); setInformationOpen(false);
     if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
@@ -235,14 +238,11 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     onActions={anchor => { setActionsAnchor(compact ? document.querySelector<HTMLElement>('.floating-table-controls button[aria-label="Comandos"]') : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
-  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact && !dockHidden ? 'mobile-hand-open' : ''}`} aria-label="Mesa da partida">
+  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact && !dockHidden ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : ''}`} data-density={density} aria-label="Mesa da partida">
     <div className="match-content">
       <div className="table-toolbar">
         <div className="toolbar-leading"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span></div>
-        <div className="toolbar-zoom" role="group" aria-label="Zoom do campo">
-          <button type="button" aria-label="Diminuir zoom" disabled={fieldZoom <= 0.25} onClick={() => stepFieldZoom(-1)}>−</button>
-          <button type="button" aria-label="Aumentar zoom" disabled={fieldZoom >= 3} onClick={() => stepFieldZoom(1)}>+</button>
-        </div>
+        <label className="table-density">Densidade <select aria-label="Densidade" value={density} onChange={event => setDensity(event.target.value as 'compact' | 'comfortable')}><option value="compact">Compacta</option><option value="comfortable">Confortável</option></select></label>
         <div className="toolbar-trailing">
           <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
           <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
@@ -254,7 +254,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
-          {miniatureOverview ? <TableOverview match={match} onFocus={focusPlayer} /> : <div className={`match-players ${focusId !== null || compact ? 'has-focus' : ''}`}>{match.players.map(player =>
+          {!compact ? <DesktopTable match={match} gesture={gesture} hoverZone={drag?.zone ?? null} density={density} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} /> : miniatureOverview ? <TableOverview match={match} onFocus={focusPlayer} /> : <div className={`match-players ${focusId !== null || compact ? 'has-focus' : ''}`}>{match.players.map(player =>
             <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={stepFieldZoom} expanded={!showingOverview} onFocus={() => togglePlayerFocus(player.userId)} onReturnToOwn={!showingOverview && player.userId !== match.viewerId && player.userId === focused.userId ? () => focusPlayer(match.viewerId) : undefined} onPlayerMenu={anchor => openPlayer(player.userId, anchor)} currentTurn={player.userId === match.currentTurn.userId} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
           )}</div>}
           <section ref={dockRef} hidden={compact && dockHidden} className={`own-dock ${dockHidden ? 'is-collapsed' : ''}`} aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
