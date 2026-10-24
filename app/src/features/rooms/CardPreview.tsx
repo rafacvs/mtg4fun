@@ -21,7 +21,8 @@ const destinations: { value: string; title: string; icon: TableIconName }[] = [
 ];
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
+export function CardPreview({ directActions = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
+  directActions?: boolean;
   card: Card | null;
   editable?: boolean;
   disabled?: boolean;
@@ -91,6 +92,9 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
         {controlled && <div className="card-quick-actions">
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
           {onMove && <button className="secondary" disabled={disabled} onClick={() => setStep('move')}><TableIcon name="move" />Mover para…</button>}
+        </div>}
+        {directActions && controlled && onMove && card.ownerId === viewerId && <div className="portrait-card-actions" role="group" aria-label="Destinos de leitura">
+          {destinations.filter(destination => destination.value !== card.zone).map(destination => <button key={destination.value} disabled={disabled} onClick={() => void onMove(card.id, destination.value)}>{destination.value === 'battlefield' ? 'Jogar no campo' : destination.title}</button>)}
         </div>}
         <div className="table-menu">
           {editable && onCounter && <MenuItem icon="markers" title="Marcadores" description="Marcadores de cor desta carta" disabled={disabled} onClick={() => setStep('markers')} />}

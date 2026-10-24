@@ -8,7 +8,9 @@ const dragThreshold = 8;
 type Props = {
   card: Card;
   draggable: boolean;
+  style?: CSSProperties;
   scrollable?: boolean;
+  scrollAxis?: 'x' | 'y';
   onPreview?: (card: Card) => void;
   selected?: boolean;
   selectedIds?: string[];
@@ -22,7 +24,7 @@ type Props = {
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, scrollable = false, onPreview, onInspect, onHover, onZoom, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected: explicitSelection, selectedIds, onOpenMenu }: Props) {
+export function PlayingCard({ card, draggable, style, scrollable = false, scrollAxis = 'x', onPreview, onInspect, onHover, onZoom, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected: explicitSelection, selectedIds, onOpenMenu }: Props) {
   const selected = explicitSelection ?? selectedIds?.includes(card.id);
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
@@ -73,7 +75,7 @@ export function PlayingCard({ card, draggable, scrollable = false, onPreview, on
       const dy = pointer.clientY - origin.y;
       if (!dragging.current && Math.hypot(dx, dy) < dragThreshold) return;
       clearHold();
-      if (!dragging.current && scrollable && event.pointerType !== 'mouse' && Math.abs(dx) > Math.abs(dy)) {
+      if (!dragging.current && scrollable && event.pointerType !== 'mouse' && (scrollAxis === 'x' ? Math.abs(dx) > Math.abs(dy) : Math.abs(dy) > Math.abs(dx))) {
         scrolling = true;
         suppressClick.current = true;
         return;
@@ -120,7 +122,7 @@ export function PlayingCard({ card, draggable, scrollable = false, onPreview, on
   return <button
     type="button"
     className={`playing-card ${draggable ? 'can-drag' : ''} ${card.tapped ? 'is-tapped' : ''} ${card.faceDown ? 'is-face-down' : ''} ${selected ? 'is-selected' : ''} ${card.ownerId !== card.controllerId ? 'borrowed-card' : ''} ${failed ? 'without-image' : ''} ${card.pending ? 'is-pending' : ''}`}
-    style={{ touchAction: scrollable ? 'pan-x' : undefined, '--controller-color': `var(--seat-${card.controllerId}, var(--gold))` } as CSSProperties}
+    style={{ ...style, touchAction: scrollable ? `pan-${scrollAxis}` : undefined, '--controller-color': `var(--seat-${card.controllerId}, var(--gold))` } as CSSProperties}
     onContextMenu={event => { event.preventDefault(); if (pointerType.current === 'mouse') onOpenMenu?.(card); }}
     aria-pressed={Boolean(selected)}
     aria-label={card.name || 'Carta face para baixo'}
