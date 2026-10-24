@@ -1,0 +1,119 @@
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
+
+async function signIn(page: Page) {
+  await page.goto('/');
+  await page.getByLabel('Login', { exact: true }).fill('amigo');
+  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Lobby', exact: true })).toBeVisible();
+}
+
+test('monta uma mesa sem enviar nem salvar os campos de exemplo', async ({ page }, info) => {
+  test.setTimeout(60_000);
+  await signIn(page);
+  const { deck } = await (await page.request.post('/api/decks', { multipart: { file: { name: 'criacao.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><deckname>Deck da criação</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>') } } })).json();
+  await page.reload();
+  const previousRooms = (await (await page.request.get('/api/rooms')).json()).rooms as { id: number }[];
+  await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
+  const panel = page.getByRole('dialog', { name: 'Montar a mesa' });
+  await expect(panel).toBeVisible();
+  await panel.getByLabel('Nome da mesa').fill('Nome ilustrativo');
+  await panel.getByLabel('Formato · exemplo').selectOption('Duelo');
+  await panel.getByLabel('Lugares · exemplo').fill('2');
+  await panel.getByLabel('Vida inicial · exemplo').fill('20');
+  await panel.getByLabel('Seu deck · exemplo').selectOption(String(deck.id));
+  await page.screenshot({ path: info.outputPath('criar-mesa.png'), fullPage: true });
+  const creation = page.waitForRequest(request => request.url().endsWith('/api/rooms') && request.method() === 'POST');
+  const created = page.waitForResponse(response => response.url().endsWith('/api/rooms') && response.request().method() === 'POST');
+  await panel.getByRole('button', { name: 'Criar e sentar' }).click();
+  expect((await creation).postDataJSON()).toEqual({});
+  expect((await created).status()).toBe(201);
+  await expect(panel).not.toBeVisible();
+  const listed = (await (await page.request.get('/api/rooms')).json()).rooms;
+  const room = listed.find((value: { id: number }) => !previousRooms.some(previous => previous.id === value.id));
+  expect(room.title).toBe(`Sala #${room.id}`);
+  expect(room.status).toBe('preparing');
+  expect(room.vacancies).toBe(5);
+  expect(room.participants).toHaveLength(1);
+  expect(room.participants[0].ready).toBe(false);
+  await expect(panel).not.toBeVisible();
+  await page.reload();
+  const card = page.getByRole('article', { name: room.title, exact: true });
+  await expect(card.getByText('Você participa desta sala.')).toBeVisible();
+  await expect(card).not.toContainText('Nome ilustrativo');
+  await card.getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
+  await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
+  await page.getByLabel('Deck para a partida').selectOption(String(deck.id));
+  await page.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Mesa da partida', exact: true })).toBeVisible();
+  const { match } = await (await page.request.get(`/api/rooms/${room.id}/match`)).json();
+  expect(match.initialLife).toBe(40);
+  expect(match.players.find((player: { userId: number }) => player.userId === match.viewerId).libraryCount).toBe(3);
+});
+
+test('prioriza as próprias mesas e não promete vagas em partidas iniciadas', async ({ page, browser, baseURL }) => {
+  test.setTimeout(60_000);
+  await signIn(page);
+  const other = await browser.newContext({ baseURL });
+  try {
+    expect((await other.request.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+    const { deck } = await (await other.request.post('/api/decks', { multipart: { file: { name: 'lobby.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><deckname>Lobby</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>') } } })).json();
+    const { room: live } = await (await other.request.post('/api/rooms', { data: {} })).json();
+    expect((await other.request.put(`/api/rooms/${live.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
+    expect((await other.request.post(`/api/rooms/${live.id}/start`, { data: {} })).status()).toBe(201);
+    const { room: open } = await (await other.request.post('/api/rooms', { data: {} })).json();
+    const { room: mine } = await (await page.request.post('/api/rooms', { data: {} })).json();
+    await expect(page.getByRole('article', { name: mine.title, exact: true })).toBeVisible();
+    const titles = await page.getByRole('region', { name: 'Salas', exact: true }).getByRole('article').locator('h3').allTextContents();
+    expect(titles.indexOf(mine.title)).toBeLessThan(titles.indexOf(open.title));
+    expect(titles.indexOf(open.title)).toBeLessThan(titles.indexOf(live.title));
+    const running = page.getByRole('article', { name: live.title, exact: true });
+    await expect(running).toContainText('Partida iniciada');
+    await expect(running).not.toContainText(/vaga|livre/);
+    await expect(running.getByRole('button', { name: 'Entrar na sala', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Minhas mesas', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Mesas abertas', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Em jogo', exact: true })).toBeVisible();
+  } finally { await other.close(); }
+});
+
+test('decks usam dados reais, identificam exemplos e confirmam exclusão sem alterar partida', async ({ page }, info) => {
+  test.setTimeout(60_000);
+  await signIn(page);
+  await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
+  await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'biblioteca.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><deckname>Biblioteca real</deckname><zone name="main"><card number="7" name="Island"/></zone></cockatrice_deck>') });
+  await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Biblioteca real', exact: true })).toBeVisible();
+  await expect(page.getByText('7 × Island', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Consultar Island', exact: true }).click();
+  await expect(page.getByText('Add U.', { exact: true })).toBeVisible();
+  const metadata = page.getByRole('region', { name: 'Dados ilustrativos do deck' });
+  for (const label of ['Comandante · exemplo', 'Cores · exemplo', 'Curva · exemplo', 'Tipos · exemplo']) await expect(metadata.getByText(label, { exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath('biblioteca-real.png'), fullPage: true });
+  const deckId = Number(await page.getByLabel('Escolher deck salvo').inputValue());
+  const { room } = await (await page.request.post('/api/rooms', { data: {} })).json();
+  expect((await page.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId } })).ok()).toBe(true);
+  expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Excluir deck?' });
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation).toContainText('Uma partida já iniciada não muda.');
+  await confirmation.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  const beforeDelete = (await (await page.request.get('/api/decks')).json()).decks.find((deck: { id: number }) => deck.id === deckId);
+  expect(Object.keys(beforeDelete).sort()).toEqual(['cards', 'id', 'name']);
+  expect(beforeDelete.name).toBe('Biblioteca real');
+  await page.reload();
+  await page.getByLabel('Escolher deck salvo').selectOption(String(deckId));
+  await expect(page.getByRole('heading', { name: 'Biblioteca real', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
+  await confirmation.getByRole('button', { name: 'Confirmar exclusão', exact: true }).click();
+  await expect(confirmation).not.toBeVisible();
+  expect((await (await page.request.get('/api/decks')).json()).decks.some((deck: { id: number }) => deck.id === deckId)).toBe(false);
+  const { match } = await (await page.request.get(`/api/rooms/${room.id}/match`)).json();
+  expect(match.players.find((player: { userId: number }) => player.userId === match.viewerId).libraryCount).toBe(7);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

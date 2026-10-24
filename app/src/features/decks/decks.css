@@ -77,3 +77,31 @@
 .import-card { background: var(--panel2); padding: 16px 18px; border-radius: 12px; }
 .import-card summary { font-size: 1rem; }
 .empty-decks { background: var(--panel); }
+
+.deck-examples { margin-top: 18px; padding: 14px 16px; background: var(--panel2); border: 1px dashed var(--line-strong); border-radius: 8px; }
+.deck-examples > p { font-size: .75rem; margin-bottom: 12px; }
+.deck-examples dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.deck-examples dt { font-size: .72rem; color: var(--muted); }
+.deck-examples dd { margin: 5px 0 0; font-size: .8rem; color: var(--text); }
+.example-green { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #5fae6e; }
+.deck-examples .example-curve { display: flex; align-items: flex-end; gap: 4px; height: 36px; }
+.example-curve span { display: grid; align-content: end; text-align: center; min-width: 24px; background: var(--line-strong); color: var(--text); font-size: .65rem; }
+.delete-deck-confirmation { width: min(100% - 24px, 460px); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 24px; color: var(--text); background: var(--panel); border: 1px solid var(--line-strong); border-radius: 12px; }
+.delete-deck-confirmation::backdrop { background: #000a; backdrop-filter: blur(4px); }
+.delete-deck-confirmation > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.delete-deck-confirmation button { min-height: 44px; }
+.saved-deck-card { border-radius: 8px; padding: 16px; align-items: start; }
+.saved-deck-card .deck-emblem { color: var(--muted); }
+.saved-deck-card[aria-pressed=true] { border-color: var(--gold-d); background: var(--gold-wash); }
+.saved-deck-card small { margin-top: 5px; }
+.deck-detail, .import-card, .deck-preview { border-radius: 8px; }
+@media (min-width: 1000px) {
+  .library-workspace { display: grid; grid-template-columns: minmax(220px, .65fr) minmax(0, 2fr); gap: 16px 24px; align-items: start; }
+  .saved-deck-grid { display: flex; flex-direction: column; grid-column: 1; grid-row: 1; margin: 0; }
+  .deck-picker { grid-column: 1; grid-row: 2; }
+  .deck-detail { grid-column: 2; grid-row: 1 / span 3; }
+}
+@media (max-width: 480px) {
+  .deck-examples dl { grid-template-columns: minmax(0, 1fr); }
+  .delete-deck-confirmation > div > button { width: 100%; }
+}
