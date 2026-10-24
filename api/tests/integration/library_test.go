@@ -20,11 +20,16 @@ type libraryCard struct {
 type libraryPlayer struct {
 	UserID           int64         `json:"userId"`
 	ConsultationFrom string        `json:"consultationFrom"`
+	Consulting       bool          `json:"consulting"`
 	LibraryCount     int           `json:"libraryCount"`
 	Consulted        []libraryCard `json:"consulted"`
 	Revealed         []libraryCard `json:"revealed"`
 	ExposedCards     []libraryCard `json:"exposedCards"`
 	Hand             []libraryCard `json:"hand"`
+	Battlefield      []libraryCard `json:"battlefield"`
+	Graveyard        []libraryCard `json:"graveyard"`
+	Exile            []libraryCard `json:"exile"`
+	Command          []libraryCard `json:"command"`
 }
 
 func libraryPlayers(t *testing.T, result response) []libraryPlayer {
@@ -80,10 +85,26 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	}
 	read := func(cookie *http.Cookie) response { return e.request("GET", path+"/match", "", cookie, nil) }
 	initial := libraryPlayers(t, read(owner))[0]
+	for _, source := range []string{"all", "top"} {
+		window := libraryPlayers(t, action(owner, fmt.Sprintf(`"kind":"consult","consultFrom":%q,"count":1`, source)))[0]
+		if window.LibraryCount != initial.LibraryCount {
+			t.Fatalf("%s esvaziou grimório", source)
+		}
+		requireStatus(t, action(owner, `"kind":"draw","count":1`), 409)
+		requireStatus(t, action(owner, `"kind":"close","libraryPlacement":"top"`), 200)
+	}
+
 	consult := action(owner, `"kind":"consult","consultFrom":"bottom","count":3`)
 	opened := libraryPlayers(t, consult)[0]
 	if opened.ConsultationFrom != "bottom" || len(opened.Consulted) != 3 {
 		t.Fatalf("consulta: %+v", opened)
+	}
+	if opened.LibraryCount != initial.LibraryCount {
+		t.Fatalf("consultar retirou cartas do grimório: %d, antes %d", opened.LibraryCount, initial.LibraryCount)
+	}
+	other := libraryPlayers(t, read(opponent))[0]
+	if !other.Consulting || other.LibraryCount != initial.LibraryCount || len(other.Consulted) != 0 {
+		t.Fatalf("vista pública da consulta: %+v", other)
 	}
 	selectedID := opened.Consulted[1].ID
 	privateID := opened.Consulted[0].ID
@@ -97,7 +118,7 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	requireStatus(t, action(owner, revealFields), 200)
 	public := read(opponent)
 	seen := libraryPlayers(t, public)[0]
-	if len(seen.Revealed) != 1 || seen.Revealed[0].ID != selectedID || len(seen.Consulted) != 0 || seen.ConsultationFrom != "" || bytes.Contains(public.body, []byte(privateID)) {
+	if len(seen.Revealed) != 1 || seen.Revealed[0].ID != selectedID || seen.LibraryCount != initial.LibraryCount || len(seen.Consulted) != 0 || seen.ConsultationFrom != "" || bytes.Contains(public.body, []byte(privateID)) {
 		t.Fatalf("filtragem da seleção: %s", public.body)
 	}
 	// Revealing a selection leaves the private sequence intact.
@@ -171,7 +192,7 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	// Moving the last card still leaves a resumable consultation to finalize.
 	requireStatus(t, action(owner, `"kind":"move","cardIds":`+string(encoded)+`,"to":"hand"`), 200)
 	empty := libraryPlayers(t, read(owner))[0]
-	if len(empty.Consulted) != 0 || empty.ConsultationFrom != "bottom" || len(empty.Hand) != 3 {
+	if empty.LibraryCount != initial.LibraryCount-3 || len(empty.Consulted) != 0 || empty.ConsultationFrom != "bottom" || len(empty.Hand) != 3 {
 		t.Fatalf("consulta vazia: %+v", empty)
 	}
 	requireStatus(t, action(owner, `"kind":"close","libraryPlacement":"top"`), 200)
@@ -197,4 +218,48 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	if consultedCardIDs(t, bottom.body)[0] != publicID {
 		t.Fatal("return changed library order")
 	}
+	requireStatus(t, action(owner, `"kind":"close","libraryPlacement":"bottom"`), 200)
+	for _, destination := range []string{"hand", "battlefield", "graveyard", "exile", "command"} {
+		window := libraryPlayers(t, action(owner, `"kind":"consult","consultFrom":"top","count":1`))[0]
+		id := window.Consulted[0].ID
+		moved := libraryPlayers(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":%q`, id, destination)))[0]
+		if moved.LibraryCount != 4-1 || len(moved.Consulted) != 0 {
+			t.Fatalf("saída para %s: %+v", destination, moved)
+		}
+		zones := map[string][]libraryCard{"hand": moved.Hand, "battlefield": moved.Battlefield, "graveyard": moved.Graveyard, "exile": moved.Exile, "command": moved.Command}
+		found := false
+		for _, card := range zones[destination] {
+			if card.ID == id {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("carta não chegou a %s", destination)
+		}
+		requireStatus(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"library","libraryPlacement":"bottom"`, id)), 200)
+		requireStatus(t, action(owner, `"kind":"close","libraryPlacement":"top"`), 200)
+	}
+	beforeShuffle := action(owner, `"kind":"consult","consultFrom":"all","count":1`)
+	beforeOrder := consultedCardIDs(t, beforeShuffle.body)
+	changed := false
+	for attempt := 0; attempt < 5; attempt++ {
+		requireStatus(t, action(owner, `"kind":"shuffle","libraryPlacement":"top"`), 200)
+		afterShuffle := action(owner, `"kind":"consult","consultFrom":"all","count":1`)
+		if !slices.Equal(beforeOrder, consultedCardIDs(t, afterShuffle.body)) {
+			changed = true
+			break
+		}
+	}
+	if !changed {
+		t.Fatal("embaralhar e fechar não alterou a ordem do monte")
+	}
+	persistedOrder := consultedCardIDs(t, read(owner).body)
+	requireStatus(t, action(owner, `"kind":"close","libraryPlacement":"top"`), 200)
+	e.stop()
+	e.start(false)
+	restored := action(owner, `"kind":"consult","consultFrom":"all","count":1`)
+	if !slices.Equal(persistedOrder, consultedCardIDs(t, restored.body)) {
+		t.Fatal("ordem embaralhada não persistiu após reinício")
+	}
+
 }

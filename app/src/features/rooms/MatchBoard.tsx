@@ -126,7 +126,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const drawOne = () => {
-    if (!busy && !unconfirmed) void draw(1);
+    if (!busy && !unconfirmed && !match?.players.find(player => player.userId === match.viewerId)?.consulting) void draw(1);
   };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -230,7 +230,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     else focusPlayer(id);
   };
   const miniatureOverview = showingOverview && (compact || match.players.length > 2);
-  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0} actionsOpen={actionsOpen}
+  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
     onActions={anchor => { setActionsAnchor(compact ? document.querySelector<HTMLElement>('.floating-table-controls button[aria-label="Comandos"]') : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
