@@ -3,8 +3,8 @@
 .table-density select { width: auto; min-height: 32px; padding: 4px 8px; }
 .battlefield-guides { display: none; }
 @media (min-width: 1001px) {
-  .desktop-table { --field-card-width: 82px; --hand-card-width: 94px; --opponent-card-width: 44px; --zone-card-width: 56px; }
-  .desktop-table[data-density="compact"] { --field-card-width: 66px; --hand-card-width: 76px; --opponent-card-width: 36px; --zone-card-width: 46px; }
+  .desktop-table { --field-card-width: 82px; --hand-card-width: 94px; --opponent-card-width: 44px; --zone-card-width: var(--opponent-card-width); }
+  .desktop-table[data-density="compact"] { --field-card-width: 66px; --hand-card-width: 76px; --opponent-card-width: 36px; --zone-card-width: var(--opponent-card-width); }
   .desktop-table .table-toolbar { grid-template-columns: minmax(0, 1fr) auto auto; }
   .desktop-table .observing-label { display: none; }
   .desktop-table .turn-order { max-width: 290px; white-space: normal; font-size: .62rem; }
@@ -47,7 +47,7 @@
   .desktop-table .zone-column .zone-library { padding: 0; }
   .desktop-table .library-bottom { min-height: 20px; padding: 1px; font-size: .5rem; }
   .opponent-table-surface .zone-battlefield { --card-width: var(--opponent-card-width); }
-  .opponent-table-surface .zone-column { --card-width: 30px; width: 64px; flex-basis: 64px; gap: 4px; }
+  .opponent-table-surface .zone-column { --card-width: var(--opponent-card-width); width: calc(var(--opponent-card-width) * 2 + 4px); flex-basis: calc(var(--opponent-card-width) * 2 + 4px); gap: 4px; }
   .opponent-table-surface .zone-column .slot-label { font-size: .4rem; }
   .opponent-table-surface .playmat { gap: 5px; }
   .opponent-table-surface .battlefield-guides span { font-size: .42rem; padding: 3px; }
@@ -63,7 +63,6 @@
 }
 @media (min-width:1001px) and (max-height:800px) {
   .desktop-table .opponent-strip { flex-basis: 178px; }
-  .desktop-table .own-dock .zone-hand .zone-cards { --card-width: calc(var(--hand-card-width) * .85); }
   .desktop-table .seat-heading { margin-bottom: 3px; }
 }
 @media (prefers-reduced-motion: reduce) {

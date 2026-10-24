@@ -29,5 +29,28 @@ Esses cards reutilizam esta superfície sem alterar os contratos da API.
 
 ## Validação
 
-Em andamento na branch de integração da spec 39. Os resultados finais serão
-registrados antes da integração do card.
+A implementação começou com uma falha no navegador/API real: a região de
+oponentes não existia. Outra falha mostrou uma carta do oponente na posição
+400/fileira 4 fora da área visível; a projeção compacta passou a preservá-la
+visível sem regravar o snapshot.
+
+- `npm run build --prefix app` e typecheck passaram, inclusive após incorporar
+  a ponta da integração com o card 44.
+- Sete cenários focais desktop passaram: composição de quatro, matriz de um a
+  seis, montes públicos, vida direta persistente, densidade, editores,
+  permissões, falha parcial e selo de poder/resistência com a API real.
+- Treze regressões desktop passaram, considerando as repetições focais após
+  correções: prévia, privacidade, revelações, comandos, menus, orientação,
+  dimensões de 320 a 1920 px, posições esparsas, seleção, homônimos, seis
+  participantes, arraste/pilhas e transferência de controle.
+- As regressões detectaram e corrigiram a subida dos montes quando surgiam
+  cartas reveladas. O helper de comandos passou a aguardar a transição para
+  desktop antes de acessar controles móveis. A verificação de empilhamento
+  observa sobreposição e deslocamento no tamanho exibido, em vez de exigir
+  oito pixels de deslocamento de uma carta mobile de 26 pixels.
+- `git diff --check` passou. Não houve alteração de backend neste card, nem
+  nova execução da suíte Go.
+
+Os cenários mobile completos serão verificados pelo card 48. A matriz de
+larguras acima usa o projeto desktop do Playwright; não equivale a testar os
+três projetos de dispositivo.

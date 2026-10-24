@@ -44,6 +44,17 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     await expect(own.getByRole('button', { name: 'Soldier Token', exact: true }).getByLabel('Poder e resistência')).toHaveText('1/1');
+    await own.getByRole('button', { name: 'Soldier Token', exact: true }).hover();
+    await expect(page.getByRole('region', { name: 'Prévia da carta', exact: true }).getByRole('heading', { name: 'Soldier Token', exact: true })).toBeVisible();
+    const seatColors = await page.locator('.seat-number').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundColor));
+    expect(new Set(seatColors).size).toBe(4);
+    const activeSeat = page.getByRole('article').filter({ has: page.getByText('Na vez', { exact: true }) });
+    expect(await activeSeat.evaluate(node => getComputedStyle(node).borderTopColor)).toBe(await activeSeat.locator('.seat-number').evaluate(node => getComputedStyle(node).backgroundColor));
+    const observed = (await (await contexts[0].request.get(`${path}/match`)).json()).match;
+    for (const player of observed.players.filter((player: { userId: number }) => player.userId !== observed.viewerId)) {
+      expect(player.battlefield[0].positionX).toBe(400);
+      expect(player.battlefield[0].row).toBe(4);
+    }
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
     const top = await opponents.boundingBox(), field = await own.boundingBox(), bottom = await hand.boundingBox();
     expect(top!.y + top!.height).toBeLessThanOrEqual(field!.y + 2);

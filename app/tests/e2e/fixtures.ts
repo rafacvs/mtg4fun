@@ -95,12 +95,17 @@ export async function closeHand(page: Page) {
 
 export async function openQuickActions(page: Page) {
   await expect(page.locator('.own-dock')).toBeAttached();
+  if ((page.viewportSize()?.width ?? 1280) > 1000) {
+    await expect(page.getByRole('button', { name: 'Comandos', exact: true })).toHaveCount(0);
+    return;
+  }
   const toggle = page.getByRole('button', { name: 'Comandos', exact: true });
   if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(toggle).toBeVisible();
   if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
 }
 
 export async function closeQuickActions(page: Page) {
+  if ((page.viewportSize()?.width ?? 1280) > 1000) return;
   const toggle = page.getByRole('button', { name: 'Comandos', exact: true });
   if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
 }

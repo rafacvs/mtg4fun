@@ -71,7 +71,7 @@ test('indica a atividade do participante certo quando nomes se repetem', async (
     await expect(thumbnails.nth(1).getByText('Atividade recente', { exact: true })).toBeVisible();
     await expect(thumbnails.nth(0).getByText('Atividade recente', { exact: true })).toHaveCount(0);
     await expect(thumbnails.nth(0).getByRole('button', { name: 'Ver campo de Amigo da mesa' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true })).toBeVisible();
+    await expect(page.locator('.own-table-surface').getByRole('article')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('article')).toHaveCount(1);
   } finally {
     await Promise.all(contexts.map(context => context.close()));
