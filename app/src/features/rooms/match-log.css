@@ -1,0 +1,12 @@
+.log-filters { display: flex; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.match-log .log-filters button { flex: 1; min-height: 44px; padding: 6px 8px; font-size: .75rem; }
+.log-filters button[aria-pressed="true"] { color: var(--gold-light); border-color: var(--gold); background: var(--gold-wash); }
+.log-turns { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.match-log .log-turns ol { overflow: visible; flex: none; }
+.log-empty { padding: 12px 0; font-size: .8rem; }
+.log-turn { border-bottom: 1px solid var(--line); }
+.log-turn summary { min-height: 44px; padding: 10px 4px; cursor: pointer; color: var(--text); }
+.log-turn summary strong { font-family: Cinzel, Georgia, serif; font-size: .8rem; }
+.log-turn summary span { margin-left: 8px; font-size: .65rem; color: var(--muted); }
+.log-turn:first-child summary strong { color: var(--gold-light); }
+.log-turn summary:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
