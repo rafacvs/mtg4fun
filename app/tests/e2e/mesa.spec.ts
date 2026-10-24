@@ -1,4 +1,4 @@
-import { test, expect, closeMatchRail, closeQuickActions, openHand, openMatchRail, openQuickActions, roomBody } from './fixtures';
+import { test, expect, closeMatchRail, closeQuickActions, openHand, openMatchRail, openQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { BrowserContext, Locator } from '@playwright/test';
 
 const cardImage = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64');
@@ -102,6 +102,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }
     expect((await contexts[0].request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+    await returnOpeningHandToLibrary(contexts[0].request, roomId);
     const page = await contexts[0].newPage();
     const other = await contexts[1].newPage();
     await page.route('**/api/cards/image?*', route => route.fulfill({ status: 200, contentType: 'image/jpeg', body: cardImage }));

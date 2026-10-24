@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { APIRequestContext } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, openMatchRail, roomBody } from './fixtures';
+import { test, expect, openMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 async function prepare(api: APIRequestContext, other: APIRequestContext) {
   let roomId = 0;
@@ -15,6 +15,7 @@ async function prepare(api: APIRequestContext, other: APIRequestContext) {
     decks.push({ request, id: deck.id });
   }
   expect((await api.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+  for (const { request } of decks) await returnOpeningHandToLibrary(request, roomId);
   for (const { request, id } of decks) expect((await request.delete(`/api/decks/${id}`)).ok()).toBe(true);
   const action = async (fields: Record<string, unknown>, request = api): Promise<Match> => {
     const response = await request.post(`/api/rooms/${roomId}/match/actions`, { data: { intentId: randomUUID(), ...fields } });

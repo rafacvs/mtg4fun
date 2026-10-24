@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Browser, Page, APIRequestContext } from '@playwright/test';
 
 async function prepare(page: Page, browser: Browser, baseURL?: string) {
@@ -17,6 +17,7 @@ async function prepare(page: Page, browser: Browser, baseURL?: string) {
   }
   const path = `/api/rooms/${roomId}/match`;
   expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).ok()).toBe(true);
+  await returnOpeningHandToLibrary(page.request, roomId);
   const act = async (data: object) => {
     const response = await page.request.post(`${path}/actions`, { data: { intentId: randomUUID(), ...data } });
     expect(response.ok()).toBe(true);

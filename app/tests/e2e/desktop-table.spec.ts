@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { BrowserContext } from '@playwright/test';
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async ({ browser, baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Composição de computador');
@@ -20,6 +20,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     }
     const path = `/api/rooms/${roomId}`;
     expect((await contexts[0].request.post(`${path}/start`, { data: {} })).status()).toBe(201);
+    for (const context of contexts) await returnOpeningHandToLibrary(context.request, roomId);
     for (const [index, context] of contexts.entries()) {
       const created = await context.request.post(`${path}/match/actions`, { data: { kind: 'create-token', intentId: randomUUID(), tokenName: 'Soldier Token' } });
       expect(created.ok()).toBe(true);
@@ -97,6 +98,7 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
       const api = contexts[0].request;
       const path = `/api/rooms/${roomId}`;
       expect((await api.post(`${path}/start`, { data: {} })).status()).toBe(201);
+      await returnOpeningHandToLibrary(api, roomId);
       const draw = await api.post(`${path}/match/actions`, { data: { kind: 'draw', intentId: randomUUID(), count: 4 } });
       const { match } = await draw.json();
       const hand = match.players.find((player: { userId: number }) => player.userId === match.viewerId).hand;

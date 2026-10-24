@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, openMatchRail, closeMatchRail, roomBody } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Page } from '@playwright/test';
 
 async function touch(page: Page, points: { x: number; y: number }[]) {
@@ -19,6 +19,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   const { room } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
   expect((await page.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await returnOpeningHandToLibrary(page.request, room.id);
   const path = `/api/rooms/${room.id}/match`;
   const act = async (data: object) => {
     const response = await page.request.post(`${path}/actions`, { data: { intentId: randomUUID(), ...data } });

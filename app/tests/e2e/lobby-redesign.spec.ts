@@ -55,7 +55,10 @@ test('envia e guarda nome, formato, lugares, vida e deck ao criar a mesa', async
   await expect(page.getByRole('region', { name: 'Mesa da partida', exact: true })).toBeVisible();
   const { match } = await (await page.request.get(`/api/rooms/${room.id}/match`)).json();
   expect(match.initialLife).toBe(20);
-  expect(match.players.find((player: { userId: number }) => player.userId === match.viewerId).libraryCount).toBe(3);
+  const player = match.players.find((item: { userId: number }) => item.userId === match.viewerId);
+  expect(player.libraryCount).toBe(0);
+  expect(player.handCount).toBe(3);
+  expect(player.commandCount).toBe(0);
 });
 
 test('prioriza as próprias mesas e não promete vagas em partidas iniciadas', async ({ page, browser, baseURL }) => {
@@ -117,6 +120,9 @@ test('decks usam dados reais, identificam exemplos e confirmam exclusão sem alt
   await expect(confirmation).not.toBeVisible();
   expect((await (await page.request.get('/api/decks')).json()).decks.some((deck: { id: number }) => deck.id === deckId)).toBe(false);
   const { match } = await (await page.request.get(`/api/rooms/${room.id}/match`)).json();
-  expect(match.players.find((player: { userId: number }) => player.userId === match.viewerId).libraryCount).toBe(7);
+  const player = match.players.find((item: { userId: number }) => item.userId === match.viewerId);
+  expect(player.libraryCount).toBe(0);
+  expect(player.handCount).toBe(7);
+  expect(player.commandCount).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

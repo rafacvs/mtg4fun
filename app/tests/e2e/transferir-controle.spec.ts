@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect, inspectCard, openMatchRail, selectFieldArea, roomBody } from './fixtures';
+import { test, expect, inspectCard, openMatchRail, selectFieldArea, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 const deckFile = {
   name: 'ilha.cod',
@@ -32,6 +32,9 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     }
     expect((await owner.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: ownerDeckID } })).ok()).toBe(true);
     expect((await owner.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await returnOpeningHandToLibrary(owner, room.id);
+    await returnOpeningHandToLibrary(second.request, room.id);
+    await returnOpeningHandToLibrary(third.request, room.id);
     const drawn = (await (await owner.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).json()).match.players[0].hand[0];
     expect((await owner.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'move', cardIds: [drawn.id], to: 'battlefield' } })).ok()).toBe(true);
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { APIRequestContext, Locator } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, openMatchRail, closeMatchRail, openHand, openQuickActions, closeQuickActions, roomBody } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, openHand, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 const fallbackArt = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" rx="3" fill="#adb9a1"/><rect x="3" y="3" width="57" height="7" rx="2" fill="#dedbc1"/><text x="5" y="8" font-size="4" font-family="serif">Island</text><rect x="4" y="13" width="55" height="40" fill="#406571"/><path d="M4 45 20 23 35 44 46 28 59 45v8H4Z" fill="#9ca98f"/><rect x="4" y="56" width="55" height="28" fill="#d7d9be"/><text x="6" y="65" font-size="4">Basic Land — Island</text></svg>';
 
@@ -17,6 +17,7 @@ async function seed(requests: APIRequestContext[]) {
     expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   }
   expect((await requests[0].post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+  for (const api of requests) await returnOpeningHandToLibrary(api, roomId);
   const action = async (data: Record<string, unknown>, api = requests[0]): Promise<Match> => {
     const response = await api.post(`/api/rooms/${roomId}/match/actions`, { data: { intentId: crypto.randomUUID(), ...data } });
     expect(response.ok(), await response.text()).toBe(true);

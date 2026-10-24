@@ -683,7 +683,30 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 		if e = shuffle(cards); e != nil {
 			return Match{}, e
 		}
-		m.Players = append(m.Players, playerState{UserID: p.ID, Name: p.Name, Life: life, Library: cards, Hand: []Card{}, Battlefield: []Card{}, Graveyard: []Card{}, Exile: []Card{}, Command: []Card{}, Consulted: []Card{}})
+		var commander sql.NullString
+		if e = tx.QueryRowContext(ctx, "SELECT commander FROM decks WHERE id=? AND user_id=?", p.DeckID, p.ID).Scan(&commander); e != nil {
+			return Match{}, e
+		}
+		command := []Card{}
+		if commander.String != "" {
+			for i, card := range cards {
+				if card.Name == commander.String {
+					card.Zone = "command"
+					command = append(command, card)
+					cards = append(cards[:i], cards[i+1:]...)
+					break
+				}
+			}
+		}
+		drawn := 7
+		if drawn > len(cards) {
+			drawn = len(cards)
+		}
+		hand := append([]Card(nil), cards[:drawn]...)
+		for i := range hand {
+			hand[i].Zone = "hand"
+		}
+		m.Players = append(m.Players, playerState{UserID: p.ID, Name: p.Name, Life: life, Library: append([]Card(nil), cards[drawn:]...), Hand: hand, Battlefield: []Card{}, Graveyard: []Card{}, Exile: []Card{}, Command: command, Consulted: []Card{}})
 	}
 	snapshot, e := json.Marshal(m)
 	if e != nil {

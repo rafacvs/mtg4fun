@@ -42,6 +42,40 @@ func decodeRoom(t *testing.T, result response) roomView {
 	return payload.Room
 }
 
+type startedPlayer struct {
+	LibraryCount int `json:"libraryCount"`
+	HandCount    int `json:"handCount"`
+	CommandCount int `json:"commandCount"`
+	Hand         []struct {
+		Name string `json:"name"`
+	} `json:"hand"`
+	Command []struct {
+		Name string `json:"name"`
+	} `json:"command"`
+}
+
+func decodeMatchPlayers(t *testing.T, body []byte) []startedPlayer {
+	t.Helper()
+	var payload struct {
+		Match struct {
+			Players []startedPlayer `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	return payload.Match.Players
+}
+
+func decodeOwnStart(t *testing.T, body []byte) startedPlayer {
+	t.Helper()
+	players := decodeMatchPlayers(t, body)
+	if len(players) != 1 {
+		t.Fatalf("partida inicial: %s", body)
+	}
+	return players[0]
+}
+
 func listRooms(t *testing.T, e *environment, cookie *http.Cookie) []roomView {
 	t.Helper()
 	result := e.request("GET", "/api/rooms", "", cookie, nil)
@@ -384,9 +418,6 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", bia, nil), 403)
 	started := e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil)
 	requireStatus(t, started, 201)
-	if bytes.Contains(started.body, []byte("Island")) {
-		t.Fatalf("início expôs biblioteca: %s", started.body)
-	}
 	var match struct {
 		Match struct {
 			InitialLife int `json:"initialLife"`
@@ -395,16 +426,37 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 				Roll   int   `json:"roll"`
 			} `json:"turnOrder"`
 			Players []struct {
-				LibraryCount int `json:"libraryCount"`
-				Life         int `json:"life"`
+				UserID       int64 `json:"userId"`
+				LibraryCount int   `json:"libraryCount"`
+				HandCount    int   `json:"handCount"`
+				CommandCount int   `json:"commandCount"`
+				Life         int   `json:"life"`
+				Hand         []struct {
+					Name string `json:"name"`
+				} `json:"hand"`
 			} `json:"players"`
 		} `json:"match"`
 	}
 	if err := json.Unmarshal(started.body, &match); err != nil {
 		t.Fatal(err)
 	}
-	if match.Match.InitialLife != 20 || match.Match.Players[0].Life != 20 || match.Match.Players[1].Life != 20 || len(match.Match.Players) != 2 || match.Match.Players[0].LibraryCount != 7 || match.Match.Players[1].LibraryCount != 7 || len(match.Match.TurnOrder) != 2 || match.Match.TurnOrder[0].Roll < 1 || match.Match.TurnOrder[0].Roll > 20 {
+	if match.Match.InitialLife != 20 || match.Match.Players[0].Life != 20 || match.Match.Players[1].Life != 20 || len(match.Match.Players) != 2 || len(match.Match.TurnOrder) != 2 || match.Match.TurnOrder[0].Roll < 1 || match.Match.TurnOrder[0].Roll > 20 {
 		t.Fatalf("partida inicial: %s", started.body)
+	}
+	var ownHand, otherHand int
+	for _, player := range match.Match.Players {
+		if player.LibraryCount != 0 || player.HandCount != 7 || player.CommandCount != 0 {
+			t.Fatalf("início sem comandante deveria comprar sete: %s", started.body)
+		}
+		if len(player.Hand) == 7 {
+			ownHand++
+		}
+		if len(player.Hand) == 0 {
+			otherHand++
+		}
+	}
+	if ownHand != 1 || otherHand != 1 {
+		t.Fatalf("mão alheia ou biblioteca exposta: %s", started.body)
 	}
 	requireStatus(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", outsider, nil), 404)
 	requireStatus(t, e.request("DELETE", fmt.Sprintf("/api/decks/%d", anaDeck), "", ana, nil), 204)
@@ -412,10 +464,105 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 	e.start(false)
 	recovered := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", ana, nil)
 	requireStatus(t, recovered, 200)
-	if !bytes.Contains(recovered.body, []byte(`"libraryCount":7`)) || bytes.Contains(recovered.body, []byte("Island")) {
+	restored := decodeMatchPlayers(t, recovered.body)
+	if len(restored) != 2 || restored[0].LibraryCount != 0 || restored[0].HandCount != 7 || restored[0].CommandCount != 0 || restored[1].LibraryCount != 0 || restored[1].HandCount != 7 || restored[1].CommandCount != 0 {
 		t.Fatalf("recuperação: %s", recovered.body)
 	}
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", outsider, nil), 409)
+}
+
+func TestStartPutsCommanderInCommandAndDrawsSeven(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	uploaded := e.uploadDeck(ana, []byte(`<cockatrice_deck><deckname>Comandante</deckname><zone name="main"><card number="9" name="Island"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/decks/%d/commander", payload.Deck.ID), `{"name":"Gargos, Vicious Watcher"}`, ana, nil), 200)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
+	started := e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil)
+	requireStatus(t, started, 201)
+	own := decodeOwnStart(t, started.body)
+	if own.LibraryCount != 2 || own.HandCount != 7 || own.CommandCount != 1 || len(own.Hand) != 7 || len(own.Command) != 1 || own.Command[0].Name != "Gargos, Vicious Watcher" {
+		t.Fatalf("início com comandante: %s", started.body)
+	}
+	for _, card := range own.Hand {
+		if card.Name != "Island" {
+			t.Fatalf("comandante foi à mão: %s", started.body)
+		}
+	}
+	recovered := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", ana, nil)
+	requireStatus(t, recovered, 200)
+	if got := decodeOwnStart(t, recovered.body); got.LibraryCount != 2 || got.HandCount != 7 || got.CommandCount != 1 || got.Command[0].Name != "Gargos, Vicious Watcher" {
+		t.Fatalf("GET da partida não manteve comando e sete: %s", recovered.body)
+	}
+}
+
+func TestStartDeliversRemainingCardsWhenDeckIsShort(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	uploaded := e.uploadDeck(ana, []byte(`<cockatrice_deck><deckname>Curto</deckname><zone name="main"><card number="3" name="Island"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/decks/%d/commander", payload.Deck.ID), `{"name":"Gargos, Vicious Watcher"}`, ana, nil), 200)
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
+	started := e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil)
+	requireStatus(t, started, 201)
+	own := decodeOwnStart(t, started.body)
+	if own.LibraryCount != 0 || own.HandCount != 3 || own.CommandCount != 1 || len(own.Hand) != 3 || own.Command[0].Name != "Gargos, Vicious Watcher" {
+		t.Fatalf("deck curto: %s", started.body)
+	}
+}
+
+func TestStartDrawsSevenWhenCommanderNameIsAbsentFromLibrary(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	uploaded := e.uploadDeck(ana, []byte(`<cockatrice_deck><deckname>Sem carta</deckname><zone name="main"><card number="8" name="Island"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	e.sql(fmt.Sprintf("UPDATE %s.decks SET commander='Gargos, Vicious Watcher' WHERE id=%d", e.db, payload.Deck.ID))
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
+	started := e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil)
+	requireStatus(t, started, 201)
+	own := decodeOwnStart(t, started.body)
+	if own.LibraryCount != 1 || own.HandCount != 7 || own.CommandCount != 0 || len(own.Command) != 0 {
+		t.Fatalf("nome ausente do grimório: %s", started.body)
+	}
 }
 
 func TestCreatingRoomWithOwnDeckSelectsItWithoutReady(t *testing.T) {
@@ -894,6 +1041,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 		requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", roomID), fmt.Sprintf(`{"deckId":%d}`, ready.deck), ready.cookie, nil), 200)
 	}
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", roomID), "{}", ana, nil), 201)
+	returnOpeningHandsToLibrary(t, e, roomID, ana, bia)
 	actionPath := fmt.Sprintf("/api/rooms/%d/match/actions", roomID)
 	consult := e.request("POST", actionPath, `{"intentId":"10101010-1010-4010-8010-101010101010","kind":"consult","consultFrom":"top","count":2}`, ana, nil)
 	requireStatus(t, consult, 200)
@@ -1182,7 +1330,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 			hasShuffle = true
 		}
 	}
-	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !containsBattlefield(own.Hand[0].ID) || restoredAna.Battlefield[0].PositionX != 735 || restoredAna.Battlefield[0].Row != 2 || restoredAna.Battlefield[0].StackOrder != stackOrder || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 20+success || !hasShuffle {
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !containsBattlefield(own.Hand[0].ID) || restoredAna.Battlefield[0].PositionX != 735 || restoredAna.Battlefield[0].Row != 2 || restoredAna.Battlefield[0].StackOrder != stackOrder || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 22+success || !hasShuffle {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
 	restoredConsult := e.request("POST", actionPath, `{"intentId":"5d5d5d5d-5d5d-45d5-85d5-5d5d5d5d5d5d","kind":"consult","consultFrom":"top","count":5}`, ana, nil)
@@ -1326,6 +1474,7 @@ func TestCollectivePositionIsAtomicAndSurvivesRestart(t *testing.T) {
 	roomID := decodeRoom(t, created).ID
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", roomID), fmt.Sprintf(`{"deckId":%d}`, upload.Deck.ID), ana, nil), 200)
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", roomID), "{}", ana, nil), 201)
+	returnOpeningHandsToLibrary(t, e, roomID, ana)
 	actionPath := fmt.Sprintf("/api/rooms/%d/match/actions", roomID)
 	requireStatus(t, e.request("POST", actionPath, `{"intentId":"40111111-1111-4111-8111-111111111111","kind":"draw","count":2}`, ana, nil), 200)
 	var drawn struct {

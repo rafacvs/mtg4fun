@@ -1,4 +1,4 @@
-import { test, expect, openQuickActions, closeQuickActions, roomBody } from './fixtures';
+import { test, expect, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Browser, TestInfo } from '@playwright/test';
 
 async function prepare(browser: Browser, baseURL: string | undefined, info: TestInfo) {
@@ -9,6 +9,7 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await returnOpeningHandToLibrary(api, room.id);
   const page = await context.newPage();
   await page.goto(`/#/salas/${room.id}`);
   const panel = page.getByRole('dialog', { name: 'Grimório', exact: true });

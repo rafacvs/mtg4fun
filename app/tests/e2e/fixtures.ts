@@ -1,4 +1,4 @@
-import { test as base, expect, type Page, type Locator } from '@playwright/test';
+import { test as base, expect, type APIRequestContext, type Page, type Locator } from '@playwright/test';
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -112,6 +112,17 @@ export async function closeQuickActions(page: Page) {
   if ((page.viewportSize()?.width ?? 1280) > 1000) return;
   const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Mais', exact: true });
   if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+}
+
+export async function returnOpeningHandToLibrary(request: APIRequestContext, roomId: number) {
+  const { match } = await (await request.get(`/api/rooms/${roomId}/match`)).json();
+  const player = match.players.find((item: { userId: number }) => item.userId === match.viewerId);
+  const ids = (player.hand ?? []).map((card: { id: string }) => card.id);
+  if (ids.length === 0) return;
+  const result = await request.post(`/api/rooms/${roomId}/match/actions`, {
+    data: { intentId: crypto.randomUUID(), kind: 'move', cardIds: ids, to: 'library', libraryPlacement: 'bottom' },
+  });
+  expect(result.ok(), await result.text()).toBe(true);
 }
 
 export async function openLibrary(page: Page) {

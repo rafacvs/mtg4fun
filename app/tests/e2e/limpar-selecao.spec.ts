@@ -1,4 +1,4 @@
-import { test, expect, selectFieldArea, roomBody } from './fixtures';
+import { test, expect, selectFieldArea, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', async ({ page }, info) => {
@@ -15,6 +15,7 @@ test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', 
   const { room } = await created.json();
   expect((await page.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await returnOpeningHandToLibrary(page.request, room.id);
   const path = `/api/rooms/${room.id}/match`;
   const action = async (fields: Record<string, unknown>): Promise<Match> => {
     const response = await page.request.post(`${path}/actions`, { data: { intentId: crypto.randomUUID(), ...fields } });

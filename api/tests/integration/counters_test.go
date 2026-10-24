@@ -183,6 +183,7 @@ func counterMatch(t *testing.T) (*environment, int64, []*http.Cookie, []int64) {
 		requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", roomID), fmt.Sprintf(`{"deckId":%d}`, data.Deck.ID), cookies[i], nil), 200)
 	}
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", roomID), "{}", cookies[0], nil), 201)
+	returnOpeningHandsToLibrary(t, e, roomID, cookies[0], cookies[1])
 	view := decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", cookies[0], nil))
 	return e, roomID, cookies, []int64{view.Players[0].UserID, view.Players[1].UserID}
 }
@@ -208,7 +209,7 @@ func TestLifeCountersPublicPermissionsAndDurability(t *testing.T) {
 	e.stop()
 	e.start(false)
 	view = decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil))
-	if view.Players[0].Life != 37 || len(view.Log) != 2 || view.Log[1].Kind != "counter" {
+	if view.Players[0].Life != 37 || view.Log[len(view.Log)-1].Kind != "counter" {
 		t.Fatalf("vida/log após reinício: %+v", view)
 	}
 }

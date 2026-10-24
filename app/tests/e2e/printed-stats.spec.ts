@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, openHand, roomBody } from './fixtures';
+import { test, expect, openHand, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 test('selo distingue o impresso da ficha do modificador manual', async ({ page }) => {
   const api = page.request;
@@ -9,6 +9,7 @@ test('selo distingue o impresso da ficha do modificador manual', async ({ page }
   const path = `/api/rooms/${room.id}`;
   expect((await api.put(`${path}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`${path}/start`, { data: {} })).status()).toBe(201);
+  await returnOpeningHandToLibrary(api, room.id);
   const result = await api.post(`${path}/match/actions`, { data: { intentId: randomUUID(), kind: 'create-token', tokenName: 'Soldier Token' } });
   expect(result.ok()).toBe(true);
   const { match } = await result.json();
