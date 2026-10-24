@@ -65,7 +65,7 @@ export function LibraryConsultation(props: Props) {
       label="Grimório"
       className={`library-consultation ${active ? 'library-active' : ''}`}
     >
-      <PanelHeader title={title} subtitle={libraryCount === 1 ? '1 carta' : `${libraryCount} cartas`} onClose={onDismiss} closeLabel="Fechar painel do grimório" onBack={!active && state.view !== 'menu' ? () => state.choose('menu') : undefined}>
+      <PanelHeader title={title} subtitle={libraryCount === 1 ? '1 carta' : `${libraryCount} cartas`} onClose={onDismiss} closeLabel={active ? "Minimizar consulta" : "Fechar painel do grimório"} onBack={!active && state.view !== 'menu' ? () => state.choose('menu') : undefined}>
       {active && (
             <p className={`library-visibility ${publicCount ? 'public' : ''}`}>
               {publicCount
@@ -164,6 +164,20 @@ export function LibraryConsultation(props: Props) {
                   value={state.search}
                   onChange={(event) => state.setSearch(event.target.value)}
                 />
+                <label>Tipo
+                  <select aria-label="Filtrar por tipo" value={state.typeFilter} disabled={busy} onChange={event => state.setTypeFilter(event.target.value)}>
+                    <option value="">Todos os tipos</option>
+                    <option value="Creature">Criaturas</option>
+                    <option value="Land">Terrenos</option>
+                    <option value="Artifact">Artefatos</option>
+                    <option value="Enchantment">Encantamentos</option>
+                    <option value="Instant">Instantâneas</option>
+                    <option value="Sorcery">Feitiços</option>
+                    <option value="Planeswalker">Planeswalkers</option>
+                    <option value="Battle">Batalhas</option>
+                    <option value="unknown">Tipo indisponível</option>
+                  </select>
+                </label>
                 <button
                   className="text-button"
                   disabled={busy || !state.filtered.length}
@@ -178,11 +192,12 @@ export function LibraryConsultation(props: Props) {
             )}
             {!searching && (
               <p className="library-order">
-                Ordem no grimório: primeira → última · Arraste pela alça à esquerda da imagem.
+                Ordem no grimório: primeira → última · Arraste pela alça ou use as teclas de direção.
               </p>
             )}
             <LibraryCards
               cards={pool}
+              layout={searching ? 'grid' : 'strip'}
               filtered={state.filtered}
               selectedIDs={state.selectedIDs}
               busy={busy}
@@ -192,49 +207,14 @@ export function LibraryConsultation(props: Props) {
             />
           </div>
           {selectedCount > 0 && (
-            <div className="library-selection" aria-label="Ações da seleção">
+            <div className="library-selection" role="region" aria-label="Ações da seleção">
               <span>{selectedCount} selecionada(s)</span>
-              <button className="secondary" disabled={busy} onClick={() => void state.move('hand')}>
-                Colocar {selectedCount} na mão
-              </button>
-              <button
-                className="secondary"
-                disabled={busy}
-                onClick={() => void state.move('library', 'bottom')}
-              >
-                No fundo
-              </button>
-              <label className="library-other">
-                <span>Outros destinos</span>
-                <select
-                  aria-label="Outros destinos"
-                  disabled={busy}
-                  value=""
-                  onChange={(event) => {
-                    const [to, placement] = event.target.value.split(':');
-                    if (to) void state.move(to, placement as 'top' | 'bottom' | undefined);
-                  }}
-                >
-                  <option value="">Escolher…</option>
-                  <option value="battlefield">Campo</option>
-                  <option value="graveyard">Cemitério</option>
-                  <option value="exile">Exílio</option>
-                  <option value="command">Comando</option>
-                  <option value="library:top">Topo do grimório</option>
-                </select>
-              </label>
-              {cards.length > 0 && (
-                <button
-                  className="secondary"
-                  disabled={
-                    busy ||
-                    state.selectedIDs.every((id) => cards.find((card) => card.id === id)?.revealed)
-                  }
-                  onClick={() => void state.reveal()}
-                >
-                  Revelar seleção
-                </button>
-              )}
+              {[
+                ['Mão', 'hand'], ['Campo', 'battlefield'], ['Cemitério', 'graveyard'],
+                ['Exílio', 'exile'], ['Topo', 'library', 'top'], ['Fundo', 'library', 'bottom'],
+                ['Comando', 'command'],
+              ].map(([label, zone, placement]) => <button key={label} className="secondary" disabled={busy} onClick={() => void state.move(zone, placement as 'top' | 'bottom' | undefined)}>{label}</button>)}
+              <button className="secondary" disabled={busy || state.selectedIDs.every(id => cards.find(card => card.id === id)?.revealed)} onClick={() => void state.reveal()}>Revelar</button>
             </div>
           )}
           </div>
@@ -258,16 +238,16 @@ export function LibraryConsultation(props: Props) {
               <button
                 className={searching ? '' : 'secondary'}
                 disabled={busy}
-                onClick={() => void state.finish(true)}
+                onClick={() => void state.finish(true).then(succeeded => { if (succeeded) onDismiss(); })}
               >
-                Devolver e embaralhar
+                Embaralhar e fechar
               </button>
               <button
                 className={searching ? 'secondary' : ''}
                 disabled={busy}
-                onClick={() => void state.finish()}
+                onClick={() => void state.finish().then(succeeded => { if (succeeded) onDismiss(); })}
               >
-                Devolver sem embaralhar
+                Fechar sem embaralhar
               </button>
             </div>
           </footer>

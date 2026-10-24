@@ -59,6 +59,7 @@
   gap: 12px;
 }
 .grimorio-workspace {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -80,6 +81,7 @@
   font-size: 0.75rem;
 }
 .library-cards {
+  max-width: 100%;
   flex: 1;
   min-height: 0;
   padding: 5px;
@@ -88,10 +90,6 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) var(--panel);
-}
-.library-list {
-  display: flex;
-  flex-direction: column;
 }
 .library-card {
   display: grid;
@@ -165,7 +163,7 @@
 .library-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 .library-card-fallback {
@@ -207,30 +205,6 @@
   display: block;
   font-size: 0.65rem;
   color: var(--muted);
-}
-.library-list .library-card {
-  flex-shrink: 0;
-  grid-template-columns: 44px 48px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-}
-.library-list .library-image {
-  width: 48px;
-}
-.library-list .library-card-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-right: 44px;
-}
-.library-list .library-selected-mark {
-  top: 50%;
-  right: 16px;
-  bottom: auto;
-  transform: translateY(-50%);
-}
-.library-list .library-card-info strong {
-  flex: 1;
 }
 .library-empty {
   margin: auto !important;
@@ -374,16 +348,35 @@
     min-height: 44px;
     padding: 8px 10px;
   }
-  .library-list .library-card {
-    grid-template-columns: 44px 44px minmax(0, 1fr);
-  }
-  .library-list .library-image {
-    width: 44px;
-  }
   .table-revealed > div {
     max-height: 40px;
   }
   .table-revealed .playing-card {
     width: 28px;
   }
+}
+
+/* The consultation is a sheet: search lays out a grid; top/bottom keep their order in a strip. */
+.library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); align-content: start; gap: 16px; }
+.library-grid .library-card, .library-strip .library-card { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.library-grid .library-drag-handle, .library-strip .library-drag-handle { align-self: stretch; min-height: 44px; height: 44px; }
+.library-grid .library-image, .library-strip .library-image { width: 100%; flex: 0 0 auto; }
+.library-grid .library-selected-mark, .library-strip .library-selected-mark { top: 58px; right: 12px; bottom: auto; }
+.library-type { display: block; font-size: .65rem; color: var(--muted); }
+.library-strip { display: flex; flex-direction: row; align-items: start; overflow-x: auto; overflow-y: auto; }
+.library-strip .library-card { flex: 0 0 148px; }
+.library-search select { min-height: 44px; }
+.library-selection { max-height: 150px; overflow: auto; }
+@media (max-width: 600px) {
+ .library-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+ .library-finish { align-items: stretch; flex-direction: column; gap: 6px; }
+ .library-finish-actions { flex-wrap: wrap; }
+ .library-finish-actions button { flex: 1; }
+}
+@media (max-height: 550px) and (orientation: landscape) {
+ .match-board .library-active { overflow-y: auto; }
+ .library-body { flex: 0 0 auto; min-height: 180px; min-width: 0; }
+ .library-cards { max-height: 240px; flex: 0 0 auto; }
+ .library-finish { flex-wrap: wrap; }
+ .library-selection { flex-wrap: wrap; max-height: none; overflow: visible; }
 }
