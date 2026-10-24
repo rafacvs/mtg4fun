@@ -143,6 +143,6 @@ export function PlayingCard({ card, draggable, scrollable = false, onPreview, on
     {card.faceDown || !card.name ? <span className="card-back">Face para baixo{card.revealed && <small>Revelada</small>}</span> : failed
       ? <span className="card-fallback">{card.name}</span>
       : <img src={cardImageURL(card)} alt="" draggable={false} onError={() => setFailed(true)} />}
-    <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />
+    <CardStats {...card} />
   </button>;
 }

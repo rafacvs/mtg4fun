@@ -69,26 +69,28 @@ type colorCounts struct {
 	Purple int64 `json:"purple,omitempty"`
 }
 type Card struct {
-	IsToken      bool        `json:"isToken,omitempty"`
-	Tapped       bool        `json:"tapped,omitempty"`
-	FaceDown     bool        `json:"faceDown,omitempty"`
-	Faces        []string    `json:"faces,omitempty"`
-	FaceIndex    int         `json:"faceIndex,omitempty"`
-	ID           string      `json:"id"`
-	Name         string      `json:"name"`
-	OwnerID      int64       `json:"ownerId"`
-	ControllerID int64       `json:"controllerId"`
-	Zone         string      `json:"zone"`
-	PositionX    int         `json:"positionX"`
-	Row          int         `json:"row"`
-	StackOrder   int         `json:"stackOrder"`
-	Revealed     bool        `json:"revealed,omitempty"`
-	Text         string      `json:"text,omitempty"`
-	ImageName    string      `json:"imageName,omitempty"`
-	InstanceKind string      `json:"instanceKind,omitempty"`
-	Power        int64       `json:"power,omitempty"`
-	Toughness    int64       `json:"toughness,omitempty"`
-	Markers      colorCounts `json:"markers,omitempty"`
+	IsToken          bool        `json:"isToken,omitempty"`
+	Tapped           bool        `json:"tapped,omitempty"`
+	FaceDown         bool        `json:"faceDown,omitempty"`
+	Faces            []string    `json:"faces,omitempty"`
+	FaceIndex        int         `json:"faceIndex,omitempty"`
+	ID               string      `json:"id"`
+	Name             string      `json:"name"`
+	OwnerID          int64       `json:"ownerId"`
+	ControllerID     int64       `json:"controllerId"`
+	Zone             string      `json:"zone"`
+	PositionX        int         `json:"positionX"`
+	Row              int         `json:"row"`
+	StackOrder       int         `json:"stackOrder"`
+	Revealed         bool        `json:"revealed,omitempty"`
+	Text             string      `json:"text,omitempty"`
+	ImageName        string      `json:"imageName,omitempty"`
+	InstanceKind     string      `json:"instanceKind,omitempty"`
+	PrintedPower     string      `json:"printedPower,omitempty"`
+	PrintedToughness string      `json:"printedToughness,omitempty"`
+	Power            int64       `json:"power,omitempty"`
+	Toughness        int64       `json:"toughness,omitempty"`
+	Markers          colorCounts `json:"markers,omitempty"`
 }
 type playerState struct {
 	UserID           int64       `json:"userId"`
@@ -151,47 +153,51 @@ type MatchPlayer struct {
 	ConsultationFrom string        `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
-	IsToken      bool        `json:"isToken,omitempty"`
-	Tapped       bool        `json:"tapped,omitempty"`
-	FaceDown     bool        `json:"faceDown,omitempty"`
-	Faces        []string    `json:"faces,omitempty"`
-	FaceIndex    int         `json:"faceIndex,omitempty"`
-	ID           string      `json:"id"`
-	Name         string      `json:"name,omitempty"`
-	Text         string      `json:"text,omitempty"`
-	ImageName    string      `json:"imageName,omitempty"`
-	InstanceKind string      `json:"instanceKind,omitempty"`
-	OwnerID      int64       `json:"ownerId"`
-	ControllerID int64       `json:"controllerId"`
-	Zone         string      `json:"zone"`
-	PositionX    int         `json:"positionX"`
-	Row          int         `json:"row"`
-	StackOrder   int         `json:"stackOrder"`
-	Revealed     bool        `json:"revealed,omitempty"`
-	Power        int64       `json:"power,omitempty"`
-	Toughness    int64       `json:"toughness,omitempty"`
-	Markers      colorCounts `json:"markers,omitempty"`
+	IsToken          bool        `json:"isToken,omitempty"`
+	Tapped           bool        `json:"tapped,omitempty"`
+	FaceDown         bool        `json:"faceDown,omitempty"`
+	Faces            []string    `json:"faces,omitempty"`
+	FaceIndex        int         `json:"faceIndex,omitempty"`
+	ID               string      `json:"id"`
+	Name             string      `json:"name,omitempty"`
+	Text             string      `json:"text,omitempty"`
+	ImageName        string      `json:"imageName,omitempty"`
+	InstanceKind     string      `json:"instanceKind,omitempty"`
+	OwnerID          int64       `json:"ownerId"`
+	ControllerID     int64       `json:"controllerId"`
+	Zone             string      `json:"zone"`
+	PositionX        int         `json:"positionX"`
+	Row              int         `json:"row"`
+	StackOrder       int         `json:"stackOrder"`
+	Revealed         bool        `json:"revealed,omitempty"`
+	PrintedPower     string      `json:"printedPower,omitempty"`
+	PrintedToughness string      `json:"printedToughness,omitempty"`
+	Power            int64       `json:"power,omitempty"`
+	Toughness        int64       `json:"toughness,omitempty"`
+	Markers          colorCounts `json:"markers,omitempty"`
 }
 
 // ExposedCard shares a revealed identity without disclosing private zone order or positions.
 type ExposedCard struct {
-	IsToken      bool        `json:"isToken,omitempty"`
-	ID           string      `json:"id"`
-	Name         string      `json:"name"`
-	Text         string      `json:"text,omitempty"`
-	ImageName    string      `json:"imageName,omitempty"`
-	InstanceKind string      `json:"instanceKind,omitempty"`
-	OwnerID      int64       `json:"ownerId"`
-	ControllerID int64       `json:"controllerId"`
-	Zone         string      `json:"zone"`
-	Tapped       bool        `json:"tapped,omitempty"`
-	FaceDown     bool        `json:"faceDown,omitempty"`
-	Faces        []string    `json:"faces,omitempty"`
-	FaceIndex    int         `json:"faceIndex,omitempty"`
-	Revealed     bool        `json:"revealed"`
-	Power        int64       `json:"power,omitempty"`
-	Toughness    int64       `json:"toughness,omitempty"`
-	Markers      colorCounts `json:"markers,omitempty"`
+	IsToken          bool        `json:"isToken,omitempty"`
+	ID               string      `json:"id"`
+	Name             string      `json:"name"`
+	Text             string      `json:"text,omitempty"`
+	ImageName        string      `json:"imageName,omitempty"`
+	InstanceKind     string      `json:"instanceKind,omitempty"`
+	OwnerID          int64       `json:"ownerId"`
+	ControllerID     int64       `json:"controllerId"`
+	Zone             string      `json:"zone"`
+	Tapped           bool        `json:"tapped,omitempty"`
+	FaceDown         bool        `json:"faceDown,omitempty"`
+	Faces            []string    `json:"faces,omitempty"`
+	FaceIndex        int         `json:"faceIndex,omitempty"`
+	Revealed         bool        `json:"revealed"`
+	PrintedPower     string      `json:"printedPower,omitempty"`
+	PrintedToughness string      `json:"printedToughness,omitempty"`
+	Power            int64       `json:"power,omitempty"`
+	Toughness        int64       `json:"toughness,omitempty"`
+	Markers          colorCounts `json:"markers,omitempty"`
 }
 type MatchLog struct {
 	Cards     []LogCard `json:"cards,omitempty"`
@@ -217,6 +223,7 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 		v := VisibleCard{ID: c.ID, OwnerID: c.OwnerID, ControllerID: c.ControllerID, Zone: c.Zone, PositionX: c.PositionX, Row: c.Row, StackOrder: c.StackOrder, Tapped: c.Tapped, FaceDown: c.FaceDown, Revealed: c.Revealed}
 		if !c.FaceDown || c.Revealed || viewerID == c.ControllerID || viewerID == c.OwnerID {
 			v.Name = c.Name
+			v.PrintedPower, v.PrintedToughness = c.PrintedPower, c.PrintedToughness
 			v.Text = c.Text
 			v.ImageName = c.ImageName
 			v.InstanceKind = c.InstanceKind
@@ -248,7 +255,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 					if inConsultation {
 						continue
 					}
-					view := ExposedCard{IsToken: isToken(card), Text: card.Text, ImageName: card.ImageName, InstanceKind: card.InstanceKind, ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: true, Power: card.Power, Toughness: card.Toughness, Markers: card.Markers}
+					view := ExposedCard{PrintedPower: card.PrintedPower, PrintedToughness: card.PrintedToughness, IsToken: isToken(card), Text: card.Text, ImageName: card.ImageName, InstanceKind: card.InstanceKind, ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: true, Power: card.Power, Toughness: card.Toughness, Markers: card.Markers}
 					p[i].ExposedCards = append(p[i].ExposedCards, view)
 				}
 			}
@@ -561,6 +568,7 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 		if s.catalog != nil {
 			for i := range cards {
 				entry, _ := s.catalog.Lookup(cards[i].Name)
+				cards[i].PrintedPower, cards[i].PrintedToughness = entry.Power, entry.Toughness
 				cards[i].Faces = append([]string(nil), entry.Faces...)
 			}
 		}
