@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect, openMatchRail, selectFieldArea } from './fixtures';
+import { test, expect, inspectCard, openMatchRail, selectFieldArea } from './fixtures';
 
 const deckFile = {
   name: 'ilha.cod',
@@ -53,7 +53,7 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     if (await chosenFocus.isVisible()) await activate(chosenFocus);
     const ownerTable = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const ownerCard = ownerTable.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });
-    await activate(ownerCard);
+    await inspectCard(page, ownerCard);
     const ownerPreview = page.getByRole('dialog', { name: 'Imagem de Island' });
     await ownerPreview.getByRole('button', { name: 'Outras ações', exact: true }).click();
     const transfer = ownerPreview.getByRole('region', { name: 'Controle da carta' });

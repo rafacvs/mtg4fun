@@ -147,3 +147,10 @@ export async function selectFieldArea(page: Page, field: Locator) {
   await page.mouse.move(area!.endX, area!.endY, { steps: 8 });
   await page.mouse.up();
 }
+
+// Selection is immediate; inspection is an explicit action in the flat menu.
+export async function inspectCard(page: Page, card: Locator) {
+  await card.click();
+  await page.getByRole('toolbar', { name: 'Ações da seleção' }).getByRole('button', { name: 'Mais', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Ações da carta', exact: true }).getByRole('button', { name: 'Inspecionar carta', exact: true }).click();
+}

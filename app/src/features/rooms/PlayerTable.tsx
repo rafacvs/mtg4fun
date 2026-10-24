@@ -16,7 +16,8 @@ export type CardGesture = {
   onHover?: (card: Card) => void;
   onPreview?: (card: Card) => void;
   onZoom?: (card: Card | null) => void;
-  onInspect: (card: Card) => void;
+  onInspect: (card: Card, additive?: boolean) => void;
+  onOpenMenu?: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
@@ -73,7 +74,7 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
         {seat && !own ? <OpponentField player={player} gesture={gesture} /> : <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />}
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
-      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} title="Ocultar todas reveladas (H)" aria-keyshortcuts="H" onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
+      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
 }
