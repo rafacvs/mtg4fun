@@ -21,6 +21,7 @@ export function useLibraryConsultation(
   const [source, setSource] = useState<'top' | 'bottom'>('top');
   const [count, setCount] = useState(1);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [placement, setPlacement] = useState<'top' | 'bottom'>(
     consultationFrom === 'bottom' ? 'bottom' : 'top',
@@ -30,15 +31,18 @@ export function useLibraryConsultation(
     setPlacement(consultationFrom === 'bottom' ? 'bottom' : 'top');
     setSelected([]);
     setSearch('');
+    setTypeFilter('');
   }, [consultationFrom]);
   const filtered = cards.filter((card) =>
-    card.name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')),
+    card.name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')) &&
+    (!typeFilter || (typeFilter === 'unknown' ? !card.type : card.type?.split('—')[0].trim().split(/\s+/).includes(typeFilter))),
   );
   const selectedIDs = cards.filter((card) => selected.includes(card.id)).map((card) => card.id);
   const choose = (next: typeof view) => {
     setView(next);
     setNotice('');
     setSearch('');
+    setTypeFilter('');
     setSelected([]);
   };
   const begin = async () => {
@@ -52,6 +56,7 @@ export function useLibraryConsultation(
       setPlacement(view === 'look' ? source : 'top');
       setView('menu');
       setSearch('');
+      setTypeFilter('');
       setSelected([]);
       setNotice(view === 'draw' ? `${count} carta(s) comprada(s).` : '');
     }
@@ -93,7 +98,9 @@ export function useLibraryConsultation(
     if (await operations.onClose(placement, shuffle)) {
       choose('menu');
       setNotice(shuffle ? 'Grimório embaralhado.' : 'Cartas devolvidas ao grimório.');
+      return true;
     }
+    return false;
   };
   return {
     view,
@@ -102,6 +109,8 @@ export function useLibraryConsultation(
     setSource,
     count,
     setCount,
+    typeFilter,
+    setTypeFilter,
     search,
     setSearch,
     placement,

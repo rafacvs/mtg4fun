@@ -45,7 +45,7 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
     // Only images are controlled; gestures, state, persistence and log use the real API.
     await page.route('**/api/cards/image?*', route => route.fulfill({ status: 502, body: 'Imagem indisponível' }));
     await page.goto(`/#/salas/${roomId}`);
-    await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
+    await expect(page.locator('.own-table-surface')).toBeVisible();
     const field = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true }).getByRole('region', { name: 'Campo', exact: true });
     const selected = field.locator('.playing-card.is-selected');
     const first = field.locator(`[data-card-id="${ids[0]}"]`);
@@ -84,7 +84,8 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
     const unselected = field.locator(`[data-card-id="${ids[4]}"]`);
     await unselected.dblclick();
     await expect(unselected).toHaveAttribute('data-tapped', 'true');
-    await expect(field.locator('.is-selected[data-tapped="false"]')).toHaveCount(4);
+    await expect(unselected).toHaveAttribute('aria-pressed', 'true');
+    await expect(selected).toHaveCount(1);
     expect((await read()).log.at(-1)).toMatchObject({ kind: 'set_tapped', count: 1 });
     await page.keyboard.press('Escape');
     await expect(selected).toHaveCount(0);

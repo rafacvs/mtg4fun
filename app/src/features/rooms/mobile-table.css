@@ -54,3 +54,121 @@
   .side-rail .rail-tab { grid-row: 1; }
   .side-rail .rail-panel-content:not([hidden]), .side-rail .players-panel .rail-panel-content:not([hidden]) { top: 60px; }
 }
+
+/* Mobile uses the same authorized seats and cards as the desktop table. */
+@media (max-width: 1000px) {
+  .mobile-table { --field-card-width: 64px; --hand-card-width: 82px; --opponent-card-width: 44px; }
+  .mobile-table .desktop-fields { flex: 1; display: flex; min-width: 0; min-height: 0; gap: 8px; }
+  .mobile-table .opponent-strip { display: flex; flex-direction: column; flex: 0 0 108px; min-height: 0; overflow: auto; gap: 6px; }
+  .mobile-table .opponent-table-surface { flex: 0 0 110px; min-width: 0; --card-width: 44px; }
+  .mobile-table .own-table-surface { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 184px; grid-template-rows: auto auto 1fr; gap: 6px; }
+  .mobile-table .own-table-surface > .player-table, .mobile-table .own-table-surface .table-zones, .mobile-table .own-table-surface .playmat { display: contents; }
+  .mobile-table .own-table-surface .seat-heading { grid-column: 2; grid-row: 1; }
+  .mobile-table .own-table-surface .zone-column { grid-column: 2; grid-row: 2; }
+  .mobile-table .own-table-surface .zone-battlefield { grid-column: 1; grid-row: 1 / 4; margin-bottom: 110px; }
+  .mobile-table .mobile-turn-actions { grid-column: 2; grid-row: 3; display: flex; flex-direction: column; gap: 4px; }
+  .mobile-table .mobile-turn-actions button { width: 100%; min-height: 44px; padding: 4px; font-size: .72rem; }
+  .mobile-table .seat-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; margin: 0; padding: 4px; border: 1px solid var(--seat-color); border-radius: 8px; background: color-mix(in srgb, var(--seat-color) 10%, var(--panel)); }
+  .mobile-table .seat-number { color: var(--seat-color); font-size: .65rem; }
+  .mobile-table .seat-name { flex: 1; min-width: 0; line-height: 1.1; }
+  .mobile-table .seat-name h2 { font-size: .66rem; margin: 0; overflow-wrap: anywhere; }
+  .mobile-table .seat-name small { font-size: .55rem; color: var(--muted); }
+  .mobile-table .seat-turn { font-size: .55rem; color: var(--seat-color); }
+  .mobile-table .seat-life-readout { font: 600 26px/1 Cinzel, serif; }
+  .mobile-table .seat-life { display: flex; align-items: center; gap: 4px; width: 100%; }
+  .mobile-table .seat-life > span { font-size: .65rem; }
+  .mobile-table .seat-life .numeric-counter { flex: 1; grid-template-columns: 44px minmax(44px, 1fr) 44px; gap: 2px; }
+  .mobile-table .seat-life input { width: 100%; min-height: 44px; font-size: 1.4rem; padding: 0; }
+  .mobile-table .seat-life button { min-height: 44px; width: 44px; padding: 0; }
+  .mobile-table .seat-markers { min-height: 44px; width: 100%; justify-content: space-around; padding: 4px; }
+  .mobile-table .seat-markers .marker-dot { width: 18px; height: 18px; min-width: 18px; font-size: .6rem; }
+  .mobile-table .opponent-table-surface .seat-markers { display: none; }
+  .mobile-table .opponent-table-surface .player-table { display: flex; padding: 3px; background: var(--panel); border-color: var(--seat-color); }
+  .mobile-table .opponent-table-surface .playmat { display: flex; }
+  .mobile-table .opponent-table-surface .zone-column, .mobile-table .opponent-hand { display: none; }
+  .mobile-table .opponent-table-surface .zone-battlefield { --card-width: 44px; }
+  .mobile-table .zone-battlefield { --card-width: var(--field-card-width); background: linear-gradient(130deg, color-mix(in srgb, var(--seat-color) 12%, var(--bg)), var(--bg)); min-height: 0; }
+  .mobile-table .zone-battlefield::before { display: none; }
+  .mobile-table .battlefield-guides { display: flex; flex-direction: column; position: absolute; inset: 24px 0 0; pointer-events: none; }
+  .mobile-table .battlefield-guides span { flex: 1; border-top: 1px solid color-mix(in srgb, var(--seat-color) 16%, transparent); padding: 4px; font-size: .55rem; color: var(--muted); }
+  .mobile-table .zone-column { --card-width: 44px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: auto; padding: 0; gap: 3px; overflow: visible; }
+  .mobile-table .zone-column .card-slot { width: 100%; min-width: 0; }
+  .mobile-table .zone-column .table-zone { padding: 0; }
+  .mobile-table .zone-column .slot-label { font-size: .48rem; }
+  .mobile-table .zone-column .zone-count { font-size: .65rem; }
+  .mobile-table .zone-column .library-bottom { min-height: 44px; width: 100%; padding: 0; font-size: .55rem; }
+  .mobile-table .own-dock { left: 124px; right: 200px; bottom: 8px; max-height: 108px; padding: 0 4px 2px; border: 0; background: transparent; overflow: hidden; }
+  .mobile-table .own-dock .dock-toggle { display: none; }
+  .mobile-table .own-dock .zone-hand > header { position: static; min-height: 0; }
+  .mobile-table .own-dock .zone-hand > header > span { display: block; font-size: .6rem; }
+  .mobile-table .own-dock .zone-hand .hand-organize { display: none; }
+  .mobile-table .own-dock .zone-cards { --card-width: 64px; padding: 4px 6px 8px; align-items: end; }
+  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: -22px; }
+  .mobile-table .own-dock .hand-hint { display: none; }
+  .mobile-table .floating-table-controls { top: 0; bottom: auto; right: 200px; flex-direction: row; transform: translateY(-100%); gap: 2px; }
+  .mobile-table .table-toolbar .observing-label, .mobile-table .toolbar-turn, .mobile-table .turn-order { display: none; }
+  .mobile-table .toolbar-leading { gap: 8px; }
+  .mobile-table .table-toolbar { grid-template-columns: 1fr auto auto; }
+  .mobile-table .table-room-label { display: none; }
+  .mobile-table .table-revealed { max-height: 56px; overflow: auto; }
+}
+@media (max-width: 1000px) {
+  .mobile-table .mobile-table-controls { position: absolute; z-index: 19; left: 124px; right: 200px; bottom: 0; display: flex; gap: 3px; padding: 4px; background: var(--panel-overlay); border-top: 1px solid var(--line); }
+  .mobile-table .mobile-table-controls button { flex: 1 1 0; min-width: 44px; min-height: 44px; padding: 4px 2px; font-size: .6rem; border-radius: 7px; line-height: 1.2; }
+  .mobile-table .own-dock { bottom: 53px; }
+  .mobile-table .own-table-surface .zone-battlefield { margin-bottom: 162px; }
+  .mobile-table .mobile-commands { right: 8px; bottom: 62px; max-height: calc(100% - 72px); }
+  .mobile-table.mobile-hand-open .mobile-commands { bottom: 62px; max-height: calc(100% - 72px); }
+  .mobile-table .mobile-commands > button { min-height: 44px; width: 100%; }
+  .mobile-table .side-rail { inset: 8px 8px 62px; }
+  .rotate-invitation { display: none; }
+  .mobile-table .card-action-bar { bottom: 62px; z-index: 25; }
+  .mobile-table .card-action-bar button { min-height: 44px; }
+  .mobile-table .card-preview-backdrop { z-index: 50; }
+  .mobile-table .card-preview button, .mobile-table .card-action-menu button { min-height: 44px; }
+  .portrait-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-table .rotate-invitation { display: block; margin: 0; padding: 12px; font-size: .8rem; text-align: center; color: var(--muted); }
+  .mobile-table .table-stage { padding: 8px 8px 66px; }
+  .mobile-table .desktop-fields { display: none; }
+  .mobile-table .own-dock { position: relative; inset: auto; flex: 1; max-height: none; width: 100%; padding: 8px; overflow: auto; border: 1px solid var(--line); background: var(--panel); }
+  .mobile-table .own-dock .dock-content { height: 100%; }
+  .mobile-table .own-dock .zone-hand { height: 100%; display: flex; flex-direction: column; }
+  .mobile-table .own-dock .zone-hand > header { display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto; }
+  .mobile-table .own-dock .zone-hand > header > span { font-size: .9rem; }
+  .mobile-table .own-dock .zone-hand .hand-organize { display: inline-flex; min-height: 44px; }
+  .mobile-table .own-dock .zone-cards { --card-width: 120px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); align-content: start; justify-items: center; gap: 12px; overflow: auto; flex: 1; padding: 10px 4px; }
+  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: 0; }
+  .mobile-table .own-dock .hand-hint { display: block; font-size: .7rem; }
+  .mobile-table .mobile-table-controls { left: 0; right: 0; padding: 6px 4px max(6px, env(safe-area-inset-bottom)); }
+  .mobile-table .mobile-table-controls button { font-size: .7rem; }
+  .mobile-table .card-preview { max-height: calc(100dvh - 16px); overflow: auto; }
+  .mobile-table .card-preview-image img { height: 40dvh; max-height: none; object-fit: contain; }
+}
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table .card-action-bar { top: 54px; bottom: auto; left: 124px; right: 200px; transform: none; width: auto; max-width: none; padding: 4px; gap: 3px; }
+  .mobile-table .card-action-bar button { min-width: 44px; min-height: 44px; font-size: .6rem; padding: 3px 5px; }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-table:has(.card-action-bar) .zone-hand .zone-cards { padding-bottom: 160px; }
+}
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table .zone-hand:not(.is-organizing) .playing-card { rotate: var(--fan-angle); transform-origin: center bottom; }
+}
+@media (max-width: 1000px) {
+  .mobile-table .player-table.is-current-turn .seat-heading { box-shadow: inset 0 0 0 1px var(--seat-color); background: color-mix(in srgb, var(--seat-color) 22%, var(--panel)); }
+}
+@media (max-width: 1000px) and (prefers-reduced-motion: no-preference) {
+  .mobile-table .seat-heading { transition: background-color .15s, box-shadow .15s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-table .playing-card.is-tapped, .mobile-table .player-table.is-current-turn .seat-heading { animation: table-state-fade .1s; }
+  @keyframes table-state-fade { from { opacity: .7; } to { opacity: 1; } }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-table .own-dock .zone-cards { min-height: 0; overscroll-behavior-y: contain; touch-action: pan-y; }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-table .own-dock .zone-cards { grid-auto-rows: calc(var(--card-width) * 88 / 63); }
+}

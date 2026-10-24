@@ -57,7 +57,7 @@ export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
     </nav>
     {screen === 'salas' ? <>
       {decks.decks.length === 0 && !decks.loading && <div className="lobby-hint">Antes de confirmar sua entrada em uma partida, <a href="/#/decks" onClick={event => navigate(event, 'decks')}>importe um deck</a>.</div>}
-      <RoomsList userId={user.id} />
+      <RoomsList userId={user.id} decks={decks.decks} />
     </> : <DeckLibrary library={decks} />}
     {error && <p role="alert" className="error">{error}</p>}
   </div>;

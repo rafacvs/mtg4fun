@@ -28,11 +28,9 @@ func (s *Service) createCatalogToken(m *matchState, p *playerState, name string)
 	if !ok || !definition.Token {
 		return actionLogPayload{}, errCardNotFound
 	}
-	power, _ := modifierFromText(definition.Power)
-	toughness, _ := modifierFromText(definition.Toughness)
 	card := Card{
-		Name: name, Text: definition.Text, Power: power,
-		Toughness: toughness, ImageName: name, InstanceKind: "token",
+		Name: name, Text: definition.Text, PrintedPower: definition.Power,
+		PrintedToughness: definition.Toughness, ImageName: name, InstanceKind: "token",
 	}
 	return addCreatedCard(m, p, card, "create-token")
 }
@@ -82,6 +80,7 @@ func (s *Service) copyCard(m *matchState, p *playerState, id string) (actionLogP
 				}
 				card := Card{
 					Name: source.Name, Text: source.Text, Power: source.Power, Toughness: source.Toughness,
+					PrintedPower: source.PrintedPower, PrintedToughness: source.PrintedToughness,
 					ImageName: source.ImageName, Faces: append([]string(nil), source.Faces...),
 					FaceIndex: source.FaceIndex, InstanceKind: "copy",
 				}
@@ -89,6 +88,7 @@ func (s *Service) copyCard(m *matchState, p *playerState, id string) (actionLogP
 				if source.InstanceKind == "" && source.ImageName == "" && s.catalog != nil {
 					if definition, ok := s.catalog.Lookup(source.Name); ok {
 						card.Text = definition.Text
+						card.PrintedPower, card.PrintedToughness = definition.Power, definition.Toughness
 						card.ImageName = source.Name
 						if len(definition.Faces) > 1 {
 							card.Faces = append([]string(nil), definition.Faces...)

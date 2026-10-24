@@ -3,39 +3,44 @@ import type { Card, Match } from './roomsApi';
 import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
+import { CardActionBar } from './CardActionBar';
+import { CardActionMenu } from './CardActionMenu';
+import { DragDestinations } from './DragDestinations';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
-import { MatchLogCards } from './MatchLogCards';
+import { MatchLog } from './MatchLog';
+import { describeLogEntry } from './matchLogPresentation';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
 import { PlayerMenu } from './PlayerMenu';
-import { FloatingTableControls } from './FloatingTableControls';
+import { MobileTableControls } from './MobileTableControls';
 import { TableQuickActions } from './TableQuickActions';
 import { PanelFeedback, PanelHeader } from './TablePanel';
 import { TableIcon } from './TableIcon';
-import { TableOverview } from './TableOverview';
+import { TableFields } from './TableFields';
 import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
 import { dropCell, firstFreeCell, layoutFromCanvas } from './battlefieldLayout';
 import { OwnHand } from './OwnHand';
-import { PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
+import { ZoneColumn, type CardGesture } from './PlayerTable';
 import './match.css';
 import './counters.css';
 import './mobile-table.css';
+import './desktop-table.css';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match: synced, error, busy, unconfirmed, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
-  const [pendingPlacement, setPendingPlacement] = useState<{ ids: string[]; column: number; row: number } | null>(null);
-  const match = synced && pendingPlacement ? withPendingPlacement(synced, pendingPlacement) : synced;
+  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const match = synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1000px)').matches);
+  const [portrait, setPortrait] = useState(() => window.matchMedia('(max-width: 1000px) and (orientation: portrait)').matches);
   const [overview, setOverview] = useState(false);
-  const [dockHidden, setDockHidden] = useState(() => window.matchMedia('(max-width: 1000px)').matches);
+  const [dockHidden, setDockHidden] = useState(false);
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [informationOpen, setInformationOpen] = useState(false);
   const [informationTab, setInformationTab] = useState<'preview' | 'players' | 'log'>('preview');
@@ -64,24 +69,32 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   };
   const [hoverCardId, setHoverCardId] = useState<string | null>(null);
   const [zoomCardId, setZoomCardId] = useState<string | null>(null);
-  const [fieldZoom, setFieldZoom] = useState(0.5);
-  const stepFieldZoom = (direction: -1 | 1) => setFieldZoom(current => Math.min(3, Math.max(0.25, Math.round((current + direction * 0.25) * 100) / 100)));
+  const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [cardMenuId, setCardMenuId] = useState<string | null>(null);
+  const closeCardMenu = useCallback(() => setCardMenuId(null), []);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
+  const [selecting, setSelecting] = useState(false);
+  const selectionControllers = useRef(new Map<string, number>());
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
-  const logRef = useRef<HTMLOListElement>(null);
+  const moreControl = useRef<HTMLButtonElement>(null);
   const dockRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
-  const followingLog = useRef(true);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1000px)');
     const update = () => {
       setCompact(media.matches);
-      setDockHidden(media.matches); setCommandsOpen(false); setInformationOpen(false);
+      setCommandsOpen(false); setInformationOpen(false);
       if (media.matches) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
     };
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1000px) and (orientation: portrait)');
+    const update = () => setPortrait(media.matches);
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
@@ -97,7 +110,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     setLibraryAnchor(document.querySelector<HTMLElement>('.focused-table .library-open') ?? document.querySelector<HTMLElement>('.library-open'));
     setLibraryOpen(true); setActionsOpen(false); setMenuPlayerId(null); setNotice('');
   };
-  const focusPlayer = (id: number) => { setFocusId(id); setOverview(false); setInformationOpen(false); if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); } };
+  const focusPlayer = (id: number) => { if (!compact) { document.querySelector<HTMLElement>(`[data-field-owner="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); return; } setFocusId(id); setOverview(false); setInformationOpen(false); if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); } };
   useEffect(() => {
     const dock = dockRef.current;
     const board = dock?.closest<HTMLElement>('.match-board');
@@ -108,12 +121,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     observer.observe(dock);
     return () => observer.disconnect();
   }, [Boolean(match)]);
-  useEffect(() => {
-    const list = logRef.current;
-    if (!list) return;
-    if (followingLog.current) { list.scrollTop = list.scrollHeight; setUnreadLog(false); }
-    else setUnreadLog(true);
-  }, [match?.log.length, logOpen, informationOpen]);
   useEffect(() => {
     if (!match) return;
     const previousLength = knownLogEntries.current;
@@ -126,7 +133,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => window.clearTimeout(timeout);
   }, [match?.log.length]);
   const drawOne = () => {
-    if (!busy && !unconfirmed) void draw(1);
+    if (!busy && !unconfirmed && !match?.players.find(player => player.userId === match.viewerId)?.consulting) void draw(1);
   };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -138,14 +145,24 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (command === 'draw') drawOne();
       else if (command === 'untap') void untapAll();
       else if (command === 'turn') void turn('next');
-      else void hideAllRevealed();
+      else if (command === 'tap') {
+        const cards = selectionIds.map(id => findCard(match, id)).filter((card): card is Card => Boolean(card && card.zone === 'battlefield' && card.controllerId === match.viewerId));
+        if (cards.length) void setTapped(cards.map(card => card.id), !cards[0].tapped);
+      } else if (command === 'marker') void addMarkers(selectionIds);
+      else if (command === 'hand' || command === 'graveyard' || command === 'exile') void moveSelection(selectionIds, command);
+      else if (command === 'random') { setActionsOpen(true); setActionsAnchor(null); }
+      else if (command === 'token') setCreationOpen(true);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [match, busy, unconfirmed, draw, untapAll, turn, hideAllRevealed]);
+  }, [match, busy, unconfirmed, draw, untapAll, turn, setTapped, selectionIds, move, counter]);
   useEffect(() => {
-    const valid = new Set(match?.players.find(player => player.userId === match.viewerId)?.battlefield?.filter(card => card.controllerId === match.viewerId).map(card => card.id));
-    setSelectionIds(current => current.every(id => valid.has(id)) ? current : current.filter(id => valid.has(id)));
+    const visible = match?.players.flatMap(player => [...player.hand ?? [], ...player.battlefield ?? [], ...player.graveyard ?? [], ...player.exile ?? [], ...player.command ?? []]) ?? [];
+    const controllers = new Map(visible.map(card => [card.id, card.controllerId]));
+    const previous = selectionControllers.current;
+    selectionControllers.current = controllers;
+    const valid = (id: string) => controllers.has(id) && (!previous.has(id) || previous.get(id) === controllers.get(id));
+    setSelectionIds(current => current.every(valid) ? current : current.filter(valid));
   }, [match]);
   useEffect(() => {
     const clear = (event: KeyboardEvent) => {
@@ -161,14 +178,15 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     selectedIds: selectionIds,
     onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
     onHover: card => { if (!drag) setHoverCardId(card.id); },
-    onPreview: card => { setHoverCardId(card.id); setHoverPreviewOpen(true); if (compact) { setInformationOpen(true); setInformationTab('preview'); setCommandsOpen(false); setPlayersOpen(false); setLogOpen(false); } },
+    onPreview: card => { setHoverCardId(card.id); setPreviewId(card.id); },
     onZoom: card => setZoomCardId(card?.id ?? null),
     onToggleTapped: card => {
       if (busy || unconfirmed) return;
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
       void setTapped(ids, !card.tapped);
     },
-    onInspect: card => { if (!drag) { setHoverCardId(card.id); setPreviewId(card.id); } },
+    onInspect: (card, additive) => { if (!drag) { if (portrait && !selecting && !additive) setPreviewId(card.id); setHoverCardId(card.id); setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
+    onOpenMenu: card => { setSelectionIds(current => current.includes(card.id) ? current : [card.id]); setCardMenuId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
     onDragCancel: () => setDrag(null),
@@ -181,6 +199,24 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     else void revealCards([card.id], Boolean(value));
   };
 
+  async function moveSelection(ids: string[], destination: string) {
+    if (!match || busy || unconfirmed) return false;
+    const cards = ids.map(id => findCard(match, id)).filter((card): card is Card => Boolean(card && card.controllerId === match.viewerId));
+    if (!cards.length) return false;
+    const [zone, placement] = destination.split('-');
+    const borrowed = cards.find(card => card.zone === 'battlefield' && card.ownerId !== match.viewerId);
+    if (borrowed && zone !== 'battlefield') { setCardMenuId(borrowed.id); setNotice('Escolha explicitamente a zona do dono para mover a carta.'); return false; }
+    return move(cards.map(card => card.id), zone, placement as 'top' | 'bottom' | undefined);
+  }
+
+  async function addMarkers(ids: string[]) {
+    for (const id of ids) {
+      const card = match && findCard(match, id);
+      if (!card || card.controllerId !== match?.viewerId) continue;
+      if (!await counter({ target: 'card', cardId: id, subject: 'marker', color: 'red', operation: 'increment', value: 1 })) break;
+    }
+  }
+
   async function dropCard(card: Card, x: number, y: number) {
     const zone = dropZoneAt(x, y);
     if (!zone || busy || unconfirmed || card.controllerId !== match?.viewerId) return;
@@ -191,36 +227,32 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     }
     if (zone === 'battlefield') {
       const battlefield = synced?.players.find(player => player.userId === synced.viewerId)?.battlefield ?? [];
-      const cell = locateBattlefieldCell(x, y, battlefield);
+      const cell = locateBattlefieldCell(x, y, battlefield) ?? firstFreeCell(battlefield);
       if (!cell || !synced) return;
       if (card.zone !== 'battlefield') {
-        setPendingPlacement({ ids: [card.id], column: cell.column, row: cell.row });
-        const ok = await move([card.id], 'battlefield', undefined, { x: cell.column, row: cell.row });
-        setPendingPlacement(null);
+        const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
+        const ok = await move(ids, 'battlefield', undefined, { x: cell.column, row: cell.row });
         if (ok) setSelectionIds([]);
         return;
       }
       const ids = selectionIds.includes(card.id) ? [card.id, ...selectionIds.filter(id => id !== card.id)] : [card.id];
-      setPendingPlacement({ ids, column: cell.column, row: cell.row });
       const ok = await position(ids, cell.column, cell.row);
-      setPendingPlacement(null);
       if (ok) setSelectionIds([]);
       return;
     }
-    if (zone === 'library') await move([card.id], 'library', 'top');
-    else if (zone === 'library-bottom') await move([card.id], 'library', 'bottom');
-    else if (zone !== card.zone) await move([card.id], zone);
+    const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
+    if (zone !== card.zone) await moveSelection(ids, zone === 'library' ? 'library-top' : zone);
   }
 
   if (!match) return <p role={error ? 'alert' : 'status'}>{error || 'Carregando mesa…'}</p>;
   const own = match.players.find(player => player.userId === match.viewerId)!;
-  const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
+  const focused = match.players.find(player => player.userId === (compact ? (focusId ?? match.viewerId) : match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
-  const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describe(lastAction) : undefined;
+  const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describeLogEntry(lastAction) : undefined;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
-  const showingOverview = compact ? overview : focusId === null;
+  const showingOverview = compact ? overview : false;
   const showOverview = () => {
     setFocusId(null); setOverview(true); setInformationOpen(false);
     if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
@@ -229,20 +261,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     if (!showingOverview && focused.userId === id) showOverview();
     else focusPlayer(id);
   };
-  const miniatureOverview = showingOverview && (compact || match.players.length > 2);
-  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0} actionsOpen={actionsOpen}
+  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
-    onActions={anchor => { setActionsAnchor(compact ? document.querySelector<HTMLElement>('.floating-table-controls button[aria-label="Comandos"]') : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
+    onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
-  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact && !dockHidden ? 'mobile-hand-open' : ''}`} aria-label="Mesa da partida">
+  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact && !dockHidden ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} data-density={density} aria-label="Mesa da partida">
     <div className="match-content">
       <div className="table-toolbar">
-        <div className="toolbar-leading"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span></div>
-        <div className="toolbar-zoom" role="group" aria-label="Zoom do campo">
-          <button type="button" aria-label="Diminuir zoom" disabled={fieldZoom <= 0.25} onClick={() => stepFieldZoom(-1)}>−</button>
-          <button type="button" aria-label="Aumentar zoom" disabled={fieldZoom >= 3} onClick={() => stepFieldZoom(1)}>+</button>
-        </div>
+        <div className="toolbar-leading"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><button className="secondary selection-mode" aria-pressed={selecting} onClick={() => setSelecting(value => !value)}>Selecionar</button><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span></div>
+        <label className="table-density">Densidade <select aria-label="Densidade" value={density} onChange={event => setDensity(event.target.value as 'compact' | 'comfortable')}><option value="compact">Compacta</option><option value="comfortable">Confortável</option></select></label>
         <div className="toolbar-trailing">
           <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
           <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
@@ -251,28 +279,30 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       </div>
       {match.finishVotes.length > 0 && <p className="finish-vote-notice" role="status">Encerramento solicitado: {match.finishVotes.length} de {match.finishRequired} concordância(s). Use Finalizar para acompanhar ou concordar.</p>}
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
+      {optimisticPending && <p className="pending-action" role="status">Ação pendente · aguardando confirmação</p>}
       {notice && <p role="status" className="library-notice">{notice}</p>}
+      {compact && <p className="rotate-invitation">Gire o aparelho para jogar o campo</p>}
       <div className="table-stage">
         <div className="table-main">
-          {miniatureOverview ? <TableOverview match={match} onFocus={focusPlayer} /> : <div className={`match-players ${focusId !== null || compact ? 'has-focus' : ''}`}>{match.players.map(player =>
-            <PlayerTable key={player.userId} player={player} focused={player.userId === focused.userId} own={player.userId === match.viewerId} viewerId={match.viewerId} hoverZone={drag?.zone ?? null} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={stepFieldZoom} expanded={!showingOverview} onFocus={() => togglePlayerFocus(player.userId)} onReturnToOwn={!showingOverview && player.userId !== match.viewerId && player.userId === focused.userId ? () => focusPlayer(match.viewerId) : undefined} onPlayerMenu={anchor => openPlayer(player.userId, anchor)} currentTurn={player.userId === match.currentTurn.userId} onLibrary={player.userId === match.viewerId ? openLibrary : undefined} onDraw={player.userId === match.viewerId ? drawOne : undefined} onHideRevealed={player.userId === match.viewerId ? () => void hideAllRevealed() : undefined} disabled={busy || unconfirmed} />
-          )}</div>}
+          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} density={density} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} hidden={compact && dockHidden} className={`own-dock ${dockHidden ? 'is-collapsed' : ''}`} aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
             <button className="dock-toggle secondary" aria-label={compact ? 'Fechar mão' : dockHidden ? `Mostrar mão (${own.handCount}) e ações` : 'Ocultar mão e ações'} aria-expanded={!dockHidden} aria-controls="own-dock-content" onClick={() => setDockHidden(value => !value)}><TableIcon name="hand" /><span>{dockHidden ? `Mostrar mão (${own.handCount}) e ações` : `Mão · ${own.handCount}`}</span><small hidden={dockHidden || compact}>Ocultar</small><TableIcon name={compact ? "close" : "chevron"} /></button>
             <div id="own-dock-content" className="dock-content" hidden={dockHidden}>
               {!compact && quickActions}
-              <OwnHand key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+              <OwnHand scrollAxis={portrait ? 'y' : 'x'} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             </div>
           </section>
         </div>
         {compact && <>
           {(commandsOpen || informationOpen) && <div className="floating-panel-scrim" aria-hidden="true" onClick={closeFloatingPanel} />}
-          <FloatingTableControls handOpen={!dockHidden} commandsOpen={commandsOpen} informationOpen={informationOpen} handCount={own.handCount} unreadLog={unreadLog}
-            onHand={() => setDockHidden(value => !value)}
-            onCommands={() => { setCommandsOpen(value => !value); setInformationOpen(false); }}
-            onInformation={() => { if (!informationOpen) toggleRailPanel(informationTab); setInformationOpen(value => !value); setCommandsOpen(false); }} />
+          <MobileTableControls moreRef={moreControl} handOpen={!dockHidden} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
+            onHand={() => setDockHidden(value => !value)} onDraw={drawOne} onUntap={() => void untapAll()} onTurn={() => void turn('next')}
+            onMore={() => { setCommandsOpen(value => !value); setInformationOpen(false); }} />
           {commandsOpen && <section id="mobile-commands" className="mobile-commands" aria-label="Comandos da partida">
             <PanelHeader title="Comandos" closeLabel="Fechar comandos" onClose={() => setCommandsOpen(false)} />
+            <button className="secondary" onClick={() => { toggleRailPanel(informationTab); setInformationOpen(true); setCommandsOpen(false); }}>Informações</button>
+            <button className="secondary" onClick={() => { setCommandsOpen(false); openLibrary(); }}>Grimório</button>
+            <button className="secondary" onClick={event => { setCommandsOpen(false); openPlayer(own.userId, event.currentTarget); }}>Vida e marcadores</button>
             {quickActions}
             <PanelFeedback error={error} busy={busy} unconfirmed={unconfirmed} onRetry={retry} />
             {actionResult && <p role="status" className="command-result">{actionResult}</p>}
@@ -292,7 +322,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
                   <button className="secondary player-summary" aria-label={`Abrir jogador ${player.name}`} onClick={event => openPlayer(player.userId, event.currentTarget.querySelector<HTMLElement>('[data-life-anchor]') ?? event.currentTarget)}>
                     <strong>{player.name}{player.userId === match.viewerId && <small>Você</small>}</strong><span data-life-anchor title="Vida" aria-label={`Vida ${player.life}`}><TableIcon name="heart" />{player.life}</span><span title="Cartas no campo" aria-label={`Campo ${player.battlefieldCount}`}><TableIcon name="focus" />{player.battlefieldCount}</span><span title="Cartas na mão" aria-label={`Mão ${player.handCount}`}><TableIcon name="hand" />{player.handCount}</span>
                   </button>
-                  <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={!showingOverview && player.userId === focused.userId} title={!showingOverview && player.userId === focused.userId ? "Voltar à visão geral" : "Ver campo"} onClick={() => togglePlayerFocus(player.userId)}><TableIcon name={!showingOverview && player.userId === focused.userId ? "grid" : "focus"} /></button>
+                  <button className="secondary player-focus" aria-label={`Ver campo de ${player.name}`} aria-pressed={!showingOverview && player.userId === focused.userId} title={!showingOverview && player.userId === focused.userId ? "Voltar à visão geral" : "Ver campo"} onClick={() => togglePlayerFocus(player.userId)}><TableIcon name={!showingOverview && player.userId === focused.userId ? "grid" : "focus"} /><span>Campo</span></button>
                   {player.userId === activePlayerId && <span className="activity-indicator">Atividade recente</span>}
                 </div>
               )}</nav>
@@ -301,13 +331,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section className={`rail-panel log-panel ${logOpen ? 'is-open' : ''}`}>
             <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
-              <section className="match-log" aria-label="Registro da partida">
-                <ol ref={logRef} onScroll={event => { const list = event.currentTarget; followingLog.current = list.scrollHeight - list.scrollTop - list.clientHeight < 32; if (followingLog.current) setUnreadLog(false); }}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}<MatchLogCards cards={entry.cards} onPreview={id => {
-                  const card = findCard(match, id);
-                  if (card) gesture.onPreview?.(card);
-                }} /></li>)}</ol>
-                {unreadLog && <button className="new-log-entries secondary" onClick={() => { followingLog.current = true; if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; setUnreadLog(false); }}><TableIcon name="draw" />Novas ações</button>}
-              </section>
+              <MatchLog entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
+                const card = findCard(match, id);
+                if (card) gesture.onPreview?.(card);
+              }} />
             </div>
           </section>
         </aside>
@@ -319,6 +346,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <img src={cardImageURL(drag.card)} alt="" />
       </div>}
     </div>
+    {drag && <DragDestinations active={drag.zone} />}
+    {!drag && <CardActionBar cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed}
+      onTapped={(ids, tapped) => void setTapped(ids, tapped)} onReveal={ids => void revealCards(ids, true)}
+      onMove={(ids, destination) => { void moveSelection(ids, destination); }}
+      onMarker={ids => { void addMarkers(ids); }}
+      onMore={() => setCardMenuId(selectionIds[0])} onClear={() => setSelectionIds([])} />}
+    <CardActionMenu card={cardMenuId ? findCard(match, cardMenuId) : null} viewerId={match.viewerId} players={match.players} disabled={busy || unconfirmed} onClose={closeCardMenu}
+      onMove={moveSelection} onMoveToOwner={(id, destination) => { const [zone, placement] = destination.split('-'); void move([id], zone, placement as 'top' | 'bottom' | undefined).then(ok => { if (ok) setNotice(''); }); }} onCounter={counter} onStateChange={changeCardState} onCopy={id => void copyCard(id)} onTransfer={(id, playerId) => void transferControl(id, playerId)} onHideAll={() => void hideAllRevealed()} onInspect={setPreviewId} />
     <LibraryConsultation
       open={libraryOpen}
       anchor={libraryAnchor}
@@ -353,7 +388,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
       return ok;
     }} onClose={closeCreation} />
-    <CardPreview players={match.players} onMove={(cardId, destination) => {
+    <CardPreview readingActions={portrait} players={match.players} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
       const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
       return move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {
@@ -424,75 +459,4 @@ function scrollBattlefieldCell(userId: number, column: number, row: number) {
     if (box.top < view.top) scroll.scrollTop -= view.top - box.top;
     else if (box.bottom > view.bottom) scroll.scrollTop += box.bottom - view.bottom;
   }));
-}
-
-function withPendingPlacement(match: Match, pending: { ids: string[]; column: number; row: number }): Match {
-  const anchor = findCard(match, pending.ids[0]);
-  if (!anchor) return match;
-  const targets = new Map<string, { column: number; row: number }>();
-  for (const id of pending.ids) {
-    const card = findCard(match, id);
-    if (!card || card.controllerId !== match.viewerId) continue;
-    if (card.zone === 'battlefield') targets.set(id, { column: card.positionX + pending.column - anchor.positionX, row: card.row + pending.row - anchor.row });
-    else if (id === anchor.id) targets.set(id, { column: pending.column, row: pending.row });
-  }
-  if (targets.size === 0) return match;
-  const zones = ['hand', 'graveyard', 'exile', 'command', 'consulted', 'revealed'] as const;
-  return {
-    ...match,
-    players: match.players.map(player => {
-      const entering: Card[] = [];
-      let next = { ...player };
-      for (const zone of zones) {
-        const cards = player[zone];
-        if (!cards) continue;
-        const staying = cards.filter(card => {
-          const target = targets.get(card.id);
-          if (!target) return true;
-          entering.push({ ...card, zone: 'battlefield', positionX: target.column, row: target.row, stackOrder: 1_000_000 + entering.length });
-          return false;
-        });
-        next = { ...next, [zone]: staying };
-        if (zone === 'hand') next.handCount = staying.length;
-        if (zone === 'graveyard') next.graveyardCount = staying.length;
-        if (zone === 'exile') next.exileCount = staying.length;
-        if (zone === 'command') next.commandCount = staying.length;
-      }
-      const battlefield = (player.battlefield ?? []).map(card => {
-        const target = targets.get(card.id);
-        return target ? { ...card, positionX: target.column, row: target.row } : card;
-      });
-      next.battlefield = [...battlefield, ...entering];
-      next.battlefieldCount = next.battlefield.length;
-      return next;
-    }),
-  };
-}
-
-function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
-  if (entry.kind === 'finish_vote') return `${entry.actorName} concordou em finalizar a partida (${entry.result}).`;
-  if (entry.kind === 'finished') return `${entry.actorName} confirmou o encerramento da partida (${entry.result}). Sala encerrada.`;
-  if (entry.kind === 'create-token' || entry.kind === 'create-custom-token') return `${entry.actorName} criou a ficha ${entry.result}.`;
-  if (entry.kind === 'copy-card') return `${entry.actorName} criou uma cópia de ${entry.result}.`;
-  if (entry.kind === 'set_tapped') return `${entry.actorName} alterou virar/desvirar de ${entry.count} carta(s).`;
-  if (entry.kind === 'untap_all') return `${entry.actorName} desvirou todas as cartas do próprio campo.`;
-  if (entry.kind === 'set_face') return `${entry.actorName} escolheu uma face da carta.`;
-  if (entry.kind === 'set_face_down') return `${entry.actorName} alterou face para baixo de ${entry.count} carta(s).`;
-  if (entry.kind === 'reveal_cards') return entry.result ? `${entry.actorName} revelou ${entry.result}.` : `${entry.actorName} ocultou uma revelação.`;
-  if (entry.kind === 'hide_all_revealed') return `${entry.actorName} ocultou todas as suas reveladas (${entry.count}).`;
-  if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
-  if (entry.kind === 'move' && entry.result) return `${entry.actorName}: ${entry.result} ao mover para ${zoneNames[entry.to || ''] || entry.to}.`;
-  if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
-  if (entry.kind === 'transfer_control') return `${entry.actorName} transferiu o controle de uma carta para ${entry.result}.`;
-  if (entry.kind === 'position') return `${entry.actorName} reposicionou ${entry.count || 1} carta(s) no campo.`;
-  if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
-  if (entry.kind === 'counter') return `${entry.actorName} alterou contadores: ${entry.result}.`;
-  if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
-  if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
-  if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;
-  if (entry.kind === 'reveal') return `${entry.actorName} revelou ${entry.result}.`;
-  if (entry.kind === 'reorder') return `${entry.actorName} reorganizou uma consulta privada.`;
-  if (entry.kind === 'close') return `${entry.actorName} fechou a consulta do grimório.`;
-  if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;
-  return 'Partida iniciada.';
 }

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
 import { fitBattlefield } from './battlefieldLayout';
 import { createLibraryGesture } from './libraryGesture';
+import { OpponentField } from './OpponentField';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
 import { TableIcon, type TableIconName } from './TableIcon';
@@ -15,7 +16,8 @@ export type CardGesture = {
   onHover?: (card: Card) => void;
   onPreview?: (card: Card) => void;
   onZoom?: (card: Card | null) => void;
-  onInspect: (card: Card) => void;
+  onInspect: (card: Card, additive?: boolean) => void;
+  onOpenMenu?: (card: Card) => void;
   onToggleTapped?: (card: Card) => void;
   onDragMove: (card: Card, x: number, y: number) => void;
   onDragEnd: (card: Card, x: number, y: number) => void;
@@ -48,9 +50,9 @@ function canDrag(card: Card, viewerId: number) {
   return card.controllerId === viewerId;
 }
 
-export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZone, gesture, fieldZoom, onFieldZoom, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; fieldZoom: number; onFieldZoom: (direction: -1 | 1) => void; onFocus: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
+export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZone, gesture, fieldZoom, onFieldZoom, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled, seat }: { seat?: ReactNode; player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; onFocus?: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
-    <header className="player-heading">
+    {seat ?? <header className="player-heading">
       <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}>
         <span className="player-name-life">
           <h2>{player.name}</h2>
@@ -63,16 +65,16 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
       {currentTurn && <span className="turn-badge">Turno atual</span>}
       <div className="player-view-actions">
         {onReturnToOwn && <button className="secondary return-own-table" onClick={onReturnToOwn} aria-label="Voltar para minha mesa" title="Voltar para minha mesa"><TableIcon name="back" /><span>Minha mesa</span></button>}
-        <button className="secondary icon-button" onClick={onFocus} aria-label={expanded ? 'Voltar à visão geral' : `Ampliar mesa de ${player.name}`} title={expanded ? 'Voltar à visão geral' : 'Ampliar mesa'}><TableIcon name={expanded ? 'grid' : 'focus'} /></button>
+        {onFocus && <button className="secondary icon-button" onClick={onFocus} aria-label={expanded ? 'Voltar à visão geral' : `Ampliar mesa de ${player.name}`} title={expanded ? 'Voltar à visão geral' : 'Ampliar mesa'}><TableIcon name={expanded ? 'grid' : 'focus'} /></button>}
       </div>
-    </header>
+    </header>}
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
-        <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={onDraw} disabled={disabled} />
-        <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />
+        <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
+        {seat && !own ? <OpponentField player={player} gesture={gesture} /> : <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />}
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
-      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} title="Ocultar todas reveladas (H)" aria-keyshortcuts="H" onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
+      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
 }
@@ -80,13 +82,14 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
 export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, disabled }: ZoneProps) {
   return <div className="zone-column">
     <CardSlot zone="command" title="Comandante" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
-    <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} onDraw={onDraw} disabled={disabled} />
+    {player.consulting && <span role="status" className="library-consulting">Consultando o grimório</span>}
+    <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
     <CardSlot zone="graveyard" title="Cemitério" count={player.graveyardCount} card={topCard(player.graveyard)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <CardSlot zone="exile" title="Exílio" count={player.exileCount} card={topCard(player.exile)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
   </div>;
 }
 
-function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoom, onFieldZoom }: ZoneProps & { fieldZoom: number; onFieldZoom: (direction: -1 | 1) => void }) {
+function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoom, onFieldZoom }: ZoneProps & { fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void }) {
   const cards = player.battlefield ?? [];
   const zoom = fieldZoom;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -115,7 +118,7 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoo
   }, [zoom, cards.length]);
   useEffect(() => {
     const node = document.querySelector<HTMLElement>(`[data-field-owner="${player.userId}"] .battlefield-scroll`);
-    if (!node) return;
+    if (!node || !onFieldZoom) return;
     const onWheel = (event: WheelEvent) => {
       if (!event.ctrlKey) return;
       event.preventDefault();
@@ -129,6 +132,7 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoo
       <span>Campo</span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
     </header>
+    <div className="battlefield-guides" aria-hidden="true"><span>Permanentes</span><span>Terrenos</span></div>
     <div className="battlefield-scroll" ref={scrollRef}>
       <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': zoom } as CSSProperties}>
         <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
@@ -157,7 +161,7 @@ function LibraryPile({ count, droppable, hoverZone, onOpen, onDraw, disabled }: 
       <ZoneLabel title="Grimório" count={count} />
       {count > 0 ? <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}>{[0, 1, 2].map(layer => <span key={layer}><img src="/library-back.png" alt="" draggable={false} /></span>)}</div>
         : <span className="slot-empty" aria-hidden="true"><TableIcon name="book-open" /></span>}
-      {onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title="Clique: ações · Duplo clique: comprar uma carta (D)" onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
+      {onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title={onDraw ? "Clique: ações · Duplo clique: comprar uma carta (D)" : "Retomar consulta do grimório"} onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
         gesture.current.doubleClick();
         if (disabled || !count) return;
         setFeedback(true); clearTimeout(feedbackTimer.current);

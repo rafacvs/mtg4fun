@@ -20,6 +20,7 @@ button.marker-dot { min-height: 46px; }
 .player-heading .marker-dot { width: 22px; height: 22px; border-width: 1px; font-size: .68rem; }
 .card-stats { position: absolute; left: 2px; right: 2px; bottom: 2px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; pointer-events: none; }
 .pt-modifier { padding: 0 3px; border-radius: 4px; background: var(--label-bg); color: #fff; font-size: .62rem; font-weight: 800; }
+.pt-modifier[data-modified=true] { background: var(--gold, #d4af65); color: #17110a; }
 .playing-card .marker-dots { gap: 2px; }
 .playing-card .marker-dot { width: 14px; height: 14px; border-width: 1px; font-size: .55rem; }
 .card-preview .adjust-pair, .card-preview .marker-dots, .card-preview .card-stats { margin-top: 12px; }

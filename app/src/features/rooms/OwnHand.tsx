@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Card } from './roomsApi';
 import type { CardGesture } from './PlayerTable';
 import { PlayingCard } from './PlayingCard';
 
-export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
+export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrollAxis = 'x' }: { scrollAxis?: 'x' | 'y'; cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
   const row = useRef<HTMLDivElement>(null);
   const [organizing, setOrganizing] = useState(false);
+  useEffect(() => { if (scrollAxis !== 'y') setOrganizing(false); }, [scrollAxis]);
   const [order, setOrder] = useState<string[]>([]);
   const ordered = [...cards].sort((a, b) => {
     const rank = (id: string) => order.includes(id) ? order.indexOf(id) : order.length + cards.findIndex(card => card.id === id);
@@ -26,7 +27,7 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
       event.preventDefault();
       reorderAt(ordered[index], Math.min(ordered.length - 1, index + (event.key === 'ArrowLeft' ? -1 : 1)));
     }}>
-      {ordered.map(card => <PlayingCard key={card.id} card={card} draggable={card.controllerId === viewerId} scrollable={!organizing} {...gesture} onDragMove={(card, x, y) => {
+      {ordered.map((card, index) => <PlayingCard style={{ '--fan-angle': `${Math.max(-7, Math.min(7, (index - (ordered.length - 1) / 2) * 2))}deg` } as CSSProperties} key={card.id} card={card} draggable={card.controllerId === viewerId} selected={gesture.selectedIds?.includes(card.id)} scrollable={!organizing} scrollAxis={scrollAxis} {...gesture} onDragMove={(card, x, y) => {
         const box = row.current?.getBoundingClientRect();
         if (box && organizing) {
           if (x < box.left + 32) row.current!.scrollLeft -= 12;
@@ -34,6 +35,8 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture }: { c
         }
         gesture.onDragMove(card, x, y);
       }} onDragEnd={(card, x, y) => {
+        const destination = document.elementsFromPoint(x, y).map(node => node.closest('[data-drop-zone]')?.getAttribute('data-drop-zone')).find(Boolean);
+        if (destination && destination !== 'hand') { gesture.onDragEnd(card, x, y); return; }
         const box = row.current?.getBoundingClientRect();
         if (box && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom) {
           const others = [...row.current!.querySelectorAll<HTMLElement>('[data-card-id]')].filter(node => node.dataset.cardId !== card.id);

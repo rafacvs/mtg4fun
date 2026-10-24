@@ -49,6 +49,7 @@ test('prévia lateral por hover e painéis recolhidos individualmente', async ({
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await read()).log.length).toBe(before);
     const box = await panel.boundingBox();
+    await openMatchRail(page);
     const players = await page.getByRole('navigation', { name: 'Foco da mesa' }).boundingBox();
     expect(box!.x).toBeGreaterThan(900);
     expect(box!.height).toBeGreaterThan(220);
@@ -110,13 +111,13 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     const otherLog = other.getByRole('region', { name: 'Registro da partida' });
     const panel = page.getByRole('region', { name: 'Prévia da carta', exact: true });
     const otherPanel = other.getByRole('region', { name: 'Prévia da carta', exact: true });
-    const link = log.getByRole('button', { name: 'Prévia de Island no registro', exact: true }).last();
+    const link = log.getByRole('listitem').filter({ hasText: 'para Cemitério' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
     const before = (await read()).log.length;
     if (info.project.use.hasTouch) await link.tap(); else await link.hover();
     await expect(panel.getByRole('img', { name: 'Prévia de Island', exact: true })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await read()).log.length).toBe(before);
-    await otherLog.getByRole('button', { name: 'Prévia de Island no registro', exact: true }).last().hover();
+    await otherLog.getByRole('listitem').filter({ hasText: 'para Cemitério' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true }).hover();
     await expect(otherPanel.getByRole('img')).toBeVisible();
     await action({ kind: 'move', cardIds: [cards[0].id], to: 'hand' });
     await expect(otherLog.locator('li').filter({ hasText: 'para Cemitério' }).getByRole('button')).toHaveCount(0);
@@ -232,7 +233,6 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await page.goto(`/#/salas/${roomId}`);
         await expect(article).toBeAttached();
         await openHand(page);
-        if (info.project.name === 'desktop') await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
         const field = article.getByRole('region', { name: 'Campo', exact: true });
         await expect(field.locator('[data-row="0"][data-stack-size="2"]')).toHaveCount(2);
         await expect(field.locator('[data-row="0"][data-stack-size="3"]')).toHaveCount(3);

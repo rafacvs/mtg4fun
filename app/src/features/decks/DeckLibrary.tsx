@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useCardInspection } from './useCardInspection';
 import { useDecks } from './useDecks';
+import { DeckExamples } from './DeckExamples';
+import { DeleteDeckConfirmation } from './DeleteDeckConfirmation';
 import './decks.css';
 
 type Props = { library: ReturnType<typeof useDecks> };
@@ -10,6 +12,7 @@ export function DeckLibrary({ library }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [importOpen, setImportOpen] = useState(true);
+  const [deleting, setDeleting] = useState<{ id: number; name: string } | null>(null);
   const chosen = library.decks.find(deck => deck.id === library.selected);
   const cardCount = chosen?.cards.reduce((sum, card) => sum + card.quantity, 0) ?? 0;
 
@@ -44,10 +47,18 @@ export function DeckLibrary({ library }: Props) {
         <input ref={fileInput} id="deck-file" type="file" accept=".cod" disabled={library.busy} onChange={event => setFile(event.target.files?.[0] ?? null)} />
       </form></div>
     </details>
+    {deleting && <DeleteDeckConfirmation name={deleting.name} busy={library.busy} error={library.error} onConfirm={() => library.remove(deleting.id)} onClose={() => setDeleting(null)} />}
     {library.error && <p role="alert" className="error">{library.error}</p>}
     {library.loading ? <p role="status">Carregando decks…</p> : library.decks.length === 0 ? <div className="empty-decks"><h3>Sua biblioteca começa aqui.</h3><p>Nenhum deck salvo. Importe seu primeiro arquivo.</p></div> : <div className="library-workspace">
       <div className="saved-deck-grid" aria-label="Decks salvos">{library.decks.map(deck => <button key={deck.id} type="button" className="saved-deck-card secondary" aria-pressed={library.selected === deck.id} onClick={() => { inspection.close(); library.setSelected(deck.id); }}>
-        <span className="deck-emblem" aria-hidden="true">♧</span><span><strong>{deck.name}</strong><small>{deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cartas</small></span><span aria-hidden="true">→</span>
+        <span className="deck-emblem" aria-hidden="true">♧</span>
+        <span>
+          <strong>{deck.name}</strong>
+          <small>{deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cartas</small>
+          <small>{deck.cards.some(card => !card.available) ? `${deck.cards.filter(card => !card.available).length} nomes fora do catálogo` : 'Cartas no catálogo'}</small>
+          <small>Prévia: {deck.cards.find(card => card.available)?.name ?? 'Nenhuma carta disponível'}</small>
+        </span>
+        <span aria-hidden="true">→</span>
       </button>)}</div>
       <div className="deck-picker">
         <label htmlFor="saved-deck">Escolher deck salvo</label>
@@ -59,8 +70,9 @@ export function DeckLibrary({ library }: Props) {
       {chosen ? <article className="deck-detail">
         <div className="deck-detail-header">
           <div><p className="eyebrow">DECK SELECIONADO</p><h3>{chosen.name}</h3><p>{cardCount} cartas · {chosen.cards.length} nomes</p></div>
-          <button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => { inspection.close(); void library.remove(chosen.id); }}>Excluir deck</button>
+          <button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => { inspection.close(); setDeleting({ id: chosen.id, name: chosen.name }); }}>Excluir deck</button>
         </div>
+        <DeckExamples />
         <div className="deck-columns">
           <section className="deck-preview" aria-label="Preview de carta">
             {inspection.card ? <>

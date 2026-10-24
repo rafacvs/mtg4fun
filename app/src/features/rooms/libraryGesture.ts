@@ -22,5 +22,6 @@ export function createLibraryGesture(open: () => void, draw: () => void, delay =
 
 export function shortcutCommand(event: Pick<KeyboardEvent, 'key' | 'repeat' | 'ctrlKey' | 'metaKey' | 'altKey'>, editing: boolean) {
   if (editing || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return null;
-  return ({ d: 'draw', u: 'untap', n: 'turn', h: 'hide' } as const)[event.key.toLowerCase() as 'd' | 'u' | 'n' | 'h'] ?? null;
+  const commands = { d: 'draw', u: 'untap', n: 'turn', t: 'tap', h: 'hand', g: 'graveyard', e: 'exile', '+': 'marker', r: 'random', f: 'token' } as const;
+  return commands[event.key.toLowerCase() as keyof typeof commands] ?? null;
 }

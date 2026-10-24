@@ -60,19 +60,19 @@ export { expect };
 // The panels are controlled by their own tabs; compact screens show one at a time.
 export async function openMatchRail(page: Page, panel = 'Jogadores') {
   await expect(page.locator('.own-dock')).toBeAttached();
-  const information = page.getByRole('button', { name: 'Informações', exact: true });
-  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(information).toBeVisible();
-  if (await information.isVisible() && await information.getAttribute('aria-expanded') === 'false') await information.click();
+  if ((page.viewportSize()?.width ?? 1280) <= 1000 && !await page.locator('#match-rail').isVisible()) {
+    await openQuickActions(page);
+    await page.getByRole('button', { name: 'Informações', exact: true }).click();
+  }
   const tab = page.getByRole('button', { name: panel, exact: true });
   await expect(tab).toBeVisible();
   if (await tab.getAttribute('aria-expanded') === 'false') await tab.click();
 }
 
 export async function closeMatchRail(page: Page) {
-  const information = page.getByRole('button', { name: 'Informações', exact: true });
-  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(information).toBeVisible();
-  if (await information.isVisible()) {
-    if (await information.getAttribute('aria-expanded') === 'true') await information.click();
+  if ((page.viewportSize()?.width ?? 1280) <= 1000) {
+    const close = page.getByRole('button', { name: 'Fechar informações', exact: true });
+    if (await close.isVisible()) await close.click();
     return;
   }
   for (const label of ['Prévia', 'Jogadores', 'Registro']) {
@@ -95,19 +95,28 @@ export async function closeHand(page: Page) {
 
 export async function openQuickActions(page: Page) {
   await expect(page.locator('.own-dock')).toBeAttached();
-  const toggle = page.getByRole('button', { name: 'Comandos', exact: true });
-  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(toggle).toBeVisible();
-  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+  if ((page.viewportSize()?.width ?? 1280) > 1000) {
+    await expect(page.getByRole('button', { name: 'Comandos', exact: true })).toHaveCount(0);
+    return;
+  }
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Mais', exact: true });
+  await expect(toggle).toBeVisible();
+  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
 }
 
 export async function closeQuickActions(page: Page) {
-  const toggle = page.getByRole('button', { name: 'Comandos', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) > 1000) return;
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Mais', exact: true });
   if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
 }
 
 export async function openLibrary(page: Page) {
   const library = page.getByRole('dialog', { name: 'Grimório', exact: true });
-  if (!await library.isVisible()) await page.getByRole('button', { name: 'Abrir ações do grimório' }).click();
+  if (!await library.isVisible()) {
+    const pile = page.getByRole('button', { name: 'Abrir ações do grimório', exact: true });
+    if (await pile.isVisible()) await pile.click();
+    else { await openQuickActions(page); await page.getByRole('button', { name: 'Grimório', exact: true }).click(); }
+  }
   await expect(library).toBeVisible();
   return library;
 }
@@ -141,4 +150,11 @@ export async function selectFieldArea(page: Page, field: Locator) {
   await page.mouse.down();
   await page.mouse.move(area!.endX, area!.endY, { steps: 8 });
   await page.mouse.up();
+}
+
+// Selection is immediate; inspection is an explicit action in the flat menu.
+export async function inspectCard(page: Page, card: Locator) {
+  await card.click();
+  await page.getByRole('toolbar', { name: 'Ações da seleção' }).getByRole('button', { name: 'Mais', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Ações da carta', exact: true }).getByRole('button', { name: 'Inspecionar carta', exact: true }).click();
 }

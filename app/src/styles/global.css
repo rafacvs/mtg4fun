@@ -1,27 +1,29 @@
+@import './fonts.css';
+
 :root {
   color-scheme: dark;
-  --bg: #0d0d10;
-  --panel: #17171c;
-  --panel2: #202027;
-  --line: #34343e;
-  --line-strong: #50505d;
-  --text: #f3ecda;
-  --muted: #a6a6b2;
-  --gold: #e0b552;
-  --gold-d: #a8822c;
-  --gold-light: #efc766;
-  --gold-wash: rgba(224, 181, 82, .1);
-  --gold-glow: rgba(224, 181, 82, .2);
+  --bg: #0b0e10;
+  --panel: #0d1012;
+  --panel2: #14181b;
+  --line: #353831;
+  --line-strong: #64614f;
+  --text: #efe8d8;
+  --muted: #a49f92;
+  --gold: #d9a94e;
+  --gold-d: #aa7a32;
+  --gold-light: #f0cc80;
+  --gold-wash: rgba(217, 169, 78, .1);
+  --gold-glow: rgba(217, 169, 78, .2);
   --hover: #292932;
-  --panel-overlay: rgba(23, 23, 28, .96);
-  --zone-bg: rgba(13, 13, 16, .4);
-  --label-bg: rgba(13, 13, 16, .8);
+  --panel-overlay: rgba(13, 16, 18, .96);
+  --zone-bg: rgba(11, 14, 16, .4);
+  --label-bg: rgba(11, 14, 16, .8);
   --success-bg: rgba(67, 162, 99, .18);
   --success-text: #7ad79a;
   --danger-bg: rgba(224, 85, 58, .16);
   --danger-text: #ffb4a3;
   --danger-line: #a55a50;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -34,14 +36,10 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100dvh;
-  background:
-    radial-gradient(900px 500px at 15% -10%, rgba(63, 143, 214, .16), transparent 60%),
-    radial-gradient(800px 500px at 100% 0%, rgba(224, 85, 58, .14), transparent 60%),
-    radial-gradient(900px 600px at 50% 120%, rgba(67, 162, 99, .16), transparent 60%),
-    var(--bg);
+  background: var(--bg) url('../assets/theme/night.jpg') center bottom / cover fixed no-repeat;
 }
 
-h1, h2, h3, h4 { color: var(--text); line-height: 1.18; letter-spacing: -.035em; }
+h1, h2, h3, h4 { font-family: Cinzel, Georgia, serif; color: var(--text); line-height: 1.18; letter-spacing: -.035em; }
 h1 { font-size: clamp(2.25rem, 5vw, 4.4rem); margin: 0 0 .5rem; }
 h2 { font-size: clamp(1.45rem, 3vw, 2rem); margin: 0 0 .5rem; }
 h3 { font-size: 1.15rem; margin: 0 0 .5rem; }

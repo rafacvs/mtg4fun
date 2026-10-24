@@ -54,7 +54,6 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await expect(page.locator('.own-dock')).toBeAttached();
     await openHand(page);
     const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
-    if (info.project.name === 'desktop') await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
     await openQuickActions(page);
     const quick = page.getByRole('navigation', { name: 'Ações rápidas' });
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
@@ -87,10 +86,10 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }).click();
     await expect(library.locator('.library-card')).toHaveCount(2);
     await withinViewport(library);
-    await library.getByRole('button', { name: 'Fechar painel do grimório' }).click();
+    await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();
     await trigger.click();
     await expect(library.locator('.library-card')).toHaveCount(2);
-    await library.getByRole('button', { name: 'Fechar painel do grimório' }).click();
+    await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();
 
     await openQuickActions(page);
     await quick.getByRole('button', { name: 'Ações', exact: true }).click();
@@ -109,7 +108,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await own.getByRole('button', { name: 'Abrir jogador Amigo da mesa' }).click();
     const playerMenu = page.getByRole('dialog', { name: 'Jogador Amigo da mesa' });
     if (info.project.name === 'desktop') {
-      const life = own.getByLabel(/^Vida:/);
+      const life = own.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true });
       const menuBox = (await playerMenu.boundingBox())!;
       const lifeBox = (await life.boundingBox())!;
       expect(Math.abs(menuBox.x - lifeBox.x)).toBeLessThan(48);
@@ -130,7 +129,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await page.screenshot({ animations: 'disabled', path: info.outputPath('05-carta.png'), fullPage: true });
     await inspector.getByLabel('Poder', { exact: true }).fill('2');
     await inspector.getByLabel('Poder', { exact: true }).press('Enter');
-    await expect(hand.getByText('+2/+0', { exact: true })).toBeVisible();
+    await expect(hand.getByLabel('Poder e resistência')).toHaveCount(0);
     await inspector.getByRole('button', { name: 'Mover para…', exact: true }).click();
     await inspector.getByRole('button', { name: 'Campo', exact: true }).click();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
@@ -146,12 +145,13 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await nav.getByRole('button', { name: 'Ver campo de Segundo amigo' }).click();
     await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toBeVisible();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
-    await page.getByRole('button', { name: 'Voltar para minha mesa', exact: true }).click();
+    if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Voltar para minha mesa', exact: true }).click();
     await expect(own).toBeVisible();
     await expect(page.getByRole('button', { name: 'Voltar para minha mesa', exact: true })).toHaveCount(0);
     await openMatchRail(page);
     await nav.getByRole('button', { name: 'Ver campo de Amigo da mesa', exact: true }).click();
-    await expect(page.locator('.overview-player')).toHaveCount(6);
+    if (info.project.name === 'desktop') await expect(page.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('article')).toHaveCount(5);
+    else await expect(page.locator('.overview-player')).toHaveCount(6);
     await openMatchRail(page);
     await nav.getByRole('button', { name: 'Ver campo de Segundo amigo', exact: true }).click();
     if (info.project.name === 'desktop') {
@@ -175,11 +175,13 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
       await page.locator('.side-rail').evaluate(rail => { rail.scrollTop = rail.scrollHeight; });
       await page.screenshot({ animations: 'disabled', path: info.outputPath('paineis-scroll-externo.png'), fullPage: true });
     }
-    await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
-    await expect(page.locator('.overview-player')).toHaveCount(6);
+    if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
+    if (info.project.name === 'desktop') await expect(page.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('article')).toHaveCount(5);
+    else await expect(page.locator('.overview-player')).toHaveCount(6);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('06-visao-geral.png'), fullPage: true });
     if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Fechar mão', exact: true }).click();
-    await page.getByRole('button', { name: 'Ampliar mesa de Amigo 6', exact: true }).click();
+    if (info.project.name === 'desktop') await page.getByRole('article', { name: 'Mesa de Amigo 6', exact: true }).scrollIntoViewIfNeeded();
+    else await page.getByRole('button', { name: 'Ampliar mesa de Amigo 6', exact: true }).click();
     await openHand(page);
     await expect(page.getByRole('article', { name: 'Mesa de Amigo 6', exact: true })).toBeVisible();
     await action({ kind: 'coin' });
@@ -313,6 +315,25 @@ test('visão geral mantém cartas visíveis com posições esparsas, pilhas e ca
     await expect(page.locator('.own-dock')).toBeAttached();
     await openHand(page);
     if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
+    if (info.project.name === 'desktop') {
+      const observer = await contexts[0].newPage();
+      await observer.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: fallbackArt }));
+      await observer.goto(`/#/salas/${roomId}`);
+      const projection = observer.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+      await expect(projection.locator('.positioned-card')).toHaveCount(4);
+      await expect(projection.locator('.playing-card[data-tapped="true"]')).toHaveCount(1);
+      for (const card of await projection.locator('.playing-card').all()) {
+        await card.scrollIntoViewIfNeeded();
+        await expect(card).toBeInViewport();
+      }
+      const field = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+      await expect(field.locator('[data-pos-x="120"][data-row="0"]')).toHaveCount(2);
+      await expect(field.locator('[data-pos-x="720"][data-row="0"]')).toHaveCount(1);
+      const after = await read();
+      expect(after.players.find(player => player.userId === after.viewerId)!.battlefield).toEqual(before.players.find(player => player.userId === before.viewerId)!.battlefield);
+      expect(after.log).toEqual(before.log);
+      return;
+    }
     const miniature = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
     await expect(miniature.locator('.overview-card')).toHaveCount(4);
     await expect(miniature.locator('.overview-card.is-tapped')).toHaveCount(1);

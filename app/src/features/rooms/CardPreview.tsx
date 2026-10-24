@@ -3,7 +3,7 @@ import { deckApi } from '../decks/deckApi';
 import { cardImageURL } from './cardImage';
 import { CardStateControls, type CardStateChange } from './CardStateControls';
 import { MarkerRows, PowerToughnessAdjust, type CounterOperation, type OwedPair } from './CounterControls';
-import { CardStats, MarkerReadout } from './CounterValues';
+import { CardStats } from './CounterValues';
 import { CardControlTransfer, type OwnerDestination } from './CardControlTransfer';
 import type { Card, Match, MarkerColor } from './roomsApi';
 import { MenuItem, PanelFeedback, PanelHeader, usePanelFocus } from './TablePanel';
@@ -21,7 +21,8 @@ const destinations: { value: string; title: string; icon: TableIconName }[] = [
 ];
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
+export function CardPreview({ readingActions = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
+  readingActions?: boolean;
   card: Card | null;
   editable?: boolean;
   disabled?: boolean;
@@ -86,11 +87,17 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
       {step === 'view' && <>
         {(card.tapped || (card.faceDown && Boolean(card.name)) || card.revealed) && <div className="card-status-chips">{card.tapped && <span>Virada</span>}{card.faceDown && card.name && <span>Face para baixo</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}</div>}
         {card.text && <p className="instance-text">{card.text}</p>}
-        {editable && onCounter ? <MarkerReadout markers={card.markers} /> : <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />}
+        <CardStats {...card} />
         {editable && onCounter && <PowerToughnessAdjust key={card.id} power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} owed={owedPair} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
         {controlled && <div className="card-quick-actions">
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
           {onMove && <button className="secondary" disabled={disabled} onClick={() => setStep('move')}><TableIcon name="move" />Mover para…</button>}
+        </div>}
+        {readingActions && controlled && <div className="portrait-card-actions" role="group" aria-label="Ações da carta">
+          {viewerId && onStateChange && card.zone === 'battlefield' && <button className="secondary" disabled={disabled} onClick={() => onStateChange('set_tapped', card, !card.tapped)}>{card.tapped ? 'Desvirar' : 'Virar'}</button>}
+          {viewerId && onStateChange && <button className="secondary" disabled={disabled} onClick={() => onStateChange('reveal_cards', card, !card.revealed)}>{card.revealed ? 'Ocultar revelação' : 'Revelar para todos'}</button>}
+          {card.ownerId === viewerId && onMove && destinations.filter(destination => destination.value !== card.zone).map(destination => <button key={destination.value} disabled={disabled} onClick={() => void onMove(card.id, destination.value)}>{destination.value === 'battlefield' ? 'Jogar no campo' : destination.title}</button>)}
+          {card.ownerId !== viewerId && viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
         </div>}
         <div className="table-menu">
           {editable && onCounter && <MenuItem icon="markers" title="Marcadores" description="Marcadores de cor desta carta" disabled={disabled} onClick={() => setStep('markers')} />}

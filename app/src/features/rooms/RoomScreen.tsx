@@ -20,8 +20,9 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
     {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
   </section>;
   if (room.status === 'started') return <MatchBoard roomId={roomId} />;
+  const waiting = room.participants.filter(value => !value.ready);
   return <section className="room-preparation" aria-label="Preparação da sala">
-    <h2>{room.title}</h2>
+    <p className="eyebrow">PREPARAÇÃO</p><h2>{room.title}</h2>
     <p>Escolha um deck. O criador pode iniciar quando todos estiverem prontos.</p>
     <ul>{room.participants.map(value => <li key={value.id}>{value.name} · {value.ready ? 'Pronto' : 'Escolhendo deck'}</li>)}</ul>
     {decks.error && <p role="alert" className="error">{decks.error}</p>}
@@ -32,7 +33,8 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
       {decks.decks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}</option>)}
     </select>
     <button disabled={rooms.busy || participant.ready || !deckId} onClick={() => void rooms.ready(roomId, Number(deckId))}>{participant.ready ? 'Deck confirmado' : 'Confirmar deck'}</button>
-    {room.creatorId === userId && <button className="secondary" disabled={rooms.busy} onClick={() => void rooms.start(roomId)}>Iniciar partida</button>}
+    {room.creatorId === userId && <button className="secondary" disabled={rooms.busy || waiting.length > 0} aria-describedby="room-waiting" onClick={() => void rooms.start(roomId)}>Iniciar partida</button>}
+    <p id="room-waiting" role="status">{waiting.length ? `Ainda falta: ${waiting.map(value => value.name).join(", ")}.` : "Todos prontos para começar."}</p>
     {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
   </section>;
 }
