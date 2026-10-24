@@ -65,6 +65,13 @@ func TestDeckImportIsolationAndPersistence(t *testing.T) {
 	if !bytes.Contains(list.body, []byte("Island")) {
 		t.Fatalf("deck perdido: %s", list.body)
 	}
+	persisted := decodeListedDeck(t, list.body)
+	if persisted.Commander != "" || persisted.ColorIdentity != "" {
+		t.Fatalf("deck antigo deveria nascer sem comandante: %s", list.body)
+	}
+	if !hasCard(persisted.Groups.Lands, "Island", 5) || !hasCard(persisted.Groups.Spells, "Fire // Ice", 1) || !hasCard(persisted.Groups.Lands, "Urza's Saga", 1) {
+		t.Fatalf("listagem deveria resolver grupos no catálogo: %s", list.body)
+	}
 	original, err := os.ReadFile("testdata/cards.xml")
 	if err != nil {
 		t.Fatal(err)
@@ -236,4 +243,181 @@ func TestOfficialCockatriceDatasetsResolveCardsAndTokens(t *testing.T) {
 	if !bytes.Contains(result.body, []byte(`"token":true`)) {
 		t.Fatalf("ficha oficial não resolvida: %s", result.body)
 	}
+}
+
+func TestDeckListingResolvesGroupsAndCurveFromCatalog(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
+	e.start(false)
+	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
+	uploaded := e.uploadDeck(cookie, []byte(`<cockatrice_deck><deckname>Hidras</deckname><zone name="main"><card number="5" name="Island"/><card number="1" name="Fire // Ice"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	listed := e.request("GET", "/api/decks", "", cookie, nil)
+	requireStatus(t, listed, 200)
+	deck := decodeListedDeck(t, listed.body)
+	if deck.Commander != "" || deck.ColorIdentity != "" {
+		t.Fatalf("deck sem comandante não pode ter identidade: %s", listed.body)
+	}
+	if !hasCard(deck.Groups.Lands, "Island", 5) {
+		t.Fatalf("Island deveria ser terreno: %s", listed.body)
+	}
+	if !hasCard(deck.Groups.Spells, "Fire // Ice", 1) {
+		t.Fatalf("Instant deveria ser mágica: %s", listed.body)
+	}
+	if !hasCard(deck.Groups.Creatures, "Gargos, Vicious Watcher", 1) {
+		t.Fatalf("Gargos deveria ser criatura até ser comandante: %s", listed.body)
+	}
+	if len(deck.Groups.Commander) != 0 {
+		t.Fatalf("sem comandante o grupo comandante deveria estar vazio: %s", listed.body)
+	}
+	if len(deck.Curve) != 3 || deck.Curve[0] != (curveBin{CMC: 0, Count: 5}) || deck.Curve[1] != (curveBin{CMC: 4, Count: 1}) || deck.Curve[2] != (curveBin{CMC: 6, Count: 1}) {
+		t.Fatalf("curva deveria contar o CMC do catálogo: %s", listed.body)
+	}
+}
+
+func TestDeckCommanderPersistsAndLeavesTypeGroup(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
+	e.start(false)
+	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
+	uploaded := e.uploadDeck(cookie, []byte(`<cockatrice_deck><deckname>Hidras</deckname><zone name="main"><card number="5" name="Island"/><card number="1" name="Fire // Ice"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var created struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &created); err != nil {
+		t.Fatal(err)
+	}
+	marked := e.request("PUT", "/api/decks/"+strconv.FormatInt(created.Deck.ID, 10)+"/commander", `{"name":"Gargos, Vicious Watcher"}`, cookie, nil)
+	requireStatus(t, marked, 200)
+	e.stop()
+	e.start(false)
+	listed := e.request("GET", "/api/decks", "", cookie, nil)
+	requireStatus(t, listed, 200)
+	deck := decodeListedDeck(t, listed.body)
+	if deck.Commander != "Gargos, Vicious Watcher" || deck.ColorIdentity != "G" {
+		t.Fatalf("comandante deveria persistir com a identidade do catálogo: %s", listed.body)
+	}
+	if !hasCard(deck.Groups.Commander, "Gargos, Vicious Watcher", 1) {
+		t.Fatalf("Gargos deveria estar no grupo comandante: %s", listed.body)
+	}
+	if hasCard(deck.Groups.Creatures, "Gargos, Vicious Watcher", 1) {
+		t.Fatalf("comandante não pode permanecer no grupo do tipo: %s", listed.body)
+	}
+	if len(deck.Curve) != 2 || deck.Curve[0] != (curveBin{CMC: 0, Count: 5}) || deck.Curve[1] != (curveBin{CMC: 4, Count: 1}) {
+		t.Fatalf("curva do 99 não inclui o comandante: %s", listed.body)
+	}
+}
+
+func TestDeckRejectsCommanderMissingFromList(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
+	e.start(false)
+	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
+	uploaded := e.uploadDeck(cookie, []byte(`<cockatrice_deck><deckname>Hidras</deckname><zone name="main"><card number="5" name="Island"/><card number="1" name="Fire // Ice"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var created struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &created); err != nil {
+		t.Fatal(err)
+	}
+	rejected := e.request("PUT", "/api/decks/"+strconv.FormatInt(created.Deck.ID, 10)+"/commander", `{"name":"Urza's Saga"}`, cookie, nil)
+	requireStatus(t, rejected, 400)
+	if !bytes.Contains(rejected.body, []byte("Carta não encontrada neste deck.")) {
+		t.Fatalf("nome fora da lista deveria ser recusado: %s", rejected.body)
+	}
+	listed := e.request("GET", "/api/decks", "", cookie, nil)
+	requireStatus(t, listed, 200)
+	deck := decodeListedDeck(t, listed.body)
+	if deck.Commander != "" || deck.ColorIdentity != "" || hasCard(deck.Groups.Commander, "Urza's Saga", 1) {
+		t.Fatalf("comandante fantasma foi gravado: %s", listed.body)
+	}
+}
+
+func TestDeckClearingCommanderRestoresTypeGroup(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
+	e.start(false)
+	cookie := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
+	uploaded := e.uploadDeck(cookie, []byte(`<cockatrice_deck><deckname>Hidras</deckname><zone name="main"><card number="5" name="Island"/><card number="1" name="Fire // Ice"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var created struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &created); err != nil {
+		t.Fatal(err)
+	}
+	path := "/api/decks/" + strconv.FormatInt(created.Deck.ID, 10) + "/commander"
+	requireStatus(t, e.request("PUT", path, `{"name":"Gargos, Vicious Watcher"}`, cookie, nil), 200)
+	cleared := e.request("PUT", path, `{"name":""}`, cookie, nil)
+	requireStatus(t, cleared, 200)
+	listed := e.request("GET", "/api/decks", "", cookie, nil)
+	requireStatus(t, listed, 200)
+	deck := decodeListedDeck(t, listed.body)
+	if deck.Commander != "" || deck.ColorIdentity != "" {
+		t.Fatalf("limpar deveria tirar identidade: %s", listed.body)
+	}
+	if len(deck.Groups.Commander) != 0 {
+		t.Fatalf("grupo comandante deveria ficar vazio: %s", listed.body)
+	}
+	if !hasCard(deck.Groups.Creatures, "Gargos, Vicious Watcher", 1) {
+		t.Fatalf("Gargos deveria voltar às criaturas: %s", listed.body)
+	}
+}
+
+type listedCard struct {
+	Name     string `json:"name"`
+	Quantity int64  `json:"quantity"`
+}
+
+type listedGroups struct {
+	Commander []listedCard `json:"commander"`
+	Creatures []listedCard `json:"creatures"`
+	Spells    []listedCard `json:"spells"`
+	Artifacts []listedCard `json:"artifacts"`
+	Lands     []listedCard `json:"lands"`
+	Other     []listedCard `json:"other"`
+}
+
+type curveBin struct {
+	CMC   int   `json:"cmc"`
+	Count int64 `json:"count"`
+}
+
+type listedDeck struct {
+	Name          string       `json:"name"`
+	Commander     string       `json:"commander"`
+	ColorIdentity string       `json:"colorIdentity"`
+	Curve         []curveBin   `json:"curve"`
+	Groups        listedGroups `json:"groups"`
+}
+
+func decodeListedDeck(t *testing.T, body []byte) listedDeck {
+	t.Helper()
+	var payload struct {
+		Decks []listedDeck `json:"decks"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Decks) != 1 {
+		t.Fatalf("esperado 1 deck, veio %d: %s", len(payload.Decks), body)
+	}
+	return payload.Decks[0]
+}
+
+func hasCard(cards []listedCard, name string, quantity int64) bool {
+	for _, card := range cards {
+		if card.Name == name && card.Quantity == quantity {
+			return true
+		}
+	}
+	return false
 }

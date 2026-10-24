@@ -2,6 +2,7 @@ package decks
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -94,6 +95,48 @@ func (s *Service) Handler(users *auth.Service) http.Handler {
 			return
 		}
 		w.WriteHeader(204)
+	})
+	mux.HandleFunc("PUT /api/decks/{id}/commander", func(w http.ResponseWriter, r *http.Request) {
+		user, ok := currentUser(w, r, users)
+		if !ok {
+			return
+		}
+		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil || id <= 0 {
+			httpserver.WriteError(w, 404, "Deck não encontrado.")
+			return
+		}
+		if strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
+			httpserver.WriteError(w, 415, "Envie JSON.")
+			return
+		}
+		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+		decoder.DisallowUnknownFields()
+		var input struct {
+			Name string `json:"name"`
+		}
+		if err := decoder.Decode(&input); err != nil {
+			httpserver.WriteError(w, 400, "Comandante inválido.")
+			return
+		}
+		if err := decoder.Decode(&struct{}{}); err != io.EOF {
+			httpserver.WriteError(w, 400, "Comandante inválido.")
+			return
+		}
+		deck, err := s.setCommander(r.Context(), user.ID, id, strings.TrimSpace(input.Name))
+		if errors.Is(err, sql.ErrNoRows) {
+			httpserver.WriteError(w, 404, "Deck não encontrado.")
+			return
+		}
+		if errors.Is(err, errUnknownCommander) {
+			httpserver.WriteError(w, 400, err.Error())
+			return
+		}
+		if err != nil {
+			httpserver.InternalError(w, err)
+			return
+		}
+		httpserver.WriteJSON(w, 200, map[string]any{"deck": deck})
 	})
 	return mux
 }
