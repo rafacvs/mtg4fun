@@ -86,10 +86,10 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }).click();
     await expect(library.locator('.library-card')).toHaveCount(2);
     await withinViewport(library);
-    await library.getByRole('button', { name: 'Fechar painel do grimório' }).click();
+    await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();
     await trigger.click();
     await expect(library.locator('.library-card')).toHaveCount(2);
-    await library.getByRole('button', { name: 'Fechar painel do grimório' }).click();
+    await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();
 
     await openQuickActions(page);
     await quick.getByRole('button', { name: 'Ações', exact: true }).click();

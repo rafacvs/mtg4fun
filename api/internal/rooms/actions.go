@@ -377,7 +377,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		if e = tx.Commit(); e != nil {
 			return Match{}, e
 		}
-		return m.view(u.ID, log), nil
+		return s.libraryView(m, u.ID, log), nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return Match{}, err
@@ -396,7 +396,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		if err = tx.Commit(); err != nil {
 			return Match{}, err
 		}
-		return m.view(u.ID, log), nil
+		return s.libraryView(m, u.ID, log), nil
 	}
 	ids := append([]string{}, input.CardIDs...)
 	if input.CardID != "" {
@@ -482,5 +482,5 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	if err = tx.Commit(); err != nil {
 		return Match{}, err
 	}
-	return m.view(u.ID, log), nil
+	return s.libraryView(m, u.ID, log), nil
 }
