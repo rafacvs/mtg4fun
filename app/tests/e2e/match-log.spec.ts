@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { APIRequestContext } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, openMatchRail } from './fixtures';
+import { test, expect, openMatchRail, roomBody } from './fixtures';
 
 async function prepare(api: APIRequestContext, other: APIRequestContext) {
   let roomId = 0;
@@ -9,7 +9,7 @@ async function prepare(api: APIRequestContext, other: APIRequestContext) {
   for (const [index, request] of [api, other].entries()) {
     expect((await request.post('/api/session', { data: { login: index ? 'segundo' : 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
     const { deck } = await (await request.post('/api/decks', { multipart: { file: { name: 'registro.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/></zone></cockatrice_deck>') } } })).json();
-    if (!roomId) roomId = (await (await request.post('/api/rooms', { data: {} })).json()).room.id;
+    if (!roomId) roomId = (await (await request.post('/api/rooms', { data: roomBody() })).json()).room.id;
     else expect((await request.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
     expect((await request.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     decks.push({ request, id: deck.id });

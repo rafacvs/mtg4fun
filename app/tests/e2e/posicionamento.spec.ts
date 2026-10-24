@@ -1,4 +1,4 @@
-import { test, expect, selectFieldArea, openHand, openQuickActions, closeQuickActions } from './fixtures';
+import { test, expect, selectFieldArea, openHand, openQuickActions, closeQuickActions, roomBody } from './fixtures';
 import type { Page } from '@playwright/test';
 
 test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independentemente', async ({ page }, testInfo) => {
@@ -8,7 +8,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'posicoes.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Posições</deckname><zone name="main"><card number="4" name="Island"/></zone></cockatrice_deck>') } } });
   expect(uploaded.status()).toBe(201);
   const { deck } = await uploaded.json();
-  const created = await api.post('/api/rooms', { data: {} });
+  const created = await api.post('/api/rooms', { data: roomBody() });
   const { room } = await created.json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);

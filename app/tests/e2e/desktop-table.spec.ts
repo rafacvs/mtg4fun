@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { BrowserContext } from '@playwright/test';
-import { test, expect } from './fixtures';
+import { test, expect, roomBody } from './fixtures';
 
 test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async ({ browser, baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Composição de computador');
@@ -14,7 +14,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
       const api = context.request;
       expect((await api.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
       const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'mesa.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/></zone></cockatrice_deck>') } } })).json();
-      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
       expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }
@@ -90,7 +90,7 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
         const api = context.request;
         expect((await api.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
         const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'assentos.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/></zone></cockatrice_deck>') } } })).json();
-        if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+        if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
         else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
         expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
       }

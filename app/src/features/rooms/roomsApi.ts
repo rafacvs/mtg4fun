@@ -1,11 +1,16 @@
 export type Room = {
   id: number;
   title: string;
+  format?: string;
+  seats: number;
+  life: number;
   creatorId: number;
   status: string;
   participants: { id: number; name: string; ready: boolean; deckId?: number }[];
   vacancies: number;
 };
+
+export type RoomDraft = { name: string; format: string; seats: number; life: number; deckId?: number };
 
 export type MarkerColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple';
 export type Markers = Partial<Record<MarkerColor, number>>;
@@ -90,7 +95,7 @@ export const roomsApi = {
   setFace: (id: number, cardId: string, faceIndex: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face', cardId, faceIndex }),
   setFaceDown: (id: number, cardIds: string[], faceDown: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face_down', cardIds, faceDown }),
   revealCards: (id: number, cardIds: string[], revealed: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal_cards', cardIds, revealed }),
-  create: () => change('/api/rooms'),
+  create: (room: RoomDraft) => change('/api/rooms', 'POST', room),
   join: (id: number) => change(`/api/rooms/${id}/participants`),
   selectDeck: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/deck`, 'PUT', { deckId }),
   ready: (id: number) => change(`/api/rooms/${id}/participants/me/ready`, 'PUT'),

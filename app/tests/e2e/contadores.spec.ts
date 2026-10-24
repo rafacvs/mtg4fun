@@ -1,5 +1,5 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
-import { test, expect, inspectCard, openHand, openMatchRail, openQuickActions } from './fixtures';
+import { test, expect, inspectCard, openHand, openMatchRail, openQuickActions, roomBody } from './fixtures';
 
 async function expectLifeBesideName(table: Locator, life: number) {
   await expect(table).toBeVisible();
@@ -36,7 +36,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
   const upload = await api.post('/api/decks', { multipart: { file: { name: 'contadores.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Contadores</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
   expect(upload.status()).toBe(201);
   const { deck } = await upload.json();
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   const observer = await browser.newContext({ baseURL, viewport: info.project.use.viewport, isMobile: info.project.use.isMobile, hasTouch: info.project.use.hasTouch });
   try {
@@ -217,7 +217,7 @@ async function prepareIsland(page: Page, partner?: APIRequestContext) {
   const upload = await api.post('/api/decks', { multipart: { file: deckFile } });
   expect(upload.status()).toBe(201);
   const deckId = (await upload.json()).deck.id;
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId } })).ok()).toBe(true);
   if (partner) {
     expect((await partner.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
