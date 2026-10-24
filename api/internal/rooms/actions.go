@@ -158,62 +158,76 @@ func positionCard(m *matchState, p *playerState, input matchAction) (actionLogPa
 	return actionLogPayload{Kind: "position", Count: len(ids)}, nil
 }
 
+func consultationCards(p *playerState) []Card {
+	cards := make([]Card, 0, len(p.ConsultationIDs))
+	for _, id := range p.ConsultationIDs {
+		for _, card := range p.Library {
+			if card.ID == id {
+				cards = append(cards, card)
+				break
+			}
+		}
+	}
+	return cards
+}
+
 func consultCards(p *playerState, input matchAction) (actionLogPayload, error) {
-	if len(p.Consulted) != 0 || input.Count < 1 {
+	if p.ConsultationFrom != "" || len(p.ConsultationIDs) != 0 || input.Count < 1 {
 		return actionLogPayload{}, errCardNotFound
 	}
-	var cards []Card
+	cards := p.Library
 	switch input.ConsultFrom {
 	case "all":
-		cards, p.Library = p.Library, []Card{}
-	case "top":
-		if input.Count > len(p.Library) {
+	case "top", "bottom":
+		if input.Count > len(cards) {
 			return actionLogPayload{}, errInsufficientCards
 		}
-		cards, p.Library = append([]Card(nil), p.Library[:input.Count]...), p.Library[input.Count:]
-	case "bottom":
-		if input.Count > len(p.Library) {
-			return actionLogPayload{}, errInsufficientCards
+		if input.ConsultFrom == "top" {
+			cards = cards[:input.Count]
+		} else {
+			cards = cards[len(cards)-input.Count:]
 		}
-		at := len(p.Library) - input.Count
-		cards, p.Library = append([]Card(nil), p.Library[at:]...), p.Library[:at]
 	default:
 		return actionLogPayload{}, errCardNotFound
 	}
-	placeCards(p, cards, "library", "consulted", "")
+	p.ConsultationIDs = make([]string, len(cards))
+	for i, card := range cards {
+		p.ConsultationIDs[i] = card.ID
+	}
 	p.ConsultationFrom = input.ConsultFrom
 	return actionLogPayload{Kind: "consult", Count: len(cards)}, nil
 }
 
 func reorderConsulted(p *playerState, ids []string) (actionLogPayload, error) {
-	// Older clients can leave both kinds of temporary cards open. Combine
-	// them without losing visibility so their displayed order can be saved.
-	if len(p.Consulted) > 0 && len(p.Revealed) > 0 && len(ids) == len(p.Consulted)+len(p.Revealed) {
-		cards := p.Revealed
-		p.Revealed = nil
-		placeCards(p, cards, "revealed", "consulted", "")
-	}
-	cards := &p.Consulted
-	if len(*cards) == 0 {
-		cards = &p.Revealed
-	}
-	if len(ids) != len(*cards) {
+	cards := consultationCards(p)
+	if len(ids) != len(cards) {
 		return actionLogPayload{}, errCardNotFound
 	}
-	byID := make(map[string]Card, len(*cards))
-	for _, card := range *cards {
+	byID := make(map[string]Card, len(cards))
+	for _, card := range cards {
 		byID[card.ID] = card
 	}
-	reordered := make([]Card, 0, len(ids))
+	ordered := make([]Card, 0, len(ids))
 	for _, id := range ids {
 		card, ok := byID[id]
 		if !ok {
 			return actionLogPayload{}, errCardNotFound
 		}
 		delete(byID, id)
-		reordered = append(reordered, card)
+		ordered = append(ordered, card)
 	}
-	*cards = reordered
+	selected := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		selected[id] = true
+	}
+	next := 0
+	for i, card := range p.Library {
+		if selected[card.ID] {
+			p.Library[i] = ordered[next]
+			next++
+		}
+	}
+	p.ConsultationIDs = append([]string(nil), ids...)
 	return actionLogPayload{Kind: "reorder", Count: len(ids)}, nil
 }
 
@@ -221,10 +235,23 @@ func closeConsultation(p *playerState, placement string, shuffleLibrary bool) (a
 	if placement != "top" && placement != "bottom" {
 		return actionLogPayload{}, errCardNotFound
 	}
-	cards := append(p.Consulted, p.Revealed...)
-	placeCards(p, cards, "consulted", "library", placement)
-	p.Consulted = []Card{}
-	p.Revealed = []Card{}
+	cards := consultationCards(p)
+	selected := map[string]bool{}
+	for _, card := range cards {
+		selected[card.ID] = true
+	}
+	remaining := make([]Card, 0, len(p.Library)-len(cards))
+	for _, card := range p.Library {
+		if !selected[card.ID] {
+			remaining = append(remaining, card)
+		}
+	}
+	if placement == "top" {
+		p.Library = append(cards, remaining...)
+	} else {
+		p.Library = append(remaining, cards...)
+	}
+	p.ConsultationIDs = nil
 	p.ConsultationFrom = ""
 	if shuffleLibrary {
 		if err := shuffle(p.Library); err != nil {
@@ -236,47 +263,40 @@ func closeConsultation(p *playerState, placement string, shuffleLibrary bool) (a
 }
 
 func revealCards(p *playerState, count int) (actionLogPayload, error) {
-	if len(p.Consulted) != 0 || count < 1 || count > len(p.Library) {
-		return actionLogPayload{}, errInsufficientCards
+	if _, err := consultCards(p, matchAction{ConsultFrom: "top", Count: count}); err != nil {
+		return actionLogPayload{}, err
 	}
-	cards := append([]Card(nil), p.Library[:count]...)
-	p.Library = p.Library[count:]
-	names := make([]string, len(cards))
-	for i := range cards {
-		cards[i].Revealed = true
-		names[i] = cards[i].Name
-	}
-	placeCards(p, cards, "library", "consulted", "")
-	p.ConsultationFrom = "top"
-	return actionLogPayload{Kind: "reveal", Count: len(cards), Result: strings.Join(names, ", "), Cards: referencesForCards(cards)}, nil
+	return revealSelection(p, p.ConsultationIDs)
 }
 
 func revealSelection(p *playerState, ids []string) (actionLogPayload, error) {
-	seen := make(map[string]bool, len(ids))
+	allowed := map[string]bool{}
+	for _, id := range p.ConsultationIDs {
+		allowed[id] = true
+	}
 	names := make([]string, 0, len(ids))
+	revealed := []Card{}
 	for _, id := range ids {
-		if seen[id] {
+		if !allowed[id] {
 			return actionLogPayload{}, errCardNotFound
 		}
-		seen[id] = true
-		found := false
-		for i := range p.Consulted {
-			card := &p.Consulted[i]
-			if card.ID == id {
-				card.Revealed = true
-				names = append(names, card.Name)
-				found = true
+		delete(allowed, id)
+		for i := range p.Library {
+			if p.Library[i].ID == id {
+				p.Library[i].Revealed = true
+				names = append(names, p.Library[i].Name)
+				revealed = append(revealed, p.Library[i])
 				break
 			}
 		}
-		if !found {
-			return actionLogPayload{}, errCardNotFound
-		}
 	}
-	return actionLogPayload{Kind: "reveal", Count: len(ids), Result: strings.Join(names, ", ")}, nil
+	return actionLogPayload{Kind: "reveal", Count: len(ids), Result: strings.Join(names, ", "), Cards: referencesForCards(revealed)}, nil
 }
 
 func drawCards(p *playerState, count int) (actionLogPayload, error) {
+	if p.ConsultationFrom != "" {
+		return actionLogPayload{}, errCardNotFound
+	}
 	if count < 1 || count > len(p.Library) {
 		return actionLogPayload{}, errInsufficientCards
 	}
@@ -392,9 +412,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 			err = finishRoom(ctx, tx, roomID, u.ID)
 		}
 	case "create-custom-token":
-		power, _ := modifierFromText(input.Power)
-		toughness, _ := modifierFromText(input.Toughness)
-		payload, err = addCreatedCard(&m, p, Card{Name: input.CustomName, Text: input.Description, Power: power, Toughness: toughness, InstanceKind: "custom-token"}, input.Kind)
+		payload, err = addCreatedCard(&m, p, Card{Name: input.CustomName, Text: input.Description, PrintedPower: strings.TrimSpace(input.Power), PrintedToughness: strings.TrimSpace(input.Toughness), InstanceKind: "custom-token"}, input.Kind)
 	case "copy-card":
 		payload, err = s.copyCard(&m, p, input.CardID)
 	case "create-token":

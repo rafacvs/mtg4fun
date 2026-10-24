@@ -154,6 +154,8 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
     await closeMatchRail(own);
     await open();
     await activate(library.getByRole('button', { name: /^Buscar no grimório/ }));
+    await expect(library.locator('.table-panel-header')).toContainText('3 cartas');
+    await expect(own.getByRole('status').filter({ hasText: 'Consultando o grimório' }).first()).toBeVisible();
     await library.getByLabel('Buscar no grimório').fill('Fire');
     await expect(library.locator('.library-card')).toHaveCount(1);
     await activate(library.getByRole('button', { name: 'Selecionar resultados', exact: true }));
@@ -450,7 +452,7 @@ test('recupera a confirmação perdida no painel sem aplicar a consulta duas vez
     await activate(retry);
     await expect(library.getByRole('alert')).toHaveCount(0);
     await expect(library.locator('.library-card')).toHaveCount(2);
-    expect((await readOwn()).libraryCount).toBe(1);
+    expect((await readOwn()).libraryCount).toBe(3);
     await expect(library.getByLabel('Destino das restantes')).toHaveValue('bottom');
     const { match } = await (
       await game.contexts[0].request.get(`/api/rooms/${game.roomId}/match`)

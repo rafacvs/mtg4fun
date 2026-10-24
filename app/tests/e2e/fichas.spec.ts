@@ -43,8 +43,8 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   const preview = page.getByRole('dialog', { name: 'Imagem de Dragão amigo' });
   await expect(preview.getByText('Voa sobre a mesa.')).toBeVisible();
   await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
-  await expect(preview.getByLabel('Poder', { exact: true })).toHaveValue('-1');
-  await expect(preview.getByLabel('Resistência', { exact: true })).toHaveValue('4');
+  await expect(preview.getByLabel('Poder', { exact: true })).toHaveValue('0');
+  await expect(preview.getByLabel('Resistência', { exact: true })).toHaveValue('0');
   await expect(preview.locator('img')).toHaveAttribute('src', '/token-default.svg');
   await click(preview.getByRole('button', { name: 'Outras ações', exact: true }));
   await click(preview.getByRole('button', { name: 'Criar cópia independente' }));
@@ -54,8 +54,8 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(2);
   await click(page.locator('.playing-card[aria-label="Dragão amigo"]').last());
   await expect(page.getByRole('dialog').getByText('Voa sobre a mesa.')).toBeVisible();
-  await expect(page.getByRole('dialog').getByLabel('Poder', { exact: true })).toHaveValue('-1');
-  await expect(page.getByRole('dialog').getByLabel('Resistência', { exact: true })).toHaveValue('4');
+  await expect(page.getByRole('dialog').getByLabel('Poder', { exact: true })).toHaveValue('0');
+  await expect(page.getByRole('dialog').getByLabel('Resistência', { exact: true })).toHaveValue('0');
   await click(page.getByRole('dialog').getByRole('button', { name: 'Fechar', exact: true }));
   await openMatchRail(page, 'Registro');
   await expect(page.getByRole('region', { name: 'Registro da partida' })).toContainText('criou uma cópia de Dragão amigo');

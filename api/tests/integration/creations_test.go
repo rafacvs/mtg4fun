@@ -14,16 +14,18 @@ import (
 )
 
 type creationCard struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Text         string `json:"text"`
-	Power        int64  `json:"power"`
-	Toughness    int64  `json:"toughness"`
-	ImageName    string `json:"imageName"`
-	InstanceKind string `json:"instanceKind"`
-	OwnerID      int64  `json:"ownerId"`
-	ControllerID int64  `json:"controllerId"`
-	Zone         string `json:"zone"`
+	PrintedPower     string `json:"printedPower"`
+	PrintedToughness string `json:"printedToughness"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	Text             string `json:"text"`
+	Power            int64  `json:"power"`
+	Toughness        int64  `json:"toughness"`
+	ImageName        string `json:"imageName"`
+	InstanceKind     string `json:"instanceKind"`
+	OwnerID          int64  `json:"ownerId"`
+	ControllerID     int64  `json:"controllerId"`
+	Zone             string `json:"zone"`
 }
 type creationPlayer struct {
 	UserID      int64          `json:"userId"`
@@ -46,7 +48,7 @@ func creationPlayers(t *testing.T, result response) []creationPlayer {
 	}
 	return payload.Match.Players
 }
-func prepareCreationMatch(t *testing.T) (*environment, []*http.Cookie, string) {
+func prepareCreationMatch(t *testing.T, decks ...string) (*environment, []*http.Cookie, string) {
 	t.Helper()
 	e := newEnvironment(t)
 	for _, name := range []string{"criador", "oponente", "fora"} {
@@ -62,7 +64,11 @@ func prepareCreationMatch(t *testing.T) (*environment, []*http.Cookie, string) {
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, room).ID)
 	requireStatus(t, e.request("POST", path+"/participants", "{}", cookies[1], nil), 200)
 	for _, cookie := range cookies[:2] {
-		result := e.uploadDeck(cookie, []byte(`<cockatrice_deck><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>`))
+		deck := `<cockatrice_deck><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>`
+		if len(decks) > 0 {
+			deck = decks[0]
+		}
+		result := e.uploadDeck(cookie, []byte(deck))
 		requireStatus(t, result, 201)
 		var payload struct {
 			Deck struct {
@@ -103,7 +109,7 @@ func TestCatalogTokenCreationIsPublicAndDurable(t *testing.T) {
 		t.Fatalf("criação: %+v", first)
 	}
 	card := first.Battlefield[0]
-	if card.ID == "" || card.OwnerID != first.UserID || card.ControllerID != first.UserID || card.Zone != "battlefield" || card.ImageName != "Soldier Token" || card.InstanceKind != "token" || card.Power != 1 {
+	if card.ID == "" || card.OwnerID != first.UserID || card.ControllerID != first.UserID || card.Zone != "battlefield" || card.ImageName != "Soldier Token" || card.InstanceKind != "token" || card.Power != 0 || card.PrintedPower != "1" || card.PrintedToughness != "1" {
 		t.Fatalf("ficha: %+v", card)
 	}
 	observer := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))[0]
@@ -131,7 +137,7 @@ func TestCustomTokensAndCopiesAreIndependentAndRecoverable(t *testing.T) {
 		return e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":"%08x-0000-4000-8000-000000000000",%s}`, number, fields), cookie, nil)
 	}
 	source := creationPlayers(t, action(cookies[0], `"kind":"create-custom-token","name":"Dragão amigo","description":"Voa sobre a mesa.","power":"-1","toughness":"4"`))[0].Battlefield[0]
-	if source.Name != "Dragão amigo" || source.Text != "Voa sobre a mesa." || source.Power != -1 || source.Toughness != 4 || source.ImageName != "" || source.InstanceKind != "custom-token" {
+	if source.Name != "Dragão amigo" || source.Text != "Voa sobre a mesa." || source.Power != 0 || source.Toughness != 0 || source.PrintedPower != "-1" || source.PrintedToughness != "4" || source.ImageName != "" || source.InstanceKind != "custom-token" {
 		t.Fatalf("personalização: %+v", source)
 	}
 	copied := creationPlayers(t, action(cookies[1], fmt.Sprintf(`"kind":"copy-card","cardId":%q`, source.ID)))[1]
@@ -245,7 +251,54 @@ func TestTokenCatalogIsBoundedSortedAndUsesExistingImageCache(t *testing.T) {
 	if downloads.Load() != 1 {
 		t.Fatalf("cache não persistiu: %d", downloads.Load())
 	}
-	if card := creationPlayers(t, e.request("GET", path+"/match", "", cookie, nil))[0].Battlefield[0]; card.Text != "Texto compartilhado." || card.Power != 2 || card.Toughness != 3 {
+	if card := creationPlayers(t, e.request("GET", path+"/match", "", cookie, nil))[0].Battlefield[0]; card.Text != "Texto compartilhado." || card.Power != 0 || card.Toughness != 0 || card.PrintedPower != "2" || card.PrintedToughness != "3" {
 		t.Fatalf("atributos persistidos: %+v", card)
+	}
+}
+
+func TestPrintedTokenStatsAreSeparateFromManualModifiers(t *testing.T) {
+	e, cookies, path := prepareCreationMatch(t)
+	created := e.request("POST", path+"/actions", `{"intentId":"42000000-0000-4000-8000-000000000001","kind":"create-token","tokenName":"Soldier Token"}`, cookies[0], nil)
+	card := creationPlayers(t, created)[0].Battlefield[0]
+	if card.PrintedPower != "1" || card.PrintedToughness != "1" || card.Power != 0 || card.Toughness != 0 {
+		t.Fatalf("impresso separado: %+v", card)
+	}
+	requireStatus(t, e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":"42000000-0000-4000-8000-000000000002","kind":"counter","target":"card","cardId":%q,"subject":"power","operation":"increment","value":2}`, card.ID), cookies[0], nil), 200)
+	e.stop()
+	e.start(false)
+	observed := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))[0].Battlefield[0]
+	if observed.PrintedPower != "1" || observed.PrintedToughness != "1" || observed.Power != 2 || observed.Toughness != 0 {
+		t.Fatalf("persistência pública: %+v", observed)
+	}
+}
+
+func TestPrintedCatalogStatsTravelWithDeckCard(t *testing.T) {
+	e, cookies, path := prepareCreationMatch(t)
+	// The source deck contains a land without printed power or toughness.
+	own := creationPlayers(t, e.request("POST", path+"/actions", `{"intentId":"42000000-0000-4000-8000-000000000003","kind":"draw","count":1}`, cookies[0], nil))[0].Hand[0]
+	if own.PrintedPower != "" || own.PrintedToughness != "" {
+		t.Fatalf("terreno: %+v", own)
+	}
+	// The custom token's printed negative value is not a manual adjustment.
+	token := creationPlayers(t, e.request("POST", path+"/actions", `{"intentId":"42000000-0000-4000-8000-000000000004","kind":"create-custom-token","name":"Ficha impressa","power":"-1","toughness":"4"}`, cookies[0], nil))[0].Battlefield[0]
+	if token.PrintedPower != "-1" || token.PrintedToughness != "4" || token.Power != 0 || token.Toughness != 0 {
+		t.Fatalf("ficha personalizada: %+v", token)
+	}
+}
+
+func TestPrintedStatsOnCatalogDeckCardsAndSymbolicTokens(t *testing.T) {
+	e, cookies, path := prepareCreationMatch(t, `<cockatrice_deck><zone name="main"><card number="1" name="Printed Test"/></zone></cockatrice_deck>`)
+	result := e.request("POST", path+"/actions", `{"intentId":"42000000-0000-4000-8000-000000000005","kind":"draw","count":1}`, cookies[0], nil)
+	card := creationPlayers(t, result)[0].Hand[0]
+	if card.PrintedPower != "2" || card.PrintedToughness != "3" || card.Power != 0 || card.Toughness != 0 {
+		t.Fatalf("carta do catálogo: %+v", card)
+	}
+	symbol := creationPlayers(t, e.request("POST", path+"/actions", `{"intentId":"42000000-0000-4000-8000-000000000006","kind":"create-token","tokenName":"Symbolic Token"}`, cookies[0], nil))[0].Battlefield[0]
+	if symbol.PrintedPower != "*" || symbol.PrintedToughness != "1+*" || symbol.Power != 0 || symbol.Toughness != 0 {
+		t.Fatalf("texto impresso: %+v", symbol)
+	}
+	copy := creationPlayers(t, e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":"42000000-0000-4000-8000-000000000007","kind":"copy-card","cardId":%q}`, card.ID), cookies[0], nil))[0].Battlefield[1]
+	if copy.PrintedPower != "2" || copy.PrintedToughness != "3" {
+		t.Fatalf("cópia: %+v", copy)
 	}
 }

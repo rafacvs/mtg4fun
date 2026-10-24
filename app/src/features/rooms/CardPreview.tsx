@@ -3,7 +3,7 @@ import { deckApi } from '../decks/deckApi';
 import { cardImageURL } from './cardImage';
 import { CardStateControls, type CardStateChange } from './CardStateControls';
 import { MarkerRows, PowerToughnessAdjust, type CounterOperation, type OwedPair } from './CounterControls';
-import { CardStats, MarkerReadout } from './CounterValues';
+import { CardStats } from './CounterValues';
 import { CardControlTransfer, type OwnerDestination } from './CardControlTransfer';
 import type { Card, Match, MarkerColor } from './roomsApi';
 import { MenuItem, PanelFeedback, PanelHeader, usePanelFocus } from './TablePanel';
@@ -86,7 +86,7 @@ export function CardPreview({ card, editable = false, disabled = false, onCounte
       {step === 'view' && <>
         {(card.tapped || (card.faceDown && Boolean(card.name)) || card.revealed) && <div className="card-status-chips">{card.tapped && <span>Virada</span>}{card.faceDown && card.name && <span>Face para baixo</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}</div>}
         {card.text && <p className="instance-text">{card.text}</p>}
-        {editable && onCounter ? <MarkerReadout markers={card.markers} /> : <CardStats power={card.power} toughness={card.toughness} markers={card.markers} />}
+        <CardStats {...card} />
         {editable && onCounter && <PowerToughnessAdjust key={card.id} power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} owed={owedPair} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
         {controlled && <div className="card-quick-actions">
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
