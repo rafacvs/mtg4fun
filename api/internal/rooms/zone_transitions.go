@@ -104,6 +104,15 @@ func moveCards(m *matchState, p *playerState, input matchAction) (actionLogPaylo
 		}
 	}
 	*source = remaining
+	if from == "library" {
+		kept := p.ConsultationIDs[:0]
+		for _, id := range p.ConsultationIDs {
+			if !seen[id] {
+				kept = append(kept, id)
+			}
+		}
+		p.ConsultationIDs = kept
+	}
 	count := len(cards)
 	removed := 0
 	for _, card := range cards {

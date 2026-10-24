@@ -101,6 +101,7 @@ type playerState struct {
 	Graveyard        []Card      `json:"graveyard"`
 	Exile            []Card      `json:"exile"`
 	Command          []Card      `json:"command"`
+	ConsultationIDs  []string    `json:"consultationIds,omitempty"`
 	Consulted        []Card      `json:"consulted,omitempty"`
 	Revealed         []Card      `json:"revealed,omitempty"`
 	ConsultationFrom string      `json:"consultationFrom,omitempty"`
@@ -128,6 +129,7 @@ type Match struct {
 	Log            []MatchLog    `json:"log"`
 }
 type MatchPlayer struct {
+	Consulting       bool          `json:"consulting"`
 	ExposedCards     []ExposedCard `json:"exposedCards,omitempty"`
 	UserID           int64         `json:"userId"`
 	Name             string        `json:"name"`
@@ -232,24 +234,35 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
+		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
 		for _, cards := range [][]Card{v.Hand, v.Library, v.Battlefield, v.Command, v.Graveyard, v.Exile} {
 			for _, card := range cards {
 				if card.Revealed {
+					inConsultation := false
+					for _, id := range v.ConsultationIDs {
+						if card.ID == id {
+							inConsultation = true
+							break
+						}
+					}
+					if inConsultation {
+						continue
+					}
 					view := ExposedCard{IsToken: isToken(card), Text: card.Text, ImageName: card.ImageName, InstanceKind: card.InstanceKind, ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: true, Power: card.Power, Toughness: card.Toughness, Markers: card.Markers}
 					p[i].ExposedCards = append(p[i].ExposedCards, view)
 				}
 			}
 		}
 		sort.Slice(p[i].ExposedCards, func(a, b int) bool { return p[i].ExposedCards[a].ID < p[i].ExposedCards[b].ID })
-		for _, card := range append(append([]Card(nil), v.Consulted...), v.Revealed...) {
+		for _, card := range consultationCards(&v) {
 			if card.Revealed {
 				p[i].Revealed = append(p[i].Revealed, visible([]Card{card}, viewerID)[0])
 			}
 		}
+		sort.Slice(p[i].Revealed, func(a, b int) bool { return p[i].Revealed[a].ID < p[i].Revealed[b].ID })
 		if v.UserID == viewerID {
 			p[i].Hand = visible(v.Hand, viewerID)
-			p[i].Consulted = visible(v.Consulted, viewerID)
+			p[i].Consulted = visible(consultationCards(&v), viewerID)
 			for _, card := range v.Revealed {
 				if !card.Revealed {
 					p[i].Consulted = append(p[i].Consulted, visible([]Card{card}, viewerID)[0])

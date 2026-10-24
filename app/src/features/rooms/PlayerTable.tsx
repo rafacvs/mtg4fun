@@ -68,7 +68,7 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
     </header>
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
-        <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={onDraw} disabled={disabled} />
+        <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
         <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
@@ -80,7 +80,8 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
 export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, disabled }: ZoneProps) {
   return <div className="zone-column">
     <CardSlot zone="command" title="Comandante" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
-    <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} onDraw={onDraw} disabled={disabled} />
+    {player.consulting && <span role="status" className="library-consulting">Consultando o grimório</span>}
+    <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
     <CardSlot zone="graveyard" title="Cemitério" count={player.graveyardCount} card={topCard(player.graveyard)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <CardSlot zone="exile" title="Exílio" count={player.exileCount} card={topCard(player.exile)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
   </div>;
@@ -157,7 +158,7 @@ function LibraryPile({ count, droppable, hoverZone, onOpen, onDraw, disabled }: 
       <ZoneLabel title="Grimório" count={count} />
       {count > 0 ? <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}>{[0, 1, 2].map(layer => <span key={layer}><img src="/library-back.png" alt="" draggable={false} /></span>)}</div>
         : <span className="slot-empty" aria-hidden="true"><TableIcon name="book-open" /></span>}
-      {onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title="Clique: ações · Duplo clique: comprar uma carta (D)" onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
+      {onOpen && <button className="library-open" aria-label="Abrir ações do grimório" title={onDraw ? "Clique: ações · Duplo clique: comprar uma carta (D)" : "Retomar consulta do grimório"} onClick={event => gesture.current.click(event.detail)} onDoubleClick={() => {
         gesture.current.doubleClick();
         if (disabled || !count) return;
         setFeedback(true); clearTimeout(feedbackTimer.current);

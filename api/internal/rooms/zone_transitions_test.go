@@ -1,6 +1,9 @@
 package rooms
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestMoveClearsBattlefieldStateAndRemovesTokens(t *testing.T) {
 	for _, destination := range []string{"graveyard", "exile", "hand", "library", "command"} {
@@ -101,11 +104,19 @@ func TestLegacyRevelationCanBeHiddenAndReturnedWithoutLoss(t *testing.T) {
 		t.Fatal("hiding moved legacy card")
 	}
 	m := matchState{Players: []playerState{p}}
+	raw, _ := json.Marshal(m)
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
 	if len(m.view(2, nil).Players[0].Revealed) != 0 {
 		t.Fatal("legacy card leaked")
 	}
 	if len(m.view(1, nil).Players[0].Consulted) != 2 {
 		t.Fatal("owner lost access")
+	}
+	raw, _ = json.Marshal(p)
+	if err := json.Unmarshal(raw, &p); err != nil {
+		t.Fatal(err)
 	}
 	if _, err := closeConsultation(&p, "top", false); err != nil {
 		t.Fatal(err)
@@ -117,10 +128,15 @@ func TestLegacyRevelationCanBeHiddenAndReturnedWithoutLoss(t *testing.T) {
 
 func TestReorderingLegacyConsultationDoesNotRevealHiddenCards(t *testing.T) {
 	p := playerState{UserID: 1, Consulted: []Card{{ID: "private", Zone: "consulted"}}, Revealed: []Card{{ID: "old", Zone: "revealed"}}}
+	raw, _ := json.Marshal(p)
+	if err := json.Unmarshal(raw, &p); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := reorderConsulted(&p, []string{"old", "private"}); err != nil {
 		t.Fatal(err)
 	}
-	if len(p.Consulted) != 2 || p.Consulted[0].Revealed {
+	cards := consultationCards(&p)
+	if len(cards) != 2 || cards[0].Revealed {
 		t.Fatal("reorder revealed a hidden identity")
 	}
 }
