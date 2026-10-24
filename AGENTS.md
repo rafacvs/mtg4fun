@@ -154,3 +154,17 @@
   podem ser preparadas com `scripts/worktree.sh isolate <nome>`.
   Configuração e histórico do Git são compartilhados entre worktrees; dados
   alterados depois da cópia do banco não são sincronizados.
+
+## Agent skills
+
+### Issue tracker
+
+Issues e specs publicadas ficam nas issues do GitHub. Veja `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Rótulos padrão: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human` e `wontfix`. Veja `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Contexto único. O glossário está em `docs/specs/` e as decisões em `docs/decisions/`. Veja `docs/agents/domain.md`.
