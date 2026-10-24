@@ -5,7 +5,8 @@ import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
-import { MatchLogCards } from './MatchLogCards';
+import { MatchLog } from './MatchLog';
+import { describeLogEntry } from './matchLogPresentation';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
 import { PlayerMenu } from './PlayerMenu';
@@ -20,7 +21,7 @@ import { cardImageURL } from './cardImage';
 import { LibraryConsultation } from './LibraryConsultation';
 import { dropCell, firstFreeCell, layoutFromCanvas } from './battlefieldLayout';
 import { OwnHand } from './OwnHand';
-import { PlayerTable, ZoneColumn, zoneNames, type CardGesture } from './PlayerTable';
+import { PlayerTable, ZoneColumn, type CardGesture } from './PlayerTable';
 import './match.css';
 import './counters.css';
 import './mobile-table.css';
@@ -74,10 +75,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [drag, setDrag] = useState<Drag | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
-  const logRef = useRef<HTMLOListElement>(null);
   const dockRef = useRef<HTMLElement>(null);
   const knownLogEntries = useRef(0);
-  const followingLog = useRef(true);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1000px)');
     const update = () => {
@@ -111,12 +110,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     observer.observe(dock);
     return () => observer.disconnect();
   }, [Boolean(match)]);
-  useEffect(() => {
-    const list = logRef.current;
-    if (!list) return;
-    if (followingLog.current) { list.scrollTop = list.scrollHeight; setUnreadLog(false); }
-    else setUnreadLog(true);
-  }, [match?.log.length, logOpen, informationOpen]);
   useEffect(() => {
     if (!match) return;
     const previousLength = knownLogEntries.current;
@@ -221,7 +214,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const ownHidden = focused.userId !== match.viewerId;
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
-  const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describe(lastAction) : undefined;
+  const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describeLogEntry(lastAction) : undefined;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
   const showingOverview = compact ? overview : false;
   const showOverview = () => {
@@ -301,13 +294,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section className={`rail-panel log-panel ${logOpen ? 'is-open' : ''}`}>
             <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
-              <section className="match-log" aria-label="Registro da partida">
-                <ol ref={logRef} onScroll={event => { const list = event.currentTarget; followingLog.current = list.scrollHeight - list.scrollTop - list.clientHeight < 32; if (followingLog.current) setUnreadLog(false); }}>{match.log.map((entry, index) => <li key={index}>{describe(entry)}<MatchLogCards cards={entry.cards} onPreview={id => {
-                  const card = findCard(match, id);
-                  if (card) gesture.onPreview?.(card);
-                }} /></li>)}</ol>
-                {unreadLog && <button className="new-log-entries secondary" onClick={() => { followingLog.current = true; if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; setUnreadLog(false); }}><TableIcon name="draw" />Novas ações</button>}
-              </section>
+              <MatchLog entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
+                const card = findCard(match, id);
+                if (card) gesture.onPreview?.(card);
+              }} />
             </div>
           </section>
         </aside>
@@ -467,32 +457,4 @@ function withPendingPlacement(match: Match, pending: { ids: string[]; column: nu
       return next;
     }),
   };
-}
-
-function describe(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
-  if (entry.kind === 'finish_vote') return `${entry.actorName} concordou em finalizar a partida (${entry.result}).`;
-  if (entry.kind === 'finished') return `${entry.actorName} confirmou o encerramento da partida (${entry.result}). Sala encerrada.`;
-  if (entry.kind === 'create-token' || entry.kind === 'create-custom-token') return `${entry.actorName} criou a ficha ${entry.result}.`;
-  if (entry.kind === 'copy-card') return `${entry.actorName} criou uma cópia de ${entry.result}.`;
-  if (entry.kind === 'set_tapped') return `${entry.actorName} alterou virar/desvirar de ${entry.count} carta(s).`;
-  if (entry.kind === 'untap_all') return `${entry.actorName} desvirou todas as cartas do próprio campo.`;
-  if (entry.kind === 'set_face') return `${entry.actorName} escolheu uma face da carta.`;
-  if (entry.kind === 'set_face_down') return `${entry.actorName} alterou face para baixo de ${entry.count} carta(s).`;
-  if (entry.kind === 'reveal_cards') return entry.result ? `${entry.actorName} revelou ${entry.result}.` : `${entry.actorName} ocultou uma revelação.`;
-  if (entry.kind === 'hide_all_revealed') return `${entry.actorName} ocultou todas as suas reveladas (${entry.count}).`;
-  if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
-  if (entry.kind === 'move' && entry.result) return `${entry.actorName}: ${entry.result} ao mover para ${zoneNames[entry.to || ''] || entry.to}.`;
-  if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
-  if (entry.kind === 'transfer_control') return `${entry.actorName} transferiu o controle de uma carta para ${entry.result}.`;
-  if (entry.kind === 'position') return `${entry.actorName} reposicionou ${entry.count || 1} carta(s) no campo.`;
-  if (entry.kind === 'roll') return `${entry.actorName} rolou ${entry.result}.`;
-  if (entry.kind === 'counter') return `${entry.actorName} alterou contadores: ${entry.result}.`;
-  if (entry.kind === 'coin') return `${entry.actorName} jogou uma moeda: ${entry.result}.`;
-  if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
-  if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;
-  if (entry.kind === 'reveal') return `${entry.actorName} revelou ${entry.result}.`;
-  if (entry.kind === 'reorder') return `${entry.actorName} reorganizou uma consulta privada.`;
-  if (entry.kind === 'close') return `${entry.actorName} fechou a consulta do grimório.`;
-  if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;
-  return 'Partida iniciada.';
 }
