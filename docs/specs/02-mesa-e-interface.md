@@ -10,13 +10,13 @@ Mesa virtual manual com ações genéricas, posicionamento em fileiras e seleç�
 
 ## Histórias de usuário
 
-1. Como jogador, quero ver minha mão junto ao menu inferior, para agir sem procurar comandos.
-2. Como jogador no celular, quero observar um campo por vez, para enxergar cartas em uma tela pequena.
-3. Como jogador, quero tocar na miniatura de outro campo, para mudar o foco.
-4. Como jogador, quero identificar o campo em foco, para evitar confundir meus cards com os do oponente.
+1. Como jogador, quero ver minha mão junto às ações frequentes, para agir sem procurar comandos.
+2. Como jogador no celular horizontal, quero a mesa de jogo própria dessa orientação, para jogar com o aparelho deitado.
+3. Como jogador no celular vertical, quero a mão e a leitura, com convite para girar, para não receber o computador encolhido.
+4. Como jogador no computador, quero a faixa de oponentes, o meu campo e a minha mão ao mesmo tempo, para acompanhar a mesa de quatro.
 5. Como jogador, quero manter minha mão e ações ao observar outro campo, para continuar jogando.
-6. Como jogador no desktop, quero ver todos os campos quando houver espaço, para acompanhar a mesa.
-7. Como jogador, quero ampliar um campo, para examinar suas cartas.
+6. Como jogador numa mesa de cinco ou seis, quero rolar a faixa de oponentes, para ninguém ficar sem lugar.
+7. Como jogador, quero dois tamanhos de densidade, para examinar o campo sem zoom em porcentagem.
 8. Como jogador, quero posicionar cartas em colunas, para organizar o campo sem deixar as cartas tortas.
 9. Como jogador, quero alinhamento automático em fileiras, para evitar desalinhamento vertical involuntário.
 10. Como jogador, quero sobrepor cartas, para organizar terrenos ou representar anexos visualmente.
@@ -50,37 +50,34 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 
 ### Layout e interação
 
-O refinamento posterior de vida/P/R diretos e acabamento premium está
-[especificado separadamente](04-refinamento-ui-mesa.md), com aprovação
-registrada na [decisão 29](../decisions/29-refinamento-ui-mesa.md) e
-implementação pendente. Ele simplifica apenas as etapas de edição indicadas;
-demais regras e fluxos abaixo permanecem.
+A apresentação, os gestos e a consulta do grimório passam a seguir a
+[nova experiência da mesa](05-nova-experiencia-da-mesa.md), aprovada na
+[decisão 35](../decisions/35-nova-experiencia-da-mesa.md). Onde um item abaixo
+divergir dessa spec, vale a nova. Vida direta e o modificador manual de
+poder/resistência continuam editáveis como no
+[refinamento](04-refinamento-ui-mesa.md), dentro da superfície nova.
 
 - Interface PT-BR, excluindo o conteúdo das cartas/dataset.
-- Celular plenamente jogável nas orientações vertical e horizontal, sem bloqueio para girar o aparelho. Alterar orientação mantém conexão, estado e acesso à mão.
-- No celular, campo principal no centro, próprio por padrão; Visão geral abre uma grade de até seis campos reduzidos. Tocar numa miniatura amplia o campo; as miniaturas não manipulam cartas.
-- No mobile, três botões flutuantes no canto inferior direito controlam, de baixo para cima: mão; comandos; informações. As três áreas começam fechadas e abrem sobre o campo, sem redimensioná-lo. Mão e comandos são independentes. Comandos oferece Passar turno, Comprar, Desvirar todas e Ações; Informações contém as abas Prévia, Jogadores e Registro. Desktop mantém mão e comandos rápidos na faixa inferior.
-- No celular, deslizar navega pela mão; Organizar permite arrastar para reordenar visualmente ou jogar. Toque longo mantém a carta em prévia após soltar o dedo. As abas ficam dentro de Informações, sem ocupar espaço permanente acima do campo, com conteúdo amplo e rolagem própria do registro. Escopo e autorização: [experiência mobile](../decisions/34-experiencia-mobile.md).
-- Menus seguem dimensões, cabeçalho e linhas verticais de ícone/texto compartilhados. Desktop ancora o menu no elemento de origem, ajustando às bordas; telas estreitas usam painel inferior. Consultas de várias cartas usam espaço maior com o mesmo padrão visual.
-- Grimório concentra comprar, embaralhar, olhar, buscar e revelar. Passar turno fica nos comandos rápidos; Ações contém dado, moeda, correção de turno e fichas. Card/cabeçalho do jogador abre vida e marcadores, com edição apenas do próprio jogador e consulta pública dos demais; Ver campo é um acesso separado.
-- Detalhe de carta organiza imagem, identificação, estados, ações rápidas, ajustes e outras ações. P/R é rotulado como modificador manual e continua universal. Destinos explícitos oferecem movimento sem depender de arrastar.
-- Visual restrito à mesa e seus fluxos: playmat escuro, texturas/detalhes arcanos discretos, dourado e cores funcionais. Turno/foco claros, prévia vazia compacta e registro que não interrompe quem lê entradas anteriores. Animações curtas respeitam movimento reduzido. Aprovação: [decisão 28](../decisions/28-ui-mesa-responsiva.md).
-- Foco só muda observação. Mão, ações próprias e permissões permanecem iguais; identificar claramente o jogador observado.
-- Desktop mostra todos os campos quando há espaço, com opção de ampliar um jogador.
+- No computador, a referência é a mesa de quatro: oponentes na faixa do topo, campo próprio no centro e mão embaixo. Um a três jogadores usam a mesma composição com menos assentos. Cinco e seis rolam essa faixa. Não há modo separado de visão geral.
+- No celular, o horizontal é o modo de jogo. O vertical é mão e leitura, com convite para girar. Mudar a orientação mantém conexão, estado e acesso à mão. Isso substitui o celular plenamente jogável nas duas orientações e os três botões flutuantes sem rótulo. Histórico: [experiência mobile](../decisions/34-experiencia-mobile.md).
+- A carta selecionada abre uma barra de um nível. O menu completo é o mesmo no clique direito e no toque longo. Consultas de várias cartas usam a folha do grimório.
+- Grimório, cemitério, exílio e comando aparecem como montes. Comprar, embaralhar, olhar, buscar e revelar continuam no grimório. Vida e os cinco marcadores de cor ficam no assento, com edição só do próprio jogador.
+- A inspeção mostra a carta inteira e o estado. O selo de poder/resistência usa o valor impresso do catálogo separado do modificador manual. Destinos explícitos oferecem movimento sem depender de arrastar.
+- O visual da mesa é o da nova experiência: noite, ouro só na próxima ação, cor do assento por pessoa, movimento curto com redução de movimento. A paleta anterior fica como histórico na [decisão 28](../decisions/28-ui-mesa-responsiva.md).
+- Observar outro campo não muda mão, ações próprias nem permissões.
 - Cartas encaixam em colunas e fileiras. A célula tem o tamanho da própria pilha: carta deitada e pilha de até três cartas ocupam mais espaço, e só empurram as cartas à direita na mesma fileira e as fileiras abaixo. O campo cresce para a direita e para baixo. Detalhe: [decisão 30](../decisions/30-grade-do-campo.md).
 - Sobreposição é apenas visual: não cria grupo, vínculo ou propagação automática de ações.
 - Seleção por área no desktop; modo explícito de seleção múltipla no celular, adicionando cartas por toque.
 - Cartas selecionadas podem ser movidas juntas e receber ações coletivas aplicáveis.
-- Toque seleciona/abre ações; arraste move. Ações essenciais não dependem de gestos secretos.
-- Virar/desvirar fica disponível na seleção; gestos rápidos opcionais não são requisito.
+- Clique ou toque seleciona na hora e abre a barra. Arraste move. Inspeção é o mouse ou o toque longo. O duplo clique ainda vira, sem atrasar a seleção. Ações essenciais não dependem de gestos secretos.
 - Não há agrupamento permanente, vínculo de aura/equipamento ou inclinação acidental causada pelo posicionamento. Sobreposição e rotação para indicar carta virada são permitidas.
 
 ### Zonas, consultas e ações
 
 - Zonas: grimório, mão, campo, cemitério, exílio e comando. Não há reserva/sideboard.
-- Área temporária privada para consultar/reordenar cartas; não é uma zona permanente adicional.
-- Mão e ordem/conteúdo do grimório privados. Campo, cemitério, exílio e comando públicos, respeitando cartas viradas para baixo.
-- Consultar todo o próprio grimório com busca por nome, consultar X do topo/fundo, reordenar, mover e revelar explicitamente.
+- A consulta é uma vista do grimório, não uma zona permanente e não retira as cartas do monte. O contrato está na [nova experiência](05-nova-experiencia-da-mesa.md).
+- Mão e ordem/conteúdo do grimório privados. Campo, cemitério, exílio e comando públicos, respeitando cartas viradas para baixo. Durante a consulta, os outros veem a contagem intacta e que a pessoa está consultando, sem os nomes.
+- Consultar todo o próprio grimório com busca por nome, consultar X do topo/fundo, reordenar, mover e revelar explicitamente. A contagem só cai quando a carta sai do grimório.
 - Embaralhamento é separado da consulta, com opção de fechar e embaralhar.
 - Movimentos para grimório escolhem topo/fundo, com topo como opção rápida.
 - Comprar X, mover entre zonas, embaralhar, revelar, virar/desvirar individualmente e desvirar todas.
@@ -121,7 +118,7 @@ Proposta: testar operações/permissões pela interface pública do servidor; te
 Critérios observáveis:
 
 - Foco em oponente preserva mão e ações próprias.
-- Celular vertical/horizontal permite consultar seis jogadores pela visão geral e ampliar qualquer campo, mantendo mão e ações próprias.
+- No computador, a faixa mostra os oponentes da mesa de quatro e rola quando há cinco ou seis, mantendo a mão e as ações próprias. No celular, o horizontal joga e o vertical lê a mão.
 - Movimento encaixa a carta na coluna e na fileira; sobreposição de até três cartas não cria vínculo.
 - Seleção múltipla move cartas juntas sem impedir manipulação individual posterior.
 - Consulta privada e cartas viradas para baixo não expõem identidade a oponentes.
@@ -140,4 +137,4 @@ Motor de regras, formatos, fases, agrupamento permanente de cartas, desfazer gen
 
 ## Notas adicionais
 
-A UI deve servir a quem conhece Magic, mas não o Cockatrice. Não inclui tutorial de regras. Os detalhes visuais finais serão refinados durante implementação sem remover a jogabilidade mobile inicial.
+A UI deve servir a quem conhece Magic, mas não o Cockatrice. Não inclui tutorial de regras. A apresentação vigente é a [nova experiência](05-nova-experiencia-da-mesa.md). O desfazer genérico continua fora desta spec e está registrado na issue 37.
