@@ -2,6 +2,12 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { test, expect, openHand, openMatchRail, openQuickActions } from './fixtures';
 
 async function expectLifeBesideName(table: Locator, life: number) {
+  await expect(table).toBeVisible();
+  if (await table.locator('.seat-heading').count()) {
+    await expect(table.getByRole('heading', { name: /Amigo da mesa/ })).toBeVisible();
+    await expect(table.getByRole('textbox', { name: 'Vida', exact: true })).toHaveValue(String(life));
+    return;
+  }
   const name = table.getByRole('heading', { name: /Amigo da mesa/ });
   const lifeLabel = table.getByLabel(`Vida: ${life}`, { exact: true });
   const identity = table.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true });
@@ -156,9 +162,10 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
     const otherPage = await observer.newPage();
     await otherPage.goto(`/#/salas/${room.id}`);
-    await openMatchRail(otherPage);
-    const focus = otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ });
-    if (info.project.use.hasTouch) await focus.tap(); else await focus.click();
+    if (info.project.use.hasTouch) {
+      await openMatchRail(otherPage);
+      await otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }).tap();
+    }
     const otherTable = otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' });
     await expect(otherTable.getByLabel('Vida: 16', { exact: true })).toBeVisible();
     await expect(otherTable.getByLabel('marcador vermelho')).toHaveText('2');
@@ -342,9 +349,10 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
 
     const otherPage = await observer.newPage();
     await otherPage.goto(`/#/salas/${roomId}`);
-    await openMatchRail(otherPage);
-    const focus = otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ });
-    if (info.project.use.hasTouch) await focus.tap(); else await focus.click();
+    if (info.project.use.hasTouch) {
+      await openMatchRail(otherPage);
+      await otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }).tap();
+    }
     const otherTable = otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' });
     await expect(otherTable.getByLabel('Poder e resistência')).toHaveCount(0);
     await otherTable.getByRole('button', { name: 'Island', exact: true }).click();

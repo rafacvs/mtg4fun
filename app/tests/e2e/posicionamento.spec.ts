@@ -66,10 +66,11 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await expect(field.locator('[data-stack-size="2"]')).toHaveCount(2);
   const baseAfterPosition = await fieldCards.nth(0).boundingBox();
   let stacked = await fieldCards.nth(1).boundingBox();
-  expect(stacked!.x - baseAfterPosition!.x).toBeGreaterThanOrEqual(8);
-  expect(stacked!.x - baseAfterPosition!.x).toBeLessThanOrEqual(24);
-  expect(stacked!.y - baseAfterPosition!.y).toBeGreaterThanOrEqual(8);
-  expect(stacked!.y - baseAfterPosition!.y).toBeLessThanOrEqual(24);
+  // Both cards remain visibly offset and overlapping at the context's card size.
+  expect(stacked!.x - baseAfterPosition!.x).toBeGreaterThan(2);
+  expect(stacked!.x - baseAfterPosition!.x).toBeLessThan(baseAfterPosition!.width / 2);
+  expect(stacked!.y - baseAfterPosition!.y).toBeGreaterThan(2);
+  expect(stacked!.y - baseAfterPosition!.y).toBeLessThan(baseAfterPosition!.height / 2);
   if (!testInfo.project.use.hasTouch) {
     await page.setViewportSize({ width: 1280, height: 900 });
     await selectFieldArea(page, field);
@@ -156,7 +157,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   }).toPass();
   if (!testInfo.project.use.hasTouch) {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.locator('.table-toolbar').getByRole('button', { name: 'Diminuir zoom', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Densidade', exact: true }).selectOption('compact');
     expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'set_tapped', cardIds: [beforeIndividual[0].id], tapped: true } })).ok()).toBe(true);
     await expect(field.locator('.is-tapped')).toHaveCount(1);
     const area = await page.evaluate(() => {

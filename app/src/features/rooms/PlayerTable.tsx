@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
 import { fitBattlefield } from './battlefieldLayout';
 import { createLibraryGesture } from './libraryGesture';
+import { OpponentField } from './OpponentField';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
 import { TableIcon, type TableIconName } from './TableIcon';
@@ -48,9 +49,9 @@ function canDrag(card: Card, viewerId: number) {
   return card.controllerId === viewerId;
 }
 
-export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZone, gesture, fieldZoom, onFieldZoom, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled }: { player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; fieldZoom: number; onFieldZoom: (direction: -1 | 1) => void; onFocus: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
+export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZone, gesture, fieldZoom, onFieldZoom, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, disabled, seat }: { seat?: ReactNode; player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; onFocus?: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; disabled?: boolean }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
-    <header className="player-heading">
+    {seat ?? <header className="player-heading">
       <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}>
         <span className="player-name-life">
           <h2>{player.name}</h2>
@@ -63,13 +64,13 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
       {currentTurn && <span className="turn-badge">Turno atual</span>}
       <div className="player-view-actions">
         {onReturnToOwn && <button className="secondary return-own-table" onClick={onReturnToOwn} aria-label="Voltar para minha mesa" title="Voltar para minha mesa"><TableIcon name="back" /><span>Minha mesa</span></button>}
-        <button className="secondary icon-button" onClick={onFocus} aria-label={expanded ? 'Voltar à visão geral' : `Ampliar mesa de ${player.name}`} title={expanded ? 'Voltar à visão geral' : 'Ampliar mesa'}><TableIcon name={expanded ? 'grid' : 'focus'} /></button>
+        {onFocus && <button className="secondary icon-button" onClick={onFocus} aria-label={expanded ? 'Voltar à visão geral' : `Ampliar mesa de ${player.name}`} title={expanded ? 'Voltar à visão geral' : 'Ampliar mesa'}><TableIcon name={expanded ? 'grid' : 'focus'} /></button>}
       </div>
-    </header>
+    </header>}
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
         <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
-        <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />
+        {seat && !own ? <OpponentField player={player} gesture={gesture} /> : <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />}
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
       {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} title="Ocultar todas reveladas (H)" aria-keyshortcuts="H" onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
@@ -87,7 +88,7 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, on
   </div>;
 }
 
-function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoom, onFieldZoom }: ZoneProps & { fieldZoom: number; onFieldZoom: (direction: -1 | 1) => void }) {
+function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoom, onFieldZoom }: ZoneProps & { fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void }) {
   const cards = player.battlefield ?? [];
   const zoom = fieldZoom;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -116,7 +117,7 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoo
   }, [zoom, cards.length]);
   useEffect(() => {
     const node = document.querySelector<HTMLElement>(`[data-field-owner="${player.userId}"] .battlefield-scroll`);
-    if (!node) return;
+    if (!node || !onFieldZoom) return;
     const onWheel = (event: WheelEvent) => {
       if (!event.ctrlKey) return;
       event.preventDefault();
@@ -130,6 +131,7 @@ function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoo
       <span>Campo</span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
     </header>
+    <div className="battlefield-guides" aria-hidden="true"><span>Permanentes</span><span>Terrenos</span></div>
     <div className="battlefield-scroll" ref={scrollRef}>
       <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': zoom } as CSSProperties}>
         <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
