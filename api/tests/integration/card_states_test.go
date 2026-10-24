@@ -66,6 +66,7 @@ func TestCardStatesPrivacyAndRecovery(t *testing.T) {
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, p.Deck.ID), cookie, nil), 200)
 	}
 	requireStatus(t, e.request("POST", path+"/start", "{}", owner, nil), 201)
+	returnOpeningHandsToLibrary(t, e, decodeRoom(t, created).ID, owner, other)
 	n := 0
 	action := func(cookie *http.Cookie, fields string) response {
 		n++

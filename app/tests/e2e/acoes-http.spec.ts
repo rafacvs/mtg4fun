@@ -1,5 +1,5 @@
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, closeQuickActions, openGameActions, openHand, openLibrary, openQuickActions } from './fixtures';
+import { test, expect, closeQuickActions, openGameActions, openHand, openLibrary, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
 
 // Resolve a non-loopback origin to the real test server. Chromium must expose
 // the same restricted Web Crypto API as public HTTP, without mocking crypto.
@@ -23,6 +23,7 @@ for (const remoteHTTP of [false, true]) {
         decks.push({ api, id: deck.id });
       }
       expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+      for (const { api } of decks) await returnOpeningHandToLibrary(api, roomId);
       for (const { api, id } of decks) expect((await api.delete(`/api/decks/${id}`)).status()).toBe(204);
 
       const origin = new URL(baseURL!);

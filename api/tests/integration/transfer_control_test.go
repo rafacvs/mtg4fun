@@ -67,6 +67,7 @@ func TestTransferControlKeepsOwnerAndReturnsCardsToOwnerZones(t *testing.T) {
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, result.Deck.ID), cookie, nil), 200)
 	}
 	requireStatus(t, e.request("POST", path+"/start", "{}", owner, nil), 201)
+	returnOpeningHandsToLibrary(t, e, roomID, owner, controller)
 	actionPath := path + "/match/actions"
 	action := func(cookie *http.Cookie, intent, fields string) response {
 		return e.request("POST", actionPath, fmt.Sprintf(`{"intentId":%q,%s}`, intent, fields), cookie, nil)

@@ -1,4 +1,4 @@
-import { test, expect, closeHand, closeMatchRail, closeQuickActions, openHand, openLibrary, openMatchRail, openQuickActions } from './fixtures';
+import { test, expect, closeHand, closeMatchRail, closeQuickActions, openHand, openLibrary, openMatchRail, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -84,6 +84,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(board).toBeVisible();
   const roomURL = page.url();
   const matchPath = `/api/rooms/${roomURL.split('/').at(-1)}/match`;
+  await returnOpeningHandToLibrary(page.request, Number(roomURL.split('/').at(-1)));
   const ownHand = async (): Promise<{ id: string }[]> => {
     const response = await page.request.get(matchPath);
     expect(response.ok()).toBe(true);

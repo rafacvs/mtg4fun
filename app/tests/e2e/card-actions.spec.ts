@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { test, expect, openHand } from './fixtures';
+import { test, expect, openHand, returnOpeningHandToLibrary } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 async function table(api: APIRequestContext, page: Page) {
@@ -9,6 +9,7 @@ async function table(api: APIRequestContext, page: Page) {
   const { room } = await (await api.post('/api/rooms', { data: {} })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBe(true);
+  await returnOpeningHandToLibrary(api, room.id);
   const path = `/api/rooms/${room.id}/match`;
   const act = async (data: object) => {
     const response = await api.post(`${path}/actions`, { data: { intentId: randomUUID(), ...data } });
