@@ -3,7 +3,7 @@ export type Room = {
   title: string;
   creatorId: number;
   status: string;
-  participants: { id: number; name: string; ready: boolean }[];
+  participants: { id: number; name: string; ready: boolean; deckId?: number }[];
   vacancies: number;
 };
 
@@ -92,7 +92,9 @@ export const roomsApi = {
   revealCards: (id: number, cardIds: string[], revealed: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal_cards', cardIds, revealed }),
   create: () => change('/api/rooms'),
   join: (id: number) => change(`/api/rooms/${id}/participants`),
-  ready: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/ready`, 'PUT', { deckId }),
+  selectDeck: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/deck`, 'PUT', { deckId }),
+  ready: (id: number) => change(`/api/rooms/${id}/participants/me/ready`, 'PUT'),
+  unready: (id: number) => change(`/api/rooms/${id}/participants/me/ready`, 'DELETE'),
   start: (id: number) => change(`/api/rooms/${id}/start`),
   match: async (id: number): Promise<Match> => {
     const response = await fetch(`/api/rooms/${id}/match`);

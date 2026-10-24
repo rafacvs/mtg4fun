@@ -21,9 +21,10 @@ import (
 const capacity = 6
 
 type Participant struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Ready bool   `json:"ready"`
+	ID     int64  `json:"id"`
+	Name   string `json:"name"`
+	Ready  bool   `json:"ready"`
+	DeckID int64  `json:"deckId,omitempty"`
 }
 type Room struct {
 	ID           int64         `json:"id"`
@@ -51,7 +52,7 @@ type roomState struct {
 func (r roomState) view() Room {
 	p := make([]Participant, len(r.Participants))
 	for i, v := range r.Participants {
-		p[i] = Participant{v.ID, v.Name, v.Ready}
+		p[i] = Participant{v.ID, v.Name, v.Ready, v.DeckID}
 	}
 	return Room{r.ID, r.Title, r.CreatorID, r.Status, p, r.Vacancies}
 }
@@ -394,6 +395,8 @@ var errRoomStarted = errors.New("A partida já foi iniciada.")
 var errNotCreator = errors.New("Somente o criador pode iniciar a partida.")
 var errNotReady = errors.New("Todos os participantes precisam confirmar um deck.")
 var errDeckNotFound = errors.New("Deck não encontrado.")
+var errDeckRequired = errors.New("Selecione um deck antes de confirmar.")
+var errReadyLocked = errors.New("Desfaça a prontidão para trocar de deck.")
 
 func lockedRoom(ctx context.Context, tx *sql.Tx, id int64) (roomState, error) {
 	return readRoom(tx.QueryRowContext(ctx, "SELECT snapshot FROM rooms WHERE id=? FOR UPDATE", id))
@@ -430,7 +433,7 @@ func (s *Service) join(ctx context.Context, id int64, u auth.User) (Room, error)
 	e = tx.Commit()
 	return r.view(), e
 }
-func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Room, error) {
+func (s *Service) selectParticipantDeck(ctx context.Context, id, deckID int64, u auth.User) (Room, error) {
 	tx, e := s.db.BeginTx(ctx, nil)
 	if e != nil {
 		return Room{}, e
@@ -452,7 +455,53 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 	}
 	for i := range r.Participants {
 		if r.Participants[i].ID == u.ID {
+			if r.Participants[i].Ready {
+				return Room{}, errReadyLocked
+			}
 			r.Participants[i].DeckID = deckID
+			if e = save(ctx, tx, r, u.ID, "selected-deck"); e != nil {
+				return Room{}, e
+			}
+			e = tx.Commit()
+			return r.view(), e
+		}
+	}
+	return Room{}, sql.ErrNoRows
+}
+
+func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Room, error) {
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return Room{}, e
+	}
+	defer tx.Rollback()
+	r, e := lockedRoom(ctx, tx, id)
+	if e != nil {
+		return Room{}, e
+	}
+	if r.Status != "preparing" {
+		return Room{}, errRoomStarted
+	}
+	if deckID > 0 {
+		var found int
+		if e = tx.QueryRowContext(ctx, "SELECT 1 FROM decks WHERE id=? AND user_id=?", deckID, u.ID).Scan(&found); e != nil {
+			if errors.Is(e, sql.ErrNoRows) {
+				return Room{}, errDeckNotFound
+			}
+			return Room{}, e
+		}
+	}
+	for i := range r.Participants {
+		if r.Participants[i].ID == u.ID {
+			if r.Participants[i].Ready && deckID > 0 && deckID != r.Participants[i].DeckID {
+				return Room{}, errReadyLocked
+			}
+			if deckID > 0 {
+				r.Participants[i].DeckID = deckID
+			}
+			if r.Participants[i].DeckID == 0 {
+				return Room{}, errDeckRequired
+			}
 			r.Participants[i].Ready = true
 			if e = save(ctx, tx, r, u.ID, "ready"); e != nil {
 				return Room{}, e
@@ -463,6 +512,33 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 	}
 	return Room{}, sql.ErrNoRows
 }
+
+func (s *Service) unready(ctx context.Context, id int64, u auth.User) (Room, error) {
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return Room{}, e
+	}
+	defer tx.Rollback()
+	r, e := lockedRoom(ctx, tx, id)
+	if e != nil {
+		return Room{}, e
+	}
+	if r.Status != "preparing" {
+		return Room{}, errRoomStarted
+	}
+	for i := range r.Participants {
+		if r.Participants[i].ID == u.ID {
+			r.Participants[i].Ready = false
+			if e = save(ctx, tx, r, u.ID, "unready"); e != nil {
+				return Room{}, e
+			}
+			e = tx.Commit()
+			return r.view(), e
+		}
+	}
+	return Room{}, sql.ErrNoRows
+}
+
 func drawTurnOrder(participants []participantState, roll func() (int, error)) ([]Turn, error) {
 	pending := append([]participantState(nil), participants...)
 	order := []Turn{}

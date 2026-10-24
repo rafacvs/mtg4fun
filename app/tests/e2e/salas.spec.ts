@@ -77,8 +77,9 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await room.getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
   await expect(page).toHaveURL(/#\/salas\/\d+$/);
   await page.getByLabel('Deck para a partida').selectOption({ label: 'Movimentos' });
-  await page.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
-  await expect(page.getByText('Pronto', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Desfazer prontidão', exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Amigo da mesa · Pronto' })).toBeVisible();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
   await expect(board).toBeVisible();
