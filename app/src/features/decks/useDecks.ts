@@ -47,8 +47,10 @@ export function useDecks() {
       await deckApi.remove(id);
       setDecks(current => current.filter(deck => deck.id !== id));
       setSelected(current => current === id ? null : current);
+      return true;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível excluir o deck.');
+      return false;
     } finally {
       setBusy(false);
     }

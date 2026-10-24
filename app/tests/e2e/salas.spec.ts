@@ -26,9 +26,11 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
     await other.getByRole('button', { name: 'Entrar', exact: true }).click();
     await expect(other.getByRole('heading', { name: 'Salas', exact: true })).toBeVisible();
     const before = await rooms.getByRole('article').count();
+    const knownTitles = new Set(await rooms.getByRole('article').locator('h3').allTextContents());
     await activate(page.getByRole('button', { name: 'Criar sala', exact: true }));
+    await page.getByRole('dialog', { name: 'Montar a mesa' }).getByRole('button', { name: 'Criar e sentar' }).click();
     await expect(rooms.getByRole('article')).toHaveCount(before + 1);
-    const title = await rooms.getByRole('article').last().getByRole('heading').innerText();
+    const title = (await rooms.getByRole('article').locator('h3').allTextContents()).find(value => !knownTitles.has(value))!;
     const mine = rooms.getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
     const theirs = other.getByRole('article').filter({ has: other.getByRole('heading', { name: title, exact: true }) });
     await expect(theirs.getByText('5 vagas disponíveis')).toBeVisible();
@@ -47,6 +49,7 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
     await page.getByLabel('Escolher deck salvo').selectOption(uploadedDeckId);
     await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Excluir deck?' }).getByRole('button', { name: 'Confirmar exclusão' }).click();
     await expect(page.getByLabel('Escolher deck salvo').locator(`option[value="${uploadedDeckId}"]`)).toHaveCount(0);
     await page.getByRole('button', { name: 'Sair', exact: true }).click();
     await expect(page.getByLabel('Login', { exact: true })).toBeVisible();
@@ -67,6 +70,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(page.getByText('Salas atualizadas em tempo real.', { exact: true })).toBeVisible();
   const knownRooms = new Set(await page.getByRole('article').locator('h3').allTextContents());
   await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Montar a mesa' }).getByRole('button', { name: 'Criar e sentar' }).click();
   await expect.poll(async () => (await page.getByRole('article').locator('h3').allTextContents()).some(title => !knownRooms.has(title))).toBe(true);
   const created = (await page.getByRole('article').locator('h3').allTextContents()).find(title => !knownRooms.has(title))!;
   const room = page.getByRole('article').filter({ has: page.getByRole('heading', { name: created, exact: true }) });
