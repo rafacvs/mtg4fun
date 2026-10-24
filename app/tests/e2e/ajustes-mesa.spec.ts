@@ -111,13 +111,13 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     const otherLog = other.getByRole('region', { name: 'Registro da partida' });
     const panel = page.getByRole('region', { name: 'Prévia da carta', exact: true });
     const otherPanel = other.getByRole('region', { name: 'Prévia da carta', exact: true });
-    const link = log.getByRole('button', { name: 'Prévia de Island no registro', exact: true }).last();
+    const link = log.getByRole('listitem').filter({ hasText: 'para Cemitério' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
     const before = (await read()).log.length;
     if (info.project.use.hasTouch) await link.tap(); else await link.hover();
     await expect(panel.getByRole('img', { name: 'Prévia de Island', exact: true })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await read()).log.length).toBe(before);
-    await otherLog.getByRole('button', { name: 'Prévia de Island no registro', exact: true }).last().hover();
+    await otherLog.getByRole('listitem').filter({ hasText: 'para Cemitério' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true }).hover();
     await expect(otherPanel.getByRole('img')).toBeVisible();
     await action({ kind: 'move', cardIds: [cards[0].id], to: 'hand' });
     await expect(otherLog.locator('li').filter({ hasText: 'para Cemitério' }).getByRole('button')).toHaveCount(0);
