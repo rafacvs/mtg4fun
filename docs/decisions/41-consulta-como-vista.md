@@ -33,3 +33,16 @@ de compra, revelação, cinco destinos, ordem no topo/fundo, retomada após
 reinício e embaralhamento persistente. O navegador usa API real para verificar
 a contagem estável e os fluxos da consulta. Os resultados executados ficam
 registrados no PR da integração.
+
+Em 24/10/2026, `go vet ./...`, os testes de `api/internal/...`, typecheck e
+build do frontend passaram neste card. Os 15 cenários de
+`grimorio.spec.ts` passaram em desktop, celular vertical e horizontal, com
+API e MySQL reais. O primeiro teste HTTP da contagem falhou antes da mudança
+(consulta de três cartas reduziu o monte de sete para quatro) e passou após
+esta implementação.
+
+A suíte HTTP completa terminou com uma falha em
+`TestTransferredSelectionPreservesZoneRulesAndRollsBack`, fora deste card:
+o teste espera posições 400/520 para duas cartas que estão empilhadas e
+recebe 400/400. A mesma falha foi reproduzida isoladamente na base `2f0ab39`.
+O comportamento de posicionamento e esse teste não foram alterados aqui.
