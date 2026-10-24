@@ -89,11 +89,11 @@ A carta passa a ser a interface. O estado aparece nela. Virar, comprar, mover, m
 59. Como usuário, quero o lobby na ordem das minhas mesas, das abertas e das que já começaram, para achar o que preciso fazer.
 60. Como usuário, quero uma mesa em jogo sem promessa de vaga, para não achar que ainda dá para sentar.
 61. Como usuário, quero o painel de criar mesa com o visual da proposta, para ver nome, formato, lugares, vida e deck no mesmo passo.
-62. Como usuário, quero que formato, lugares, vida da sala e deck na criação apareçam como exemplo e não sejam salvos, para o visual não mentir que a sala guardou isso.
+62. Como usuário, quero que formato, lugares, vida da sala e deck na criação sejam o contrato da [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md), para o painel deixar de ser exemplo.
 63. Como jogador na preparação, quero ver quem está pronto e o botão de começar desabilitado dizendo quem falta, para não receber um erro no lugar do aviso.
 64. Como jogador, quero excluir um deck só depois de confirmar, com a explicação de que a partida já iniciada não muda, para a ação perigosa não ficar no botão principal.
 65. Como jogador, quero Meus decks no visual da proposta, com nome, quantidade, carta fora do catálogo e prévia verdadeiros, para organizar a biblioteca com o que o servidor já sabe.
-66. Como jogador, quero comandante, cores, curva e tipos marcados como exemplo, para não escolher um deck por um dado falso.
+66. Como jogador, quero comandante, cores, curva e tipos reais conforme a [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md), para não escolher um deck por um dado falso.
 67. Como jogador, quero continuar editando vida e modificador de poder e resistência com os controles diretos já existentes, dentro da superfície nova, para o redesenho não tirar a edição que já funciona.
 68. Como jogador, quero finalizar a partida como hoje, para o encerramento não mudar junto com o visual.
 
@@ -112,7 +112,7 @@ A carta passa a ser a interface. O estado aparece nela. Virar, comprar, mover, m
 - Atalhos novos convivem com D, U e N. H passa a ser mão.
 - O clique seleciona na hora. O duplo clique ainda vira, sem segurar o clique.
 - Vida direta, modificador de poder e resistência, confirmação por Enter ou saída do campo, falha parcial e permissão de quem edita continuam valendo dentro da barra, do assento e da inspeção.
-- Lobby, criação de sala, preparação, Meus decks e login ganham o visual. O que o servidor não guarda aparece com a marca exemplo e não é enviado. Nome, quantidade e carta fora do catálogo continuam reais. Criar sala continua criando a sala como hoje, com o criador sentado. Começar partida continua exigindo todos prontos. O botão só deixa de disparar o erro quando alguém falta.
+- Lobby, criação de sala, preparação, Meus decks e login ganham o visual. Nome, formato, lugares, vida, deck na criação, comandante, cores, curva e tipos deixam de ser exemplo quando a [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md) estiver entregue. Criar sala senta o criador. Começar partida continua exigindo todos prontos. O botão só deixa de disparar o erro quando alguém falta.
 - Excluir deck pede confirmação. A exclusão não altera partida já iniciada, como já é o caso.
 - A construção usa os cards 40 a 48 numa branch de integração, no fluxo `/implement-spec`. Esta spec não abre um PR por card.
 - Fontes Cinzel e Geist entram como dependência de apresentação, porque fazem parte do desenho aprovado.
@@ -131,11 +131,8 @@ Vida, permissão e falha parcial do modificador continuam cobertos pelos fluxos 
 ## Out of Scope
 
 - Desfazer a última ação própria. Fica na issue 37. A spec da mesa continua sem desfazer genérico até lá.
-- Comprar 7 e colocar o comandante na zona de comando ao iniciar. Issue 33. A sala não anuncia essas regras.
-- Comandante, cores, curva, tipos, exportar, duplicar, colar lista e corrigir nomes como dado real. Issue 34. No visual, isso é exemplo.
-- Desfazer a prontidão. Issue 35.
-- Reinício por unanimidade. Issue 36. A spec da mesa mantém o requisito. Esta entrega não o implementa e não o apaga.
-- Criar mesa persistindo nome, formato, lugares, vida e deck. Issue 38. Formato, se um dia for salvo, é rótulo. A mesa continua sem motor de regras.
+- Exportar, duplicar, colar lista, corrigir nomes e “quando foi jogado”. Saíram da issue 34 para outro tospec.
+- Compra inicial, comandante do deck, prontidão reversível, criação persistida e reinício votado. Estão na [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md).
 - Mulligan como fluxo próprio.
 - Dano de comandante por oponente. Continuam os cinco marcadores de cor.
 - Recorte de arte no campo.

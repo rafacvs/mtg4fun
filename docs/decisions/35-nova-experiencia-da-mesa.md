@@ -35,10 +35,12 @@ branch de integração, em vez de um PR por card.
 
 ## O que fica para as issues já abertas
 
-Compra inicial e comandante (33), dados reais de decks (34), prontidão
-reversível (35), reinício por unanimidade (36), desfazer (37) e criação de mesa
-persistida (38). Mulligan, recorte de arte, dano de comandante por oponente e
-sessão única ficam de fora.
+Compra inicial, comandante do deck, dados reais da biblioteca (exceto
+exportar/colar/última jogada), prontidão reversível, reinício e criação
+persistida passaram para a
+[spec 06](../specs/06-preparacao-inicio-e-reinicio.md). Desfazer (37),
+mulligan, recorte de arte, dano de comandante por oponente e sessão única
+ficam de fora.
 
 ## Implementação
 

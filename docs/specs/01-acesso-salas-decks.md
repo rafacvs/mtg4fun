@@ -44,13 +44,20 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 
 ### Salas e preparação
 
-- Várias salas simultâneas, com limite de seis jogadores por sala.
+- Várias salas simultâneas. Cada sala tem de um a seis lugares; o máximo
+  continua seis.
 - Qualquer usuário autenticado cria e entra em salas com vagas antes do início; não há aprovação individual ou senha adicional de sala.
-- Cada participante escolhe um deck e confirma prontidão. O criador inicia quando todos estiverem prontos.
+- A criação grava nome, formato (rótulo), lugares, vida daquela sala e, se
+  houver, o deck do criador, sem prontidão automática, conforme a
+  [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md).
+- Cada participante escolhe um deck e confirma prontidão. Deck selecionado e
+  pronto são distintos; a prontidão pode ser desfeita enquanto a partida não
+  começou. O criador inicia quando todos estiverem prontos.
 - A quantidade mínima de jogadores para iniciar não foi explicitamente definida; não impor requisito de formato de Magic.
-- No início, carregar os decks, inicializar a vida pelo valor configurado no banco, embaralhar os grimórios e sortear a ordem de turnos.
-- Compra da mão inicial é manual pelo atalho de comprar X.
-- Não selecionar comandantes na preparação: jogadores consultam o grimório, movem as cartas para comando e embaralham.
+- No início, carregar os decks, inicializar a vida pela vida daquela sala,
+  embaralhar os grimórios, pôr o comandante do deck na zona de comando quando
+  houver e comprar sete, conforme a
+  [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md).
 - Após o início, participantes ficam fixos. Desconexão não libera o lugar para outro usuário.
 - Um participante original pode autenticar novamente e recuperar seu estado.
 
@@ -94,4 +101,4 @@ Editor/exportador de decks, sideboard na mesa, aprovação de entradas antes do 
 
 O repositório original do Cockatrice foi consultado como referência local. Suas estruturas não determinam módulos, banco ou protocolo desta aplicação.
 
-A apresentação do login, do lobby, da preparação e de Meus decks segue a [nova experiência da mesa](05-nova-experiencia-da-mesa.md). Isso não cria formato, lugares, vida por sala, deck na criação, comandante, curva nem tipos persistidos. O que ainda não existe aparece como exemplo e não é salvo. Excluir um deck pede confirmação. O comportamento persistido desta spec permanece.
+A apresentação do login, do lobby, da preparação e de Meus decks segue a [nova experiência da mesa](05-nova-experiencia-da-mesa.md). Nome, formato, lugares, vida da sala, deck na criação, comandante, cores, curva e tipos passam a ser o contrato da [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md). Excluir um deck pede confirmação. Exportar, duplicar, colar lista, corrigir nomes e “quando foi jogado” continuam de fora.
