@@ -110,7 +110,7 @@
   .mobile-table .toolbar-leading { gap: 8px; }
   .mobile-table .table-toolbar { grid-template-columns: 1fr auto auto; }
   .mobile-table .table-room-label { display: none; }
-  .mobile-table .table-revealed { display: none; }
+  .mobile-table .table-revealed { max-height: 56px; overflow: auto; }
 }
 @media (max-width: 1000px) {
   .mobile-table .mobile-table-controls { position: absolute; z-index: 19; left: 124px; right: 200px; bottom: 0; display: flex; gap: 3px; padding: 4px; background: var(--panel-overlay); border-top: 1px solid var(--line); }
@@ -148,7 +148,7 @@
 }
 @media (max-width: 1000px) and (orientation: landscape) {
   .mobile-table .card-action-bar { top: 54px; bottom: auto; left: 124px; right: 200px; transform: none; width: auto; max-width: none; padding: 4px; gap: 3px; }
-  .mobile-table .card-action-bar button { font-size: .6rem; padding: 3px 5px; }
+  .mobile-table .card-action-bar button { min-width: 44px; min-height: 44px; font-size: .6rem; padding: 3px 5px; }
 }
 @media (max-width: 1000px) and (orientation: portrait) {
   .mobile-table:has(.card-action-bar) .zone-hand .zone-cards { padding-bottom: 160px; }
@@ -163,7 +163,7 @@
   .mobile-table .seat-heading { transition: background-color .15s, box-shadow .15s; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .playing-card.is-tapped, .player-table.is-current-turn .seat-heading { animation: table-state-fade .1s; }
+  .mobile-table .playing-card.is-tapped, .mobile-table .player-table.is-current-turn .seat-heading { animation: table-state-fade .1s; }
   @keyframes table-state-fade { from { opacity: .7; } to { opacity: 1; } }
 }
 @media (max-width: 1000px) and (orientation: portrait) {

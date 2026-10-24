@@ -93,10 +93,13 @@ test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao gir
   await preview.getByRole('button', { name: 'Fechar', exact: true }).tap();
   await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(cards).toHaveCount(3);
+  await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
+  await expect(hand).toHaveClass(/is-organizing/);
   const before = (await (await page.request.get(path)).json()).match;
   const sameDocument = await page.evaluate(() => { (window as Window & { orientationCheck?: string }).orientationCheck = 'same'; return location.href; });
   await page.setViewportSize({ width: 839, height: 393 });
   await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toBeHidden();
+  await expect(hand).not.toHaveClass(/is-organizing/);
   await expect(hand).toBeVisible();
   await expect(cards).toHaveCount(3);
   expect(await page.evaluate(() => (window as Window & { orientationCheck?: string }).orientationCheck)).toBe('same');

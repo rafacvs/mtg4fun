@@ -21,8 +21,8 @@ const destinations: { value: string; title: string; icon: TableIconName }[] = [
 ];
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ directActions = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
-  directActions?: boolean;
+export function CardPreview({ readingActions = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
+  readingActions?: boolean;
   card: Card | null;
   editable?: boolean;
   disabled?: boolean;
@@ -93,8 +93,11 @@ export function CardPreview({ directActions = false, card, editable = false, dis
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
           {onMove && <button className="secondary" disabled={disabled} onClick={() => setStep('move')}><TableIcon name="move" />Mover para…</button>}
         </div>}
-        {directActions && controlled && onMove && card.ownerId === viewerId && <div className="portrait-card-actions" role="group" aria-label="Destinos de leitura">
-          {destinations.filter(destination => destination.value !== card.zone).map(destination => <button key={destination.value} disabled={disabled} onClick={() => void onMove(card.id, destination.value)}>{destination.value === 'battlefield' ? 'Jogar no campo' : destination.title}</button>)}
+        {readingActions && controlled && <div className="portrait-card-actions" role="group" aria-label="Ações da carta">
+          {viewerId && onStateChange && card.zone === 'battlefield' && <button className="secondary" disabled={disabled} onClick={() => onStateChange('set_tapped', card, !card.tapped)}>{card.tapped ? 'Desvirar' : 'Virar'}</button>}
+          {viewerId && onStateChange && <button className="secondary" disabled={disabled} onClick={() => onStateChange('reveal_cards', card, !card.revealed)}>{card.revealed ? 'Ocultar revelação' : 'Revelar para todos'}</button>}
+          {card.ownerId === viewerId && onMove && destinations.filter(destination => destination.value !== card.zone).map(destination => <button key={destination.value} disabled={disabled} onClick={() => void onMove(card.id, destination.value)}>{destination.value === 'battlefield' ? 'Jogar no campo' : destination.title}</button>)}
+          {card.ownerId !== viewerId && viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
         </div>}
         <div className="table-menu">
           {editable && onCounter && <MenuItem icon="markers" title="Marcadores" description="Marcadores de cor desta carta" disabled={disabled} onClick={() => setStep('markers')} />}
