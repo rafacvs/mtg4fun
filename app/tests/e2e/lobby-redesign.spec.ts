@@ -46,7 +46,9 @@ test('monta uma mesa sem enviar nem salvar os campos de exemplo', async ({ page 
   await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
   await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
   await page.getByLabel('Deck para a partida').selectOption(String(deck.id));
-  await page.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
+  await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
+  await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Mesa da partida', exact: true })).toBeVisible();

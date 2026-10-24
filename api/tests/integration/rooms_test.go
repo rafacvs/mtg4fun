@@ -20,8 +20,10 @@ type roomView struct {
 	CreatorID    int64  `json:"creatorId"`
 	Status       string `json:"status"`
 	Participants []struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
+		ID     int64  `json:"id"`
+		Name   string `json:"name"`
+		Ready  bool   `json:"ready"`
+		DeckID int64  `json:"deckId"`
 	} `json:"participants"`
 	Vacancies int `json:"vacancies"`
 }
@@ -368,6 +370,190 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 		t.Fatalf("recuperação: %s", recovered.body)
 	}
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", outsider, nil), 409)
+}
+
+func TestSelectingDeckDoesNotMarkReady(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(ana, deck)
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	selected := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/deck", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil)
+	requireStatus(t, selected, 200)
+	room := decodeRoom(t, selected)
+	if len(room.Participants) != 1 || room.Participants[0].Ready || room.Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("seleção marcou pronto: %s", selected.body)
+	}
+	listed := listRooms(t, e, ana)
+	if len(listed) != 1 || listed[0].Participants[0].Ready || listed[0].Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("listagem após seleção: %+v", listed)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 409)
+}
+
+func TestConfirmingReadyRequiresSelectedDeck(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploaded := e.uploadDeck(ana, deck)
+	requireStatus(t, uploaded, 201)
+	var payload struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	missing := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), "{}", ana, nil)
+	requireStatus(t, missing, 409)
+	if !bytes.Contains(missing.body, []byte("Selecione um deck")) {
+		t.Fatalf("prontidão sem deck: %s", missing.body)
+	}
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/deck", id), fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), ana, nil), 200)
+	confirmed := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), "{}", ana, nil)
+	requireStatus(t, confirmed, 200)
+	room := decodeRoom(t, confirmed)
+	if !room.Participants[0].Ready || room.Participants[0].DeckID != payload.Deck.ID {
+		t.Fatalf("confirmação: %s", confirmed.body)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 201)
+}
+
+func TestUndoReadyKeepsDeckAndAllowsChangingIt(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.mustCreate("bia", "Bia", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	anaDeck := e.uploadDeck(ana, deck)
+	firstBia := e.uploadDeck(bia, deck)
+	secondBia := e.uploadDeck(bia, []byte(`<cockatrice_deck version="1"><deckname>Outro</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>`))
+	requireStatus(t, anaDeck, 201)
+	requireStatus(t, firstBia, 201)
+	requireStatus(t, secondBia, 201)
+	var uploaded struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(anaDeck.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	anaID := uploaded.Deck.ID
+	if err := json.Unmarshal(firstBia.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	biaFirst := uploaded.Deck.ID
+	if err := json.Unmarshal(secondBia.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	biaSecond := uploaded.Deck.ID
+	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	path := fmt.Sprintf("/api/rooms/%d/participants/me", id)
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", bia, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, anaID), ana, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, biaFirst), bia, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/ready", "{}", ana, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/ready", "{}", bia, nil), 200)
+	locked := e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, biaSecond), bia, nil)
+	requireStatus(t, locked, 409)
+	undone := e.request("DELETE", path+"/ready", "{}", bia, nil)
+	requireStatus(t, undone, 200)
+	room := decodeRoom(t, undone)
+	var biaState, anaState struct {
+		Ready  bool
+		DeckID int64
+	}
+	for _, participant := range room.Participants {
+		switch participant.Name {
+		case "Bia":
+			biaState.Ready, biaState.DeckID = participant.Ready, participant.DeckID
+		case "Ana":
+			anaState.Ready, anaState.DeckID = participant.Ready, participant.DeckID
+		}
+	}
+	if biaState.Ready || biaState.DeckID != biaFirst || !anaState.Ready || anaState.DeckID != anaID {
+		t.Fatalf("desfazer prontidão: %s", undone.body)
+	}
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 409)
+	changed := e.request("PUT", path+"/deck", fmt.Sprintf(`{"deckId":%d}`, biaSecond), bia, nil)
+	requireStatus(t, changed, 200)
+	after := decodeRoom(t, changed)
+	for _, participant := range after.Participants {
+		if participant.Name == "Bia" && (participant.Ready || participant.DeckID != biaSecond) {
+			t.Fatalf("troca após desfazer: %s", changed.body)
+		}
+	}
+}
+
+func TestReadyDoesNotChangeDeckWhileLocked(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := e.uploadDeck(ana, deck)
+	second := e.uploadDeck(ana, []byte(`<cockatrice_deck version="1"><deckname>Outro</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>`))
+	requireStatus(t, first, 201)
+	requireStatus(t, second, 201)
+	var uploaded struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(first.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	firstID := uploaded.Deck.ID
+	if err := json.Unmarshal(second.body, &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	secondID := uploaded.Deck.ID
+	created := e.request("POST", "/api/rooms", "{}", ana, nil)
+	requireStatus(t, created, 201)
+	id := decodeRoom(t, created).ID
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, firstID), ana, nil), 200)
+	locked := e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, secondID), ana, nil)
+	requireStatus(t, locked, 409)
+	listed := listRooms(t, e, ana)
+	if listed[0].Participants[0].DeckID != firstID || !listed[0].Participants[0].Ready {
+		t.Fatalf("prontidão trocou o deck: %+v", listed)
+	}
 }
 
 func TestStartRollsBackWhenMatchLogCannotBeSaved(t *testing.T) {

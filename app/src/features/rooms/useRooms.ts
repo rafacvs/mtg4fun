@@ -34,7 +34,9 @@ export function useRooms() {
     rooms, connection, loading, busy, error,
     create: () => act(roomsApi.create),
     join: (id: number) => act(() => roomsApi.join(id)),
-    ready: (id: number, deckId: number) => act(() => roomsApi.ready(id, deckId)),
+    selectDeck: (id: number, deckId: number) => act(() => roomsApi.selectDeck(id, deckId)),
+    ready: (id: number) => act(() => roomsApi.ready(id)),
+    unready: (id: number) => act(() => roomsApi.unready(id)),
     start: (id: number) => act(() => roomsApi.start(id)),
   };
 }
