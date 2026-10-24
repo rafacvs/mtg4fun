@@ -56,7 +56,7 @@ for (const remoteHTTP of [false, true]) {
       await library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }).click();
       await expect(library.locator('.library-card')).toHaveCount(2);
       expect(own(await read()).consulted).toHaveLength(2);
-      await library.getByRole('button', { name: 'Fechar painel do grimório' }).click();
+      await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();
 
       // Drop the first attempt; the automatic retry must retain its action ID.
       let dropped = false;

@@ -11,10 +11,12 @@ import (
 )
 
 type libraryCard struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Revealed bool   `json:"revealed"`
-	FaceDown bool   `json:"faceDown"`
+	Type            string `json:"type"`
+	LibraryPosition int    `json:"libraryPosition"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Revealed        bool   `json:"revealed"`
+	FaceDown        bool   `json:"faceDown"`
 }
 
 type libraryPlayer struct {
@@ -102,6 +104,11 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	if opened.LibraryCount != initial.LibraryCount {
 		t.Fatalf("consultar retirou cartas do grimório: %d, antes %d", opened.LibraryCount, initial.LibraryCount)
 	}
+	for index, card := range opened.Consulted {
+		if card.LibraryPosition != 5+index || card.Type == "" {
+			t.Fatalf("posição/tipo da faixa do fundo: %+v", opened.Consulted)
+		}
+	}
 	other := libraryPlayers(t, read(opponent))[0]
 	if !other.Consulting || other.LibraryCount != initial.LibraryCount || len(other.Consulted) != 0 {
 		t.Fatalf("vista pública da consulta: %+v", other)
@@ -120,6 +127,9 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	seen := libraryPlayers(t, public)[0]
 	if len(seen.Revealed) != 1 || seen.Revealed[0].ID != selectedID || seen.LibraryCount != initial.LibraryCount || len(seen.Consulted) != 0 || seen.ConsultationFrom != "" || bytes.Contains(public.body, []byte(privateID)) {
 		t.Fatalf("filtragem da seleção: %s", public.body)
+	}
+	if seen.Revealed[0].LibraryPosition != 0 || bytes.Contains(public.body, []byte(`"libraryPosition"`)) {
+		t.Fatalf("revelação vazou ordem privada: %s", public.body)
 	}
 	// Revealing a selection leaves the private sequence intact.
 	if got := consultedCardIDs(t, read(owner).body); !slices.Equal(got, consultedCardIDs(t, consult.body)) {

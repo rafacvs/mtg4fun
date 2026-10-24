@@ -153,6 +153,8 @@ type MatchPlayer struct {
 	ConsultationFrom string        `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
+	Type             string      `json:"type,omitempty"`
+	LibraryPosition  int         `json:"libraryPosition,omitempty"`
 	IsToken          bool        `json:"isToken,omitempty"`
 	Tapped           bool        `json:"tapped,omitempty"`
 	FaceDown         bool        `json:"faceDown,omitempty"`
@@ -602,7 +604,7 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e = tx.Commit(); e != nil {
 		return Match{}, e
 	}
-	return m.view(u.ID, log), nil
+	return s.libraryView(m, u.ID, log), nil
 }
 func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, error) {
 	var b []byte
@@ -621,5 +623,5 @@ func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e != nil {
 		return Match{}, e
 	}
-	return m.view(u.ID, log), nil
+	return s.libraryView(m, u.ID, log), nil
 }

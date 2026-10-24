@@ -6,6 +6,7 @@ import { useLibrarySelectionGesture } from './useLibrarySelectionGesture';
 
 type Props = {
   cards: Card[];
+  layout: 'grid' | 'strip';
   filtered: Card[];
   selectedIDs: string[];
   busy: boolean;
@@ -20,13 +21,13 @@ export function LibraryCards(props: Props) {
   return (
     <div
       ref={drag.container}
-      className="library-cards library-list"
+      className={`library-cards library-${props.layout}`}
       aria-label="Cartas da consulta"
     >
       {!props.filtered.length && (
         <p className="library-empty">
           {props.cards.length
-            ? 'Nenhuma carta com esse nome.'
+            ? 'Nenhuma carta com esses filtros.'
             : 'Todas as cartas foram movidas. Finalize a consulta.'}
         </p>
       )}
@@ -93,10 +94,11 @@ export function LibraryCards(props: Props) {
             <CardImage card={card} onInspect={props.onInspect} />
             <div className="library-card-info">
               <span className="library-position">
-                {index + 1}
+                Posição {card.libraryPosition ?? index + 1}
                 {(card.revealed || card.zone === 'revealed') && ' · Todos veem'}
               </span>
               <strong>{card.name}</strong>
+              {card.type && <small className="library-type">{card.type}</small>}
               {selected && (
                 <span className="library-selected-mark" aria-hidden="true">
                   ✓
