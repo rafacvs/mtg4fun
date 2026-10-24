@@ -392,9 +392,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 			err = finishRoom(ctx, tx, roomID, u.ID)
 		}
 	case "create-custom-token":
-		power, _ := modifierFromText(input.Power)
-		toughness, _ := modifierFromText(input.Toughness)
-		payload, err = addCreatedCard(&m, p, Card{Name: input.CustomName, Text: input.Description, Power: power, Toughness: toughness, InstanceKind: "custom-token"}, input.Kind)
+		payload, err = addCreatedCard(&m, p, Card{Name: input.CustomName, Text: input.Description, PrintedPower: strings.TrimSpace(input.Power), PrintedToughness: strings.TrimSpace(input.Toughness), InstanceKind: "custom-token"}, input.Kind)
 	case "copy-card":
 		payload, err = s.copyCard(&m, p, input.CardID)
 	case "create-token":
