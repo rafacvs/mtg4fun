@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
     "test": "playwright test",
+    "capture:parity-v2": "npm run build && playwright test tests/e2e/paridade-visual-v2.spec.ts --project=desktop --workers=1",
     "test:unit": "node --experimental-strip-types --test src/features/rooms/*.test.ts"
   },
   "dependencies": {
