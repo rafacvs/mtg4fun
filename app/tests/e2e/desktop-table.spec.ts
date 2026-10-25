@@ -63,7 +63,28 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     expect(topOpponents).toHaveLength(2);
     expect(opponentBoxes.some(box => box.top >= field!.y - 2 && box.left > field!.x)).toBe(true);
     expect(field!.y + field!.height).toBeLessThanOrEqual(bottom!.y + 2);
-    await expect(page.getByRole('button', { name: /Ampliar mesa|Voltar à visão geral/ })).toHaveCount(0);
+    const focusOpponent = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
+    const focusOwn = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
+    await expect(focusOpponent).toBeVisible();
+    await expect(focusOwn).toBeVisible();
+    const opponentBeforeFocus = await opponents.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true }).boundingBox();
+    const persistedBeforeFocus = await (await contexts[0].request.get(`${path}/match`)).json();
+    await focusOpponent.click();
+    const returnToOverview = page.getByRole('button', { name: 'Voltar à visão geral', exact: true });
+    await expect(returnToOverview).toBeVisible();
+    const opponentAfterFocus = await opponents.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true }).boundingBox();
+    expect(opponentAfterFocus!.width).toBeGreaterThan(opponentBeforeFocus!.width);
+    for (const player of await page.getByRole('article').all()) await expect(player).toBeInViewport();
+    await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+    expect((await (await contexts[0].request.get(`${path}/match`)).json()).match.players).toEqual(persistedBeforeFocus.match.players);
+    const otherPage = await contexts[1].newPage();
+    await otherPage.goto(`/#/salas/${roomId}`);
+    await expect(otherPage.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
+    await returnToOverview.click();
+    await expect(page.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
+    await focusOwn.click();
+    await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true })).toHaveClass(/focused-table/);
+    await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     const ownLife = own.getByRole('textbox', { name: 'Vida', exact: true });
     await ownLife.fill('37');
     await ownLife.press('Enter');
@@ -73,7 +94,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     const card = own.getByRole('button', { name: 'Soldier Token', exact: true });
     await expect(page.getByRole('combobox', { name: 'Densidade', exact: true })).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Zoom do campo' })).toHaveCount(0);
-    await expect(own.getByLabel('marcador vermelho', { exact: true })).toHaveText('0');
+    await expect(own.getByLabel('marcador vermelho', { exact: true })).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath('mesa-quatro.png') });
   } finally { await Promise.all(contexts.map(context => context.close())); }
 });

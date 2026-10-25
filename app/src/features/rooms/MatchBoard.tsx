@@ -108,7 +108,15 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     setLibraryAnchor(document.querySelector<HTMLElement>('.focused-table .library-open') ?? document.querySelector<HTMLElement>('.library-open'));
     setLibraryOpen(true); setActionsOpen(false); setMenuPlayerId(null); setNotice('');
   };
-  const focusPlayer = (id: number) => { if (!compact) { document.querySelector<HTMLElement>(`[data-field-owner="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); return; } setFocusId(id); setOverview(false); setInformationOpen(false); if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); } };
+  const focusPlayer = (id: number) => {
+    if (focusId === id) {
+      setFocusId(null); setOverview(true); setInformationOpen(false);
+      if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+      return;
+    }
+    setFocusId(id); setOverview(false); setInformationOpen(false);
+    if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+  };
   useEffect(() => {
     const dock = dockRef.current;
     const board = dock?.closest<HTMLElement>('.match-board');
@@ -244,21 +252,18 @@ export function MatchBoard({ roomId }: { roomId: number }) {
 
   if (!match) return <p role={error ? 'alert' : 'status'}>{error || 'Carregando mesa…'}</p>;
   const own = match.players.find(player => player.userId === match.viewerId)!;
-  const focused = match.players.find(player => player.userId === (compact ? (focusId ?? match.viewerId) : match.viewerId))!;
+  const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
   const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describeLogEntry(lastAction) : undefined;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
-  const showingOverview = compact ? overview : false;
+  const showingOverview = compact ? overview : focusId === null;
   const showOverview = () => {
     setFocusId(null); setOverview(true); setInformationOpen(false);
     if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
   };
-  const togglePlayerFocus = (id: number) => {
-    if (!showingOverview && focused.userId === id) showOverview();
-    else focusPlayer(id);
-  };
+  const togglePlayerFocus = (id: number) => focusPlayer(id);
   const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
@@ -281,7 +286,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {compact && <p className="rotate-invitation">Gire o aparelho para jogar o campo</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={focusId} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Mão · {own.handCount}</span></div>
             <div id="own-dock-content" className="dock-content">
