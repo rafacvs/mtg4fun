@@ -57,8 +57,11 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
       expect(player.battlefield[0].row).toBe(4);
     }
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
-    const top = await opponents.boundingBox(), field = await own.boundingBox(), bottom = await hand.boundingBox();
-    expect(top!.y + top!.height).toBeLessThanOrEqual(field!.y + 2);
+    const opponentBoxes = await opponents.getByRole('article').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect()));
+    const field = await own.boundingBox(), bottom = await hand.boundingBox();
+    const topOpponents = opponentBoxes.filter(box => box.bottom <= field!.y + 2);
+    expect(topOpponents).toHaveLength(2);
+    expect(opponentBoxes.some(box => box.top >= field!.y - 2 && box.left > field!.x)).toBe(true);
     expect(field!.y + field!.height).toBeLessThanOrEqual(bottom!.y + 2);
     await expect(page.getByRole('button', { name: /Ampliar mesa|Voltar à visão geral/ })).toHaveCount(0);
     const ownLife = own.getByRole('textbox', { name: 'Vida', exact: true });
@@ -119,15 +122,20 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
       if (count === 1) await expect(strip).toHaveCount(0);
       else {
         await expect(strip.getByRole('article')).toHaveCount(count - 1);
-        const boxes = await strip.getByRole('article').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().top));
-        expect(Math.max(...boxes) - Math.min(...boxes)).toBeLessThan(2);
-        if (count >= 5) {
-          expect(await strip.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
-          const last = strip.getByRole('article').last();
-          await last.scrollIntoViewIfNeeded();
-          await expect(last).toBeInViewport();
-          expect(await strip.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
-          await expect(own).toBeVisible();
+        const fields = page.locator('.desktop-fields');
+        const boxes = await page.getByRole('article').evaluateAll(nodes => nodes.map(node => {
+          const box = node.getBoundingClientRect();
+          return { bottom: box.bottom, left: box.left, right: box.right, top: box.top };
+        }));
+        const fieldBox = await fields.boundingBox();
+        expect(await fields.evaluate(node => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight)).toBe(true);
+        expect(boxes.every(box => box.left >= fieldBox!.x - 1 && box.right <= fieldBox!.x + fieldBox!.width + 1 && box.top >= fieldBox!.y - 1 && box.bottom <= fieldBox!.y + fieldBox!.height + 1)).toBe(true);
+        if (count === 2) expect(boxes[1].top).toBeGreaterThan(boxes[0].top);
+        if (count === 3) expect(boxes[2].top).toBeGreaterThan(boxes[0].top);
+        if (count >= 4) {
+          const ownBox = await own.boundingBox();
+          expect(ownBox!.y).toBeGreaterThan(boxes[0].top);
+          expect(ownBox!.x).toBeLessThanOrEqual(Math.min(...boxes.filter(box => box.top >= ownBox!.y - 2).map(box => box.left)) + 2);
         }
       }
       const turnName = (await (await api.get(`${path}/match`)).json()).match.currentTurn.name;

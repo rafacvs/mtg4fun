@@ -21,7 +21,7 @@ export function TableFields({ match, gesture, hoverZone, disabled, onPlayerMenu,
     </div>;
   };
   const controllerColors = Object.fromEntries(match.players.map((player, index) => [`--seat-${player.userId}`, seatColors[index % seatColors.length]])) as CSSProperties;
-  return <div className="desktop-fields" style={controllerColors}>
+  return <div className={`desktop-fields player-count-${match.players.length}`} style={controllerColors}>
     {opponents.length > 0 && <section className="opponent-strip" aria-label="Oponentes" tabIndex={0}>{opponents.map(renderPlayer)}</section>}
     {renderPlayer(own)}
   </div>;
