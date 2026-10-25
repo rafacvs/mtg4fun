@@ -1,6 +1,10 @@
 # Nova experiência da mesa
 
-**Estado:** aprovada em 24/10/2026. A implementação ainda não começou. A construção segue `/implement-spec` numa branch de integração. Issue: https://github.com/rafacvs/mtg4fun/issues/39
+**Estado histórico:** aprovada em 24/10/2026, seguida pela mesa V2 da
+[issue 57](https://github.com/rafacvs/mtg4fun/issues/57), entregue no PR 69.
+A apresentação-alvo atual é a [paridade visual V2](07-paridade-visual-v2.md),
+ainda pendente de implementação corretiva. As seções abaixo preservam o
+planejamento original da issue https://github.com/rafacvs/mtg4fun/issues/39.
 
 Cards, na ordem em que podem começar:
 
