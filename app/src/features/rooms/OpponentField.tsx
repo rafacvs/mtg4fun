@@ -10,8 +10,7 @@ export function OpponentField({ player, gesture }: { player: Match['players'][nu
   const layout = overviewLayout(cards);
   return <section className="table-zone zone-battlefield" aria-label="Campo" data-field-owner={player.userId}>
     <header><span>Campo</span><strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong></header>
-    <div className="battlefield-guides" aria-hidden="true"><span>Permanentes</span><span>Terrenos</span></div>
-    <div className="battlefield-scroll">
+    <div className="battlefield-fit">
       <div className="opponent-canvas" style={{ '--mat-width': layout.width, '--mat-height': layout.height } as CSSProperties}>
         {cards.map(card => {
           const place = layout.cards.get(card.id);

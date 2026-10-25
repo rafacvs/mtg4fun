@@ -89,8 +89,6 @@
   .mobile-table .opponent-table-surface .zone-battlefield { --card-width: 44px; }
   .mobile-table .zone-battlefield { --card-width: var(--field-card-width); background: linear-gradient(130deg, color-mix(in srgb, var(--seat-color) 12%, var(--bg)), var(--bg)); min-height: 0; }
   .mobile-table .zone-battlefield::before { display: none; }
-  .mobile-table .battlefield-guides { display: flex; flex-direction: column; position: absolute; inset: 24px 0 0; pointer-events: none; }
-  .mobile-table .battlefield-guides span { flex: 1; border-top: 1px solid color-mix(in srgb, var(--seat-color) 16%, transparent); padding: 4px; font-size: .55rem; color: var(--muted); }
   .mobile-table .zone-column { --card-width: 44px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: auto; padding: 0; gap: 3px; overflow: visible; }
   .mobile-table .zone-column .card-slot { width: 100%; min-width: 0; }
   .mobile-table .zone-column .table-zone { padding: 0; }

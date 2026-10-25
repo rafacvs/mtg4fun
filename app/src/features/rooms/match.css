@@ -60,7 +60,7 @@
 .zone-battlefield::before { content: ''; position: absolute; width: min(220px, 42%); height: min(220px, 42%); left: 50%; top: 46%; transform: translate(-50%, -50%) rotate(45deg); border: 1px solid rgba(224, 181, 82, .13); border-radius: 50%; outline: 1px solid rgba(224, 181, 82, .07); outline-offset: 10px; pointer-events: none; }
 .zone-battlefield > header { z-index: 1; padding: 0 2px 6px; }
 .zone-battlefield > header > span:first-child { text-transform: uppercase; letter-spacing: .14em; font-size: .6rem; }
-.battlefield-scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--line-strong) 70%, transparent) transparent; z-index: 1; }
+.battlefield-fit { flex: 1; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; z-index: 1; }
 .battlefield-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); }
 .battlefield-canvas { position: relative; width: calc(var(--mat-width) * var(--card-width)); height: calc(var(--mat-height) * var(--card-width)); transform: scale(var(--mat-zoom)); transform-origin: 0 0; }
 .positioned-card { position: absolute; width: var(--card-width); height: calc(var(--card-width) * 88 / 63); }

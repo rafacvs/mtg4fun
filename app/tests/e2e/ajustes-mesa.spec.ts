@@ -259,11 +259,14 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         const mixed = await field.locator('[data-row="1"][data-pos-x="0"] .playing-card').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }));
         const neighbor = await field.locator('[data-row="1"][data-pos-x="1"] .playing-card').boundingBox();
         expect(neighbor!.x).toBeGreaterThan(Math.max(...mixed.map(r => r.right)));
-        const dimensions = await field.locator('.battlefield-scroll').evaluate(node => ({ content: node.scrollWidth, visible: node.clientWidth }));
-        expect(dimensions.content).toBeGreaterThan(dimensions.visible);
-        await field.locator('[data-row="2"]').last().scrollIntoViewIfNeeded();
-        await expect(field.locator('[data-row="2"]').last()).toBeInViewport();
-        await field.locator('.battlefield-scroll').evaluate(node => { node.scrollLeft = 0; node.scrollTop = 0; });
+        const bounds = await field.evaluate(node => { const box = node.getBoundingClientRect(); return { left: box.left, right: box.right, top: box.top, bottom: box.bottom }; });
+        for (const card of await field.locator('.playing-card').all()) {
+          const box = await card.boundingBox();
+          expect(box!.x).toBeGreaterThanOrEqual(bounds.left);
+          expect(box!.x + box!.width).toBeLessThanOrEqual(bounds.right);
+          expect(box!.y).toBeGreaterThanOrEqual(bounds.top);
+          expect(box!.y + box!.height).toBeLessThanOrEqual(bounds.bottom);
+        }
         await page.screenshot({ path: info.outputPath('campo-cenarios.png'), fullPage: true });
         await openMatchRail(page, 'Registro');
         await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeVisible();
