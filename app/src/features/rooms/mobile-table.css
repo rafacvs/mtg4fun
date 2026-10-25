@@ -81,6 +81,7 @@
   .mobile-table .seat-life input { width: 100%; min-height: 44px; font-size: 1.4rem; padding: 0; }
   .mobile-table .seat-life button { min-height: 44px; width: 44px; padding: 0; }
   .mobile-table .seat-markers { min-height: 44px; width: 100%; justify-content: space-around; padding: 4px; }
+  .mobile-table .seat-focus { display: none; }
   .mobile-table .seat-markers .marker-dot { width: 18px; height: 18px; min-width: 18px; font-size: .6rem; }
   .mobile-table .opponent-table-surface .seat-markers { display: none; }
   .mobile-table .opponent-table-surface .player-table { display: flex; padding: 3px; background: var(--panel); border-color: var(--seat-color); }

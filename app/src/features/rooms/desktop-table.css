@@ -16,6 +16,10 @@
   .player-count-4 .own-table-surface { grid-column: 1; grid-row: 2; }
   .player-count-5, .player-count-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .player-count-5 .own-table-surface, .player-count-6 .own-table-surface { grid-column: 1; grid-row: 2; }
+  .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .desktop-fields.has-field-focus .focused-table-surface { grid-column: span 3; }
+  .desktop-fields.has-field-focus .focused-table-surface .player-table { --field-card-width: clamp(58px, 7vw, 108px); }
+  .desktop-fields.has-field-focus .focused-table-surface .zone-battlefield { --card-width: var(--field-card-width); }
   .desktop-table .player-table { border-radius: 8px; padding: 8px; background: linear-gradient(150deg, color-mix(in srgb, var(--seat-color) 8%, var(--panel)), var(--panel)); border-color: color-mix(in srgb, var(--seat-color) 24%, var(--line)); }
   .desktop-table .player-table.is-current-turn { border-color: var(--seat-color); box-shadow: inset 0 0 0 1px var(--seat-color), 0 0 15px color-mix(in srgb, var(--seat-color) 16%, transparent); }
   .seat-heading { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; min-width: 0; margin-bottom: 6px; }
@@ -31,6 +35,7 @@
   .seat-life .numeric-counter input { min-height: 38px; width: 68px; font: 600 28px/1 Cinzel, Georgia, serif; background: transparent; border: 0; }
   .desktop-table .seat-life .numeric-counter button { width: 32px; min-height: 32px; padding: 0; }
   .desktop-table .seat-markers { gap: 4px; padding: 4px; min-height: 30px; background: transparent; border-color: transparent; }
+  .desktop-table .seat-focus { min-height: 30px; padding: 3px 6px; font-size: .58rem; white-space: nowrap; }
   .seat-markers .marker-dot { min-width: 15px; width: 15px; height: 15px; font-size: .55rem; }
   .opponent-table-surface .seat-heading { flex-wrap: wrap; gap: 4px 6px; }
   .opponent-table-surface .seat-markers { margin-left: auto; }
@@ -77,4 +82,5 @@
   .playing-card { transition: transform .15s; }
 }
 
-.opponent-canvas { position: relative; width: calc(var(--mat-width) * var(--card-width)); height: calc(var(--mat-height) * var(--card-width)); min-width: 100%; min-height: 100%; }
+.opponent-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); }
+.opponent-canvas { position: relative; width: calc(var(--mat-width) * var(--card-width)); height: calc(var(--mat-height) * var(--card-width)); transform: scale(var(--mat-zoom)); transform-origin: 0 0; }
