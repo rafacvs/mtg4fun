@@ -98,6 +98,11 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
   await expect(opponents).toBeVisible();
   await expect(opponents.getByRole('article')).toHaveCount(3);
+  // V7 uses full-width opponent bands, not the old two-column thumbnail grid.
+  for (const opponent of await opponents.getByRole('article').all()) {
+    const box = (await opponent.boundingBox())!;
+    expect(box.width).toBeGreaterThan(350);
+  }
   await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
   const ownFocus = own.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
   await expect(ownFocus).toBeVisible();
