@@ -21,8 +21,9 @@ const destinations: { value: string; title: string; icon: TableIconName }[] = [
 ];
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ readingActions = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onTransfer, onMoveToOwner, onMove }: {
+export function CardPreview({ readingActions = false, mobileSheet = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onFocusOwner, onTransfer, onMoveToOwner, onMove }: {
   readingActions?: boolean;
+  mobileSheet?: boolean;
   card: Card | null;
   editable?: boolean;
   disabled?: boolean;
@@ -37,6 +38,7 @@ export function CardPreview({ readingActions = false, card, editable = false, di
   unconfirmed?: boolean;
   onRetry?: () => Promise<boolean>;
   players?: Match['players'];
+  onFocusOwner?: (ownerId: number) => void;
   onTransfer?: (cardId: string, controllerId: number) => void;
   onMoveToOwner?: (cardId: string, destination: OwnerDestination) => void;
   onMove?: (cardId: string, destination: string) => Promise<boolean>;
@@ -74,8 +76,8 @@ export function CardPreview({ readingActions = false, card, editable = false, di
   const zone = destinations.find(destination => destination.value === card.zone)?.title ?? 'Consulta do grimório';
   const controlled = card.controllerId === viewerId;
   const image = card.instanceKind || card.imageName ? cardImageURL(card) : deckApi.imageURL(imageName);
-  return <div className="card-preview-backdrop" onClick={() => onCloseRef.current()}>
-    <div ref={panelRef} className="card-preview" role="dialog" aria-modal="true" aria-label={`Imagem de ${card.name || 'Carta face para baixo'}`} onClick={event => event.stopPropagation()}>
+  return <div className={`card-preview-backdrop ${mobileSheet ? 'mobile-card-sheet-backdrop' : ''}`} onClick={() => onCloseRef.current()}>
+    <div ref={panelRef} className={`card-preview ${mobileSheet ? 'mobile-card-sheet' : ''}`} role="dialog" aria-modal="true" aria-label={`Imagem de ${card.name || 'Carta face para baixo'}`} onClick={event => event.stopPropagation()}>
       <div className="card-preview-image">
         {!card.name ? <p>Face para baixo · identidade oculta.</p> : failed
           ? <p role="status">A imagem não está disponível agora.</p>
@@ -88,6 +90,7 @@ export function CardPreview({ readingActions = false, card, editable = false, di
         {(card.tapped || (card.faceDown && Boolean(card.name)) || card.revealed) && <div className="card-status-chips">{card.tapped && <span>Virada</span>}{card.faceDown && card.name && <span>Face para baixo</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}</div>}
         {card.text && <p className="instance-text">{card.text}</p>}
         <CardStats {...card} />
+        {mobileSheet && players && <div className="card-reading-owner"><span>Dono: {players.find(player => player.userId === card.ownerId)?.name ?? 'desconhecido'}</span><button className="secondary" onClick={() => onFocusOwner?.(card.ownerId)}>Ver campo</button></div>}
         {editable && onCounter && <PowerToughnessAdjust key={card.id} power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} owed={owedPair} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />}
         {controlled && <div className="card-quick-actions">
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
