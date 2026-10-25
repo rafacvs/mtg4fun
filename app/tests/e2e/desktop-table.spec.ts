@@ -49,6 +49,10 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     await expect(page.getByRole('region', { name: 'Prévia da carta', exact: true }).getByRole('heading', { name: 'Soldier Token', exact: true })).toBeVisible();
     const seatColors = await page.locator('.seat-number').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundColor));
     expect(new Set(seatColors).size).toBe(4);
+    const playmats = await page.locator('.zone-battlefield').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundImage));
+    expect(playmats).toHaveLength(4);
+    expect(playmats.every(image => image.includes('url('))).toBe(true);
+    expect(new Set(playmats).size).toBe(4);
     const activeSeat = page.getByRole('article').filter({ has: page.getByText('Na vez', { exact: true }) });
     expect(await activeSeat.evaluate(node => getComputedStyle(node).borderTopColor)).toBe(await activeSeat.locator('.seat-number').evaluate(node => getComputedStyle(node).backgroundColor));
     const observed = (await (await contexts[0].request.get(`${path}/match`)).json()).match;
