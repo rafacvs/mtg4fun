@@ -82,8 +82,17 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     await expect(otherPage.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
     await returnToOverview.click();
     await expect(page.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
+    const selectedCard = own.getByRole('button', { name: 'Soldier Token', exact: true });
+    await selectedCard.click();
+    await expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
+    const consultation = await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'consult', intentId: randomUUID(), consultFrom: 'top', count: 2 } });
+    expect(consultation.ok()).toBe(true);
+    await expect(own.getByText('Consultando o grimório', { exact: true })).toBeVisible();
     await focusOwn.click();
     await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true })).toHaveClass(/focused-table/);
+    await expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
+    await expect(own.getByText('Consultando o grimório', { exact: true })).toBeVisible();
+    await expect.poll(async () => (await (await contexts[1].request.get(`${path}/match`)).json()).match.players.find((player: { name: string }) => player.name === 'Amigo da mesa').consulting).toBe(true);
     await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     const ownLife = own.getByRole('textbox', { name: 'Vida', exact: true });
     await ownLife.fill('37');
@@ -140,6 +149,18 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
       await expect(library).not.toContainText('Island');
       await expect(library.locator('img')).toHaveCount(3);
       const strip = page.getByRole('region', { name: 'Oponentes', exact: true });
+      const focusOwn = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
+      await focusOwn.click();
+      await expect(own).toHaveClass(/focused-table/);
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      for (const player of await page.getByRole('article').all()) await expect(player).toBeInViewport();
+      await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
+      if (count > 1) {
+        const focusOpponent = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
+        await focusOpponent.click();
+        await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toHaveClass(/focused-table/);
+        await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
+      }
       if (count === 1) await expect(strip).toHaveCount(0);
       else {
         await expect(strip.getByRole('article')).toHaveCount(count - 1);
