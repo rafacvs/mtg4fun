@@ -68,6 +68,9 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     };
     const table = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     await expectLifeBesideName(table, 40);
+    // The header stays quiet while all player markers are zero, but its
+    // button remains the public route to open the editable marker controls.
+    await expect(table.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).locator('.marker-dot')).toHaveCount(0);
     const viewport = page.viewportSize();
     await page.setViewportSize({ width: 320, height: 568 });
     await expectLifeBesideName(table, 40);
