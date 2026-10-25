@@ -77,13 +77,24 @@ test('celular horizontal mostra oponentes, campo e comandos próprios sem perder
   await page.screenshot({ path: info.outputPath('horizontal48.png') });
 });
 
-test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao girar', async ({ page, browser, baseURL }, info) => {
-  test.skip(info.project.name !== 'celular', 'Leitura vertical e mudança de orientação.');
+test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança de orientação', async ({ page, browser, baseURL }, info) => {
+  test.skip(info.project.name !== 'celular', 'Mesa jogável na vertical e mudança de orientação.');
   test.setTimeout(90_000);
   const { path, act } = await prepare(page, browser, baseURL);
-  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toHaveCount(0);
+  const opponents = page.getByRole('region', { name: 'Oponentes', exact: true });
+  const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+  await expect(opponents).toBeVisible();
+  await expect(opponents.getByRole('article')).toHaveCount(3);
+  await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
+  const ownFocus = own.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
+  await expect(ownFocus).toBeVisible();
+  await ownFocus.tap();
+  await expect(own.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toBeVisible();
+  await expect(opponents).toBeVisible();
+  await own.getByRole('button', { name: 'Voltar à visão geral', exact: true }).tap();
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
-  for (const label of ['Mão', 'Comprar', 'Desvirar', 'Passar a vez', 'Mais']) {
+  for (const label of ['Comprar', 'Desvirar', 'Passar a vez', 'Mais']) {
     const button = nav.getByRole('button', { name: label, exact: true });
     await expect(button).toBeVisible();
     expect(await button.innerText()).toContain(label);
@@ -95,6 +106,9 @@ test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao gir
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   const ids = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')));
   await cards.first().tap();
+  await expect(page.getByRole('toolbar', { name: 'Ações da seleção', exact: true })).toBeVisible();
+  await page.getByRole('toolbar', { name: 'Ações da seleção', exact: true }).getByRole('button', { name: 'Mais', exact: true }).tap();
+  await page.getByRole('dialog', { name: 'Ações da carta', exact: true }).getByRole('button', { name: 'Inspecionar carta', exact: true }).tap();
   const preview = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('img', { name: 'Imagem ampliada de Island', exact: true })).toBeVisible();
@@ -111,7 +125,6 @@ test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao gir
   const before = (await (await page.request.get(path)).json()).match;
   const sameDocument = await page.evaluate(() => { (window as Window & { orientationCheck?: string }).orientationCheck = 'same'; return location.href; });
   await page.setViewportSize({ width: 839, height: 393 });
-  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toBeHidden();
   await expect(hand).not.toHaveClass(/is-organizing/);
   await expect(hand).toBeVisible();
   await expect(cards).toHaveCount(3);
@@ -126,7 +139,7 @@ test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao gir
   expect(current.players.find((player: { userId: number }) => player.userId === current.viewerId).hand.map((card: { id: string }) => card.id)).toEqual(before.players.find((player: { userId: number }) => player.userId === before.viewerId).hand.map((card: { id: string }) => card.id));
   await page.setViewportSize({ width: 393, height: 839 });
   await expect(cards).toHaveCount(3);
-  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toBeVisible();
+  await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
   await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Registro', exact: true }).tap();

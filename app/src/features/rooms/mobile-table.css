@@ -128,18 +128,31 @@
   .portrait-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 }
 @media (max-width: 1000px) and (orientation: portrait) {
-  .mobile-table .rotate-invitation { display: block; margin: 0; padding: 12px; font-size: .8rem; text-align: center; color: var(--muted); }
+  /* Portrait is a game board, not a hand-only orientation.  Opponents occupy
+     compact bands above the larger own field; the hand remains a small dock. */
+  .mobile-table { --field-card-width: 52px; }
   .mobile-table .table-stage { padding: 8px 8px 66px; }
-  .mobile-table .desktop-fields { display: none; }
-  .mobile-table .own-dock { position: relative; inset: auto; flex: 1; max-height: none; width: 100%; padding: 8px; overflow: auto; border: 1px solid var(--line); background: var(--panel); }
-  .mobile-table .own-dock .dock-content { height: 100%; }
-  .mobile-table .own-dock .zone-hand { height: 100%; display: flex; flex-direction: column; }
+  .mobile-table .table-main { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; }
+  .mobile-table .desktop-fields { flex: none; min-height: 0; display: grid; grid-template-rows: minmax(0, .82fr) minmax(0, 1.18fr); gap: 6px; overflow: hidden; }
+  .mobile-table .opponent-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 5px; min-height: 0; overflow: hidden; }
+  .mobile-table .player-count-1 .opponent-strip { display: none; }
+  .mobile-table .player-count-2 .opponent-strip { grid-template-columns: minmax(0, 1fr); }
+  .mobile-table .player-count-6 .opponent-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mobile-table .opponent-table-surface, .mobile-table .own-table-surface { min-width: 0; min-height: 0; }
+  .mobile-table .opponent-table-surface .zone-battlefield { --card-width: 34px; }
+  .mobile-table .opponent-table-surface .seat-focus { display: inline-flex; min-width: 44px; min-height: 32px; font-size: .55rem; }
+  .mobile-table .own-table-surface .seat-focus { display: inline-flex; min-height: 44px; font-size: .65rem; }
+  .mobile-table .desktop-fields.has-field-focus { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .mobile-table .desktop-fields.has-field-focus .focused-table-surface { grid-column: 1 / -1; }
+  .mobile-table .own-dock { position: relative; inset: auto; flex: none; width: 100%; max-height: 25dvh; padding: 6px 8px; overflow: auto; border: 1px solid var(--line); background: var(--panel); }
+  .mobile-table .own-dock .dock-content { height: auto; }
+  .mobile-table .own-dock .zone-hand { height: auto; display: flex; flex-direction: column; }
   .mobile-table .own-dock .zone-hand > header { display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto; }
   .mobile-table .own-dock .zone-hand > header > span { font-size: .9rem; }
   .mobile-table .own-dock .zone-hand .hand-organize { display: inline-flex; min-height: 44px; }
-  .mobile-table .own-dock .zone-cards { --card-width: 120px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); align-content: start; justify-items: center; gap: 12px; overflow: auto; flex: 1; padding: 10px 4px; }
-  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: 0; }
-  .mobile-table .own-dock .hand-hint { display: block; font-size: .7rem; }
+  .mobile-table .own-dock .zone-cards { --card-width: 72px; display: flex; align-items: end; gap: 4px; overflow: auto; flex: 1; padding: 4px 2px; }
+  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: -18px; }
+  .mobile-table .own-dock .hand-hint { display: none; }
   .mobile-table .mobile-table-controls { left: 0; right: 0; padding: 6px 4px max(6px, env(safe-area-inset-bottom)); }
   .mobile-table .mobile-table-controls button { font-size: .7rem; }
   .mobile-table .card-preview { max-height: calc(100dvh - 16px); overflow: auto; }
