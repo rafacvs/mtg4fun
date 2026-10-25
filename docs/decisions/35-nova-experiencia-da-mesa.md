@@ -11,7 +11,13 @@ Issue: https://github.com/rafacvs/mtg4fun/issues/39
 Em 24/10/2026, o usuário pediu a construção pelo fluxo `/implement-spec`, numa
 branch de integração, em vez de um PR por card.
 
-## O que passa a valer
+## Atualização posterior
+
+A [decisão da mesa v2](mesa-v2-campo-unificado.md) registra a aprovação explícita
+que substitui os pontos conflitantes de apresentação e interação abaixo.
+Os contratos de jogo não reabertos continuam valendo.
+
+## O que passou a valer na entrega original
 
 - Mesa de quatro no computador: faixa de oponentes, campo próprio e mão. Um a
   três jogadores usam a mesma composição. Cinco e seis rolam a faixa.
@@ -42,4 +48,5 @@ sessão única ficam de fora.
 
 ## Implementação
 
-Ainda não começou.
+A entrega original foi integrada no [PR 51](https://github.com/rafacvs/mtg4fun/pull/51).
+O redesign posterior da mesa v2 permanece pendente.
