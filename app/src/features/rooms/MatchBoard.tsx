@@ -40,7 +40,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1000px)').matches);
   const [portrait, setPortrait] = useState(() => window.matchMedia('(max-width: 1000px) and (orientation: portrait)').matches);
   const [overview, setOverview] = useState(false);
-  const [dockHidden, setDockHidden] = useState(false);
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [informationOpen, setInformationOpen] = useState(false);
   const [informationTab, setInformationTab] = useState<'preview' | 'players' | 'log'>('preview');
@@ -184,7 +183,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
       void setTapped(ids, !card.tapped);
     },
-    onInspect: (card, additive) => { if (!drag) { setHoverCardId(card.id); if (card.controllerId !== match?.viewerId || (portrait && !selecting && !additive)) { setPreviewId(card.id); return; } setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
+    onInspect: (card, additive) => { if (!drag) { setHoverCardId(card.id); if (card.controllerId !== match?.viewerId) { setPreviewId(card.id); return; } setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
     onOpenMenu: card => { setSelectionIds(current => current.includes(card.id) ? current : [card.id]); setCardMenuId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
@@ -293,8 +292,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         </div>
         {compact && <>
           {(commandsOpen || informationOpen) && <div className="floating-panel-scrim" aria-hidden="true" onClick={closeFloatingPanel} />}
-          <MobileTableControls moreRef={moreControl} handOpen={!dockHidden} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
-            onHand={() => setDockHidden(value => !value)} onDraw={drawOne} onUntap={() => void untapAll()} onTurn={() => void turn('next')}
+          <MobileTableControls moreRef={moreControl} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
+            onDraw={drawOne} onUntap={() => void untapAll()} onTurn={() => void turn('next')}
             onMore={() => { setCommandsOpen(value => !value); setInformationOpen(false); }} />
           {commandsOpen && <section id="mobile-commands" className="mobile-commands" aria-label="Comandos da partida">
             <PanelHeader title="Comandos" closeLabel="Fechar comandos" onClose={() => setCommandsOpen(false)} />
