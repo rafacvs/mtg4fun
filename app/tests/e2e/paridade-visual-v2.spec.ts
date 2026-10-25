@@ -47,9 +47,18 @@ test('produz o comparativo inicial de cada prancha com uma partida real descart�
       expect(created.ok()).toBe(true);
     }
     expect((await page.request.post(`${matchPath}/actions`, { data: { kind: 'draw', intentId: randomUUID(), count: 5 } })).ok()).toBe(true);
-    await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#8daebf"/><text x="4" y="12" font-size="7">Island</text></svg>' }));
     await page.goto(`/#/salas/${roomId}`);
     await expect(page.getByRole('article', { name: /Mesa de/ })).toHaveCount(4);
+    // The acceptance evidence must include an actual complete card, fetched by
+    // the public image endpoint.  Do not route this request to a placeholder:
+    // a failed source is an acceptance failure, not a reason to fake artwork.
+    const hand = page.getByRole('region', { name: 'Mão', exact: true });
+    const islandImage = hand.getByRole('button', { name: 'Island', exact: true }).first().locator('img');
+    await expect(islandImage).toHaveAttribute('src', /\/api\/cards\/image\?/);
+    await expect.poll(() => islandImage.evaluate(node => {
+      const image = node as HTMLImageElement;
+      return image.complete && image.naturalWidth > 0;
+    })).toBe(true);
 
     const captures = new Map<string, string>();
     const capture = async (id: string) => {
@@ -75,17 +84,28 @@ test('produz o comparativo inicial de cada prancha com uma partida real descart�
     await page.getByRole('button', { name: 'Registro', exact: true }).click();
     await page.setViewportSize({ width: 844, height: 390 });
     await capture('V5');
-    // The pre-redesign surface has no mobile-focus composition equivalent to
-    // V6. Capture that absence explicitly instead of manufacturing a state.
+    const landscapeFocus = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
+    await expect(landscapeFocus).toBeVisible();
+    await landscapeFocus.tap();
+    await expect(page.locator('.desktop-fields.has-field-focus')).toBeVisible();
     await capture('V6');
+    await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).tap();
     await page.setViewportSize({ width: 390, height: 844 });
-    const handCard = page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first();
+    const handCard = hand.getByRole('button', { name: 'Island', exact: true }).first();
     await handCard.click();
     await expect(handCard).toHaveAttribute('aria-pressed', 'true');
     await capture('V7');
-    // V8 and V9 likewise retain the current vertical surface as evidence of
-    // the missing V2 composition/panel before their implementation tickets.
+    const portraitFocus = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
+    await expect(portraitFocus).toBeVisible();
+    await portraitFocus.tap();
+    await expect(page.locator('.desktop-fields.has-field-focus')).toBeVisible();
     await capture('V8');
+    await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).tap();
+    const opponentCard = page.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('button', { name: 'Soldier Token', exact: true }).first();
+    await opponentCard.tap();
+    const reading = page.getByRole('dialog', { name: 'Imagem de Soldier Token', exact: true });
+    await expect(reading).toBeVisible();
+    await expect(reading.getByRole('button', { name: 'Ver campo', exact: true })).toBeVisible();
     await capture('V9');
     writeV2ComparisonReport(testInfo.outputDir, captures);
   } finally {
