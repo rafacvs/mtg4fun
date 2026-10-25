@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { APIRequestContext, Locator } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
-import { test, expect, openMatchRail, closeMatchRail, openHand, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, inspectCard, openMatchRail, closeMatchRail, openHand, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 const fallbackArt = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" rx="3" fill="#adb9a1"/><rect x="3" y="3" width="57" height="7" rx="2" fill="#dedbc1"/><text x="5" y="8" font-size="4" font-family="serif">Island</text><rect x="4" y="13" width="55" height="40" fill="#406571"/><path d="M4 45 20 23 35 44 46 28 59 45v8H4Z" fill="#9ca98f"/><rect x="4" y="56" width="55" height="28" fill="#d7d9be"/><text x="6" y="65" font-size="4">Basic Land — Island</text></svg>';
 
@@ -124,7 +124,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await page.screenshot({ animations: 'disabled', path: info.outputPath('04-jogador.png'), fullPage: true });
     await playerMenu.getByRole('button', { name: 'Fechar jogador' }).click();
 
-    await hand.getByRole('button', { name: 'Island', exact: true }).first().click();
+    await inspectCard(page, hand.getByRole('button', { name: 'Island', exact: true }).first());
     const inspector = page.getByRole('dialog', { name: 'Imagem de Island' });
     await withinViewport(inspector);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('05-carta.png'), fullPage: true });
@@ -180,7 +180,6 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     if (info.project.name === 'desktop') await expect(page.getByRole('region', { name: 'Oponentes', exact: true }).getByRole('article')).toHaveCount(5);
     else await expect(page.locator('.overview-player')).toHaveCount(6);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('06-visao-geral.png'), fullPage: true });
-    if (info.project.name !== 'desktop') await page.getByRole('button', { name: 'Fechar mão', exact: true }).click();
     if (info.project.name === 'desktop') await page.getByRole('article', { name: 'Mesa de Amigo 6', exact: true }).scrollIntoViewIfNeeded();
     else await page.getByRole('button', { name: 'Ampliar mesa de Amigo 6', exact: true }).click();
     await openHand(page);
@@ -291,7 +290,7 @@ test('mesa e painéis cabem de 320 px ao tablet e desktop sem rolagem da página
       await expect(panel).toHaveCSS('animation-name', 'none');
       await panel.getByRole('button', { name: 'Fechar ações', exact: true }).click();
       await openHand(page);
-      await page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first().click();
+      await inspectCard(page, page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first());
       const inspector = page.getByRole('dialog', { name: 'Imagem de Island' });
       await withinViewport(inspector);
       await inspector.getByRole('button', { name: 'Fechar', exact: true }).click();

@@ -87,14 +87,12 @@ export async function closeMatchRail(page: Page) {
 
 export async function openHand(page: Page) {
   await expect(page.locator('.own-dock')).toBeAttached();
-  const toggle = page.getByRole('navigation', { name: 'Controles da mesa' }).getByRole('button', { name: 'Mão', exact: true });
-  if ((page.viewportSize()?.width ?? 1280) <= 1000) await expect(toggle).toBeVisible();
-  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+  await expect(page.getByRole('region', { name: 'Mão', exact: true })).toBeVisible();
 }
 
 export async function closeHand(page: Page) {
-  const toggle = page.getByRole('navigation', { name: 'Controles da mesa' }).getByRole('button', { name: 'Mão', exact: true });
-  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+  // The hand is deliberately persistent; there is no hidden dock to reopen.
+  await expect(page.getByRole('region', { name: 'Mão', exact: true })).toBeVisible();
 }
 
 export async function openQuickActions(page: Page) {
