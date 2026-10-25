@@ -283,7 +283,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       {optimisticPending && <p className="pending-action" role="status">Ação pendente · aguardando confirmação</p>}
       {notice && <p role="status" className="library-notice">{notice}</p>}
-      {compact && <p className="rotate-invitation">Gire o aparelho para jogar o campo</p>}
       <div className="table-stage">
         <div className="table-main">
           <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={focusId} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
