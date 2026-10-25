@@ -29,6 +29,56 @@ export type FieldLayout = {
   height: number;
 };
 
+export type BattlefieldProjection = {
+  layout: FieldLayout;
+  destination: (column: number, row: number) => { column: number; row: number };
+};
+
+// Positions are durable game data, while this map is solely the view's local
+// coordinate system. Keeping one nearby empty cell preserves intentional
+// grouping without allowing legacy coordinates (for example 120 → 720) to
+// consume the whole visible field.
+function compactAxis(values: number[]) {
+  const sorted = [...new Set(values)].sort((a, b) => a - b);
+  const projected = new Map<number, number>();
+  const original = new Map<number, number>();
+  let next = 0;
+  for (let index = 0; index < sorted.length; index += 1) {
+    const value = sorted[index]!;
+    if (index > 0) next += Math.min(value - sorted[index - 1]!, 2);
+    projected.set(value, next);
+    original.set(next, value);
+  }
+  return { projected, original };
+}
+
+export function projectBattlefield(cards: LayoutCard[]): BattlefieldProjection {
+  const rows = compactAxis(cards.map(card => card.row));
+  const columns = new Map<number, ReturnType<typeof compactAxis>>();
+  for (const row of rows.projected.keys()) columns.set(row, compactAxis(cards.filter(card => card.row === row).map(card => card.positionX)));
+  const layout = battlefieldLayout(cards.map(card => ({
+    ...card,
+    positionX: columns.get(card.row)!.projected.get(card.positionX)!,
+    row: rows.projected.get(card.row)!,
+  })), 0, 0);
+  return {
+    layout,
+    destination: (column, row) => {
+      const originalRow = rows.original.get(row) ?? [...rows.original.entries()].sort((a, b) => Math.abs(a[0] - row) - Math.abs(b[0] - row))[0]?.[1] ?? 0;
+      const axis = columns.get(originalRow);
+      const candidates = axis ? [...axis.original.entries()] : [];
+      const first = candidates.at(0);
+      const last = candidates.at(-1);
+      const originalColumn = axis?.original.get(column)
+        ?? (first && column < first[0] ? first[1] - (first[0] - column) : undefined)
+        ?? (last && column > last[0] ? last[1] + (column - last[0]) : undefined)
+        ?? candidates.sort((a, b) => Math.abs(a[0] - column) - Math.abs(b[0] - column))[0]?.[1]
+        ?? column;
+      return { column: originalColumn, row: originalRow };
+    },
+  };
+}
+
 export function firstFreeCell(cards: { positionX: number; row: number }[]) {
   const counts = new Map<number, number>();
   let maxColumn = -1;
@@ -122,9 +172,5 @@ export function dropCell(layout: FieldLayout, x: number, y: number) {
 export function layoutFromCanvas(cards: Card[], canvas: HTMLElement) {
   const zoom = Number(canvas.dataset.zoom || '1') || 1;
   const cardWidth = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--card-width')) || 76;
-  // Match the painted grid. Subtract a hair so rounding cannot append a cell
-  // the canvas does not contain.
-  const targetWidth = canvas.offsetWidth / cardWidth - 0.05;
-  const targetHeight = canvas.offsetHeight / cardWidth - 0.05;
-  return { layout: fitBattlefield(cards, targetWidth, targetHeight), cardWidth, zoom, box: canvas.getBoundingClientRect() };
+  return { projection: projectBattlefield(cards), cardWidth, zoom, box: canvas.getBoundingClientRect() };
 }

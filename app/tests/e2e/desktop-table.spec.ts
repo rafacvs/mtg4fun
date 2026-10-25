@@ -68,9 +68,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     await page.reload();
     await expect(ownLife).toHaveValue('37');
     const card = own.getByRole('button', { name: 'Soldier Token', exact: true });
-    const comfortable = (await card.boundingBox())!.width;
-    await page.getByRole('combobox', { name: 'Densidade', exact: true }).selectOption('compact');
-    await expect.poll(async () => (await card.boundingBox())!.width).toBeLessThan(comfortable);
+    await expect(page.getByRole('combobox', { name: 'Densidade', exact: true })).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Zoom do campo' })).toHaveCount(0);
     await expect(own.getByLabel('marcador vermelho', { exact: true })).toHaveText('0');
     await page.screenshot({ path: testInfo.outputPath('mesa-quatro.png') });

@@ -68,7 +68,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   };
   const [hoverCardId, setHoverCardId] = useState<string | null>(null);
   const [zoomCardId, setZoomCardId] = useState<string | null>(null);
-  const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [cardMenuId, setCardMenuId] = useState<string | null>(null);
@@ -265,11 +264,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
-  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} data-density={density} aria-label="Mesa da partida">
+  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} aria-label="Mesa da partida">
     <div className="match-content">
       <div className="table-toolbar">
         <div className="toolbar-leading"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><button className="secondary selection-mode" aria-pressed={selecting} onClick={() => setSelecting(value => !value)}>Selecionar</button><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span></div>
-        <label className="table-density">Densidade <select aria-label="Densidade" value={density} onChange={event => setDensity(event.target.value as 'compact' | 'comfortable')}><option value="compact">Compacta</option><option value="comfortable">Confortável</option></select></label>
         <div className="toolbar-trailing">
           <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
           <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
@@ -283,7 +281,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {compact && <p className="rotate-invitation">Gire o aparelho para jogar o campo</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} density={density} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Mão · {own.handCount}</span></div>
             <div id="own-dock-content" className="dock-content">
@@ -443,8 +441,9 @@ function locateBattlefieldCell(x: number, y: number, cards: Card[]) {
   for (const element of document.elementsFromPoint(x, y)) {
     const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
     if (!canvas) continue;
-    const { layout, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
-    return dropCell(layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
+    const { projection, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
+    const cell = dropCell(projection.layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
+    return cell && projection.destination(cell.column, cell.row);
   }
   return null;
 }

@@ -3,8 +3,8 @@ import type { CounterAction, Match } from './roomsApi';
 import { PlayerTable, type CardGesture } from './PlayerTable';
 import { PlayerSeat, seatColors } from './PlayerSeat';
 
-export function TableFields({ match, gesture, hoverZone, density, disabled, onPlayerMenu, onCounter, onLibrary, onDraw, onHideRevealed, ownCommands }: {
-  ownCommands?: ReactNode; match: Match; gesture: CardGesture; hoverZone: string | null; density: 'compact' | 'comfortable'; disabled: boolean;
+export function TableFields({ match, gesture, hoverZone, disabled, onPlayerMenu, onCounter, onLibrary, onDraw, onHideRevealed, ownCommands }: {
+  ownCommands?: ReactNode; match: Match; gesture: CardGesture; hoverZone: string | null; disabled: boolean;
   onPlayerMenu: (id: number, anchor: HTMLElement) => void; onCounter: (input: CounterAction) => Promise<boolean>;
   onLibrary: () => void; onDraw: () => void; onHideRevealed: () => void;
 }) {
@@ -21,7 +21,7 @@ export function TableFields({ match, gesture, hoverZone, density, disabled, onPl
     </div>;
   };
   const controllerColors = Object.fromEntries(match.players.map((player, index) => [`--seat-${player.userId}`, seatColors[index % seatColors.length]])) as CSSProperties;
-  return <div className="desktop-fields" data-density={density} style={controllerColors}>
+  return <div className="desktop-fields" style={controllerColors}>
     {opponents.length > 0 && <section className="opponent-strip" aria-label="Oponentes" tabIndex={0}>{opponents.map(renderPlayer)}</section>}
     {renderPlayer(own)}
   </div>;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
-import { fitBattlefield } from './battlefieldLayout';
+import { projectBattlefield } from './battlefieldLayout';
 import { createLibraryGesture } from './libraryGesture';
 import { OpponentField } from './OpponentField';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
@@ -89,53 +89,34 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, on
   </div>;
 }
 
-function Battlefield({ player, viewerId, droppable, hoverZone, gesture, fieldZoom, onFieldZoom }: ZoneProps & { fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void }) {
+function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps & { fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void }) {
   const cards = player.battlefield ?? [];
-  const zoom = fieldZoom;
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState({ width: 0, height: 0 });
-  const layout = fitBattlefield(cards, visible.width, visible.height);
+  const layout = projectBattlefield(cards).layout;
   useEffect(() => {
-    const node = scrollRef.current;
+    const node = fieldRef.current;
     if (!node) return;
     const measure = () => {
-      const cardWidth = Number.parseFloat(getComputedStyle(node).getPropertyValue('--card-width')) || 76;
-      const width = node.clientWidth / (cardWidth * zoom);
-      const height = node.clientHeight / (cardWidth * zoom);
-      // Ignore the small shrink caused by a scrollbar appearing, so the grid
-      // does not grow and shrink forever. A real resize still updates.
-      setVisible(current => {
-        if (current.width === 0) return { width, height };
-        const grew = width > current.width + 0.2 || height > current.height + 0.2;
-        const shrank = width < current.width - 1 || height < current.height - 1;
-        return grew || shrank ? { width, height } : current;
-      });
+      setVisible({ width: node.clientWidth, height: node.clientHeight });
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
-  }, [zoom, cards.length]);
-  useEffect(() => {
-    const node = document.querySelector<HTMLElement>(`[data-field-owner="${player.userId}"] .battlefield-scroll`);
-    if (!node || !onFieldZoom) return;
-    const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) return;
-      event.preventDefault();
-      onFieldZoom(event.deltaY < 0 ? 1 : -1);
-    };
-    node.addEventListener('wheel', onWheel, { passive: false });
-    return () => node.removeEventListener('wheel', onWheel);
-  }, [player.userId, onFieldZoom]);
+  }, []);
+  const cardWidth = 76;
+  const scale = visible.width && visible.height && layout.width && layout.height
+    ? Math.min(1, visible.width / (layout.width * cardWidth), visible.height / (layout.height * cardWidth))
+    : 1;
   return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
     <header>
       <span>Campo</span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
     </header>
-    <div className="battlefield-guides" aria-hidden="true"><span>Permanentes</span><span>Terrenos</span></div>
-    <div className="battlefield-scroll" ref={scrollRef}>
-      <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': zoom } as CSSProperties}>
-        <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
+    <div className="battlefield-fit" ref={fieldRef}>
+      <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': scale } as CSSProperties}>
+        <BattlefieldCanvas cards={cards} zoom={scale} enabled={droppable} onSelectArea={gesture.onSelectArea}>
           {cards.map(card => {
             const place = layout.cards.get(card.id);
             if (!place) return null;
