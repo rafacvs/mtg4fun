@@ -16,8 +16,11 @@
   .player-count-4 .own-table-surface { grid-column: 1; grid-row: 2; }
   .player-count-5, .player-count-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .player-count-5 .own-table-surface, .player-count-6 .own-table-surface { grid-column: 1; grid-row: 2; }
-  .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1.35fr) minmax(0, 1fr); }
   .desktop-fields.has-field-focus .focused-table-surface { grid-column: span 3; }
+  .desktop-fields.has-field-focus .focused-table-surface { grid-column: 1 / -1; grid-row: 1; }
+  .desktop-fields.has-field-focus .own-table-surface { grid-column: 1 / span 2; grid-row: 2; }
+  .desktop-fields.has-field-focus .opponent-table-surface:not(.focused-table-surface) { grid-row: 2; }
   .desktop-fields.has-field-focus .focused-table-surface .player-table { --field-card-width: clamp(58px, 7vw, 108px); }
   .desktop-fields.has-field-focus .focused-table-surface .zone-battlefield { --card-width: var(--field-card-width); }
   .desktop-table .player-table { border-radius: 8px; padding: 8px; background: linear-gradient(150deg, color-mix(in srgb, var(--seat-color) 8%, var(--panel)), var(--panel)); border-color: color-mix(in srgb, var(--seat-color) 24%, var(--line)); }
@@ -61,7 +64,8 @@
   .desktop-table .own-dock .zone-hand .zone-cards { --card-width: var(--hand-card-width); }
   .desktop-table .own-dock .zone-hand > header { min-height: 22px; }
   .desktop-table .own-dock .zone-hand .hand-organize { min-height: 22px; padding: 2px 8px; font-size: .6rem; }
-  .desktop-table .side-rail { width: 240px; flex-basis: 240px; }
+  .desktop-table .side-rail { width: 340px; flex-basis: 340px; }
+  .desktop-table .log-panel.is-open { flex-basis: 0; min-height: 0; }
   .desktop-table .hover-card-preview img { max-height: 280px; object-fit: contain; }
 }
 @media (min-width:1001px) and (max-height:800px) {
