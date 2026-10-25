@@ -44,6 +44,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     }
     const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
+    const dock = page.getByRole('region', { name: 'Sua mão e ações', exact: true });
     await expect(own.getByRole('button', { name: 'Soldier Token', exact: true }).getByLabel('Poder e resistência')).toHaveText('1/1');
     await own.getByRole('button', { name: 'Soldier Token', exact: true }).hover();
     await expect(page.getByRole('region', { name: 'Prévia da carta', exact: true }).getByRole('heading', { name: 'Soldier Token', exact: true })).toBeVisible();
@@ -61,6 +62,10 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
       expect(player.battlefield[0].row).toBe(4);
     }
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+    const toolbarBox = await page.locator('.table-toolbar').boundingBox();
+    const dockBox = await dock.boundingBox();
+    expect(toolbarBox!.height).toBeLessThanOrEqual(46);
+    expect(dockBox!.height).toBeLessThanOrEqual(112);
     const opponentBoxes = await opponents.getByRole('article').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect()));
     const field = await own.boundingBox(), bottom = await hand.boundingBox();
     const topOpponents = opponentBoxes.filter(box => box.bottom <= field!.y + 2);
