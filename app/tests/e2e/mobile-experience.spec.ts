@@ -56,6 +56,18 @@ test('celular horizontal mostra oponentes, campo e comandos próprios sem perder
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
   await expect(hand.getByRole('button', { name: 'Island', exact: true }).first()).toBeInViewport();
+  // V6 must be entered through the visible touch control in the compact rail,
+  // not through the auxiliary information panel or a scripted state change.
+  const focus = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
+  await expect(focus).toBeVisible();
+  const fieldBottom = await own.getByRole('region', { name: 'Campo', exact: true }).evaluate(node => node.getBoundingClientRect().bottom);
+  const dockTop = await hand.evaluate(node => node.getBoundingClientRect().top);
+  expect(fieldBottom).toBeLessThanOrEqual(dockTop + 1);
+  await focus.tap();
+  await expect(page.locator('.desktop-fields.has-field-focus')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).tap();
+  await expect(page.locator('.desktop-fields.has-field-focus')).toHaveCount(0);
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
   await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(4);
