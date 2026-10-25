@@ -189,7 +189,15 @@
    projection shrinks cards inside each seat, so every participant remains in
    view while the hand and deliberate panels can temporarily float above it. */
 @media (max-width: 1000px) and (orientation: landscape) {
+  /* V5/V6 use a short top bar and a reserved bottom dock.  Keeping the
+     reservation in normal layout space is important: the hand and command
+     strip must not merely float above a playable field. */
   .mobile-table { --field-card-width: 52px; }
+  .mobile-table .table-toolbar { min-height: 34px; height: 34px; padding: 1px 5px; }
+  .mobile-table .table-toolbar a,
+  .mobile-table .table-toolbar button { min-height: 30px; padding: 3px 6px; }
+  .mobile-table .table-stage { padding: 5px 5px 117px; gap: 5px; }
+  .mobile-table .table-main { gap: 5px; }
   .mobile-table .desktop-fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -212,8 +220,10 @@
   .mobile-table .player-count-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .mobile-table .player-count-5 .own-table-surface,
   .mobile-table .player-count-6 .own-table-surface { grid-column: 1; grid-row: 2; }
-  .mobile-table .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .mobile-table .desktop-fields.has-field-focus .focused-table-surface { grid-column: span 3; }
+  .mobile-table .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .mobile-table .desktop-fields.has-field-focus .focused-table-surface { grid-column: 1 / -1; grid-row: 1; }
+  .mobile-table .desktop-fields.has-field-focus .own-table-surface { grid-column: 1 / span 2; grid-row: 2; }
+  .mobile-table .desktop-fields.has-field-focus .opponent-table-surface:not(.focused-table-surface) { grid-row: 2; }
   .mobile-table .player-table,
   .mobile-table .opponent-table-surface .player-table { display: flex; height: 100%; padding: 3px; }
   .mobile-table .own-table-surface > .player-table,
@@ -233,12 +243,16 @@
   .mobile-table .seat-life .numeric-counter { display: block; }
   .mobile-table .seat-life input { min-height: 24px; width: 42px; font-size: .85rem; }
   .mobile-table .seat-life-readout { font-size: .85rem; }
+  .mobile-table .seat-focus { display: inline-flex; min-width: 28px; min-height: 28px; padding: 2px 4px; font-size: .5rem; }
   .mobile-table .playmat { min-height: 0; }
   .mobile-table .zone-battlefield,
   .mobile-table .own-table-surface .zone-battlefield { margin: 0; min-height: 0; padding: 2px; }
   .mobile-table .zone-battlefield > header { display: none; }
-  .mobile-table .own-dock { left: 8px; right: 62px; bottom: 52px; max-height: 70px; }
-  .mobile-table .mobile-table-controls { left: 8px; right: 62px; bottom: 0; }
-  .mobile-table .floating-table-controls { right: 8px; }
-  .mobile-table .card-action-bar { left: 8px; right: 62px; }
+  .mobile-table .own-dock { left: 5px; right: 5px; bottom: 57px; height: 60px; min-height: 60px; max-height: 60px; }
+  .mobile-table .own-dock .zone-hand > header { display: none; }
+  .mobile-table .own-dock .zone-cards { --card-width: 42px; padding: 1px 4px; }
+  .mobile-table .mobile-table-controls { left: 5px; right: 5px; bottom: 0; min-height: 57px; padding: 5px; }
+  .mobile-table .mobile-table-controls button { min-height: 44px; }
+  .mobile-table .floating-table-controls { right: 8px; top: 39px; transform: none; }
+  .mobile-table .card-action-bar { left: 5px; right: 5px; }
 }
