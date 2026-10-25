@@ -75,6 +75,14 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   await expect(fieldCard).toHaveAttribute('data-tapped', 'false');
   await page.setViewportSize({ width: 393, height: 839 });
   await expect(cards).toHaveCount(15);
+  // A normal touch keeps the card actionable; only a deliberate hold opens
+  // inspection. This uses the real match API and the selected card can then
+  // be played through the public action bar.
+  await cards.first().tap();
+  await expect(hand.locator('[aria-pressed="true"]')).toHaveCount(1);
+  await expect(page.getByRole('toolbar', { name: 'Ações da seleção', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Imagem de Island', exact: true })).toHaveCount(0);
+  await page.getByRole('toolbar', { name: 'Ações da seleção', exact: true }).getByRole('button', { name: 'Limpar seleção', exact: true }).tap();
   await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
   const oldFirst = await cards.first().getAttribute('data-card-id');
   await cards.first().focus();

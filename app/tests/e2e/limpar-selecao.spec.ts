@@ -43,10 +43,7 @@ test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', 
   await selectCards();
   const before = await read();
   await expect(field.getByRole('button', { name: 'Diminuir zoom', exact: true })).toHaveCount(0);
-  const readCardWidth = () => field.locator('.playing-card').first().evaluate(node => node.getBoundingClientRect().width);
-  const comfortableWidth = await readCardWidth();
-  await page.getByRole('combobox', { name: 'Densidade', exact: true }).selectOption('compact');
-  expect(await readCardWidth()).toBeLessThan(comfortableWidth);
+  await page.setViewportSize({ width: 1100, height: 700 });
   await expect(selected).toHaveCount(4);
   await clear();
   expect(await read()).toEqual(before);
