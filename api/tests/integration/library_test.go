@@ -61,7 +61,7 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	created := e.request("POST", "/api/rooms", "{}", owner, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), owner, nil)
 	requireStatus(t, created, 201)
 	roomID := decodeRoom(t, created).ID
 	path := fmt.Sprintf("/api/rooms/%d", roomID)
@@ -80,6 +80,7 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), cookie, nil), 200)
 	}
 	requireStatus(t, e.request("POST", path+"/start", "{}", owner, nil), 201)
+	returnOpeningHandsToLibrary(t, e, roomID, owner, opponent)
 	number := 0
 	action := func(cookie *http.Cookie, fields string) response {
 		number++

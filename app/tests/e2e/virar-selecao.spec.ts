@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('duplo clique vira e desvira quatro cartas selecionadas por área', async ({ page, browser, baseURL }, info) => {
@@ -15,11 +15,13 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
       } } });
       expect(uploaded.status()).toBe(201);
       const { deck } = await uploaded.json();
-      if (!roomId) roomId = (await (await request.post('/api/rooms', { data: {} })).json()).room.id;
+      if (!roomId) roomId = (await (await request.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await request.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
       expect((await request.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }
     expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+    await returnOpeningHandToLibrary(page.request, roomId);
+    await returnOpeningHandToLibrary(observer.request, roomId);
     const path = `/api/rooms/${roomId}/match`;
     const action = async (fields: Record<string, unknown>, request = page.request): Promise<Match> => {
       const response = await request.post(`${path}/actions`, { data: { intentId: crypto.randomUUID(), ...fields } });

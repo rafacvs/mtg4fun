@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, openHand, openQuickActions, closeMatchRail } from './fixtures';
+import { test, expect, openMatchRail, openHand, openQuickActions, closeMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { APIRequestContext, BrowserContext } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
@@ -10,12 +10,13 @@ async function prepare(api: APIRequestContext, other: APIRequestContext) {
     const upload = await request.post('/api/decks', { multipart: { file: { name: 'cenarios.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="32" name="Island"/></zone></cockatrice_deck>') } } });
     expect(upload.status()).toBe(201);
     const { deck } = await upload.json();
-    if (!roomId) roomId = (await (await request.post('/api/rooms', { data: {} })).json()).room.id;
+    if (!roomId) roomId = (await (await request.post('/api/rooms', { data: roomBody() })).json()).room.id;
     else expect((await request.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
     expect((await request.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     decks.push({ request, id: deck.id });
   }
   expect((await api.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+  for (const { request } of decks) await returnOpeningHandToLibrary(request, roomId);
   for (const {request, id} of decks) expect((await request.delete(`/api/decks/${id}`)).status()).toBe(204);
   const action = async (fields: Record<string, unknown>, request = api): Promise<Match> => {
     const result = await request.post(`/api/rooms/${roomId}/match/actions`, { data: { intentId: crypto.randomUUID(), ...fields } });

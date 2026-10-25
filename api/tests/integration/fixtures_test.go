@@ -246,6 +246,55 @@ func (e *environment) login(login, password string) response {
 	return e.request("POST", "/api/session", string(data), nil, nil)
 }
 
+func returnOpeningHandToLibrary(t *testing.T, e *environment, roomID int64, cookie *http.Cookie, intent string) {
+	t.Helper()
+	view := e.request("GET", fmt.Sprintf("/api/rooms/%d/match", roomID), "", cookie, nil)
+	requireStatus(t, view, 200)
+	var payload struct {
+		Match struct {
+			ViewerID int64 `json:"viewerId"`
+			Players  []struct {
+				UserID int64 `json:"userId"`
+				Hand   []struct {
+					ID string `json:"id"`
+				} `json:"hand"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(view.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for _, player := range payload.Match.Players {
+		if player.UserID != payload.Match.ViewerID {
+			continue
+		}
+		for _, card := range player.Hand {
+			ids = append(ids, card.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	encoded, err := json.Marshal(ids)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := fmt.Sprintf(`{"intentId":%q,"kind":"move","cardIds":%s,"to":"library","libraryPlacement":"bottom"}`, intent, encoded)
+	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/match/actions", roomID), body, cookie, nil), 200)
+}
+
+func returnOpeningHandsToLibrary(t *testing.T, e *environment, roomID int64, cookies ...*http.Cookie) {
+	t.Helper()
+	for i, cookie := range cookies {
+		returnOpeningHandToLibrary(t, e, roomID, cookie, fmt.Sprintf("e1000000-0000-4000-8000-%012d", i+1))
+	}
+}
+
+func roomJSON() string {
+	return `{"name":"Mesa de teste","format":"Commander","seats":6,"life":40}`
+}
+
 func requireStatus(t *testing.T, r response, want int) {
 	t.Helper()
 	if r.status != want {

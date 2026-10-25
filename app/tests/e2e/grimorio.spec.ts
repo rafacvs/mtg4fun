@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, closeMatchRail } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 
 async function expectOrderedLayout(library: Locator) {
@@ -94,7 +94,7 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
       });
       expect(uploaded.status()).toBe(201);
       const { deck } = await uploaded.json();
-      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: {} })).json()).room.id;
+      if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else
         expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
       expect(
@@ -106,6 +106,8 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
     expect(
       (await contexts[0].request.post(`/api/rooms/${roomId}/start`, { data: {} })).status(),
     ).toBe(201);
+    await returnOpeningHandToLibrary(contexts[0].request, roomId);
+    await returnOpeningHandToLibrary(contexts[1].request, roomId);
     const own = await contexts[0].newPage();
     const opponent = await contexts[1].newPage();
     if (info.project.name === 'celular-horizontal') {

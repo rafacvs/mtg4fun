@@ -1,4 +1,4 @@
-import { test, expect, closeHand, closeMatchRail, closeQuickActions, openHand, openLibrary, openMatchRail, openQuickActions } from './fixtures';
+import { test, expect, closeHand, closeMatchRail, closeQuickActions, openHand, openLibrary, openMatchRail, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -28,7 +28,10 @@ test('preserva deck ao criar sala, acompanhar participação e recarregar', asyn
     const before = await rooms.getByRole('article').count();
     const knownTitles = new Set(await rooms.getByRole('article').locator('h3').allTextContents());
     await activate(page.getByRole('button', { name: 'Criar sala', exact: true }));
-    await page.getByRole('dialog', { name: 'Montar a mesa' }).getByRole('button', { name: 'Criar e sentar' }).click();
+    const createPanel = page.getByRole('dialog', { name: 'Montar a mesa' });
+    await createPanel.getByLabel('Nome da mesa').fill('Mesa das salas');
+    await createPanel.getByLabel('Lugares').fill('6');
+    await createPanel.getByRole('button', { name: 'Criar e sentar' }).click();
     await expect(rooms.getByRole('article')).toHaveCount(before + 1);
     const title = (await rooms.getByRole('article').locator('h3').allTextContents()).find(value => !knownTitles.has(value))!;
     const mine = rooms.getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
@@ -70,20 +73,24 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await expect(page.getByText('Salas atualizadas em tempo real.', { exact: true })).toBeVisible();
   const knownRooms = new Set(await page.getByRole('article').locator('h3').allTextContents());
   await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Montar a mesa' }).getByRole('button', { name: 'Criar e sentar' }).click();
+  const createPanel = page.getByRole('dialog', { name: 'Montar a mesa' });
+  await createPanel.getByLabel('Nome da mesa').fill('Mesa dos movimentos');
+  await createPanel.getByRole('button', { name: 'Criar e sentar' }).click();
   await expect.poll(async () => (await page.getByRole('article').locator('h3').allTextContents()).some(title => !knownRooms.has(title))).toBe(true);
   const created = (await page.getByRole('article').locator('h3').allTextContents()).find(title => !knownRooms.has(title))!;
   const room = page.getByRole('article').filter({ has: page.getByRole('heading', { name: created, exact: true }) });
   await room.getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
   await expect(page).toHaveURL(/#\/salas\/\d+$/);
   await page.getByLabel('Deck para a partida').selectOption({ label: 'Movimentos' });
-  await page.getByRole('button', { name: 'Confirmar deck', exact: true }).click();
-  await expect(page.getByText('Pronto', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Desfazer prontidão', exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Amigo da mesa · Pronto' })).toBeVisible();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
   await expect(board).toBeVisible();
   const roomURL = page.url();
   const matchPath = `/api/rooms/${roomURL.split('/').at(-1)}/match`;
+  await returnOpeningHandToLibrary(page.request, Number(roomURL.split('/').at(-1)));
   const ownHand = async (): Promise<{ id: string }[]> => {
     const response = await page.request.get(matchPath);
     expect(response.ok()).toBe(true);

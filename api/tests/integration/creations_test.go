@@ -59,9 +59,10 @@ func prepareCreationMatch(t *testing.T, decks ...string) (*environment, []*http.
 	for _, name := range []string{"criador", "oponente", "fora"} {
 		cookies = append(cookies, sessionCookie(t, e.login(name, "senha-da-mesa")))
 	}
-	room := e.request("POST", "/api/rooms", "{}", cookies[0], nil)
+	room := e.request("POST", "/api/rooms", roomJSON(), cookies[0], nil)
 	requireStatus(t, room, 201)
-	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, room).ID)
+	roomID := decodeRoom(t, room).ID
+	path := fmt.Sprintf("/api/rooms/%d", roomID)
 	requireStatus(t, e.request("POST", path+"/participants", "{}", cookies[1], nil), 200)
 	for _, cookie := range cookies[:2] {
 		deck := `<cockatrice_deck><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>`
@@ -81,6 +82,7 @@ func prepareCreationMatch(t *testing.T, decks ...string) (*environment, []*http.
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), cookie, nil), 200)
 	}
 	requireStatus(t, e.request("POST", path+"/start", "{}", cookies[0], nil), 201)
+	returnOpeningHandsToLibrary(t, e, roomID, cookies[0], cookies[1])
 	return e, cookies, path + "/match"
 }
 func TestCatalogTokenCreationIsPublicAndDurable(t *testing.T) {
@@ -220,7 +222,7 @@ func TestTokenCatalogIsBoundedSortedAndUsesExistingImageCache(t *testing.T) {
 	if err := json.Unmarshal(upload.body, &deck); err != nil {
 		t.Fatal(err)
 	}
-	room := e.request("POST", "/api/rooms", "{}", cookie, nil)
+	room := e.request("POST", "/api/rooms", roomJSON(), cookie, nil)
 	requireStatus(t, room, 201)
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, room).ID)
 	requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, deck.Deck.ID), cookie, nil), 200)

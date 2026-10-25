@@ -40,6 +40,22 @@ export function useDecks() {
     }
   }
 
+  async function setCommander(id: number, name: string) {
+    if (loading || busy) return false;
+    setBusy(true);
+    setError('');
+    try {
+      const deck = await deckApi.setCommander(id, name);
+      setDecks(current => current.map(item => item.id === id ? deck : item));
+      return true;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível atualizar o comandante.');
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove(id: number) {
     setBusy(true);
     setError('');
@@ -56,5 +72,5 @@ export function useDecks() {
     }
   }
 
-  return { decks, loading, busy, error, selected, setSelected, upload, remove };
+  return { decks, loading, busy, error, selected, setSelected, upload, setCommander, remove };
 }

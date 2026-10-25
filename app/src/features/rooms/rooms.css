@@ -47,7 +47,6 @@
 .create-room-panel::backdrop { background: #000a; backdrop-filter: blur(5px); }
 .create-room-panel header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
 .create-room-panel h2 { font-size: 1.65rem; }
-.example-note { font-size: .8rem; padding: 12px; border-left: 2px solid var(--line-strong); background: var(--panel2); }
 .create-room-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .create-room-numbers > div { min-width: 0; }
 .create-room-panel button[type=submit] { width: 100%; margin-top: 22px; }

@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { test, expect, openHand } from './fixtures';
+import { test, expect, openHand, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 async function table(api: APIRequestContext, page: Page) {
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
   const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'gestos.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/></zone></cockatrice_deck>') } } })).json();
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBe(true);
+  await returnOpeningHandToLibrary(api, room.id);
   const path = `/api/rooms/${room.id}/match`;
   const act = async (data: object) => {
     const response = await api.post(`${path}/actions`, { data: { intentId: randomUUID(), ...data } });

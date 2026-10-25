@@ -42,7 +42,7 @@ func prepareFinishMatch(t *testing.T, count int) (*environment, []*http.Cookie, 
 	for i := range cookies {
 		cookies[i] = sessionCookie(t, e.login(fmt.Sprintf("finish%d", i), "senha-da-mesa"))
 	}
-	room := e.request("POST", "/api/rooms", "{}", cookies[0], nil)
+	room := e.request("POST", "/api/rooms", roomJSON(), cookies[0], nil)
 	requireStatus(t, room, 201)
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, room).ID)
 	for i, cookie := range cookies[:count] {

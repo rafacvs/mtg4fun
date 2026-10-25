@@ -1,5 +1,5 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
-import { test, expect, inspectCard, openHand, openMatchRail, openQuickActions } from './fixtures';
+import { test, expect, inspectCard, openHand, openMatchRail, openQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
 async function expectLifeBesideName(table: Locator, life: number) {
   await expect(table).toBeVisible();
@@ -36,7 +36,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
   const upload = await api.post('/api/decks', { multipart: { file: { name: 'contadores.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Contadores</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
   expect(upload.status()).toBe(201);
   const { deck } = await upload.json();
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   const observer = await browser.newContext({ baseURL, viewport: info.project.use.viewport, isMobile: info.project.use.isMobile, hasTouch: info.project.use.hasTouch });
   try {
@@ -47,6 +47,8 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     expect((await observer.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
     expect((await observer.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: otherDeckID } })).ok()).toBe(true);
     expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await returnOpeningHandToLibrary(api, room.id);
+    await returnOpeningHandToLibrary(observer.request, room.id);
     expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);
     expect((await observer.request.delete(`/api/decks/${otherDeckID}`)).status()).toBe(204);
     expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);
@@ -217,7 +219,7 @@ async function prepareIsland(page: Page, partner?: APIRequestContext) {
   const upload = await api.post('/api/decks', { multipart: { file: deckFile } });
   expect(upload.status()).toBe(201);
   const deckId = (await upload.json()).deck.id;
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId } })).ok()).toBe(true);
   if (partner) {
     expect((await partner.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
@@ -227,8 +229,13 @@ async function prepareIsland(page: Page, partner?: APIRequestContext) {
     expect((await partner.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
     expect((await partner.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: otherDeckId } })).ok()).toBe(true);
     expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await returnOpeningHandToLibrary(api, room.id);
+    await returnOpeningHandToLibrary(partner, room.id);
     expect((await partner.delete(`/api/decks/${otherDeckId}`)).status()).toBe(204);
-  } else expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  } else {
+    expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await returnOpeningHandToLibrary(api, room.id);
+  }
   expect((await api.delete(`/api/decks/${deckId}`)).status()).toBe(204);
   expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);
   await page.goto(`/#/salas/${room.id}`);

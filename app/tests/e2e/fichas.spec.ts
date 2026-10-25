@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, openQuickActions } from './fixtures';
+import { test, expect, openMatchRail, openQuickActions, roomBody } from './fixtures';
 
 // The page uses the actual executable and MySQL; no application routes are mocked.
 test('cria fichas e cópias com mouse/toque e recupera atributos após recarga', async ({ page }, info) => {
@@ -6,7 +6,7 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
   const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'fichas.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="1" name="Island"/></zone></cockatrice_deck>') } } });
   const { deck } = await uploaded.json();
-  const { room } = await (await api.post('/api/rooms', { data: {} })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
   expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);

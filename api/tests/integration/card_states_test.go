@@ -50,7 +50,7 @@ func TestCardStatesPrivacyAndRecovery(t *testing.T) {
 	e.start(false)
 	owner := sessionCookie(t, e.login("dono", "senha-da-sala"))
 	other := sessionCookie(t, e.login("outro", "senha-da-sala"))
-	created := e.request("POST", "/api/rooms", "{}", owner, nil)
+	created := e.request("POST", "/api/rooms", roomJSON(), owner, nil)
 	requireStatus(t, created, 201)
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, created).ID)
 	requireStatus(t, e.request("POST", path+"/participants", "{}", other, nil), 200)
@@ -66,6 +66,7 @@ func TestCardStatesPrivacyAndRecovery(t *testing.T) {
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, p.Deck.ID), cookie, nil), 200)
 	}
 	requireStatus(t, e.request("POST", path+"/start", "{}", owner, nil), 201)
+	returnOpeningHandsToLibrary(t, e, decodeRoom(t, created).ID, owner, other)
 	n := 0
 	action := func(cookie *http.Cookie, fields string) response {
 		n++
