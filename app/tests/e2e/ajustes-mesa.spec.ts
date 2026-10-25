@@ -79,6 +79,11 @@ test('prévia lateral por hover e painéis recolhidos individualmente', async ({
     const otherField = page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true });
     await otherField.getByRole('button', { name: 'Island', exact: true }).hover();
     await expect(panel.getByRole('img')).toBeVisible();
+    await otherField.getByRole('button', { name: 'Island', exact: true }).click();
+    const inspection = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
+    await expect(inspection).toBeVisible();
+    await inspection.getByRole('button', { name: 'Fechar', exact: true }).click();
+    await expect(inspection).toHaveCount(0);
     await action({ kind: 'set_face_down', cardIds: [otherCard.id], faceDown: true }, observer.request);
     await expect(panel).toContainText('identidade oculta');
     await expect(panel.getByRole('img')).toHaveCount(0);
@@ -114,7 +119,14 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     const otherPanel = other.getByRole('region', { name: 'Prévia da carta', exact: true });
     const link = log.getByRole('listitem').filter({ hasText: 'para Cemitério' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
     const before = (await read()).log.length;
-    if (info.project.use.hasTouch) await link.tap(); else await link.hover();
+    if (info.project.use.hasTouch) {
+      await link.tap();
+      const inspection = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
+      await expect(inspection).toBeVisible();
+      await inspection.getByRole('button', { name: 'Fechar', exact: true }).tap();
+      await expect(inspection).toHaveCount(0);
+      return;
+    } else await link.hover();
     await expect(panel.getByRole('img', { name: 'Prévia de Island', exact: true })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await read()).log.length).toBe(before);
@@ -129,6 +141,12 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     const ownMove = log.locator('li').filter({ hasText: 'de Cemitério para Mão' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
     await ownMove.focus();
     await expect(panel.getByRole('img')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.keyboard.press('Enter');
+    const inspection = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
+    await expect(inspection).toBeVisible();
+    await inspection.getByRole('button', { name: 'Fechar', exact: true }).click();
+    await expect(inspection).toHaveCount(0);
     await page.screenshot({ path: info.outputPath('previa-no-registro.png'), fullPage: true });
   } finally { await observer.close(); }
 });
