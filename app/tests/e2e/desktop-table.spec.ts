@@ -82,7 +82,16 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     await expect(otherPage.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
     await returnToOverview.click();
     await expect(page.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
-    const selectedCard = own.getByRole('button', { name: 'Soldier Token', exact: true });
+    for (const position of [[1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]) {
+      const created = await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'create-token', intentId: randomUUID(), tokenName: 'Soldier Token' } });
+      expect(created.ok()).toBe(true);
+      const { match } = await created.json();
+      const ownPlayer = match.players.find((player: { userId: number }) => player.userId === match.viewerId);
+      const card = ownPlayer.battlefield.at(-1);
+      expect((await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'position', intentId: randomUUID(), cardId: card.id, x: position[0], row: position[1] } })).ok()).toBe(true);
+    }
+    await expect(own.getByRole('button', { name: 'Soldier Token', exact: true })).toHaveCount(9);
+    const selectedCard = own.getByRole('button', { name: 'Soldier Token', exact: true }).first();
     await selectedCard.click();
     await expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
     const consultation = await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'consult', intentId: randomUUID(), consultFrom: 'top', count: 2 } });
@@ -92,6 +101,12 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true })).toHaveClass(/focused-table/);
     await expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
     await expect(own.getByText('Consultando o grimório', { exact: true })).toBeVisible();
+    await expect(async () => {
+      const fit = await own.locator('.battlefield-fit').boundingBox();
+      const cards = await own.getByRole('button', { name: 'Soldier Token', exact: true }).evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect()));
+      expect(cards).toHaveLength(9);
+      expect(cards.every(card => card.left >= fit!.x - 1 && card.right <= fit!.x + fit!.width + 1 && card.top >= fit!.y - 1 && card.bottom <= fit!.y + fit!.height + 1)).toBe(true);
+    }).toPass();
     await expect.poll(async () => (await (await contexts[1].request.get(`${path}/match`)).json()).match.players.find((player: { name: string }) => player.name === 'Amigo da mesa').consulting).toBe(true);
     await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     const ownLife = own.getByRole('textbox', { name: 'Vida', exact: true });

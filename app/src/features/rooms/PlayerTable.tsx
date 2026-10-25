@@ -92,22 +92,23 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, on
 function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps & { fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void }) {
   const cards = player.battlefield ?? [];
   const fieldRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState({ width: 0, height: 0 });
+  const [visible, setVisible] = useState({ width: 0, height: 0, cardWidth: 76 });
   const layout = projectBattlefield(cards).layout;
   useEffect(() => {
     const node = fieldRef.current;
     if (!node) return;
-    const measure = () => {
-      setVisible({ width: node.clientWidth, height: node.clientHeight });
-    };
+    const measure = () => setVisible({
+      width: node.clientWidth,
+      height: node.clientHeight,
+      cardWidth: Number.parseFloat(getComputedStyle(node).getPropertyValue('--card-width')) || 76,
+    });
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  const cardWidth = 76;
   const scale = visible.width && visible.height && layout.width && layout.height
-    ? Math.min(1, visible.width / (layout.width * cardWidth), visible.height / (layout.height * cardWidth))
+    ? Math.min(1, visible.width / (layout.width * visible.cardWidth), visible.height / (layout.height * visible.cardWidth))
     : 1;
   return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
     <header>
