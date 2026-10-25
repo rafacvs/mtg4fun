@@ -53,7 +53,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [hoverPreviewOpen, setHoverPreviewOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
   const [playersOpen, setPlayersOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
-  const [logOpen, setLogOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
+  const [logOpen, setLogOpen] = useState(false);
   const toggleRailPanel = (panel: 'preview' | 'players' | 'log') => {
     if (compact) {
       setInformationTab(panel);
@@ -276,6 +276,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <div className="toolbar-trailing">
           <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
           <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
+          {!compact && <button className="secondary chronicle-toggle" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => setLogOpen(value => !value)}>{logOpen ? 'Fechar crônica' : 'Abrir crônica'}</button>}
           <FinishMatch match={match} busy={busy} unconfirmed={unconfirmed} error={error} onConfirm={finish} onRetry={retry} />
         </div>
       </div>
@@ -309,13 +310,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             {actionResult && <p role="status" className="command-result">{actionResult}</p>}
           </section>}
         </>}
-        <aside id="match-rail" className="side-rail" hidden={compact && !informationOpen} aria-label="Painéis da mesa">
+        {(compact ? informationOpen : logOpen) && <aside id="match-rail" className="side-rail" aria-label="Painéis da mesa">
           {compact && <PanelHeader title="Informações" closeLabel="Fechar informações" onClose={() => setInformationOpen(false)} />}
-          <section className={`rail-panel preview-panel ${hoverPreviewOpen ? 'is-open' : ''}`}>
+          {compact && <section className={`rail-panel preview-panel ${hoverPreviewOpen ? 'is-open' : ''}`}>
             <button className="rail-tab secondary" aria-expanded={hoverPreviewOpen} aria-controls="preview-panel-content" onClick={() => toggleRailPanel('preview')}><TableIcon name="eye" /><span>Prévia</span><TableIcon name="chevron" /></button>
             <div id="preview-panel-content" className="rail-panel-content" hidden={!hoverPreviewOpen}><HoverCardPreview card={hoverCardId ? findCard(match, hoverCardId) : null} /></div>
-          </section>
-          <section className={`rail-panel players-panel ${playersOpen ? 'is-open' : ''}`}>
+          </section>}
+          {compact && <section className={`rail-panel players-panel ${playersOpen ? 'is-open' : ''}`}>
             <button className="rail-tab secondary" aria-label="Jogadores" aria-expanded={playersOpen} aria-controls="players-panel-content" onClick={() => toggleRailPanel('players')}><TableIcon name="grid" /><span>Jogadores</span><small>{match.players.length}</small><TableIcon name="chevron" /></button>
             <div id="players-panel-content" className="rail-panel-content" hidden={!playersOpen}>
               <nav className="player-thumbnails" aria-label="Foco da mesa">{match.players.map(player =>
@@ -328,9 +329,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
                 </div>
               )}</nav>
             </div>
-          </section>
+          </section>}
           <section className={`rail-panel log-panel ${logOpen ? 'is-open' : ''}`}>
-            <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>
+            {compact && <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>}
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
               <MatchLog entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
                 const card = findCard(match, id);
@@ -342,6 +343,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             </div>
           </section>
         </aside>
+        }
         {drag && ownHidden && <aside className="drag-own-column" aria-label="Suas zonas">
           <ZoneColumn player={own} viewerId={match.viewerId} droppable hoverZone={drag.zone} gesture={gesture} />
         </aside>}
