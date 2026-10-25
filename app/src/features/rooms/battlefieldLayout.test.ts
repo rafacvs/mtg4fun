@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CARD_ASPECT, CELL_GAP, STACK_SHIFT_X, battlefieldLayout, dropCell, firstFreeCell, fitBattlefield } from './battlefieldLayout.ts';
+import { CARD_ASPECT, CELL_GAP, STACK_SHIFT_X, battlefieldLayout, dropCell, firstFreeCell, fitBattlefield, projectBattlefield } from './battlefieldLayout.ts';
 
 const card = (id: string, positionX: number, row: number, tapped = false) => ({ id, positionX, row, stackOrder: 0, tapped });
 
@@ -59,4 +59,18 @@ test('the field grows until it covers the visible area', () => {
   const layout = fitBattlefield([card('only', 0, 0)], 8, 6);
   assert.ok(layout.width >= 8);
   assert.ok(layout.height >= 6);
+});
+
+test('projection compacts only distant saved coordinates without mutating their destinations', () => {
+  const cards = [card('first', 120, 4), card('near', 121, 4), card('far', 720, 18)];
+  const projected = projectBattlefield(cards);
+
+  assert.equal(projected.layout.cards.get('first')?.x, 0);
+  assert.equal(projected.layout.cards.get('near')?.x, 1 + CELL_GAP);
+  assert.equal(projected.layout.cards.get('far')?.y, 2 * (CARD_ASPECT + CELL_GAP));
+  assert.deepEqual(projected.destination(0, 0), { column: 120, row: 4 });
+  assert.deepEqual(projected.destination(0, 2), { column: 720, row: 18 });
+  assert.deepEqual(cards.map(({ positionX, row }) => ({ positionX, row })), [
+    { positionX: 120, row: 4 }, { positionX: 121, row: 4 }, { positionX: 720, row: 18 },
+  ]);
 });

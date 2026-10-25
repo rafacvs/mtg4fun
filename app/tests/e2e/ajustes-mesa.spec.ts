@@ -79,6 +79,11 @@ test('prévia lateral por hover e painéis recolhidos individualmente', async ({
     const otherField = page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true });
     await otherField.getByRole('button', { name: 'Island', exact: true }).hover();
     await expect(panel.getByRole('img')).toBeVisible();
+    await otherField.getByRole('button', { name: 'Island', exact: true }).click();
+    const inspection = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
+    await expect(inspection).toBeVisible();
+    await inspection.getByRole('button', { name: 'Fechar', exact: true }).click();
+    await expect(inspection).toHaveCount(0);
     await action({ kind: 'set_face_down', cardIds: [otherCard.id], faceDown: true }, observer.request);
     await expect(panel).toContainText('identidade oculta');
     await expect(panel.getByRole('img')).toHaveCount(0);
@@ -114,7 +119,14 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     const otherPanel = other.getByRole('region', { name: 'Prévia da carta', exact: true });
     const link = log.getByRole('listitem').filter({ hasText: 'para Cemitério' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
     const before = (await read()).log.length;
-    if (info.project.use.hasTouch) await link.tap(); else await link.hover();
+    if (info.project.use.hasTouch) {
+      await link.tap();
+      const inspection = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
+      await expect(inspection).toBeVisible();
+      await inspection.getByRole('button', { name: 'Fechar', exact: true }).tap();
+      await expect(inspection).toHaveCount(0);
+      return;
+    } else await link.hover();
     await expect(panel.getByRole('img', { name: 'Prévia de Island', exact: true })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await read()).log.length).toBe(before);
@@ -129,6 +141,12 @@ test('prévia de cartas pelo registro respeita visibilidade e recarga', async ({
     const ownMove = log.locator('li').filter({ hasText: 'de Cemitério para Mão' }).getByRole('button', { name: 'Prévia de Island no registro', exact: true });
     await ownMove.focus();
     await expect(panel.getByRole('img')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.keyboard.press('Enter');
+    const inspection = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
+    await expect(inspection).toBeVisible();
+    await inspection.getByRole('button', { name: 'Fechar', exact: true }).click();
+    await expect(inspection).toHaveCount(0);
     await page.screenshot({ path: info.outputPath('previa-no-registro.png'), fullPage: true });
   } finally { await observer.close(); }
 });
@@ -241,11 +259,14 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         const mixed = await field.locator('[data-row="1"][data-pos-x="0"] .playing-card').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }));
         const neighbor = await field.locator('[data-row="1"][data-pos-x="1"] .playing-card').boundingBox();
         expect(neighbor!.x).toBeGreaterThan(Math.max(...mixed.map(r => r.right)));
-        const dimensions = await field.locator('.battlefield-scroll').evaluate(node => ({ content: node.scrollWidth, visible: node.clientWidth }));
-        expect(dimensions.content).toBeGreaterThan(dimensions.visible);
-        await field.locator('[data-row="2"]').last().scrollIntoViewIfNeeded();
-        await expect(field.locator('[data-row="2"]').last()).toBeInViewport();
-        await field.locator('.battlefield-scroll').evaluate(node => { node.scrollLeft = 0; node.scrollTop = 0; });
+        const bounds = await field.evaluate(node => { const box = node.getBoundingClientRect(); return { left: box.left, right: box.right, top: box.top, bottom: box.bottom }; });
+        for (const card of await field.locator('.playing-card').all()) {
+          const box = await card.boundingBox();
+          expect(box!.x).toBeGreaterThanOrEqual(bounds.left);
+          expect(box!.x + box!.width).toBeLessThanOrEqual(bounds.right);
+          expect(box!.y).toBeGreaterThanOrEqual(bounds.top);
+          expect(box!.y + box!.height).toBeLessThanOrEqual(bounds.bottom);
+        }
         await page.screenshot({ path: info.outputPath('campo-cenarios.png'), fullPage: true });
         await openMatchRail(page, 'Registro');
         await expect(page.getByRole('region', { name: 'Registro da partida' })).toBeVisible();

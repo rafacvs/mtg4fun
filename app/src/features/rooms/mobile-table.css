@@ -81,6 +81,7 @@
   .mobile-table .seat-life input { width: 100%; min-height: 44px; font-size: 1.4rem; padding: 0; }
   .mobile-table .seat-life button { min-height: 44px; width: 44px; padding: 0; }
   .mobile-table .seat-markers { min-height: 44px; width: 100%; justify-content: space-around; padding: 4px; }
+  .mobile-table .seat-focus { display: none; }
   .mobile-table .seat-markers .marker-dot { width: 18px; height: 18px; min-width: 18px; font-size: .6rem; }
   .mobile-table .opponent-table-surface .seat-markers { display: none; }
   .mobile-table .opponent-table-surface .player-table { display: flex; padding: 3px; background: var(--panel); border-color: var(--seat-color); }
@@ -89,8 +90,6 @@
   .mobile-table .opponent-table-surface .zone-battlefield { --card-width: 44px; }
   .mobile-table .zone-battlefield { --card-width: var(--field-card-width); background: linear-gradient(130deg, color-mix(in srgb, var(--seat-color) 12%, var(--bg)), var(--bg)); min-height: 0; }
   .mobile-table .zone-battlefield::before { display: none; }
-  .mobile-table .battlefield-guides { display: flex; flex-direction: column; position: absolute; inset: 24px 0 0; pointer-events: none; }
-  .mobile-table .battlefield-guides span { flex: 1; border-top: 1px solid color-mix(in srgb, var(--seat-color) 16%, transparent); padding: 4px; font-size: .55rem; color: var(--muted); }
   .mobile-table .zone-column { --card-width: 44px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: auto; padding: 0; gap: 3px; overflow: visible; }
   .mobile-table .zone-column .card-slot { width: 100%; min-width: 0; }
   .mobile-table .zone-column .table-zone { padding: 0; }
@@ -129,18 +128,31 @@
   .portrait-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 }
 @media (max-width: 1000px) and (orientation: portrait) {
-  .mobile-table .rotate-invitation { display: block; margin: 0; padding: 12px; font-size: .8rem; text-align: center; color: var(--muted); }
+  /* Portrait is a game board, not a hand-only orientation.  Opponents occupy
+     compact bands above the larger own field; the hand remains a small dock. */
+  .mobile-table { --field-card-width: 52px; }
   .mobile-table .table-stage { padding: 8px 8px 66px; }
-  .mobile-table .desktop-fields { display: none; }
-  .mobile-table .own-dock { position: relative; inset: auto; flex: 1; max-height: none; width: 100%; padding: 8px; overflow: auto; border: 1px solid var(--line); background: var(--panel); }
-  .mobile-table .own-dock .dock-content { height: 100%; }
-  .mobile-table .own-dock .zone-hand { height: 100%; display: flex; flex-direction: column; }
+  .mobile-table .table-main { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; }
+  .mobile-table .desktop-fields { flex: none; min-height: 0; display: grid; grid-template-rows: minmax(0, .82fr) minmax(0, 1.18fr); gap: 6px; overflow: hidden; }
+  .mobile-table .opponent-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 5px; min-height: 0; overflow: hidden; }
+  .mobile-table .player-count-1 .opponent-strip { display: none; }
+  .mobile-table .player-count-2 .opponent-strip { grid-template-columns: minmax(0, 1fr); }
+  .mobile-table .player-count-6 .opponent-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mobile-table .opponent-table-surface, .mobile-table .own-table-surface { min-width: 0; min-height: 0; }
+  .mobile-table .opponent-table-surface .zone-battlefield { --card-width: 34px; }
+  .mobile-table .opponent-table-surface .seat-focus { display: inline-flex; min-width: 44px; min-height: 32px; font-size: .55rem; }
+  .mobile-table .own-table-surface .seat-focus { display: inline-flex; min-height: 44px; font-size: .65rem; }
+  .mobile-table .desktop-fields.has-field-focus { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .mobile-table .desktop-fields.has-field-focus .focused-table-surface { grid-column: 1 / -1; }
+  .mobile-table .own-dock { position: relative; inset: auto; flex: none; width: 100%; max-height: 25dvh; padding: 6px 8px; overflow: auto; border: 1px solid var(--line); background: var(--panel); }
+  .mobile-table .own-dock .dock-content { height: auto; }
+  .mobile-table .own-dock .zone-hand { height: auto; display: flex; flex-direction: column; }
   .mobile-table .own-dock .zone-hand > header { display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto; }
   .mobile-table .own-dock .zone-hand > header > span { font-size: .9rem; }
   .mobile-table .own-dock .zone-hand .hand-organize { display: inline-flex; min-height: 44px; }
-  .mobile-table .own-dock .zone-cards { --card-width: 120px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); align-content: start; justify-items: center; gap: 12px; overflow: auto; flex: 1; padding: 10px 4px; }
-  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: 0; }
-  .mobile-table .own-dock .hand-hint { display: block; font-size: .7rem; }
+  .mobile-table .own-dock .zone-cards { --card-width: 72px; display: flex; align-items: end; gap: 4px; overflow: auto; flex: 1; padding: 4px 2px; }
+  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: -18px; }
+  .mobile-table .own-dock .hand-hint { display: none; }
   .mobile-table .mobile-table-controls { left: 0; right: 0; padding: 6px 4px max(6px, env(safe-area-inset-bottom)); }
   .mobile-table .mobile-table-controls button { font-size: .7rem; }
   .mobile-table .card-preview { max-height: calc(100dvh - 16px); overflow: auto; }
@@ -171,4 +183,62 @@
 }
 @media (max-width: 1000px) and (orientation: portrait) {
   .mobile-table .own-dock .zone-cards { grid-auto-rows: calc(var(--card-width) * 88 / 63); }
+}
+
+/* Landscape is a shared table, not a scrollable opponent rail.  The field
+   projection shrinks cards inside each seat, so every participant remains in
+   view while the hand and deliberate panels can temporarily float above it. */
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table { --field-card-width: 52px; }
+  .mobile-table .desktop-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    overflow: hidden;
+  }
+  .mobile-table .opponent-strip { display: contents; }
+  .mobile-table .opponent-table-surface,
+  .mobile-table .own-table-surface {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+  }
+  .mobile-table .player-count-1 { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .mobile-table .player-count-2 .own-table-surface { grid-column: 1; grid-row: 2; }
+  .mobile-table .player-count-3 .own-table-surface { grid-column: 1 / -1; grid-row: 2; }
+  .mobile-table .player-count-4 .own-table-surface { grid-column: 1; grid-row: 2; }
+  .mobile-table .player-count-5,
+  .mobile-table .player-count-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mobile-table .player-count-5 .own-table-surface,
+  .mobile-table .player-count-6 .own-table-surface { grid-column: 1; grid-row: 2; }
+  .mobile-table .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mobile-table .desktop-fields.has-field-focus .focused-table-surface { grid-column: span 3; }
+  .mobile-table .player-table,
+  .mobile-table .opponent-table-surface .player-table { display: flex; height: 100%; padding: 3px; }
+  .mobile-table .own-table-surface > .player-table,
+  .mobile-table .own-table-surface .table-zones,
+  .mobile-table .own-table-surface .playmat { display: flex; }
+  .mobile-table .own-table-surface .table-zones { flex-direction: column; }
+  .mobile-table .seat-heading { flex: 0 0 auto; min-height: 24px; padding: 2px 4px; }
+  .mobile-table .seat-name h2 { font-size: .58rem; }
+  .mobile-table .seat-name small,
+  .mobile-table .seat-markers,
+  .mobile-table .zone-column,
+  .mobile-table .mobile-turn-actions,
+  .mobile-table .opponent-hand { display: none; }
+  .mobile-table .seat-life { width: auto; }
+  .mobile-table .seat-life > span,
+  .mobile-table .seat-life .numeric-counter button { display: none; }
+  .mobile-table .seat-life .numeric-counter { display: block; }
+  .mobile-table .seat-life input { min-height: 24px; width: 42px; font-size: .85rem; }
+  .mobile-table .seat-life-readout { font-size: .85rem; }
+  .mobile-table .playmat { min-height: 0; }
+  .mobile-table .zone-battlefield,
+  .mobile-table .own-table-surface .zone-battlefield { margin: 0; min-height: 0; padding: 2px; }
+  .mobile-table .zone-battlefield > header { display: none; }
+  .mobile-table .own-dock { left: 8px; right: 62px; bottom: 52px; max-height: 70px; }
+  .mobile-table .mobile-table-controls { left: 8px; right: 62px; bottom: 0; }
+  .mobile-table .floating-table-controls { right: 8px; }
+  .mobile-table .card-action-bar { left: 8px; right: 62px; }
 }

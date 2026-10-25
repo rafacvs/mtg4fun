@@ -87,7 +87,7 @@ test('prioriza as próprias mesas e não promete vagas em partidas iniciadas', a
   } finally { await other.close(); }
 });
 
-test('decks usam dados reais, identificam exemplos e confirmam exclusão sem alterar partida', async ({ page }, info) => {
+test('decks usam dados reais e confirmam exclusão sem alterar partida', async ({ page }, info) => {
   test.setTimeout(60_000);
   await signIn(page);
   await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
@@ -97,8 +97,12 @@ test('decks usam dados reais, identificam exemplos e confirmam exclusão sem alt
   await expect(page.getByText('7 × Island', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Consultar Island', exact: true }).click();
   await expect(page.getByText('Add U.', { exact: true })).toBeVisible();
-  const metadata = page.getByRole('region', { name: 'Dados ilustrativos do deck' });
-  for (const label of ['Comandante · exemplo', 'Cores · exemplo', 'Curva · exemplo', 'Tipos · exemplo']) await expect(metadata.getByText(label, { exact: true })).toBeVisible();
+  const metadata = page.getByRole('region', { name: 'Dados do deck' });
+  await expect(metadata).toContainText('Comandante');
+  await expect(metadata).toContainText('Nenhum');
+  await expect(metadata).toContainText('Curva');
+  await expect(metadata).toContainText('Tipos');
+  await expect(metadata).toContainText('Terrenos 7');
   await page.screenshot({ path: info.outputPath('biblioteca-real.png'), fullPage: true });
   const deckId = Number(await page.getByLabel('Escolher deck salvo').inputValue());
   const { room } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
@@ -110,7 +114,7 @@ test('decks usam dados reais, identificam exemplos e confirmam exclusão sem alt
   await expect(confirmation).toContainText('Uma partida já iniciada não muda.');
   await confirmation.getByRole('button', { name: 'Cancelar', exact: true }).click();
   const beforeDelete = (await (await page.request.get('/api/decks')).json()).decks.find((deck: { id: number }) => deck.id === deckId);
-  expect(Object.keys(beforeDelete).sort()).toEqual(['cards', 'id', 'name']);
+  expect(beforeDelete.id).toBe(deckId);
   expect(beforeDelete.name).toBe('Biblioteca real');
   await page.reload();
   await page.getByLabel('Escolher deck salvo').selectOption(String(deckId));

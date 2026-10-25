@@ -40,7 +40,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1000px)').matches);
   const [portrait, setPortrait] = useState(() => window.matchMedia('(max-width: 1000px) and (orientation: portrait)').matches);
   const [overview, setOverview] = useState(false);
-  const [dockHidden, setDockHidden] = useState(false);
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [informationOpen, setInformationOpen] = useState(false);
   const [informationTab, setInformationTab] = useState<'preview' | 'players' | 'log'>('preview');
@@ -69,7 +68,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   };
   const [hoverCardId, setHoverCardId] = useState<string | null>(null);
   const [zoomCardId, setZoomCardId] = useState<string | null>(null);
-  const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [cardMenuId, setCardMenuId] = useState<string | null>(null);
@@ -110,7 +108,15 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     setLibraryAnchor(document.querySelector<HTMLElement>('.focused-table .library-open') ?? document.querySelector<HTMLElement>('.library-open'));
     setLibraryOpen(true); setActionsOpen(false); setMenuPlayerId(null); setNotice('');
   };
-  const focusPlayer = (id: number) => { if (!compact) { document.querySelector<HTMLElement>(`[data-field-owner="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); return; } setFocusId(id); setOverview(false); setInformationOpen(false); if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); } };
+  const focusPlayer = (id: number) => {
+    if (focusId === id) {
+      setFocusId(null); setOverview(true); setInformationOpen(false);
+      if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+      return;
+    }
+    setFocusId(id); setOverview(false); setInformationOpen(false);
+    if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+  };
   useEffect(() => {
     const dock = dockRef.current;
     const board = dock?.closest<HTMLElement>('.match-board');
@@ -185,7 +191,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
       void setTapped(ids, !card.tapped);
     },
-    onInspect: (card, additive) => { if (!drag) { if (portrait && !selecting && !additive) setPreviewId(card.id); setHoverCardId(card.id); setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
+    onInspect: (card, additive) => { if (!drag) { setHoverCardId(card.id); if (card.controllerId !== match?.viewerId) { setPreviewId(card.id); return; } setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
     onOpenMenu: card => { setSelectionIds(current => current.includes(card.id) ? current : [card.id]); setCardMenuId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
@@ -246,31 +252,27 @@ export function MatchBoard({ roomId }: { roomId: number }) {
 
   if (!match) return <p role={error ? 'alert' : 'status'}>{error || 'Carregando mesa…'}</p>;
   const own = match.players.find(player => player.userId === match.viewerId)!;
-  const focused = match.players.find(player => player.userId === (compact ? (focusId ?? match.viewerId) : match.viewerId))!;
+  const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
   const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describeLogEntry(lastAction) : undefined;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
-  const showingOverview = compact ? overview : false;
+  const showingOverview = compact ? overview : focusId === null;
   const showOverview = () => {
     setFocusId(null); setOverview(true); setInformationOpen(false);
     if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
   };
-  const togglePlayerFocus = (id: number) => {
-    if (!showingOverview && focused.userId === id) showOverview();
-    else focusPlayer(id);
-  };
+  const togglePlayerFocus = (id: number) => focusPlayer(id);
   const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
-  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact && !dockHidden ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} data-density={density} aria-label="Mesa da partida">
+  return <section className={`match-board ${drag ? 'dragging' : ''} ${compact ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} aria-label="Mesa da partida">
     <div className="match-content">
       <div className="table-toolbar">
         <div className="toolbar-leading"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><button className="secondary selection-mode" aria-pressed={selecting} onClick={() => setSelecting(value => !value)}>Selecionar</button><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span></div>
-        <label className="table-density">Densidade <select aria-label="Densidade" value={density} onChange={event => setDensity(event.target.value as 'compact' | 'comfortable')}><option value="compact">Compacta</option><option value="comfortable">Confortável</option></select></label>
         <div className="toolbar-trailing">
           <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
           <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
@@ -281,13 +283,12 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       {optimisticPending && <p className="pending-action" role="status">Ação pendente · aguardando confirmação</p>}
       {notice && <p role="status" className="library-notice">{notice}</p>}
-      {compact && <p className="rotate-invitation">Gire o aparelho para jogar o campo</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} density={density} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
-          <section ref={dockRef} hidden={compact && dockHidden} className={`own-dock ${dockHidden ? 'is-collapsed' : ''}`} aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
-            <button className="dock-toggle secondary" aria-label={compact ? 'Fechar mão' : dockHidden ? `Mostrar mão (${own.handCount}) e ações` : 'Ocultar mão e ações'} aria-expanded={!dockHidden} aria-controls="own-dock-content" onClick={() => setDockHidden(value => !value)}><TableIcon name="hand" /><span>{dockHidden ? `Mostrar mão (${own.handCount}) e ações` : `Mão · ${own.handCount}`}</span><small hidden={dockHidden || compact}>Ocultar</small><TableIcon name={compact ? "close" : "chevron"} /></button>
-            <div id="own-dock-content" className="dock-content" hidden={dockHidden}>
+          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={focusId} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
+            <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Mão · {own.handCount}</span></div>
+            <div id="own-dock-content" className="dock-content">
               {!compact && quickActions}
               <OwnHand scrollAxis={portrait ? 'y' : 'x'} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             </div>
@@ -295,8 +296,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         </div>
         {compact && <>
           {(commandsOpen || informationOpen) && <div className="floating-panel-scrim" aria-hidden="true" onClick={closeFloatingPanel} />}
-          <MobileTableControls moreRef={moreControl} handOpen={!dockHidden} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
-            onHand={() => setDockHidden(value => !value)} onDraw={drawOne} onUntap={() => void untapAll()} onTurn={() => void turn('next')}
+          <MobileTableControls moreRef={moreControl} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
+            onDraw={drawOne} onUntap={() => void untapAll()} onTurn={() => void turn('next')}
             onMore={() => { setCommandsOpen(value => !value); setInformationOpen(false); }} />
           {commandsOpen && <section id="mobile-commands" className="mobile-commands" aria-label="Comandos da partida">
             <PanelHeader title="Comandos" closeLabel="Fechar comandos" onClose={() => setCommandsOpen(false)} />
@@ -333,7 +334,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
               <MatchLog entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
                 const card = findCard(match, id);
-                if (card) gesture.onPreview?.(card);
+                if (card) setHoverCardId(card.id);
+              }} onInspect={id => {
+                const card = findCard(match, id);
+                if (card) setPreviewId(card.id);
               }} />
             </div>
           </section>
@@ -441,8 +445,9 @@ function locateBattlefieldCell(x: number, y: number, cards: Card[]) {
   for (const element of document.elementsFromPoint(x, y)) {
     const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
     if (!canvas) continue;
-    const { layout, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
-    return dropCell(layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
+    const { projection, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
+    const cell = dropCell(projection.layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
+    return cell && projection.destination(cell.column, cell.row);
   }
   return null;
 }

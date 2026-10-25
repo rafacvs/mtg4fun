@@ -76,7 +76,7 @@ test('entrada usa a tipografia da mesa e o fundo noturno aprovado', async ({ pag
 test('depois de entrar, reabre uma partida iniciada e compra uma carta', async ({ page }) => {
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
-  const upload = await api.post('/api/decks', { multipart: { file: { name: 'login.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Login</deckname><zone name="main"><card number="2" name="Island"/></zone></cockatrice_deck>') } } });
+  const upload = await api.post('/api/decks', { multipart: { file: { name: 'login.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck version="1"><deckname>Login</deckname><zone name="main"><card number="8" name="Island"/></zone></cockatrice_deck>') } } });
   expect(upload.status()).toBe(201);
   const { deck } = await upload.json();
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
@@ -92,8 +92,8 @@ test('depois de entrar, reabre uma partida iniciada e compra uma carta', async (
   await openQuickActions(page);
   await page.getByRole('button', { name: 'Comprar', exact: true }).click();
   await openHand(page);
-  await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true })).toHaveCount(8);
   await page.reload();
   await openHand(page);
-  await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true })).toHaveCount(8);
 });

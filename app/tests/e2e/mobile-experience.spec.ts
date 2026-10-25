@@ -43,35 +43,58 @@ test('celular horizontal mostra oponentes, campo e comandos próprios sem perder
   const opponents = page.getByRole('region', { name: 'Oponentes', exact: true });
   await expect(opponents).toBeVisible();
   await expect(opponents.getByRole('article')).toHaveCount(3);
-  await expect(opponents.getByRole('button', { name: 'Soldier Token', exact: true })).toBeInViewport({ ratio: 1 });
+  // A visão conjunta não pode depender de rolar uma faixa de oponentes: as
+  // quatro mesas e as cartas públicas cabem na tela horizontal de jogo.
+  const tables = page.getByRole('article', { name: /Mesa de/ });
+  await expect(tables).toHaveCount(4);
+  for (const table of await tables.all()) await expect(table).toBeInViewport({ ratio: 1 });
+  for (const card of await opponents.getByRole('button', { name: 'Soldier Token', exact: true }).all()) await expect(card).toBeInViewport({ ratio: 1 });
   const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
   const field = own.getByRole('region', { name: 'Campo', exact: true });
-  const controls = page.getByRole('region', { name: 'Seus comandos', exact: true });
   await expect(field.getByRole('button', { name: 'Soldier Token', exact: true })).toBeInViewport();
   await expect(own.getByRole('textbox', { name: 'Vida', exact: true })).toBeVisible();
-  for (const zone of ['Grimório', 'Cemitério', 'Exílio', 'Comando']) await expect(own.getByRole('region', { name: zone, exact: true })).toBeVisible();
-  const left = (await opponents.boundingBox())!, center = (await field.boundingBox())!, right = (await controls.boundingBox())!;
-  expect(left.x + left.width).toBeLessThanOrEqual(center.x + 2);
-  expect(center.x + center.width).toBeLessThanOrEqual(right.x + 2);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
   await expect(hand.getByRole('button', { name: 'Island', exact: true }).first()).toBeInViewport();
-  await controls.getByRole('button', { name: 'Comprar', exact: true }).tap();
+  const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
+  await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(4);
   const previousTurn = (await (await page.request.get(path)).json()).match.currentTurn.userId;
-  await controls.getByRole('button', { name: 'Passar a vez', exact: true }).tap();
+  await nav.getByRole('button', { name: 'Passar a vez', exact: true }).tap();
   await expect.poll(async () => (await (await page.request.get(path)).json()).match.currentTurn.userId).not.toBe(previousTurn);
+  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await page.getByRole('button', { name: 'Informações', exact: true }).tap();
+  await page.getByRole('button', { name: 'Jogadores', exact: true }).tap();
+  await page.getByRole('button', { name: /Ver campo de Segundo amigo/ }).tap();
+  await expect(page.locator('.desktop-fields.has-field-focus')).toBeVisible();
+  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await page.getByRole('button', { name: 'Informações', exact: true }).tap();
+  await page.getByRole('button', { name: 'Jogadores', exact: true }).tap();
+  await page.getByRole('button', { name: 'Ver campo de Segundo amigo', exact: true }).tap();
+  await expect(page.locator('.desktop-fields.has-field-focus')).toHaveCount(0);
+  for (const table of await tables.all()) await expect(table).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('horizontal48.png') });
 });
 
-test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao girar', async ({ page, browser, baseURL }, info) => {
-  test.skip(info.project.name !== 'celular', 'Leitura vertical e mudança de orientação.');
+test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança de orientação', async ({ page, browser, baseURL }, info) => {
+  test.skip(info.project.name !== 'celular', 'Mesa jogável na vertical e mudança de orientação.');
   test.setTimeout(90_000);
   const { path, act } = await prepare(page, browser, baseURL);
-  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toHaveCount(0);
+  const opponents = page.getByRole('region', { name: 'Oponentes', exact: true });
+  const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+  await expect(opponents).toBeVisible();
+  await expect(opponents.getByRole('article')).toHaveCount(3);
+  await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
+  const ownFocus = own.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
+  await expect(ownFocus).toBeVisible();
+  await ownFocus.tap();
+  await expect(own.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toBeVisible();
+  await expect(opponents).toBeVisible();
+  await own.getByRole('button', { name: 'Voltar à visão geral', exact: true }).tap();
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
-  for (const label of ['Mão', 'Comprar', 'Desvirar', 'Passar a vez', 'Mais']) {
+  for (const label of ['Comprar', 'Desvirar', 'Passar a vez', 'Mais']) {
     const button = nav.getByRole('button', { name: label, exact: true });
     await expect(button).toBeVisible();
     expect(await button.innerText()).toContain(label);
@@ -83,6 +106,9 @@ test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao gir
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   const ids = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')));
   await cards.first().tap();
+  await expect(page.getByRole('toolbar', { name: 'Ações da seleção', exact: true })).toBeVisible();
+  await page.getByRole('toolbar', { name: 'Ações da seleção', exact: true }).getByRole('button', { name: 'Mais', exact: true }).tap();
+  await page.getByRole('dialog', { name: 'Ações da carta', exact: true }).getByRole('button', { name: 'Inspecionar carta', exact: true }).tap();
   const preview = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('img', { name: 'Imagem ampliada de Island', exact: true })).toBeVisible();
@@ -99,7 +125,6 @@ test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao gir
   const before = (await (await page.request.get(path)).json()).match;
   const sameDocument = await page.evaluate(() => { (window as Window & { orientationCheck?: string }).orientationCheck = 'same'; return location.href; });
   await page.setViewportSize({ width: 839, height: 393 });
-  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toBeHidden();
   await expect(hand).not.toHaveClass(/is-organizing/);
   await expect(hand).toBeVisible();
   await expect(cards).toHaveCount(3);
@@ -114,7 +139,7 @@ test('vertical oferece mão e leitura, barra rotulada e mantém a sessão ao gir
   expect(current.players.find((player: { userId: number }) => player.userId === current.viewerId).hand.map((card: { id: string }) => card.id)).toEqual(before.players.find((player: { userId: number }) => player.userId === before.viewerId).hand.map((card: { id: string }) => card.id));
   await page.setViewportSize({ width: 393, height: 839 });
   await expect(cards).toHaveCount(3);
-  await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toBeVisible();
+  await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
   await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Registro', exact: true }).tap();
