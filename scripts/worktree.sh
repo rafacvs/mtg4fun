@@ -45,9 +45,9 @@ name=$2
   fail 'Use um nome com letras, números, hífens e underscores, começando com letra ou número.'
 branch="work/$name"
 target="$worktree_root/$name"
-project="mtg4fun-${name,,}"
-database="mtg4fun_${name//-/_}"
-database="${database,,}"
+lower_name=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
+project="mtg4fun-${lower_name}"
+database="mtg4fun_${lower_name//-/_}"
 [[ ${#database} -le 64 ]] || fail "O nome produz um banco maior que 64 caracteres."
 
 compose_at() (
