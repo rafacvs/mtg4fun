@@ -3,10 +3,11 @@ import { MatchLogCards } from './MatchLogCards';
 import { describeLogLine, groupLogTurns, isLogAdjustment, type LogEntry, type LogFilter } from './matchLogPresentation';
 import './match-log.css';
 
-export function MatchLog({ entries, visible, onPreview, onUnreadChange }: {
+export function MatchLog({ entries, visible, onPreview, onInspect, onUnreadChange }: {
   entries: LogEntry[];
   visible: boolean;
   onPreview: (id: string) => void;
+  onInspect: (id: string) => void;
   onUnreadChange: (unread: boolean) => void;
 }) {
   const [filter, setFilter] = useState<LogFilter>('game');
@@ -30,7 +31,7 @@ export function MatchLog({ entries, visible, onPreview, onUnreadChange }: {
     }}>
       {turns.map((turn, index) => <details className="log-turn" key={turn.number} open={index === 0}>
         <summary aria-label={`Turno ${turn.number}`}><strong>Turno {turn.number}</strong><span>{index === 0 ? 'Atual' : 'Anterior'} · {turn.lines.length} registro(s)</span></summary>
-        <ol>{turn.lines.map(line => <li key={line.index}>{describeLogLine(line)}<MatchLogCards cards={line.entry.cards} onPreview={onPreview} /></li>)}</ol>
+        <ol>{turn.lines.map(line => <li key={line.index}>{describeLogLine(line)}<MatchLogCards cards={line.entry.cards} onPreview={onPreview} onInspect={onInspect} /></li>)}</ol>
         {!turn.lines.length && <p className="log-empty">Nenhuma ação neste filtro.</p>}
       </details>)}
     </div>

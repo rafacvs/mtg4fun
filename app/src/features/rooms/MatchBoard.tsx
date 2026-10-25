@@ -185,7 +185,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
       void setTapped(ids, !card.tapped);
     },
-    onInspect: (card, additive) => { if (!drag) { if (portrait && !selecting && !additive) setPreviewId(card.id); setHoverCardId(card.id); setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
+    onInspect: (card, additive) => { if (!drag) { setHoverCardId(card.id); if (card.controllerId !== match?.viewerId || (portrait && !selecting && !additive)) { setPreviewId(card.id); return; } setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
     onOpenMenu: card => { setSelectionIds(current => current.includes(card.id) ? current : [card.id]); setCardMenuId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
@@ -333,7 +333,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
               <MatchLog entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
                 const card = findCard(match, id);
-                if (card) gesture.onPreview?.(card);
+                if (card) setHoverCardId(card.id);
+              }} onInspect={id => {
+                const card = findCard(match, id);
+                if (card) setPreviewId(card.id);
               }} />
             </div>
           </section>
