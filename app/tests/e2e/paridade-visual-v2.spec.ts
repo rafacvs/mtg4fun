@@ -52,6 +52,9 @@ test('produz o comparativo inicial de cada prancha com uma partida real descart√
     // The acceptance evidence must include an actual complete card, fetched by
     // the public image endpoint.  Do not route this request to a placeholder:
     // a failed source is an acceptance failure, not a reason to fake artwork.
+    const imageResponse = await page.request.get('/api/cards/image?name=Island');
+    expect(imageResponse.ok(), await imageResponse.text()).toBe(true);
+    expect(imageResponse.headers()['content-type']).toMatch(/^image\//);
     const hand = page.getByRole('region', { name: 'M√£o', exact: true });
     const islandImage = hand.getByRole('button', { name: 'Island', exact: true }).first().locator('img');
     await expect(islandImage).toHaveAttribute('src', /\/api\/cards\/image\?/);
