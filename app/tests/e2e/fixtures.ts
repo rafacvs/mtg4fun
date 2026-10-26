@@ -64,6 +64,12 @@ export { expect };
 // The panels are controlled by their own tabs; compact screens show one at a time.
 export async function openMatchRail(page: Page, panel = 'Jogadores') {
   await expect(page.locator('.own-dock')).toBeAttached();
+  if ((page.viewportSize()?.width ?? 1280) > 1000 && panel === 'Registro') {
+    const chronicle = page.getByRole('button', { name: 'Abrir crônica', exact: true });
+    await expect(chronicle).toBeVisible();
+    await chronicle.click();
+    return;
+  }
   if ((page.viewportSize()?.width ?? 1280) <= 1000 && !await page.locator('#match-rail').isVisible()) {
     await openQuickActions(page);
     await page.getByRole('button', { name: 'Informações', exact: true }).click();
@@ -74,6 +80,11 @@ export async function openMatchRail(page: Page, panel = 'Jogadores') {
 }
 
 export async function closeMatchRail(page: Page) {
+  if ((page.viewportSize()?.width ?? 1280) > 1000) {
+    const chronicle = page.getByRole('button', { name: 'Fechar crônica', exact: true });
+    if (await chronicle.isVisible()) await chronicle.click();
+    return;
+  }
   if ((page.viewportSize()?.width ?? 1280) <= 1000) {
     const close = page.getByRole('button', { name: 'Fechar informações', exact: true });
     if (await close.isVisible()) await close.click();
