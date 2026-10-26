@@ -77,15 +77,15 @@ export function writeV2ComparisonReport(outputDirectory: string, applicationCapt
   });
   const report = {
     reference: { commit: referenceCommit, path: referencePath },
-    status: 'diagnóstico inicial — não é alegação de paridade nem aceite visual',
+    status: 'captura técnica atual — aguardando comparação e aceite visual explícito do usuário',
     rows,
     differences: [
-      'As capturas da aplicação são diagnóstico do estado anterior ao redesign; não são baseline de aceitação.',
-      'Composição, fundos, trilhos, mão, foco, leitura e superfícies móveis ainda precisam ser comparados visualmente com a prancha V2 correspondente.',
-      'As exceções aprovadas (campo manual, carta inteira, dados reais e adaptação de 2–6 participantes) não tornam outras diferenças aceitáveis.',
+      'Cada par deve ser revisado contra a prancha V2 correspondente; esta execução não declara paridade nem aceite visual.',
+      'Somente campo manual, carta inteira, dados reais e adaptação de 2–6 participantes são exceções aprovadas. Qualquer outra diferença é defeito a corrigir.',
+      'A evidência funcional exige imagem completa obtida pelo endpoint público; indisponibilidade não pode ser substituída por placeholder.',
     ],
   };
   writeFileSync(join(outputDirectory, 'comparativo-v2.json'), `${JSON.stringify(report, null, 2)}\n`);
-  const cards = rows.map(row => `<section><h2>${row.id} · ${row.title} (${row.viewport.width}×${row.viewport.height})</h2><div><figure><figcaption>HTML V2 — referência</figcaption><img src="${row.reference}" alt="Referência ${row.id}"></figure><figure><figcaption>Aplicação — diagnóstico</figcaption><img src="${row.application}" alt="Aplicação ${row.id}"></figure></div></section>`).join('\n');
-  writeFileSync(join(outputDirectory, 'comparativo-v2.html'), `<!doctype html><meta charset="utf-8"><title>Comparativo V2</title><style>body{font:16px system-ui;margin:2rem;background:#f5f4ef;color:#1f1e1d}section{margin:2rem 0;border-top:1px solid #bbb}div{display:flex;gap:1rem;align-items:start;overflow:auto}figure{margin:0;min-width:max-content}figcaption{font-weight:700;margin:.5rem 0}img{display:block;border:1px solid #777;max-width:none}</style><h1>Comparativo visual V2 — diagnóstico inicial</h1><p>Não é alegação de paridade nem aceite visual. A referência é renderizada do commit ${referenceCommit}.</p>${cards}`);
+  const cards = rows.map(row => `<section><h2>${row.id} · ${row.title} (${row.viewport.width}×${row.viewport.height})</h2><p>Revisar composição, medidas, tipografia, cores, playmat, molduras e controles. Estado: aguardando revisão visual humana.</p><div><figure><figcaption>HTML V2 — referência</figcaption><img src="${row.reference}" alt="Referência ${row.id}"></figure><figure><figcaption>Aplicação — captura desta execução</figcaption><img src="${row.application}" alt="Aplicação ${row.id}"></figure></div></section>`).join('\n');
+  writeFileSync(join(outputDirectory, 'comparativo-v2.html'), `<!doctype html><meta charset="utf-8"><title>Comparativo V2</title><style>body{font:16px system-ui;margin:2rem;background:#f5f4ef;color:#1f1e1d}section{margin:2rem 0;border-top:1px solid #bbb}div{display:flex;gap:1rem;align-items:start;overflow:auto}figure{margin:0;min-width:max-content}figcaption{font-weight:700;margin:.5rem 0}img{display:block;border:1px solid #777;max-width:none}</style><h1>Comparativo visual V2 — captura técnica atual</h1><p>Não declara paridade nem aceite visual. A referência é renderizada do commit ${referenceCommit}; o aceite depende de revisão explícita do usuário.</p>${cards}`);
 }

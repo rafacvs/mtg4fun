@@ -4,7 +4,10 @@
 
 Requisitos aprovados explicitamente na conversa de 25/10/2026 e publicados na
 [issue 70](https://github.com/rafacvs/mtg4fun/issues/70), com `ready-for-agent`.
-A implementação corretiva e o aceite visual ainda estão pendentes.
+A implementação corretiva foi entregue tecnicamente na branch de integração
+da issue #70. O aceite visual explícito do usuário continua pendente na
+issue #81; ele não é substituído por testes automatizados nem pela revisão do
+agente.
 A fonte consolidada é a [spec de paridade](../specs/07-paridade-visual-v2.md);
 este registro documenta a autorização, sem duplicar todos os requisitos.
 
@@ -38,8 +41,9 @@ a uma suposta ausência completa de referências versionadas.
 
 Após Q9, o usuário pediu explicitamente transformar o refinamento em nova spec
 via to-spec no GitHub, enfatizando a referência do HTML para garantir paridade
-visual. Esse pedido autoriza a publicação, mas não é ordem de implementar a
-correção nem aprovação antecipada das telas que serão entregues.
+visual. Esse pedido autorizou a publicação dos requisitos, mas não constituiu
+aprovação antecipada das telas entregues. A aprovação visual permanece uma
+etapa humana posterior, registrada na issue #81.
 
 ## Relação com decisões anteriores
 

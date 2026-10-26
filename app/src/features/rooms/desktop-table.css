@@ -18,7 +18,6 @@
   .player-count-5, .player-count-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .player-count-5 .own-table-surface, .player-count-6 .own-table-surface { grid-column: 1; grid-row: 2; }
   .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1.35fr) minmax(0, 1fr); }
-  .desktop-fields.has-field-focus .focused-table-surface { grid-column: span 3; }
   .desktop-fields.has-field-focus .focused-table-surface { grid-column: 1 / -1; grid-row: 1; }
   .desktop-fields.has-field-focus .own-table-surface { grid-column: 1 / span 2; grid-row: 2; }
   .desktop-fields.has-field-focus .opponent-table-surface:not(.focused-table-surface) { grid-row: 2; }

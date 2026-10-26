@@ -35,14 +35,16 @@ O procedimento reproduzível é `npm --prefix app run capture:parity-v2`. Ele
 usa Playwright, a API pública e MySQL descartável, e grava os pares lado a
 lado em `app/test-results/`; a referência nunca é derivada da aplicação.
 
-Nesta entrega, em 25/10/2026, `npm --prefix app run build` passou. A captura
-integrada foi iniciada, mas não alcançou o navegador: o ambiente não possui
-Go nativo. Uma tentativa temporária de compilação no contêiner `golang:1.26`
-produziu binário Linux, que o macOS recusou antes da API iniciar (`ENOEXEC`).
-Portanto não há capturas novas nem resultado funcional a declarar. Isso não
-é evidência de falha ou sucesso da interface; é uma limitação de ambiente.
+Nesta entrega, em 25/10/2026, `npm --prefix app run build` passou e o fluxo
+com API Go e MySQL descartável alcançou o navegador. A preparação da matriz
+de 2–6 participantes registrou geral/foco nos três viewports e 1366×768.
+Porém `npm --prefix app run capture:parity-v2` ainda falha corretamente na
+evidência obrigatória de imagem completa: a carta `Island` chega à mão sem um
+`img` carregado pelo endpoint público e a interface mostra “Sem imagem”. Não
+foi usado placeholder nem a falha foi mascarada; por isso não há pares finais
+nem resultado funcional de aceite a declarar.
 
-Quando um Go nativo estiver disponível, executar o comando acima, anexar os
-nove pares e a captura 1366×768 ao PR, comparar os estados de 2–6 e solicitar
-a revisão visual explícita do usuário. Até essa manifestação, #81 e #70
+Depois de restaurar a imagem pública, executar o comando acima, anexar os nove
+pares e a captura 1366×768 ao PR, comparar os estados de 2–6 e solicitar a
+revisão visual explícita do usuário. Até essa manifestação, #81 e #70
 permanecem abertas.
