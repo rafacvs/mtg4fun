@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { APIRequestContext, BrowserContext } from '@playwright/test';
-import { test, expect, openMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, closeMatchRail, openMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import { captureV2ReferenceBoards, writeV2ComparisonReport } from './paridade-visual-v2';
 
 test('captura as nove pranchas V2 renderizadas nas dimens√µes publicadas', async ({ page }, testInfo) => {
@@ -84,7 +84,7 @@ test('produz o comparativo inicial de cada prancha com uma partida real descart√
     await openMatchRail(page, 'Registro');
     await expect(page.getByRole('region', { name: 'Registro da partida', exact: true })).toBeVisible();
     await capture('V4');
-    await page.getByRole('button', { name: 'Registro', exact: true }).click();
+    await closeMatchRail(page);
     await page.setViewportSize({ width: 844, height: 390 });
     await capture('V5');
     const landscapeFocus = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
