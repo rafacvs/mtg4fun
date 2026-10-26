@@ -14,7 +14,8 @@ A apresentação-alvo vigente da mesa é a
 [paridade visual com o protótipo V2](07-paridade-visual-v2.md), aprovada em
 25/10/2026 e publicada na [issue 70](https://github.com/rafacvs/mtg4fun/issues/70).
 **O HTML V2 é referência visual obrigatória, com as exceções explícitas da
-spec; a correção ainda não foi implementada.**
+spec. A implementação técnica está na branch de integração da issue #70; o
+aceite visual explícito do usuário continua pendente na issue #81.**
 
 A [nova experiência](05-nova-experiencia-da-mesa.md) registra a etapa anterior,
 seguida pela [spec da mesa V2 na issue 57](https://github.com/rafacvs/mtg4fun/issues/57),

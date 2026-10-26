@@ -23,22 +23,22 @@ As referências vêm diretamente do HTML V2 no commit imutável
 renderizar conteúdo de cada iframe, aguardar suas fontes ou gravar a captura;
 ela nunca cria uma referência a partir da aplicação.
 
-| Estado | Prancha | Viewport CSS | Cenário da aplicação no diagnóstico inicial |
+| Estado | Prancha | Viewport CSS | Cenário da aplicação capturado |
 | --- | --- | --- | --- |
 | V1 | Mesa em quadrantes · 4 jogadores | 1440×900 | Mesa de quatro recém-preparada. |
 | V2 | Foco · ampliar um oponente | 1440×900 | Foco de Segundo amigo. |
 | V3 | Leitura · prévia ao passar o mouse | 1440×900 | Hover na ficha do campo próprio. |
 | V4 | Crônica aberta · grade se ajusta | 1440×900 | Registro aberto. |
 | V5 | Celular horizontal · quatro campos | 844×390 | Mesa de quatro no horizontal. |
-| V6 | Celular horizontal · foco em um oponente | 844×390 | Diagnóstico da ausência da composição de foco V2 antes da issue responsável. |
+| V6 | Celular horizontal · foco em um oponente | 844×390 | Foco por toque em Segundo amigo. |
 | V7 | Celular vertical · faixas e carta selecionada | 390×844 | Carta da mão própria selecionada. |
-| V8 | Celular vertical · faixa expandida | 390×844 | Diagnóstico da ausência da faixa expandida V2 antes da issue responsável. |
-| V9 | Celular vertical · ler carta de oponente | 390×844 | Diagnóstico da ausência do painel V2 antes da issue responsável. |
+| V8 | Celular vertical · faixa expandida | 390×844 | Faixa de Segundo amigo ampliada por toque. |
+| V9 | Celular vertical · ler carta de oponente | 390×844 | Painel inferior aberto ao tocar ficha adversária. |
 
-O relatório identifica a referência e o resultado lado a lado. As capturas de
-V6, V8 e V9 registram deliberadamente a lacuna atual, sem fabricar estados ou
-chamar isso de equivalência. As issues posteriores devem executar de novo o
-comando e atualizar a evidência observada, relacionando apenas as exceções
-aprovadas a diferenças remanescentes. A tela em 1366×768 continua coberta
-pelos fluxos Playwright existentes de mesa desktop; ela não substitui os três
-viewports de referência acima.
+O relatório identifica a referência e a captura da execução lado a lado; ele
+nunca declara equivalência nem aceite. O mesmo fluxo registra geral e foco de
+2–6 participantes nos três viewports, além da adaptação desktop em 1366×768.
+O revisor precisa relacionar cada diferença somente às exceções aprovadas ou
+tratá-la como defeito. A imagem completa de uma carta deve carregar pelo
+endpoint público: se a fonte externa estiver indisponível, o teste falha e
+nenhuma captura parcial conta como evidência final.
