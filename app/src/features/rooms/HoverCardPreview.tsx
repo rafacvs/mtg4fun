@@ -23,12 +23,12 @@ export function CardHoverZoom({ card }: { card: Card }) {
       setSide(box.left + box.width / 2 < window.innerWidth / 2 ? 'right' : 'left');
     }
   }, [card.id]);
-  return <div className={`card-hover-zoom card-hover-zoom-${side}`} aria-hidden="true">
+  return <section className={`card-hover-zoom card-hover-zoom-${side}`} aria-label="Prévia da carta">
     {!card.name ? <p>Face para baixo</p>
       : failed || !image ? <p>{card.name}</p>
         : <img src={image} alt="" draggable={false} onError={() => setFailed(true)} />}
-    {card.name && <p>{card.name}</p>}
-  </div>;
+    {card.name && <h2>{card.name}</h2>}
+  </section>;
 }
 
 function HoverImage({ image, card }: { image: string; card: Card }) {
