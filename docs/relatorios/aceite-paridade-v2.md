@@ -29,22 +29,37 @@ o revisor deve registrar composição, medidas, fontes, cores, playmat,
 molduras, controles e toda diferença; diferenças fora das exceções acima são
 defeitos, não calibração futura.
 
-## Procedimento e execução desta entrega
+## Procedimento reproduzível
 
 O procedimento reproduzível é `npm --prefix app run capture:parity-v2`. Ele
 usa Playwright, a API pública e MySQL descartável, e grava os pares lado a
 lado em `app/test-results/`; a referência nunca é derivada da aplicação.
+Depois da execução, abrir o arquivo
+`app/test-results/**/comparativo-v2.html` para revisar os nove pares. Os
+diretórios de resultado são ignorados pelo Git:
+o revisor os gera localmente pelo mesmo comando, sem depender de credenciais,
+sala ou banco principal.
 
-Nesta entrega, em 25/10/2026, `npm --prefix app run build` passou e o fluxo
-com API Go e MySQL descartável alcançou o navegador. A preparação da matriz
-de 2–6 participantes registrou geral/foco nos três viewports e 1366×768.
-Porém `npm --prefix app run capture:parity-v2` ainda falha corretamente na
-evidência obrigatória de imagem completa: a carta `Island` chega à mão sem um
-`img` carregado pelo endpoint público e a interface mostra “Sem imagem”. Não
-foi usado placeholder nem a falha foi mascarada; por isso não há pares finais
-nem resultado funcional de aceite a declarar.
+## Execução técnica registrada
 
-Depois de restaurar a imagem pública, executar o comando acima, anexar os nove
-pares e a captura 1366×768 ao PR, comparar os estados de 2–6 e solicitar a
-revisão visual explícita do usuário. Até essa manifestação, #81 e #70
-permanecem abertas.
+Em 26/10/2026, na branch de integração, `npm --prefix app run
+capture:parity-v2` passou: três testes Playwright em 43,5 segundos, com
+navegador, API Go e MySQL descartável reais. A execução produziu:
+
+- nove referências HTML V2 e nove capturas da aplicação, mais a captura
+  desktop de 1366×768;
+- `comparativo-v2.html` e `comparativo-v2.json` lado a lado para V1–V9;
+- 35 capturas da matriz de geral/foco de 2–6 participantes: desktop,
+  horizontal e vertical, mais 1366×768 para cada quantidade de jogadores.
+
+A carta `Island` foi carregada pelo endpoint público como `image/jpeg`; não
+houve placeholder. Esse resultado prova que o procedimento e as fronteiras
+funcionais executaram. Ele não é uma declaração de paridade: o revisor ainda
+precisa comparar composição, medidas, tipografia, cores, playmats, molduras e
+controles em cada par, distinguindo somente as exceções aprovadas.
+
+## Próximo gate
+
+Solicitar a revisão visual explícita do usuário sobre os comparativos gerados.
+Até essa manifestação, #81 e #70 permanecem abertas; esta documentação não
+declara aprovação nem autoriza merge automático.
