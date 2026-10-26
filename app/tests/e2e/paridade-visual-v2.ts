@@ -23,6 +23,30 @@ export const v2Boards = [
 
 type Board = typeof v2Boards[number];
 
+const visualReviewPending = {
+  composition: 'Aguardando revisão visual humana.',
+  measures: 'Aguardando revisão visual humana.',
+  typography: 'Aguardando revisão visual humana.',
+  colors: 'Aguardando revisão visual humana.',
+  playmat: 'Aguardando revisão visual humana.',
+  frames: 'Aguardando revisão visual humana.',
+  controls: 'Aguardando revisão visual humana.',
+  differences: 'Aguardando revisão visual humana.',
+  exceptionJustification: 'Aguardando revisão visual humana.',
+} as const;
+
+const reviewLabels: ReadonlyArray<[keyof typeof visualReviewPending, string]> = [
+  ['composition', 'Composição'],
+  ['measures', 'Medidas'],
+  ['typography', 'Tipografia'],
+  ['colors', 'Cores'],
+  ['playmat', 'Playmat'],
+  ['frames', 'Molduras'],
+  ['controls', 'Controles'],
+  ['differences', 'Diferenças'],
+  ['exceptionJustification', 'Justificativa de exceção'],
+];
+
 function referenceHTML() {
   return execFileSync('git', ['show', `${referenceCommit}:${referencePath}`], {
     cwd: repositoryRoot,
@@ -73,7 +97,7 @@ export function writeV2ComparisonReport(outputDirectory: string, applicationCapt
     const reference = safeName(id);
     const application = applicationCaptures.get(id);
     if (!application) throw new Error(`Falta a captura da aplicação para ${id}.`);
-    return { id, title, viewport, reference, application };
+    return { id, title, viewport, reference, application, visualReview: visualReviewPending };
   });
   const report = {
     reference: { commit: referenceCommit, path: referencePath },
@@ -86,6 +110,9 @@ export function writeV2ComparisonReport(outputDirectory: string, applicationCapt
     ],
   };
   writeFileSync(join(outputDirectory, 'comparativo-v2.json'), `${JSON.stringify(report, null, 2)}\n`);
-  const cards = rows.map(row => `<section><h2>${row.id} · ${row.title} (${row.viewport.width}×${row.viewport.height})</h2><p>Revisar composição, medidas, tipografia, cores, playmat, molduras e controles. Estado: aguardando revisão visual humana.</p><div><figure><figcaption>HTML V2 — referência</figcaption><img src="${row.reference}" alt="Referência ${row.id}"></figure><figure><figcaption>Aplicação — captura desta execução</figcaption><img src="${row.application}" alt="Aplicação ${row.id}"></figure></div></section>`).join('\n');
+  const cards = rows.map(row => {
+    const review = reviewLabels.map(([field, label]) => `<dt>${label}</dt><dd>${row.visualReview[field]}</dd>`).join('');
+    return `<section><h2>${row.id} · ${row.title} (${row.viewport.width}×${row.viewport.height})</h2><p>Estado técnico: capturado com navegador, API pública e banco descartável. A avaliação visual permanece humana.</p><dl>${review}</dl><div><figure><figcaption>HTML V2 — referência</figcaption><img src="${row.reference}" alt="Referência ${row.id}"></figure><figure><figcaption>Aplicação — captura desta execução</figcaption><img src="${row.application}" alt="Aplicação ${row.id}"></figure></div></section>`;
+  }).join('\n');
   writeFileSync(join(outputDirectory, 'comparativo-v2.html'), `<!doctype html><meta charset="utf-8"><title>Comparativo V2</title><style>body{font:16px system-ui;margin:2rem;background:#f5f4ef;color:#1f1e1d}section{margin:2rem 0;border-top:1px solid #bbb}div{display:flex;gap:1rem;align-items:start;overflow:auto}figure{margin:0;min-width:max-content}figcaption{font-weight:700;margin:.5rem 0}img{display:block;border:1px solid #777;max-width:none}</style><h1>Comparativo visual V2 — captura técnica atual</h1><p>Não declara paridade nem aceite visual. A referência é renderizada do commit ${referenceCommit}; o aceite depende de revisão explícita do usuário.</p>${cards}`);
 }

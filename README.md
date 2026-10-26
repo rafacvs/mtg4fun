@@ -101,12 +101,14 @@ empilhados no canto inferior direito do campo. O botão de ampliar no cabeçalho
 alterna entre campo em foco e visão geral. Ao observar um oponente, **Minha
 mesa** retorna ao seu campo em foco. Clicar em **Ver campo** do jogador já
 focado na lateral também retorna à visão geral.
-**Prévia**, **Jogadores** e **Registro** têm abas próprias para expandir ou
-recolher cada painel. Em telas compactas, as abas ficam acima do campo e abrem
-um painel por vez sobre a mesa. A coluna tem rolagem própria, com prévia e
-lista completa de jogadores sem scroll interno. O registro mantém altura
-mínima para leitura e rolagem independente das entradas. Passar o mouse sobre uma carta mostra sua
-imagem ampliada quando a prévia está aberta.
+No desktop, passar o mouse sobre uma carta mostra uma prévia passiva no lado
+oposto do campo observado; ela não abre modal nem exige painel prévio. O botão
+**Abrir crônica** na barra superior abre o registro e reajusta a grade; o
+mesmo botão passa a **Fechar crônica**. Em telas compactas, **Prévia**,
+**Jogadores** e **Registro** são abas acima do campo e abrem um painel por vez
+sobre a mesa. A coluna compacta tem rolagem própria, com prévia e lista
+completa de jogadores sem scroll interno. O registro mantém altura mínima para
+leitura e rolagem independente das entradas.
 Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
 por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas
 antigas sem referência de carta continuam como texto.

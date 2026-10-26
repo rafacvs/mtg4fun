@@ -54,9 +54,29 @@ navegador, API Go e MySQL descartável reais. A execução produziu:
 
 A carta `Island` foi carregada pelo endpoint público como `image/jpeg`; não
 houve placeholder. Esse resultado prova que o procedimento e as fronteiras
-funcionais executaram. Ele não é uma declaração de paridade: o revisor ainda
-precisa comparar composição, medidas, tipografia, cores, playmats, molduras e
-controles em cada par, distinguindo somente as exceções aprovadas.
+funcionais executaram. Ele não é uma declaração de paridade: a avaliação dos
+atributos visuais abaixo permanece pendente do revisor humano.
+
+## Registro por prancha
+
+O `comparativo-v2.json` e o HTML lado a lado trazem, para cada prancha, estes
+mesmos nove campos. Eles começam como **aguardando revisão visual humana**:
+uma captura automatizada prova que o estado público foi alcançado, mas não
+declara que sua aparência é igual à referência. Ao revisar, registre a
+diferença observada ou uma das quatro exceções aprovadas; qualquer outra
+diferença é defeito.
+
+| ID | Evidência técnica gerada | Composição e medidas | Tipografia e cores | Playmat e molduras | Controles | Diferenças e exceções |
+| --- | --- | --- | --- | --- | --- | --- |
+| V1 | `v1-referencia-v2.png` × `v1-aplicacao-atual.png`; visão geral real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V2 | `v2-referencia-v2.png` × `v2-aplicacao-atual.png`; foco real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V3 | `v3-referencia-v2.png` × `v3-aplicacao-atual.png`; hover passivo real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V4 | `v4-referencia-v2.png` × `v4-aplicacao-atual.png`; crônica aberta real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V5 | `v5-referencia-v2.png` × `v5-aplicacao-atual.png`; horizontal real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V6 | `v6-referencia-v2.png` × `v6-aplicacao-atual.png`; foco horizontal real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V7 | `v7-referencia-v2.png` × `v7-aplicacao-atual.png`; seleção vertical real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V8 | `v8-referencia-v2.png` × `v8-aplicacao-atual.png`; foco vertical real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
+| V9 | `v9-referencia-v2.png` × `v9-aplicacao-atual.png`; leitura móvel real | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana | Aguardando revisão visual humana |
 
 ## Próximo gate
 
