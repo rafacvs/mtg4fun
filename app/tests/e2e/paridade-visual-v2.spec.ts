@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import type { APIRequestContext, BrowserContext } from '@playwright/test';
 import { test, expect, closeMatchRail, openMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import { captureV2ReferenceBoards, writeV2ComparisonReport } from './paridade-visual-v2';
@@ -111,6 +112,23 @@ test('produz o comparativo inicial de cada prancha com uma partida real descart�
     await expect(reading.getByRole('button', { name: 'Ver campo', exact: true })).toBeVisible();
     await capture('V9');
     writeV2ComparisonReport(testInfo.outputDir, captures);
+    const comparison = JSON.parse(readFileSync(testInfo.outputPath('comparativo-v2.json'), 'utf8')) as {
+      rows: Array<{ id: string; visualReview: Record<string, string> }>;
+    };
+    expect(comparison.rows).toHaveLength(9);
+    for (const row of comparison.rows) {
+      expect(row.visualReview).toMatchObject({
+        composition: 'Aguardando revis찾o visual humana.',
+        measures: 'Aguardando revis찾o visual humana.',
+        typography: 'Aguardando revis찾o visual humana.',
+        colors: 'Aguardando revis찾o visual humana.',
+        playmat: 'Aguardando revis찾o visual humana.',
+        frames: 'Aguardando revis찾o visual humana.',
+        controls: 'Aguardando revis찾o visual humana.',
+        differences: 'Aguardando revis찾o visual humana.',
+        exceptionJustification: 'Aguardando revis찾o visual humana.',
+      });
+    }
   } finally {
     await Promise.all(contexts.map(context => context.close()));
   }
