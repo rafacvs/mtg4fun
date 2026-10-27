@@ -68,7 +68,7 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 - Manter estado/snapshot final e log após encerramento. Não excluir automaticamente por decisão de finalizar.
 - Não foi exigida retenção de um snapshot histórico por ação; atualizar o snapshot recuperável e preservar o final atende ao requisito. Se versões forem adicionadas, não são obrigação desta primeira versão.
 - Encerramento é estado terminal para ações de jogo; conservação de dados não implica reabertura ou tela de histórico.
-- Reinício aprovado volta à preparação; os resultados aleatórios do novo início são persistidos como os demais estados.
+- Reinício da partida aprovado volta à preparação e arquiva snapshot e log da partida abandonada, conforme a [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md); os resultados aleatórios do novo início são persistidos como os demais estados. Encerramento continua na partida viva. Sem tela de histórico.
 
 ## Decisões de teste
 
@@ -85,7 +85,7 @@ Critérios observáveis:
 - Falha de persistência não gera confirmação de sucesso ou estado publicado como durável.
 - Estado e log são gravados atomicamente.
 - Controle antigo não consegue agir após nova conexão.
-- Reinício votado limpa estado de jogo conforme preparação; encerramento preserva snapshot/log e rejeita novas ações de jogo.
+- Reinício votado arquiva a partida abandonada e limpa o estado de jogo conforme preparação; encerramento preserva snapshot/log na partida viva e rejeita novas ações de jogo.
 - Salas distintas não interferem umas nas outras.
 - Upload/exclusão de deck e atualização de catálogo não corrompem partidas em andamento.
 

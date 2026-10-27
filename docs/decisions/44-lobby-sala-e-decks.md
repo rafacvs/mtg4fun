@@ -17,7 +17,9 @@ exemplos locais, identificados nos rótulos e na explicação do painel. Não
 envia esses campos: conserva `POST /api/rooms` com `{}`, nome automático,
 capacidade atual e criador sentado sem prontidão automática. A vida inicial
 continua vindo da configuração existente e o deck continua sendo confirmado
-na preparação. Não há compra inicial nem comandante automático.
+na preparação. Não há compra inicial nem comandante automático. Esse “não
+salvar” vale para a entrega visual da issue 44; o contrato novo está na
+[spec 06](../specs/06-preparacao-inicio-e-reinicio.md).
 
 Na biblioteca, nome, quantidade, disponibilidade no catálogo, lista e prévia
 continuam usando a API real. Comandante, cores, curva e tipos ficam numa

@@ -16,6 +16,12 @@ Ela substitui a apresentação da [mesa](02-mesa-e-interface.md) e a direção
 visual do [refinamento premium](04-refinamento-ui-mesa.md). As regras de jogo
 da mesa permanecem, com a consulta do grimório redefinida na spec nova.
 
+A [preparação, o início e o reinício](06-preparacao-inicio-e-reinicio.md),
+aprovados em 24/10/2026, passam a valer sobre criação da sala, prontidão,
+compra inicial, comandante do deck e reinício votado. Substitui a compra
+manual e a escolha de comandante pelo grimório da spec de acesso, e o
+exemplo não salvo da nova experiência para esses campos.
+
 ## Objetivo e direção
 
 Criar uma aplicação web própria para jogar Magic online entre amigos que conhecem o jogo, reduzindo as dificuldades da interface do Cockatrice. O resultado esperado é código organizado e mantível e partidas efetivamente jogáveis.
@@ -40,6 +46,11 @@ Preferir menos componentes, camadas, dependências e código, desde que os compo
 - **Catálogo:** dataset compartilhado de cartas e fichas.
 - **Snapshot:** representação completa e durável do estado da partida.
 - **Log:** registro de ações, com informações filtradas conforme visibilidade.
+- **Formato da sala:** rótulo Commander, Livre ou Duelo. Não é regra de jogo.
+- **Comandante:** carta do deck escolhida pelo dono na biblioteca. No início,
+  se ainda estiver no grimório, vai à zona de comando.
+- **Arquivo de partida:** snapshot e log de uma partida substituída por
+  reinício. Não há tela nem replay nesta versão.
 
 ## Decisões técnicas ainda abertas
 
@@ -60,4 +71,6 @@ As fronteiras de teste descritas são propostas da síntese original, quando ain
 
 Motor de regras, validação de formatos/decks, fases, editor de decks, sideboard na mesa, espectadores, cadastro público, administração web, recuperação por e-mail, voz/chat de conversa integrados, desfazer genérico, compatibilidade com Servatrice e interface de histórico/replay.
 
-Manter snapshots e logs de partidas encerradas é obrigatório; isso não implica oferecer navegação por histórico nem manter uma versão de snapshot para cada ação.
+Manter snapshots e logs de partidas encerradas é obrigatório; o reinício
+aprovado arquiva a partida abandonada. Isso não implica oferecer navegação
+por histórico nem manter uma versão de snapshot para cada ação.

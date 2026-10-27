@@ -107,8 +107,9 @@ poder/resistência continuam editáveis como no
 - Reinício exige unanimidade de todos os participantes, inclusive desconectados quando retornarem.
 - No reinício, uma recusa encerra a proposta; proponente pode cancelar. Partida continua enquanto aguarda.
 - Não há aprovação automática por tempo nem exceção para desconectados; partida pode aguardar indefinidamente.
-- Reinício aprovado volta à preparação, mantendo participantes e decks selecionados, permitindo troca.
-- Novo início limpa mesa e contadores, restaura vida inicial, carrega/embaralha decks e sorteia novamente a ordem.
+- Reinício aprovado volta à preparação de verdade, mantendo participantes e decks selecionados, ninguém pronto, permitindo sair e ocupar vaga, conforme a [preparação, início e reinício](06-preparacao-inicio-e-reinicio.md).
+- Novo início limpa mesa e contadores, restaura a vida daquela sala, carrega/embaralha decks, põe o comandante no comando quando houver, compra sete e sorteia novamente a ordem.
+- Reinício e finalizar não convivem. A partida abandonada vai para o arquivo; a mesa atual não a devolve. Sem tela de histórico.
 - Qualquer participante pode solicitar encerramento pelo botão **Finalizar**, com destaque discreto em vermelho na barra superior. Confirmar registra concordância; pelo menos metade dos participantes, arredondando para cima, encerra a partida e fecha a sala. Uma pessoa sozinha pode confirmar e encerrar. A sala sai do lobby e todos voltam ao lobby, preservando snapshot e log. Votos persistem e a partida continua enquanto faltam concordâncias. Detalhes e autorização: [decisão de encerramento](../decisions/24-finalizar-partida.md); apresentação refinada na [decisão 28](../decisions/28-ui-mesa-responsiva.md).
 
 ## Decisões de teste
@@ -127,7 +128,7 @@ Critérios observáveis:
 - Controle transferido altera quem pode manipular; dono original permanece.
 - Sorteio resolve empates somente entre empatados. Usar aleatoriedade controlável no teste sem impor mecanismo público de manipulação dos resultados.
 - Turno não bloqueia jogadas; correções aparecem no log.
-- Reinício não conclui sem o voto de desconectados; recusa/cancelamento encerra a proposta; unanimidade reinicia corretamente. Encerramento exige metade dos participantes, incluindo os desconectados no total, e preserva estado/log ao fechar a sala.
+- Reinício não conclui sem o voto de desconectados; recusa/cancelamento encerra a proposta; unanimidade arquiva a partida abandonada e volta à preparação. Encerramento exige metade dos participantes, incluindo os desconectados no total, e preserva estado/log ao fechar a sala. Reinício e finalizar não convivem.
 
 Testar comportamento observável, evitando snapshots de CSS ou testes que apenas repitam cálculos internos de layout.
 
@@ -138,3 +139,5 @@ Motor de regras, formatos, fases, agrupamento permanente de cartas, desfazer gen
 ## Notas adicionais
 
 A UI deve servir a quem conhece Magic, mas não o Cockatrice. Não inclui tutorial de regras. A apresentação vigente é a [nova experiência](05-nova-experiencia-da-mesa.md). O desfazer genérico continua fora desta spec e está registrado na issue 37.
+A compra inicial, o comandante do deck e o reinício votado estão na
+[preparação, início e reinício](06-preparacao-inicio-e-reinicio.md).
