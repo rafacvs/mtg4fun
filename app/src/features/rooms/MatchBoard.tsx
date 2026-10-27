@@ -86,6 +86,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       setCompact(media.matches);
       setCommandsOpen(false); setInformationOpen(false);
       if (media.matches) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
+      else { setFocusId(null); setOverview(false); }
     };
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
@@ -274,6 +275,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       <div className="table-toolbar">
         <div className="toolbar-leading"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><button className="secondary selection-mode" aria-pressed={selecting} onClick={() => setSelecting(value => !value)}>Selecionar</button><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span></div>
         <div className="toolbar-trailing">
+          {compact && !overview && ownHidden && <button className="secondary mobile-own-field" aria-label="Voltar para meu campo" title="Voltar para meu campo" onClick={() => { setFocusId(match.viewerId); setOverview(false); }}><TableIcon name="back" /></button>}
+          {compact && <button className="secondary mobile-view-toggle" aria-label={overview ? 'Voltar para meu campo' : 'Abrir visão geral'} title={overview ? 'Voltar para meu campo' : 'Abrir visão geral'} onClick={() => { if (overview) { setFocusId(match.viewerId); setOverview(false); } else showOverview(); }}><TableIcon name={overview ? 'focus' : 'grid'} /></button>}
           <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
           <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
           {!compact && <button className="secondary chronicle-toggle" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => setLogOpen(value => !value)}>{logOpen ? 'Fechar crônica' : 'Abrir crônica'}</button>}
@@ -286,9 +289,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={focusId} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : null} focusEnabled={compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onCounter={counter} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
-            <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Mão · {own.handCount}</span></div>
+            <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small>{own.handCount} cartas</small></span></div>
             <div id="own-dock-content" className="dock-content">
               {!compact && quickActions}
               <OwnHand scrollAxis={portrait ? 'y' : 'x'} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />

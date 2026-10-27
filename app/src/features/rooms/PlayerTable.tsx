@@ -81,8 +81,8 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
 
 export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, disabled }: ZoneProps) {
   return <div className="zone-column">
+    <span className="rail-hand-count" aria-label={`Mão: ${player.handCount} cartas`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><rect x="4" y="5" width="10" height="14" rx="1.5" /><path d="M10 5l7 1.5a2 2 0 0 1 1.5 2.4L16 19" /></svg>{player.handCount}</span>
     <CardSlot zone="command" title="Comandante" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
-    {player.consulting && <span role="status" className="library-consulting">Consultando o grimório</span>}
     <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
     <CardSlot zone="graveyard" title="Cemitério" count={player.graveyardCount} card={topCard(player.graveyard)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <CardSlot zone="exile" title="Exílio" count={player.exileCount} card={topCard(player.exile)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
