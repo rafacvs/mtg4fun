@@ -102,7 +102,13 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
       suppressClick.current = true;
       stopTracking.current?.();
     };
+    const secondTouch = (pointer: PointerEvent) => {
+      if (pointer.pointerType !== 'touch' || pointer.pointerId === pointerId) return;
+      suppressClick.current = true;
+      stopTracking.current?.();
+    };
     const cleanup = () => {
+      window.removeEventListener('pointerdown', secondTouch);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
@@ -115,6 +121,7 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
       dragging.current = false;
     };
     window.addEventListener('pointermove', move);
+    window.addEventListener('pointerdown', secondTouch);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', cancel);
   }

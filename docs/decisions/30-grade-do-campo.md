@@ -1,5 +1,16 @@
 # Grade do campo de batalha
 
+## Restauração solicitada pelo usuário
+
+Em 27/10/2026, o usuário relatou que a compactação e o encaixe automático
+introduzidos após a grade prejudicaram a organização manual. Pediu recuperar
+as fileiras invisíveis e as colunas que acomodam cartas em pé, viradas e pilhas
+de até três, com crescimento do campo. Pediu zoom pela roda no desktop e
+pinça no celular, independente para cada campo, e um botão para enquadrar
+todas as cartas. Essa orientação substitui o encaixe automático da spec de
+paridade visual. Zoom e enquadramento são locais ao observador; não alteram
+posições salvas nem regras ou dados da partida.
+
 ## Proposta e aprovação explícita
 
 Em 20/10/2026, nesta conversa, o usuário pediu corrigir o posicionamento das

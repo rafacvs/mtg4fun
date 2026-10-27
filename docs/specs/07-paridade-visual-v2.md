@@ -9,6 +9,9 @@ foco desktop e a distribuição de três jogadores, seguem a
 que prevalece sobre as descrições e capturas V2 conflitantes abaixo. O restante
 da referência visual continua aplicável; a nova composição ainda requer revisão.
 
+O usuário também substituiu o encaixe automático do campo por grade manual e
+zoom independente por campo; veja a [decisão da grade](../decisions/30-grade-do-campo.md#restauração-solicitada-pelo-usuário).
+
 ## Problem Statement
 
 Após a entrega da issue [57](https://github.com/rafacvs/mtg4fun/issues/57) e

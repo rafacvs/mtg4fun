@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
-import { projectBattlefield } from './battlefieldLayout';
+import { useFieldViewport } from './useFieldViewport';
 import { createLibraryGesture } from './libraryGesture';
-import { OpponentField } from './OpponentField';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
 import { TableIcon, type TableIconName } from './TableIcon';
@@ -71,7 +70,7 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
         <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
-        {seat && !own ? <OpponentField player={player} gesture={gesture} /> : <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />}
+        <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />
       </div>
       {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
       {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
@@ -91,37 +90,20 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, on
 
 function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps & { fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void }) {
   const cards = player.battlefield ?? [];
-  const fieldRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState({ width: 0, height: 0, cardWidth: 76 });
-  const layout = projectBattlefield(cards).layout;
-  useEffect(() => {
-    const node = fieldRef.current;
-    if (!node) return;
-    const measure = () => setVisible({
-      width: node.clientWidth,
-      height: node.clientHeight,
-      cardWidth: Number.parseFloat(getComputedStyle(node).getPropertyValue('--card-width')) || 76,
-    });
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-  const scale = visible.width && visible.height && layout.width && layout.height
-    ? Math.min(1, visible.width / (layout.width * visible.cardWidth), visible.height / (layout.height * visible.cardWidth))
-    : 1;
+  const { ref, layout, zoom, center } = useFieldViewport(cards, gesture.onDragCancel);
   return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
     <header>
       <span>Campo</span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
     </header>
-    <div className="battlefield-fit" ref={fieldRef}>
-      <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': scale } as CSSProperties}>
-        <BattlefieldCanvas cards={cards} zoom={scale} enabled={droppable} onSelectArea={gesture.onSelectArea}>
+    <button type="button" className="field-center secondary" aria-label={`Centralizar campo de ${player.name}`} title="Mostrar todas as cartas" onClick={center}><TableIcon name="focus" /></button>
+    <div className="battlefield-fit battlefield-scroll" ref={ref}>
+      <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': zoom } as CSSProperties}>
+        <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
           {cards.map(card => {
             const place = layout.cards.get(card.id);
             if (!place) return null;
-            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={place.size} style={{ left: `calc(${place.x} * var(--card-width))`, top: `calc(${place.y} * var(--card-width))`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={canDrag(card, viewerId)} selected={gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
+            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={place.size} style={{ left: `calc(${place.x} * var(--card-width))`, top: `calc(${place.y} * var(--card-width))`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={droppable && canDrag(card, viewerId)} selected={gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
           })}
         </BattlefieldCanvas>
       </div>

@@ -450,9 +450,8 @@ function locateBattlefieldCell(x: number, y: number, cards: Card[]) {
   for (const element of document.elementsFromPoint(x, y)) {
     const canvas = element.closest<HTMLElement>('[data-battlefield-canvas]');
     if (!canvas) continue;
-    const { projection, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
-    const cell = dropCell(projection.layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
-    return cell && projection.destination(cell.column, cell.row);
+    const { layout, cardWidth, zoom, box } = layoutFromCanvas(cards, canvas);
+    return dropCell(layout, (x - box.left) / zoom / cardWidth, (y - box.top) / zoom / cardWidth);
   }
   return null;
 }

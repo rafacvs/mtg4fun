@@ -139,6 +139,14 @@
 }
 
 .opponent-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); }
+.match-board .battlefield-fit.battlefield-scroll { display: block; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; }
+.match-board .battlefield-zoom-space { position: relative; }
+.match-board .field-center { position: absolute; right: 4px; top: 4px; z-index: 4; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 6px; border-radius: 4px; background: #0b0e10dd; }
+.match-board .field-center .table-icon { width: 16px; height: 16px; }
+@media (max-width: 1000px) {
+  .match-board .field-center { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .mobile-table .desktop-fields:not(.has-field-focus) .field-center { display: none; }
+}
 .opponent-canvas { position: relative; width: calc(var(--mat-width) * var(--card-width)); height: calc(var(--mat-height) * var(--card-width)); transform: scale(var(--mat-zoom)); transform-origin: 0 0; }
 
 .rail-hand-count { display: none; }

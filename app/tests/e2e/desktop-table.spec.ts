@@ -38,6 +38,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     await expect(opponents.getByRole('article')).toHaveCount(3);
     for (const name of ['Segundo amigo', 'Amigo 3', 'Amigo 4']) {
       const seat = opponents.getByRole('article', { name: `Mesa de ${name}`, exact: true });
+      await seat.getByRole('button', { name: `Centralizar campo de ${name}`, exact: true }).click();
       await expect(seat.getByRole('button', { name: 'Soldier Token', exact: true })).toBeInViewport();
       await expect(seat.getByLabel('Vida: 40')).toBeVisible();
       await expect(seat.getByRole('textbox', { name: 'Vida', exact: true })).toHaveCount(0);
@@ -109,6 +110,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     const consultation = await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'consult', intentId: randomUUID(), consultFrom: 'top', count: 2 } });
     expect(consultation.ok()).toBe(true);
     await expect(own.getByText('Consultando o grimório', { exact: true })).toBeVisible();
+    await own.getByRole('button', { name: 'Centralizar campo de Amigo da mesa', exact: true }).click();
     await expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
     await expect(own.getByText('Consultando o grimório', { exact: true })).toBeVisible();
     await expect(async () => {
