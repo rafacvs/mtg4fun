@@ -12,7 +12,7 @@ export function PlayerSeat({ player, own, turnPosition, currentTurn, focused, di
   return <header className="seat-heading">
     <span className="seat-number" title={`Posição na ordem do turno: ${turnPosition}`}>{turnPosition}</span>
     <div className="seat-name"><h2>{player.name}</h2><small>{own ? 'Você' : `Mão: ${player.handCount} · Privada`}</small>{player.consulting && <span role="status" className="seat-activity">Consultando o grimório</span>}{currentTurn && <span className="seat-turn" aria-label="Na vez">Vez</span>}</div>
-    {own ? <div className="seat-life" aria-label={`Vida: ${player.life}`}><span>Vida</span><NumericCounter label="vida" inputLabel="Vida" value={player.life} textual disabled={disabled} onApply={(operation, value) => onCounter({ target: 'player', playerId: player.userId, subject: 'life', operation, value })} /></div>
+    {own ? <div className="seat-life" aria-label={`Vida: ${player.life}`}><span>Vida</span><strong className="seat-life-mobile" aria-hidden="true">{player.life}</strong><NumericCounter label="vida" inputLabel="Vida" value={player.life} textual disabled={disabled} onApply={(operation, value) => onCounter({ target: 'player', playerId: player.userId, subject: 'life', operation, value })} /></div>
       : <strong className="seat-life-readout" aria-label={`Vida: ${player.life}`}>{player.life}</strong>}
     <button className="seat-markers secondary" aria-label={`Abrir jogador ${player.name}`} title="Vida e marcadores" onClick={event => onMenu(event.currentTarget)}>
       <MarkerReadout markers={player.markers} />

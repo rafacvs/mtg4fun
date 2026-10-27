@@ -447,7 +447,10 @@
 }
 /* Mobile: one focused field or a selectable overview; the dock remains visible. */
 @media (max-width: 1000px) {
-  .mobile-table .table-toolbar { height: 46px; min-height: 46px; }
+  .mobile-table .table-toolbar { height: 46px; min-height: 46px; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
+  .mobile-table .toolbar-leading, .mobile-table .toolbar-trailing { gap: 4px; }
+  .mobile-table .toolbar-leading a { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .mobile-table .table-toolbar button { min-height: 44px; }
   .mobile-table .mobile-own-field, .mobile-table .mobile-view-toggle { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 8px; border-radius: 4px; }
   .mobile-table .mobile-own-field .table-icon, .mobile-table .mobile-view-toggle .table-icon { width: 18px; height: 18px; }
   .mobile-table .desktop-fields:not(.has-field-focus) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 4px; overflow: hidden; }
@@ -465,4 +468,107 @@
   .mobile-table .desktop-fields.has-field-focus .focused-table-surface .zone-battlefield { --card-width: 76px; }
   .mobile-table .desktop-fields.has-field-focus .seat-focus { display: none; }
   .mobile-table .desktop-fields:not(.has-field-focus) .seat-focus { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .mobile-table .card-action-bar {
+    position: absolute; top: auto; left: 5px; right: 5px; width: auto; max-width: none;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px;
+    padding: 4px; overflow: visible; transform: none;
+  }
+  .mobile-table .card-action-bar > span { grid-column: 1 / -1; padding: 0 3px; font-size: 10px; }
+  .mobile-table .card-action-bar button { width: 100%; min-width: 0; min-height: 44px; padding: 3px; white-space: normal; font-size: 10px; line-height: 1.1; }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-table:has(.card-action-bar) .table-stage { padding-bottom: 242px; }
+  .mobile-table .card-action-bar { bottom: 118px; }
+  .mobile-table .own-dock .zone-cards {
+    display: flex; flex-wrap: nowrap; align-items: flex-start; align-content: normal;
+    overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x;
+    padding: 45px 5px 5px;
+  }
+  .mobile-table .own-dock .zone-hand > header { min-height: 44px; }
+  .mobile-table .own-dock .zone-hand .hand-organize { min-height: 44px; }
+  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: -22px; }
+  .mobile-table .zone-hand:not(.is-organizing) .playing-card { rotate: var(--fan-angle); transform-origin: center bottom; }
+}
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table:has(.card-action-bar) .table-stage { padding-bottom: 184px; }
+  .mobile-table .card-action-bar { bottom: 60px; }
+}
+@media (min-width: 500px) and (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table:has(.card-action-bar) .table-stage { padding-bottom: 120px; }
+  .mobile-table .card-action-bar { grid-template-columns: auto repeat(8, minmax(0, 1fr)); }
+  .mobile-table .card-action-bar > span { grid-column: auto; }
+}
+
+/* Focused fields reserve a narrow rail; its contents scroll independently. */
+@media (max-width: 1000px) {
+  .mobile-table .focused-table .seat-heading::before { width: 54px; }
+  .mobile-table .focused-table .seat-number { left: 18px; }
+  .mobile-table .focused-table .seat-name { left: 61px; }
+  .mobile-table .focused-table .seat-life,
+  .mobile-table .focused-table .seat-life-readout { top: 44px; left: 4px; width: 44px; height: 44px; line-height: 44px; text-align: center; }
+  .mobile-table .focused-table .seat-life > span,
+  .mobile-table .focused-table .seat-life .numeric-counter { display: none; }
+  .mobile-table .focused-table .seat-life-mobile { display: block; font: 700 20px/44px Cinzel, serif; }
+  .mobile-table .focused-table .seat-markers,
+  .mobile-table .focused-table .seat-markers:not(:has(.marker-dot)),
+  .mobile-table .focused-table .seat-markers:has(.marker-dot) {
+    top: 44px; left: 4px; width: 44px; height: 44px; min-height: 44px;
+    padding: 0; background: transparent; border: 0;
+  }
+  .mobile-table .focused-table .seat-markers .marker-dots { position: absolute; top: -36px; left: 0; max-width: 44px; }
+  .mobile-table .focused-table .zone-column,
+  .mobile-table .opponent-table-surface .focused-table .zone-column,
+  .mobile-table .own-table-surface .focused-table .zone-column {
+    top: 90px; left: 4px; width: 46px; max-height: calc(100% - 92px);
+    gap: 3px; overflow: auto; overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .mobile-table .focused-table .zone-column .card-slot,
+  .mobile-table .focused-table .zone-column .zone-library,
+  .mobile-table .focused-table .zone-column .zone-library .card-slot {
+    flex: 0 0 46px; width: 100%; height: 46px; min-height: 46px; line-height: 44px;
+  }
+  .mobile-table .focused-table .rail-hand-count { flex: 0 0 44px; height: 44px; line-height: 42px; }
+  .mobile-table .focused-table .zone-column .slot-label { line-height: 44px; }
+  .mobile-table .focused-table .zone-column .zone-count { top: 11px; right: 2px; font-size: 10px; }
+  .mobile-table .focused-table .zone-battlefield,
+  .mobile-table .own-table-surface .focused-table .zone-battlefield { margin-left: 54px; min-width: 0; overflow: hidden; }
+}
+
+/* The hand owns the bottom edge; game commands open from one floating button. */
+@media (max-width: 1000px) {
+  .mobile-table .own-dock { left: 5px; right: 5px; width: auto; }
+  .mobile-table .mobile-table-controls {
+    display: flex; left: auto; right: 8px; width: 44px; height: 44px;
+    min-height: 44px; padding: 0; border: 0; background: transparent;
+  }
+  .mobile-table .mobile-table-controls button,
+  .mobile-table .mobile-table-controls button:nth-child(1) {
+    flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px;
+    padding: 8px; color: #efe8d8; background: #10171bf2; border: 1px solid #a47d36aa;
+    border-radius: 6px; box-shadow: 0 4px 12px #0008;
+  }
+  .mobile-table .mobile-table-controls button .table-icon { width: 20px; height: 20px; flex-basis: 20px; }
+  .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands {
+    z-index: 30; right: 8px; width: min(300px, calc(100% - 16px)); display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 6px;
+  }
+  .mobile-table .mobile-commands .table-panel-header { grid-column: 1 / -1; }
+  .mobile-table .mobile-commands .quick-actions { display: contents; }
+  .mobile-table .mobile-commands > button,
+  .match-board .mobile-commands .quick-actions button {
+    width: 100%; min-width: 0; min-height: 44px; padding: 4px; gap: 3px;
+    justify-content: center; white-space: normal; font-size: 10px; line-height: 1.1;
+  }
+  .mobile-table .mobile-commands .quick-actions .table-icon { width: 14px; height: 14px; flex-basis: 14px; }
+  .mobile-table .mobile-commands > :not(button):not(.quick-actions):not(.table-panel-header) { grid-column: 1 / -1; }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-table .mobile-table-controls { bottom: 126px; }
+  .mobile-table:has(.card-action-bar) .mobile-table-controls { bottom: 249px; }
+  .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands { bottom: 126px; max-height: calc(100dvh - 174px); }
+}
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table .mobile-table-controls { bottom: 68px; }
+  .mobile-table:has(.card-action-bar) .mobile-table-controls { bottom: 128px; }
+  .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands { bottom: 68px; max-height: calc(100dvh - 116px); }
 }

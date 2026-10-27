@@ -98,3 +98,15 @@ o campo próprio ocupando a linha inferior. Para dois jogadores, são duas faixa
 horizontais de mesma área; para quatro, uma grade de campos iguais. O usuário
 decidiu remover o botão de ampliar no desktop. Essas decisões substituem as
 composições correspondentes da spec V2, sem alterar dados ou regras de jogo.
+
+## Revisão do mobile e do trilho
+
+Na revisão, o usuário pediu manter a tela principal fixa a partir de 320 px,
+com campo, mão e comandos acessíveis. Aprovou uma mão em leque com rolagem
+horizontal interna e um trilho com alvos de toque maiores e rolagem interna
+quando necessário. Depois pediu que a mão ocupe sozinha a faixa inferior e que
+comprar, desvirar, passar turno e demais comandos fiquem em um botão flutuante.
+Para preservar um trilho estreito, aprovou abrir os ajustes de vida no painel
+do jogador ao tocar na vida. Pediu ainda comandante acima do grimório, ícones
+maiores no desktop e remoção do atalho visual de fundo do grimório no campo;
+o destino continua disponível nas ações e nos destinos de arraste da carta.

@@ -156,6 +156,12 @@
 .desktop-table .zone-column .zone-command .playing-card img, .mobile-table .zone-column .zone-command .playing-card img { width: 11px; height: calc(100% - 2px); margin: 1px 0 1px 2px; object-fit: contain; }
 .zone-column .zone-command .playing-card .card-state-badges,
 .zone-column .zone-command .playing-card .card-stats { display: none; }
+.match-board .zone-column .card-slot.zone-command { order: 0; }
+.match-board .zone-column .zone-library .card-slot .slot-label::before,
+.match-board .zone-column .card-slot.zone-graveyard .slot-label::before,
+.match-board .zone-column .card-slot.zone-exile .slot-label::before { content: none; }
+.match-board .zone-column .slot-label .table-icon { width: 16px; height: 16px; vertical-align: middle; }
+.desktop-table .zone-column .rail-hand-count svg { width: 16px; height: 16px; }
 .desktop-table .zone-column .zone-command .slot-label, .mobile-table .zone-column .zone-command .slot-label { padding-left: 14px; }
 .mobile-table .zone-column .zone-command .slot-label { padding-right: 0; }
 .mobile-table .zone-column .zone-command .slot-label::before { font-size: 8px; }

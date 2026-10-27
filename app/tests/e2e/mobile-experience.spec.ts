@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Browser, Page, APIRequestContext } from '@playwright/test';
 
 async function prepare(page: Page, browser: Browser, baseURL?: string) {
@@ -78,17 +78,18 @@ test('celular horizontal mostra oponentes, campo e comandos próprios sem perder
   const dockTop = await hand.evaluate(node => node.getBoundingClientRect().top);
   expect(fieldBottom).toBeLessThanOrEqual(dockTop + 1);
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
-  await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
+  await openQuickActions(page);
+  await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(4);
   const previousTurn = (await (await page.request.get(path)).json()).match.currentTurn.userId;
-  await nav.getByRole('button', { name: 'Passar turno', exact: true }).tap();
+  await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Passar turno', exact: true }).tap();
   await expect.poll(async () => (await (await page.request.get(path)).json()).match.currentTurn.userId).not.toBe(previousTurn);
-  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await openQuickActions(page);
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Jogadores', exact: true }).tap();
   await page.getByRole('button', { name: /Ver campo de Segundo amigo/ }).tap();
   await expect(page.locator('.desktop-fields.has-field-focus')).toBeVisible();
-  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await openQuickActions(page);
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Jogadores', exact: true }).tap();
   await page.getByRole('button', { name: 'Ver campo de Segundo amigo', exact: true }).tap();
@@ -106,13 +107,15 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
   await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toBeHidden();
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
-  for (const label of ['Comprar', 'Desvirar', 'Passar turno', 'Mais']) {
-    const button = nav.getByRole('button', { name: label, exact: true });
+  await openQuickActions(page);
+  for (const label of ['Comprar', 'Desvirar todas', 'Passar turno', 'Ações']) {
+    const button = page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: label, exact: true });
     await expect(button).toBeVisible();
     const box = (await button.boundingBox())!;
     expect(box.width).toBeGreaterThanOrEqual(44);
     expect(box.height).toBeGreaterThanOrEqual(44);
   }
+  await closeQuickActions(page);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   const ids = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')));
@@ -129,8 +132,10 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   await play.tap();
   await expect(cards).toHaveCount(2);
   await preview.getByRole('button', { name: 'Fechar', exact: true }).tap();
-  await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
+  await openQuickActions(page);
+  await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(cards).toHaveCount(3);
+  await closeQuickActions(page);
   await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
   await expect(hand).toHaveClass(/is-organizing/);
   const before = (await (await page.request.get(path)).json()).match;
@@ -151,7 +156,7 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   await page.setViewportSize({ width: 393, height: 839 });
   await expect(cards).toHaveCount(3);
   await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
-  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await openQuickActions(page);
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Registro', exact: true }).tap();
   await expect(page.getByRole('group', { name: 'Filtrar registro', exact: true })).toBeVisible();
@@ -178,8 +183,10 @@ test('toque seleciona várias cartas e a mão horizontal é um leque navegável'
   await expect(field.locator('[aria-pressed="true"]')).toHaveCount(2);
   await bar.getByRole('button', { name: 'Virar', exact: true }).tap();
   await expect(field.locator('[aria-pressed="true"][data-tapped="true"]')).toHaveCount(2);
-  const draw = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Comprar', exact: true });
+  await openQuickActions(page);
+  const draw = page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true });
   await draw.tap();
+  await closeQuickActions(page);
   await expect(cards).toHaveCount(2);
   const firstAngle = await cards.first().evaluate(node => getComputedStyle(node).rotate);
   const lastAngle = await cards.last().evaluate(node => getComputedStyle(node).rotate);

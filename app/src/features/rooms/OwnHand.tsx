@@ -3,10 +3,11 @@ import type { Card } from './roomsApi';
 import type { CardGesture } from './PlayerTable';
 import { PlayingCard } from './PlayingCard';
 
-export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrollAxis = 'x' }: { scrollAxis?: 'x' | 'y'; cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
+export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrollAxis = 'x', orientation }: { scrollAxis?: 'x' | 'y'; orientation?: 'portrait' | 'landscape'; cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
   const row = useRef<HTMLDivElement>(null);
   const [organizing, setOrganizing] = useState(false);
   useEffect(() => { if (scrollAxis !== 'y') setOrganizing(false); }, [scrollAxis]);
+  useEffect(() => { setOrganizing(false); }, [orientation]);
   const [order, setOrder] = useState<string[]>([]);
   const ordered = [...cards].sort((a, b) => {
     const rank = (id: string) => order.includes(id) ? order.indexOf(id) : order.length + cards.findIndex(card => card.id === id);

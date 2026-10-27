@@ -294,14 +294,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small>{own.handCount} cartas</small></span></div>
             <div id="own-dock-content" className="dock-content">
               {!compact && quickActions}
-              <OwnHand scrollAxis={portrait ? 'y' : 'x'} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+              <OwnHand scrollAxis="x" orientation={portrait ? 'portrait' : 'landscape'} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             </div>
           </section>
         </div>
         {compact && <>
           {(commandsOpen || informationOpen) && <div className="floating-panel-scrim" aria-hidden="true" onClick={closeFloatingPanel} />}
-          <MobileTableControls moreRef={moreControl} moreOpen={commandsOpen} canDraw={own.libraryCount > 0 && !own.consulting} disabled={busy || unconfirmed}
-            onDraw={drawOne} onUntap={() => void untapAll()} onTurn={() => void turn('next')}
+          <MobileTableControls moreRef={moreControl} moreOpen={commandsOpen}
             onMore={() => { setCommandsOpen(value => !value); setInformationOpen(false); }} />
           {commandsOpen && <section id="mobile-commands" className="mobile-commands" aria-label="Comandos da partida">
             <PanelHeader title="Comandos" closeLabel="Fechar comandos" onClose={() => setCommandsOpen(false)} />

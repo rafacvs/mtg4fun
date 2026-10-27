@@ -132,16 +132,16 @@ function LibraryPile({ count, droppable, hoverZone, onOpen, onDraw, disabled }: 
         feedbackTimer.current = setTimeout(() => setFeedback(false), 450);
       }} />}
     </div>
-    {droppable && <button type="button" className={`library-bottom ${hoverZone === 'library-bottom' ? 'drop-hover' : ''}`} data-drop-zone="library-bottom" aria-label="Fundo do grimório">Fundo</button>}
   </section>;
 }
 
 const emptyZoneIcons = { command: 'crown', graveyard: 'skull', exile: 'orbit' } satisfies Record<string, TableIconName>;
 
 function ZoneLabel({ title, count }: { title: string; count: number }) {
+  const icon = ({ 'Grimório': 'book-open', 'Cemitério': 'graveyard', 'Exílio': 'exile' } as const)[title as 'Grimório' | 'Cemitério' | 'Exílio'];
   return <>
     <strong className="zone-count" aria-label={`${count} cartas`}>{count}</strong>
-    <span className="slot-label">{title}</span>
+    <span className="slot-label">{icon && <TableIcon name={icon} />}{title}</span>
   </>;
 }
 

@@ -155,6 +155,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
     expect(sourceBox, 'carta de origem visível').toBeTruthy();
     await page.mouse.move(sourceBox!.x + sourceBox!.width / 2, sourceBox!.y + sourceBox!.height / 2);
     await page.mouse.down();
+    if (await to.count() === 0) await page.mouse.move(sourceBox!.x + sourceBox!.width / 2, sourceBox!.y + sourceBox!.height / 2 - 16, { steps: 4 });
     await to.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
     const targetBox = await to.boundingBox();
     expect(targetBox, 'zona de destino visível').toBeTruthy();
@@ -178,7 +179,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await closeActions();
   await expect(hand.locator('.playing-card')).toHaveCount(1);
   expect((await ownHand())[0].id).toBe(returnedId);
-  await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), board.getByRole('button', { name: 'Fundo do grimório', exact: true }));
+  await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), page.getByRole('region', { name: 'Destinos do arraste', exact: true }).getByRole('button', { name: 'Fundo', exact: true }));
   await expect(hand.locator('.playing-card')).toHaveCount(0);
   await buy('1');
   await closeActions();
@@ -194,7 +195,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await page.getByRole('link', { name: 'Voltar ao lobby' }).click();
   await expect(board).toHaveCount(0);
   await page.goto(roomURL);
-  await openMatchRail(page);
+  await openMatchRail(page, 'Registro');
   await expect(board.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island' })).toBeVisible();
   await openHand(page);
   await buy('3');

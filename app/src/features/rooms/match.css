@@ -9,8 +9,14 @@
 
 /* Table surfaces and dimensions belong to the game, not the lobby or decks. */
 .match-board { --card-width: 76px; --table-edge: var(--line); --table-green: var(--panel2); --touch-size: 44px; flex: 1; min-height: 0; min-width: 0; background: radial-gradient(ellipse at 50% 16%, color-mix(in srgb, var(--panel2) 80%, transparent), transparent 46%), radial-gradient(ellipse at 50% 120%, color-mix(in srgb, var(--bg) 90%, transparent), transparent 42%), var(--bg); }
+.match-board * { scrollbar-width: thin; scrollbar-color: #8b713d99 transparent; }
+.match-board *::-webkit-scrollbar { width: 6px; height: 6px; }
+.match-board *::-webkit-scrollbar-track { background: transparent; }
+.match-board *::-webkit-scrollbar-thumb { background: #8b713d99; border: 1px solid #0b0e10; border-radius: 6px; }
+.match-board *::-webkit-scrollbar-corner { background: transparent; }
 .match-content { height: 100%; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden; }
 .table-icon { width: 20px; height: 20px; flex: 0 0 20px; vertical-align: middle; }
+.seat-life-mobile { display: none; }
 .match-board :where(button:not(.playing-card):not(.library-open):not(.token-thumb):not(.log-card)), .table-toolbar a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .match-board .icon-button { min-width: var(--touch-size); min-height: var(--touch-size); padding: 8px; flex-shrink: 0; }
 .table-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px 12px; padding: 2px 12px; min-height: 48px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, rgba(243, 236, 218, .04), transparent 42%), linear-gradient(180deg, var(--panel2), var(--panel)); font-size: .75rem; box-shadow: 0 8px 24px rgba(0, 0, 0, .28); }

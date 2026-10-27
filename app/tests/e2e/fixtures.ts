@@ -112,15 +112,15 @@ export async function openQuickActions(page: Page) {
     await expect(page.getByRole('button', { name: 'Comandos', exact: true })).toHaveCount(0);
     return;
   }
-  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Mais', exact: true });
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Comandos', exact: true });
   await expect(toggle).toBeVisible();
   if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
 }
 
 export async function closeQuickActions(page: Page) {
   if ((page.viewportSize()?.width ?? 1280) > 1000) return;
-  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Mais', exact: true });
-  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Comandos', exact: true });
+  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await page.getByRole('button', { name: 'Fechar comandos', exact: true }).click();
 }
 
 export async function returnOpeningHandToLibrary(request: APIRequestContext, roomId: number) {
