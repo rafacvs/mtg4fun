@@ -10,11 +10,15 @@ Estas especificações consolidam o esboço inicial e as decisões da conversa d
 
 As três especificações formam uma única primeira versão, incluindo jogo completo no celular desde o início.
 
-A experiência vigente da mesa é a
-[nova experiência](05-nova-experiencia-da-mesa.md), aprovada em 24/10/2026.
-Ela substitui a apresentação da [mesa](02-mesa-e-interface.md) e a direção
-visual do [refinamento premium](04-refinamento-ui-mesa.md). As regras de jogo
-da mesa permanecem, com a consulta do grimório redefinida na spec nova.
+Os requisitos visuais mais recentes são os da
+[mesa v2: campo unificado, visão conjunta e responsividade](06-mesa-v2-campo-unificado.md),
+aprovados e ainda pendentes de implementação. Eles substituem os pontos
+conflitantes de apresentação e interação da
+[nova experiência](05-nova-experiencia-da-mesa.md), implementada no PR 51.
+As regras de jogo da [mesa](02-mesa-e-interface.md) e os contratos não
+alterados, incluindo a consulta do grimório da spec anterior, permanecem.
+A direção do [refinamento premium](04-refinamento-ui-mesa.md) também deve ser
+lida à luz da spec v2.
 
 ## Objetivo e direção
 

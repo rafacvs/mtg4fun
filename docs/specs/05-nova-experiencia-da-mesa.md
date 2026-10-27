@@ -1,6 +1,12 @@
 # Nova experiência da mesa
 
-**Estado:** aprovada em 24/10/2026. A implementação ainda não começou. A construção segue `/implement-spec` numa branch de integração. Issue: https://github.com/rafacvs/mtg4fun/issues/39
+**Estado histórico:** aprovada em 24/10/2026 e implementada no [PR 51](https://github.com/rafacvs/mtg4fun/pull/51). Issue: https://github.com/rafacvs/mtg4fun/issues/39
+
+**Atualização:** os requisitos conflitantes de apresentação e interação foram
+substituídos pela [mesa v2](06-mesa-v2-campo-unificado.md), aprovada e ainda
+pendente de implementação. O conteúdo abaixo preserva a referência da entrega
+anterior; não redefine os requisitos mais recentes. As funcionalidades de
+preparação/início/reinício seguem a [issue 52](https://github.com/rafacvs/mtg4fun/issues/52).
 
 Cards, na ordem em que podem começar:
 
