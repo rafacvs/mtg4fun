@@ -11,6 +11,15 @@ async function touch(page: Page, points: { x: number; y: number }[]) {
   } finally { await session.detach(); }
 }
 
+async function expectLibraryBottomClearOfGraveyard(page: Page) {
+  const rail = page.locator('.own-table-surface .zone-column');
+  const bottom = await rail.getByRole('button', { name: 'Fundo do grimório' }).boundingBox();
+  const graveyard = await rail.getByRole('region', { name: 'Cemitério', exact: true }).boundingBox();
+  expect(bottom).not.toBeNull();
+  expect(graveyard).not.toBeNull();
+  expect(bottom!.y + bottom!.height).toBeLessThanOrEqual(graveyard!.y + 1);
+}
+
 test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar', async ({ page }, info) => {
   test.skip(info.project.name === 'desktop', 'Gestos reais de toque.');
   test.setTimeout(90_000);
@@ -31,6 +40,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#8daebf"/><text x="5" y="10" font-size="6">Island</text></svg>' }));
   await page.setViewportSize({ width: 839, height: 393 });
   await page.goto(`/#/salas/${room.id}`);
+  await expectLibraryBottomClearOfGraveyard(page);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const row = hand.getByLabel('Cartas da mão', { exact: true });
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
@@ -74,6 +84,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   await nav.getByRole('button', { name: 'Desvirar', exact: true }).tap();
   await expect(fieldCard).toHaveAttribute('data-tapped', 'false');
   await page.setViewportSize({ width: 393, height: 839 });
+  await expectLibraryBottomClearOfGraveyard(page);
   await expect(cards).toHaveCount(15);
   // A normal touch keeps the card actionable; only a deliberate hold opens
   // inspection. This uses the real match API and the selected card can then

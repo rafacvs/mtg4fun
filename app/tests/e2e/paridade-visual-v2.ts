@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 const repositoryRoot = resolve(import.meta.dirname, '../../..');
 const referenceCommit = '170a87f10caa5f11708429ad0890df9c1cdde5bb';
@@ -77,13 +77,36 @@ export async function captureV2ReferenceBoards(page: Page, outputDirectory: stri
       await iframe.waitFor({ state: 'visible' });
       const content = page.frameLocator(`iframe[title="${title}"]`).locator('body');
       await content.waitFor({ state: 'visible' });
+      // An iframe's initial about:blank body already has the expected size.
+      // Wait for the prototype's rendered UI, not merely that empty body.
+      await expect.poll(async () => (await content.innerText()).trim().length, {
+        message: `A prancha ${id} não renderizou seu conteúdo.`,
+        timeout: 30_000,
+      }).toBeGreaterThan(30);
       await content.evaluate(async body => { await body.ownerDocument.fonts.ready; });
       const bodySize = await content.evaluate(body => body.getBoundingClientRect());
       if (bodySize.width < viewport.width || bodySize.height < viewport.height) {
         throw new Error(`A prancha ${id} ficou vazia ou incompleta (${bodySize.width}×${bodySize.height}).`);
       }
       const screenshot = join(outputDirectory, safeName(id));
-      await iframe.screenshot({ path: screenshot });
+      let image: Buffer | undefined;
+      await expect.poll(async () => {
+        image = await iframe.screenshot({ animations: 'disabled' });
+        return page.evaluate(async encoded => {
+          const bitmap = new Image();
+          bitmap.src = `data:image/png;base64,${encoded}`;
+          await bitmap.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = 20; canvas.height = 20;
+          const context = canvas.getContext('2d')!;
+          context.drawImage(bitmap, 0, 0, 20, 20);
+          const pixels = context.getImageData(0, 0, 20, 20).data;
+          let dark = 0;
+          for (let i = 0; i < pixels.length; i += 4) if (pixels[i] < 180 && pixels[i + 1] < 180 && pixels[i + 2] < 180) dark++;
+          return dark;
+        }, image.toString('base64'));
+      }, { message: `A captura da prancha ${id} está vazia.`, timeout: 15_000 }).toBeGreaterThan(20);
+      writeFileSync(screenshot, image!);
       if (!existsSync(screenshot) || statSync(screenshot).size === 0) throw new Error(`A captura da prancha ${id} não foi criada.`);
     }
     return [...v2Boards];
@@ -105,7 +128,8 @@ export function writeV2ComparisonReport(outputDirectory: string, applicationCapt
     rows,
     differences: [
       'Cada par deve ser revisado contra a prancha V2 correspondente; esta execução não declara paridade nem aceite visual.',
-      'Somente campo manual, carta inteira, dados reais e adaptação de 2–6 participantes são exceções aprovadas. Qualquer outra diferença é defeito a corrigir.',
+      'A composição móvel e o foco desktop foram alterados por decisão posterior do usuário; V2 e V5–V9 registram a experiência atual e não são equivalentes à composição original.',
+      'As exceções aprovadas incluem campo manual, carta inteira, dados reais, adaptação de participantes e a composição posterior de desktop e mobile.',
       'A evidência funcional exige imagem completa obtida pelo endpoint público; indisponibilidade não pode ser substituída por placeholder.',
     ],
   };
@@ -114,5 +138,5 @@ export function writeV2ComparisonReport(outputDirectory: string, applicationCapt
     const review = reviewLabels.map(([field, label]) => `<dt>${label}</dt><dd>${row.visualReview[field]}</dd>`).join('');
     return `<section><h2>${row.id} · ${row.title} (${row.viewport.width}×${row.viewport.height})</h2><p>Estado técnico: capturado com navegador, API pública e banco descartável. A avaliação visual permanece humana.</p><dl>${review}</dl><div><figure><figcaption>HTML V2 — referência</figcaption><img src="${row.reference}" alt="Referência ${row.id}"></figure><figure><figcaption>Aplicação — captura desta execução</figcaption><img src="${row.application}" alt="Aplicação ${row.id}"></figure></div></section>`;
   }).join('\n');
-  writeFileSync(join(outputDirectory, 'comparativo-v2.html'), `<!doctype html><meta charset="utf-8"><title>Comparativo V2</title><style>body{font:16px system-ui;margin:2rem;background:#f5f4ef;color:#1f1e1d}section{margin:2rem 0;border-top:1px solid #bbb}div{display:flex;gap:1rem;align-items:start;overflow:auto}figure{margin:0;min-width:max-content}figcaption{font-weight:700;margin:.5rem 0}img{display:block;border:1px solid #777;max-width:none}</style><h1>Comparativo visual V2 — captura técnica atual</h1><p>Não declara paridade nem aceite visual. A referência é renderizada do commit ${referenceCommit}; o aceite depende de revisão explícita do usuário.</p>${cards}`);
+  writeFileSync(join(outputDirectory, 'comparativo-v2.html'), `<!doctype html><meta charset="utf-8"><title>Comparativo V2</title><style>body{font:16px system-ui;margin:2rem;background:#f5f4ef;color:#1f1e1d}section{margin:2rem 0;border-top:1px solid #bbb}div{display:flex;gap:1rem;align-items:start;overflow:auto}figure{margin:0;min-width:max-content}figcaption{font-weight:700;margin:.5rem 0}img{display:block;border:1px solid #777;max-width:none}</style><h1>Comparativo visual V2 — captura técnica atual</h1><p>Não declara paridade nem aceite visual. A referência é renderizada do commit ${referenceCommit}; o aceite depende de revisão explícita do usuário. A composição móvel e o foco desktop foram alterados por decisão posterior do usuário: V2 e V5–V9 não são equivalentes à composição original.</p>${cards}`);
 }

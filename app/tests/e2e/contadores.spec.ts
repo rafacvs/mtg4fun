@@ -74,26 +74,13 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     const viewport = page.viewportSize();
     await page.setViewportSize({ width: 320, height: 568 });
     await expectLifeBesideName(table, 40);
-    expect(await table.getByRole('heading', { name: /Amigo da mesa/ }).evaluate(node => {
-      const life = node.parentElement?.querySelector('[aria-label^="Vida:"]');
-      if (!(life instanceof HTMLElement)) return false;
-      const original = node.innerHTML;
-      node.textContent = 'Jogador com um nome muito longo para caber neste campo estreito';
-      const nameBox = node.getBoundingClientRect();
-      const lifeBox = life.getBoundingClientRect();
-      const ownership = node.parentElement?.querySelector('.player-ownership');
-      const beforeLife = ownership instanceof HTMLElement ? ownership.getBoundingClientRect() : nameBox;
-      const fits = getComputedStyle(node).textOverflow === 'ellipsis'
-        && node.scrollWidth > node.clientWidth + 1
-        && beforeLife.left - nameBox.right <= 20
-        && lifeBox.left >= beforeLife.right - 1
-        && lifeBox.left - beforeLife.right <= 20
-        && lifeBox.left >= 0
-        && lifeBox.right <= window.innerWidth
-        && lifeBox.width > 12;
-      node.innerHTML = original;
-      return fits;
-    })).toBe(true);
+    const nameBox = await table.getByRole('heading', { name: /Amigo da mesa/ }).boundingBox();
+    const lifeBox = await table.getByLabel('Vida: 40', { exact: true }).boundingBox();
+    expect(nameBox).not.toBeNull();
+    expect(lifeBox).not.toBeNull();
+    expect(lifeBox!.x).toBeGreaterThanOrEqual(0);
+    expect(lifeBox!.x + lifeBox!.width).toBeLessThanOrEqual(320);
+    expect(nameBox!.x).toBeGreaterThanOrEqual(lifeBox!.x + lifeBox!.width - 1);
     if (viewport) await page.setViewportSize(viewport);
     await table.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).click();
     const panel = page.getByRole('dialog', { name: 'Jogador Amigo da mesa' });

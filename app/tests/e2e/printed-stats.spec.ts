@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect, openHand, returnOpeningHandToLibrary, roomBody } from './fixtures';
 
-test('selo distingue o impresso da ficha do modificador manual', async ({ page }) => {
+test('selo distingue o impresso da ficha do modificador manual', async ({ page }, testInfo) => {
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
   const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'stats.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="1" name="Island"/></zone></cockatrice_deck>') } } })).json();
@@ -24,6 +24,11 @@ test('selo distingue o impresso da ficha do modificador manual', async ({ page }
   await expect(badge).toHaveText('3/1');
   await expect(badge).toHaveAttribute('data-modified', 'true');
   await expect.poll(() => badge.evaluate(node => getComputedStyle(node).backgroundColor)).not.toBe(unmodifiedColor);
+  expect((await api.post(`${path}/match/actions`, { data: { intentId: randomUUID(), kind: 'counter', target: 'card', cardId: id, subject: 'marker', color: 'green', operation: 'increment', value: 3 } })).ok()).toBe(true);
+  const marker = card.getByLabel('marcador verde');
+  await expect(marker).toHaveText('3');
+  await expect(marker).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('carta-marcador-e-poder.png') });
   await page.reload();
   await expect(badge).toHaveText('3/1');
   const symbolic = await api.post(`${path}/match/actions`, { data: { intentId: randomUUID(), kind: 'create-token', tokenName: 'Symbolic Token' } });

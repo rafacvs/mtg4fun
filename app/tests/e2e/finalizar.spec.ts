@@ -36,7 +36,6 @@ for (const count of [1, 3]) {
       expect(finishBox!.x).toBeGreaterThanOrEqual(0);
       expect(finishBox!.x + finishBox!.width).toBeLessThanOrEqual(info.project.use.viewport!.width);
       const backs = page.locator('.library-stack img');
-      if (info.project.name === 'desktop' && count > 2) await page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true }).click();
       await expect.poll(() => backs.first().evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
       const image = await backs.nth(2).boundingBox();
       expect(image!.height / image!.width).toBeGreaterThan(1.3);

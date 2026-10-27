@@ -50,11 +50,11 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     await expect(page.getByRole('region', { name: 'Prévia da carta', exact: true }).getByRole('heading', { name: 'Soldier Token', exact: true })).toBeVisible();
     const seatColors = await page.locator('.seat-number').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundColor));
     expect(new Set(seatColors).size).toBe(4);
-    const playmats = await page.locator('.zone-battlefield').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundImage));
+    const playmats = await page.getByRole('article', { name: /Mesa de/ }).evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundImage));
     expect(playmats).toHaveLength(4);
     expect(playmats.every(image => image.includes('url('))).toBe(true);
     expect(new Set(playmats).size).toBe(4);
-    const activeSeat = page.getByRole('article').filter({ has: page.getByText('Na vez', { exact: true }) });
+    const activeSeat = page.getByRole('article').filter({ has: page.getByText('Vez', { exact: true }) });
     expect(await activeSeat.evaluate(node => getComputedStyle(node).borderTopColor)).toBe(await activeSeat.locator('.seat-number').evaluate(node => getComputedStyle(node).backgroundColor));
     const observed = (await (await contexts[0].request.get(`${path}/match`)).json()).match;
     for (const player of observed.players.filter((player: { userId: number }) => player.userId !== observed.viewerId)) {
@@ -72,35 +72,28 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     expect(topOpponents).toHaveLength(2);
     expect(opponentBoxes.some(box => box.top >= field!.y - 2 && box.left > field!.x)).toBe(true);
     expect(field!.y + field!.height).toBeLessThanOrEqual(bottom!.y + 2);
-    const focusOpponent = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
-    const focusOwn = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
-    await expect(focusOpponent).toBeVisible();
-    await expect(focusOwn).toBeVisible();
-    const opponentBeforeFocus = await opponents.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true }).boundingBox();
-    const persistedBeforeFocus = await (await contexts[0].request.get(`${path}/match`)).json();
-    await focusOpponent.click();
-    const returnToOverview = page.getByRole('button', { name: 'Voltar à visão geral', exact: true });
-    await expect(returnToOverview).toBeVisible();
-    const opponentAfterFocus = await opponents.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true }).boundingBox();
-    expect(opponentAfterFocus!.width).toBeGreaterThan(opponentBeforeFocus!.width);
-    const ownAfterFocus = await own.boundingBox();
-    expect(ownAfterFocus!.y).toBeGreaterThan(opponentAfterFocus!.y + opponentAfterFocus!.height - 2);
-    expect(ownAfterFocus!.x).toBeLessThan(opponentAfterFocus!.x + opponentAfterFocus!.width / 2);
-    for (const player of await page.getByRole('article').all()) await expect(player).toBeInViewport();
-    await expect(hand.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
-    expect((await (await contexts[0].request.get(`${path}/match`)).json()).match.players).toEqual(persistedBeforeFocus.match.players);
+    await expect(page.locator('.seat-focus')).toHaveCount(0);
+    const sizes = await page.getByRole('article', { name: /Mesa de/ }).evaluateAll(nodes => nodes.map(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
+    for (const size of sizes) {
+      expect(size.width).toBeCloseTo(sizes[0].width, 0);
+      expect(size.height).toBeCloseTo(sizes[0].height, 0);
+    }
     const chronicle = page.getByRole('button', { name: 'Abrir crônica', exact: true });
+    const dockBeforeChronicle = await dock.boundingBox();
     await chronicle.click();
     const log = page.getByRole('region', { name: 'Registro da partida', exact: true });
     await expect(log).toBeVisible();
     await expect(log).toBeInViewport();
+    const dockWithChronicle = await dock.boundingBox();
+    const railWithChronicle = await page.locator('.side-rail').boundingBox();
+    expect(dockWithChronicle!.x).toBeCloseTo(dockBeforeChronicle!.x, 0);
+    expect(dockWithChronicle!.width).toBeCloseTo(dockBeforeChronicle!.width, 0);
+    expect(railWithChronicle!.y + railWithChronicle!.height).toBeLessThanOrEqual(dockWithChronicle!.y + 1);
     await page.getByRole('button', { name: 'Fechar crônica', exact: true }).click();
     await expect(log).toHaveCount(0);
     const otherPage = await contexts[1].newPage();
     await otherPage.goto(`/#/salas/${roomId}`);
     await expect(otherPage.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
-    await returnToOverview.click();
-    await expect(page.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toHaveCount(0);
     for (const position of [[1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]) {
       const created = await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'create-token', intentId: randomUUID(), tokenName: 'Soldier Token' } });
       expect(created.ok()).toBe(true);
@@ -116,8 +109,6 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     const consultation = await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'consult', intentId: randomUUID(), consultFrom: 'top', count: 2 } });
     expect(consultation.ok()).toBe(true);
     await expect(own.getByText('Consultando o grimório', { exact: true })).toBeVisible();
-    await focusOwn.click();
-    await expect(page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true })).toHaveClass(/focused-table/);
     await expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
     await expect(own.getByText('Consultando o grimório', { exact: true })).toBeVisible();
     await expect(async () => {
@@ -127,7 +118,6 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
       expect(cards.every(card => card.left >= fit!.x - 1 && card.right <= fit!.x + fit!.width + 1 && card.top >= fit!.y - 1 && card.bottom <= fit!.y + fit!.height + 1)).toBe(true);
     }).toPass();
     await expect.poll(async () => (await (await contexts[1].request.get(`${path}/match`)).json()).match.players.find((player: { name: string }) => player.name === 'Amigo da mesa').consulting).toBe(true);
-    await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
     const ownLife = own.getByRole('textbox', { name: 'Vida', exact: true });
     await ownLife.fill('37');
     await ownLife.press('Enter');
@@ -183,18 +173,9 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
       await expect(library).not.toContainText('Island');
       await expect(library.locator('img')).toHaveCount(3);
       const strip = page.getByRole('region', { name: 'Oponentes', exact: true });
-      const focusOwn = page.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
-      await focusOwn.click();
-      await expect(own).toHaveClass(/focused-table/);
+      await expect(page.locator('.seat-focus')).toHaveCount(0);
       await page.setViewportSize({ width: 1920, height: 1080 });
       for (const player of await page.getByRole('article').all()) await expect(player).toBeInViewport();
-      await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
-      if (count > 1) {
-        const focusOpponent = page.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true });
-        await focusOpponent.click();
-        await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toHaveClass(/focused-table/);
-        await page.getByRole('button', { name: 'Voltar à visão geral', exact: true }).click();
-      }
       if (count === 1) await expect(strip).toHaveCount(0);
       else {
         await expect(strip.getByRole('article')).toHaveCount(count - 1);
@@ -206,8 +187,16 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
         const fieldBox = await fields.boundingBox();
         expect(await fields.evaluate(node => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight)).toBe(true);
         expect(boxes.every(box => box.left >= fieldBox!.x - 1 && box.right <= fieldBox!.x + fieldBox!.width + 1 && box.top >= fieldBox!.y - 1 && box.bottom <= fieldBox!.y + fieldBox!.height + 1)).toBe(true);
-        if (count === 2) expect(boxes[1].top).toBeGreaterThan(boxes[0].top);
-        if (count === 3) expect(boxes[2].top).toBeGreaterThan(boxes[0].top);
+        if (count === 2) {
+          expect(boxes[1].top).toBeGreaterThan(boxes[0].top);
+          for (const box of boxes) expect(box.right - box.left).toBeCloseTo(fieldBox!.width, 0);
+          expect(boxes[0].bottom - boxes[0].top).toBeCloseTo(boxes[1].bottom - boxes[1].top, 0);
+        }
+        if (count === 3) {
+          expect(boxes[2].top).toBeGreaterThan(boxes[0].top);
+          expect(boxes[2].right - boxes[2].left).toBeCloseTo(fieldBox!.width, 0);
+          expect(boxes[0].right - boxes[0].left).toBeCloseTo(boxes[1].right - boxes[1].left, 0);
+        }
         if (count >= 4) {
           const ownBox = await own.boundingBox();
           expect(ownBox!.y).toBeGreaterThan(boxes[0].top);
@@ -215,8 +204,9 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
         }
       }
       const turnName = (await (await api.get(`${path}/match`)).json()).match.currentTurn.name;
-      await expect(page.getByRole('article', { name: `Mesa de ${turnName}`, exact: true }).getByText('Na vez', { exact: true })).toHaveCount(1);
+      await expect(page.getByRole('article', { name: `Mesa de ${turnName}`, exact: true }).getByText('Vez', { exact: true })).toHaveCount(1);
       await expect(page.getByText('Ordem:', { exact: false })).toBeVisible();
+      await page.screenshot({ path: testInfo.outputPath(`desktop-${count}-jogadores.png`) });
     } finally { await Promise.all(contexts.map(context => context.close())); }
   }
 });
