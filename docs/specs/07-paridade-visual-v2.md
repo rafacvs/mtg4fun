@@ -3,6 +3,12 @@
 **Estado:** requisitos aprovados no refinamento de 25/10/2026; implementação
 corretiva e aceite visual pendentes. Issue: https://github.com/rafacvs/mtg4fun/issues/70.
 
+**Alteração posterior aprovada:** a composição e o foco mobile, assim como o
+foco desktop e a distribuição de três jogadores, seguem a
+[decisão de composição da mesa](../decisions/paridade-visual-v2.md#alteração-aprovada-para-composição-da-mesa),
+que prevalece sobre as descrições e capturas V2 conflitantes abaixo. O restante
+da referência visual continua aplicável; a nova composição ainda requer revisão.
+
 ## Problem Statement
 
 Após a entrega da issue [57](https://github.com/rafacvs/mtg4fun/issues/57) e

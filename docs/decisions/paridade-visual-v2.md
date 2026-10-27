@@ -65,3 +65,36 @@ Esta tarefa publica requisitos e referências, não código da interface.
 Nenhum resultado histórico de teste foi convertido em validação nova.
 O aceite futuro requer os fluxos reais e comparativos definidos na spec,
 seguidos de revisão visual explícita do usuário.
+
+## Correção visual em andamento — 27/10/2026
+
+Na revisão da implementação da issue 70, o usuário relatou divergências
+significativas em relação ao HTML V2 e pediu a correção gradual, com capturas
+comparativas e consulta prévia caso seja necessário alterar lógica, backend ou
+banco. A aprovação da spec não representa aprovação visual da implementação.
+
+O usuário autorizou explicitamente ajustar a lógica de distribuição visual
+dos participantes conforme a ordem do turno, sem alterar dados ou regras da
+partida. Também orientou que, quando o protótipo não apresenta um desenho
+específico para estados como carta revelada ou controlada por outro jogador,
+o trabalho de paridade se concentre no que está representado no protótipo.
+Os indicadores e capacidades existentes desses estados continuam preservados;
+essa orientação não é aprovação de um novo desenho para eles.
+
+As propostas de mudar a interação do menu superior, fornecer o nome do deck
+pela API e acrescentar dados existentes à prévia desktop aguardam resposta do
+usuário. As alterações visuais em andamento e os testes executados não são
+aceite da spec nem autorização para mudanças nessas propostas.
+
+## Alteração aprovada para composição da mesa
+
+O usuário substituiu a composição móvel da V2 por um campo focado por vez,
+inicialmente o próprio, com mão sempre visível e sem rolagem da tela principal.
+O controle de visão geral alterna entre a grade e o próprio campo; cada campo
+da grade permite foco e, ao focar um adversário, há retorno direto ao próprio.
+No desktop, o usuário pediu campos iguais e preenchendo o espaço disponível,
+com exceção expressamente aprovada para três jogadores: dois oponentes acima e
+o campo próprio ocupando a linha inferior. Para dois jogadores, são duas faixas
+horizontais de mesma área; para quatro, uma grade de campos iguais. O usuário
+decidiu remover o botão de ampliar no desktop. Essas decisões substituem as
+composições correspondentes da spec V2, sem alterar dados ou regras de jogo.
