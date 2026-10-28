@@ -131,6 +131,13 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await activate(addRed);
     await activate(addRed);
     await expect(table.getByLabel('marcador vermelho')).toHaveText('2');
+    if (info.project.name === 'desktop') {
+      const markerBox = await table.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).boundingBox();
+      const exileBox = await table.getByRole('region', { name: 'Exílio', exact: true }).boundingBox();
+      expect(markerBox).not.toBeNull();
+      expect(exileBox).not.toBeNull();
+      expect(markerBox!.y).toBeGreaterThanOrEqual(exileBox!.y + exileBox!.height);
+    }
     await expectLifeLog(['vida = 0', 'vida = -5', 'vida = -6', 'vida = -5', 'vida = 16']);
     await expect(table.getByLabel('Vida: 16', { exact: true })).toBeVisible();
     await press('Voltar');

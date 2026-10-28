@@ -46,6 +46,9 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     const dock = page.getByRole('region', { name: 'Sua mão e ações', exact: true });
+    const drawIcon = page.getByRole('button', { name: 'Comprar', exact: true }).locator('img.draw-action-icon');
+    await expect(drawIcon).toBeVisible();
+    expect((await drawIcon.boundingBox())!.width).toBeGreaterThanOrEqual(36);
     await expect(own.getByRole('button', { name: 'Soldier Token', exact: true }).getByLabel('Poder e resistência')).toHaveText('1/1');
     await own.getByRole('button', { name: 'Soldier Token', exact: true }).hover();
     await expect(page.getByRole('region', { name: 'Prévia da carta', exact: true }).getByRole('heading', { name: 'Soldier Token', exact: true })).toBeVisible();
@@ -55,8 +58,9 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
       const rail = (await table.locator('.zone-column').boundingBox())!;
       const field = (await table.locator('.battlefield-scroll').boundingBox())!;
       expect(rail.x + rail.width).toBeLessThanOrEqual(field.x + 1);
+      expect(rail.width).toBeGreaterThanOrEqual(60);
       const icon = (await table.locator('.zone-library .slot-label .table-icon').boundingBox())!;
-      expect(icon.width).toBeGreaterThanOrEqual(16);
+      expect(icon.width).toBeGreaterThanOrEqual(22);
     }
     const playmats = await page.getByRole('article', { name: /Mesa de/ }).evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundImage));
     expect(playmats).toHaveLength(4);
