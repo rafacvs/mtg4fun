@@ -15,13 +15,27 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
     }
     expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
     await returnOpeningHandToLibrary(page.request, roomId);
-    expect((await page.request.post(`/api/rooms/${roomId}/match/actions`, { data: { kind: 'draw', intentId: crypto.randomUUID(), count: 15 } })).ok()).toBe(true);
+    expect((await page.request.post(`/api/rooms/${roomId}/match/actions`, { data: { kind: 'draw', intentId: crypto.randomUUID(), count: 2 } })).ok()).toBe(true);
     await page.goto(`/#/salas/${roomId}`);
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     const cards = hand.getByRole('button', { name: 'Island', exact: true });
-    await expect(cards).toHaveCount(15);
+    await expect(cards).toHaveCount(2);
     const field = page.locator('.focused-table');
     const bar = page.getByRole('toolbar', { name: 'Ações da seleção', exact: true });
+    for (const [name, width, height] of [['320x568', 320, 568], ['844x390', 844, 390]] as const) {
+      await page.setViewportSize({ width, height });
+      const first = (await cards.first().boundingBox())!, last = (await cards.last().boundingBox())!;
+      expect(Math.abs((first.x + last.x + last.width) / 2 - width / 2)).toBeLessThan(4);
+      await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toBeHidden();
+      expect(await page.evaluate(() => {
+        const field = document.querySelector('.focused-table .battlefield-scroll')!.getBoundingClientRect();
+        const dock = document.querySelector('.own-dock')!.getBoundingClientRect();
+        return Boolean(document.elementFromPoint(field.right - 10, dock.bottom - 20)?.closest('.battlefield-scroll'));
+      })).toBe(true);
+      await page.screenshot({ path: info.outputPath(`${name}-mao-curta.png`) });
+    }
+    expect((await page.request.post(`/api/rooms/${roomId}/match/actions`, { data: { kind: 'draw', intentId: crypto.randomUUID(), count: 13 } })).ok()).toBe(true);
+    await expect(cards).toHaveCount(15);
     const viewports = [
       ['320x568', 320, 568], ['360x640', 360, 640], ['390x844', 390, 844],
       ['768x1024', 768, 1024], ['568x320', 568, 320], ['844x390', 844, 390],
@@ -32,7 +46,7 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
       await expect(hand).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight)).toBe(true);
       const [fieldBox, handBox, controlsBox] = await Promise.all([field.boundingBox(), hand.boundingBox(), page.getByRole('navigation', { name: 'Controles da mesa' }).boundingBox()]);
-      expect(fieldBox!.y + fieldBox!.height).toBeLessThanOrEqual(handBox!.y + 1);
+      expect(fieldBox!.y + fieldBox!.height).toBeGreaterThan(handBox!.y);
       expect(controlsBox!.y + controlsBox!.height).toBeLessThanOrEqual(handBox!.y + 1);
       for (const button of await page.locator('.table-toolbar button:visible, .table-toolbar a:visible, .mobile-table-controls button:visible').all()) {
         const box = (await button.boundingBox())!;
@@ -71,7 +85,7 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
       await expect(bar).toBeVisible();
       const barBox = (await bar.boundingBox())!;
       const resizedField = (await field.boundingBox())!;
-      expect(resizedField.y + resizedField.height).toBeLessThanOrEqual(barBox.y + 1);
+      expect(resizedField.y + resizedField.height).toBeGreaterThan(barBox.y);
       expect(barBox.y + barBox.height).toBeLessThanOrEqual(handBox!.y + 1);
       for (const button of await bar.getByRole('button').all()) {
         const box = (await button.boundingBox())!;
@@ -116,6 +130,8 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
     await expect(page.locator('.match-board')).toHaveClass(/mobile-table/);
     const rail = field.locator('.zone-column');
     const railBox = (await rail.boundingBox())!;
+    const floatingHand = (await row.boundingBox())!;
+    expect(floatingHand.x).toBeGreaterThanOrEqual(railBox.x + railBox.width);
     const railTouch = await page.context().newCDPSession(page);
     for (let swipe = 0; swipe < 3; swipe++) {
       await railTouch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: railBox.x + railBox.width / 2, y: railBox.y + railBox.height - 10 }] });

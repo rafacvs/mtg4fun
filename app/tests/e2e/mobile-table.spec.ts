@@ -95,12 +95,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   await expect(page.getByRole('toolbar', { name: 'Ações da seleção', exact: true })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Imagem de Island', exact: true })).toHaveCount(0);
   await page.getByRole('toolbar', { name: 'Ações da seleção', exact: true }).getByRole('button', { name: 'Limpar seleção', exact: true }).tap();
-  await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
-  const oldFirst = await cards.first().getAttribute('data-card-id');
-  await cards.first().focus();
-  await page.keyboard.press('Alt+ArrowRight');
-  expect(await cards.nth(1).getAttribute('data-card-id')).toBe(oldFirst);
-  await hand.getByRole('button', { name: 'Concluir', exact: true }).tap();
+  await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toBeHidden();
   const grid = (await row.boundingBox())!;
   await row.evaluate(node => { node.scrollLeft = 0; });
   await touch(page, [{ x: grid.x + grid.width - 10, y: grid.y + grid.height - 25 }, { x: grid.x + grid.width / 2, y: grid.y + grid.height - 25 }, { x: grid.x + 10, y: grid.y + grid.height - 25 }]);

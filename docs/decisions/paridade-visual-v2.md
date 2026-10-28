@@ -110,3 +110,8 @@ Para preservar um trilho estreito, aprovou abrir os ajustes de vida no painel
 do jogador ao tocar na vida. Pediu ainda comandante acima do grimório, ícones
 maiores no desktop e remoção do atalho visual de fundo do grimório no campo;
 o destino continua disponível nas ações e nos destinos de arraste da carta.
+
+Na revisão seguinte, o usuário substituiu a faixa inferior reservada por uma
+mão flutuante sobre o campo móvel. Pediu cartas um pouco maiores, leque
+centralizado quando couber, deslizamento horizontal em mãos grandes e remoção
+do botão de organizar no celular. A tela principal continua sem rolagem.

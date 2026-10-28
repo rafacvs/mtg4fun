@@ -294,7 +294,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small>{own.handCount} cartas</small></span></div>
             <div id="own-dock-content" className="dock-content">
               {!compact && quickActions}
-              <OwnHand scrollAxis="x" orientation={portrait ? 'portrait' : 'landscape'} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+              <OwnHand scrollAxis="x" orientation={portrait ? 'portrait' : 'landscape'} organizeEnabled={!compact} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             </div>
           </section>
         </div>

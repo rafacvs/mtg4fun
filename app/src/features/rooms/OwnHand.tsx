@@ -3,11 +3,12 @@ import type { Card } from './roomsApi';
 import type { CardGesture } from './PlayerTable';
 import { PlayingCard } from './PlayingCard';
 
-export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrollAxis = 'x', orientation }: { scrollAxis?: 'x' | 'y'; orientation?: 'portrait' | 'landscape'; cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
+export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrollAxis = 'x', orientation, organizeEnabled = true }: { scrollAxis?: 'x' | 'y'; orientation?: 'portrait' | 'landscape'; organizeEnabled?: boolean; cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
   const row = useRef<HTMLDivElement>(null);
   const [organizing, setOrganizing] = useState(false);
   useEffect(() => { if (scrollAxis !== 'y') setOrganizing(false); }, [scrollAxis]);
   useEffect(() => { setOrganizing(false); }, [orientation]);
+  useEffect(() => { if (!organizeEnabled) setOrganizing(false); }, [organizeEnabled]);
   const [order, setOrder] = useState<string[]>([]);
   const ordered = [...cards].sort((a, b) => {
     const rank = (id: string) => order.includes(id) ? order.indexOf(id) : order.length + cards.findIndex(card => card.id === id);
@@ -19,7 +20,7 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
     setOrder(ids);
   };
   return <section className={`table-zone zone-hand ${organizing ? 'is-organizing' : ''} ${hoverZone === 'hand' ? 'drop-hover' : ''}`} aria-label="Mão" data-drop-zone="hand">
-    <header><span>Mão · {count}</span><button className="hand-organize secondary" aria-pressed={organizing} onClick={() => setOrganizing(value => !value)}>{organizing ? 'Concluir' : 'Organizar'}</button></header>
+    <header><span>Mão · {count}</span>{organizeEnabled && <button className="hand-organize secondary" aria-pressed={organizing} onClick={() => setOrganizing(value => !value)}>{organizing ? 'Concluir' : 'Organizar'}</button>}</header>
     <div ref={row} className="zone-cards" tabIndex={0} aria-label="Cartas da mão" title={organizing ? 'Arraste ou use Alt + setas para ordenar uma carta focada' : undefined} onKeyDown={event => {
       if (!organizing || !event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
       const id = (event.target as HTMLElement).closest('[data-card-id]')?.getAttribute('data-card-id');

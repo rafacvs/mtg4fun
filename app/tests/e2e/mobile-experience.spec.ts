@@ -76,7 +76,7 @@ test('celular horizontal mostra oponentes, campo e comandos próprios sem perder
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
   const fieldBottom = await own.getByRole('region', { name: 'Campo', exact: true }).evaluate(node => node.getBoundingClientRect().bottom);
   const dockTop = await hand.evaluate(node => node.getBoundingClientRect().top);
-  expect(fieldBottom).toBeLessThanOrEqual(dockTop + 1);
+  expect(fieldBottom).toBeGreaterThan(dockTop);
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
   await openQuickActions(page);
   await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true }).tap();
@@ -136,8 +136,7 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(cards).toHaveCount(3);
   await closeQuickActions(page);
-  await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
-  await expect(hand).toHaveClass(/is-organizing/);
+  await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toBeHidden();
   const before = (await (await page.request.get(path)).json()).match;
   const sameDocument = await page.evaluate(() => { (window as Window & { orientationCheck?: string }).orientationCheck = 'same'; return location.href; });
   await page.setViewportSize({ width: 839, height: 393 });

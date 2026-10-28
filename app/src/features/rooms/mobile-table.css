@@ -572,3 +572,38 @@
   .mobile-table:has(.card-action-bar) .mobile-table-controls { bottom: 128px; }
   .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands { bottom: 68px; max-height: calc(100dvh - 116px); }
 }
+
+/* The hand floats above the battlefield instead of reserving a bottom band. */
+@media (max-width: 1000px) {
+  .mobile-table .table-stage,
+  .mobile-table:has(.card-action-bar) .table-stage { padding-bottom: 5px; }
+  .mobile-table .own-dock {
+    left: 5px; right: 5px; bottom: max(0px, env(safe-area-inset-bottom));
+    width: auto; height: 104px; min-height: 104px; max-height: 104px;
+    padding: 0; overflow: hidden; border: 0; background: transparent; box-shadow: none; pointer-events: none;
+  }
+  .mobile-table .own-dock .dock-content { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%; min-height: 0; flex: 1 1 0; }
+  .mobile-table .own-dock .zone-hand { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%; min-height: 0; align-items: center; }
+  .mobile-table .own-dock .zone-hand > header { display: none; }
+  .mobile-table .own-dock .zone-cards {
+    --card-width: 64px; display: flex; flex-wrap: nowrap; align-items: flex-end;
+    justify-content: safe center; gap: 0; width: fit-content; max-width: calc(100% - 108px); height: 100%; min-height: 0; flex: 0 1 auto;
+    padding: 8px 14px 5px; overflow-x: auto; overflow-y: hidden;
+    overscroll-behavior-x: contain; touch-action: pan-x; pointer-events: auto;
+  }
+  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: -24px; }
+  .mobile-table .zone-hand:not(.is-organizing) .playing-card { rotate: var(--fan-angle); transform-origin: center bottom; }
+  .mobile-table .mobile-table-controls { bottom: 110px; }
+  .mobile-table:has(.card-action-bar) .mobile-table-controls { bottom: 233px; }
+  .mobile-table .card-action-bar { bottom: 104px; }
+  .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands { bottom: 110px; max-height: calc(100dvh - 158px); }
+}
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table .own-dock { height: 86px; min-height: 86px; max-height: 86px; }
+  .mobile-table .own-dock .zone-cards { --card-width: 52px; }
+  .mobile-table .own-dock .zone-cards .playing-card + .playing-card { margin-left: -20px; }
+  .mobile-table .mobile-table-controls { bottom: 92px; }
+  .mobile-table:has(.card-action-bar) .mobile-table-controls { bottom: 152px; }
+  .mobile-table .card-action-bar { bottom: 86px; }
+  .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands { bottom: 92px; max-height: calc(100dvh - 140px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
