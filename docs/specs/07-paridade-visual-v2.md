@@ -135,7 +135,7 @@ correspondente neste V2 e não recebem promessa de paridade 1:1 nesta entrega.
 38. Como jogador no celular horizontal, quero os quatro campos acima da doca, para mão e controles não cobrirem o meu campo.
 39. Como jogador no celular horizontal, quero trilhos e acesso visível ao foco, para observar vida, contagens e cartas como na proposta.
 40. Como jogador no celular vertical, quero oponentes em faixas de largura inteira e meu campo maior, para evitar duas colunas de miniaturas ilegíveis.
-41. Como jogador no celular vertical, quero a barra de ações da carta própria acima da mão, para selecionar e agir sem um modal de leitura involuntário.
+41. Como jogador no celular vertical, quero abrir a inspeção ao tocar uma carta e usar o modo Selecionar para mostrar a barra de ações em conjunto acima da mão.
 42. Como jogador no celular vertical, quero ampliar uma faixa preservando as demais, para observar um oponente sem perder a mesa.
 43. Como jogador no celular, quero tocar carta adversária e abrir o painel inferior da V2, para ler carta, valores atuais, estados e dono.
 44. Como jogador no celular, quero o atalho para o campo do dono e fechamento visível da leitura, para alternar entre informação e jogo.
@@ -186,10 +186,10 @@ correspondente neste V2 e não recebem promessa de paridade 1:1 nesta entrega.
   permanentemente com o turno. Não duplicar lista de jogadores numa lateral.
 - Prévia por hover é passiva e fica no lado oposto ao campo observado.
   Não abrir modal central nem duplicar a prévia numa lateral fixa.
-- Carta própria mantém clique/toque para seleção, duplo clique para virar e
-  toque longo para leitura. Carta adversária mantém clique/toque para
-  inspeção pública. A seleção móvel mostra ações acima da mão; a leitura de
-  oponente usa painel inferior com os dados e atalhos do protótipo.
+- Clique/toque abre a inspeção da carta; o modo Selecionar e Shift mantêm a
+  seleção em conjunto. Duplo clique de mouse continua virando cartas do campo,
+  e toque longo abre a leitura sem alterar a seleção. A seleção móvel mostra
+  ações acima da mão; a inspeção mantém a imagem fixa ao rolar as ações.
 - Preservar compra, desvirar, movimentos entre zonas, topo/fundo, consulta e
   reordenação do grimório, revelar/ocultar, faces, marcadores e modificadores,
   fichas/cópias, controle e dono, dados/moeda, turno e encerramento.

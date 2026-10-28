@@ -128,8 +128,7 @@
   .mobile-table .card-action-bar { bottom: 62px; z-index: 25; }
   .mobile-table .card-action-bar button { min-height: 44px; }
   .mobile-table .card-preview-backdrop { z-index: 50; }
-  .mobile-table .card-preview button, .mobile-table .card-action-menu button { min-height: 44px; }
-  .portrait-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .mobile-table .card-preview button { min-height: 44px; }
 }
 @media (max-width: 1000px) and (orientation: portrait) {
   /* Portrait is a game board, not a hand-only orientation.  Opponents occupy
@@ -425,26 +424,6 @@
   .mobile-table:has(.card-action-bar) .zone-hand .zone-cards { padding-bottom: 4px; }
 }
 
-@media (max-width: 1000px) and (orientation: portrait) {
-  .mobile-table .mobile-card-sheet-backdrop:has(.card-reading-owner):not(:has(.card-quick-actions)) { padding: 0; background: #0009; backdrop-filter: none; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) {
-    position: relative; width: 100%; max-width: none; height: 330px; max-height: 70dvh;
-    grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 16px; padding: 38px 16px 65px;
-    border-color: #98763f; border-radius: 8px 8px 0 0; background: url('../../assets/theme/corner-v2.svg') -1px -1px / 24px 24px no-repeat, #0d1012fa; box-shadow: inset 0 0 0 3px #0b0e10e6, inset 0 0 0 4px #d9a94e1a, 0 -24px 50px #0009;
-  }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions))::before { content: ''; position: absolute; top: 12px; left: 50%; width: 110px; height: 14px; transform: translateX(-50%); background: url('../../assets/theme/divider-v2.svg') center / 100% 100% no-repeat; pointer-events: none; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions))::after { content: ''; position: absolute; top: -1px; right: -1px; width: 24px; height: 24px; transform: scaleX(-1); background: url('../../assets/theme/corner-v2.svg') center / contain no-repeat; pointer-events: none; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .card-preview-image { align-self: start; padding: 0; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .card-preview-image img { width: 100%; height: 210px; max-height: 100%; object-fit: contain; border: 1px solid #d9a94e; border-radius: 6px; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .card-preview-actions { display: flex; gap: 8px; overflow: visible; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .table-panel-header { position: static; padding: 0; border: 0; background: transparent; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .table-panel-header .actions-kicker { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .table-panel-header h2 { font: 700 17px/1.3 Cinzel, serif; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .panel-close { position: absolute; bottom: 18px; right: 16px; width: calc(50% - 20px); min-height: 44px; border-radius: 4px; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .panel-close .table-icon { display: none; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .panel-close::after { content: 'Fechar'; font: 12px Geist, sans-serif; color: #efe8d8; }
-  .mobile-table .mobile-card-sheet:has(.card-reading-owner):not(:has(.card-quick-actions)) .card-reading-owner button { position: absolute; bottom: 18px; left: 16px; width: calc(50% - 20px); min-height: 44px; border-radius: 4px; }
-}
 /* Mobile: one focused field or a selectable overview; the dock remains visible. */
 @media (max-width: 1000px) {
   .mobile-table .table-toolbar { height: 46px; min-height: 46px; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
@@ -533,6 +512,7 @@
   .mobile-table .focused-table .zone-column .zone-count { top: 11px; right: 2px; font-size: 10px; }
   .mobile-table .focused-table .zone-battlefield,
   .mobile-table .own-table-surface .focused-table .zone-battlefield { margin-left: 54px; min-width: 0; overflow: hidden; }
+  .mobile-table .focused-table .table-revealed { margin-left: 54px; }
 }
 
 /* The hand owns the bottom edge; game commands open from one floating button. */
@@ -607,4 +587,14 @@
   .mobile-table:has(.card-action-bar) .mobile-table-controls { bottom: 152px; }
   .mobile-table .card-action-bar { bottom: 86px; }
   .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands { bottom: 92px; max-height: calc(100dvh - 140px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Keep the card in view and scroll only the actions, including at 320px. */
+@media (max-width: 1000px) {
+  .mobile-table .card-preview.mobile-card-sheet { overflow: hidden; }
+  .mobile-table .mobile-card-sheet .card-preview-actions { min-height: 0; overflow-y: auto; overflow-x: hidden; }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-table .card-preview.mobile-card-sheet { height: min(88dvh, 720px); max-height: calc(100dvh - 16px); grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .mobile-table .mobile-card-sheet .card-preview-image img { height: min(28dvh, 180px); max-height: 180px; }
 }

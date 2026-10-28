@@ -58,7 +58,6 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     const ownerCard = ownerTable.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });
     await inspectCard(page, ownerCard);
     const ownerPreview = page.getByRole('dialog', { name: 'Imagem de Island' });
-    await ownerPreview.getByRole('button', { name: 'Outras ações', exact: true }).click();
     const transfer = ownerPreview.getByRole('region', { name: 'Controle da carta' });
     const target = transfer.getByLabel('Transferir controle para');
     await expect(target.locator('option:checked')).toHaveText('Segundo amigo');

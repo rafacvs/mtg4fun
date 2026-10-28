@@ -33,6 +33,28 @@ test('hover no campo mostra prévia passiva sem abrir diálogo', async ({ browse
     const preview = page.getByRole('region', { name: 'Prévia da carta', exact: true });
     await expect(preview.getByRole('heading', { name: 'Soldier Token', exact: true })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
+    const hover = page.locator('.card-hover-zoom');
+    await expect(hover).toBeVisible();
+    const hoverWidth = (await hover.boundingBox())!.width;
+    await card.click();
+    const dialog = page.getByRole('dialog', { name: 'Imagem de Soldier Token', exact: true });
+    await expect(dialog).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Ações da carta', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('toolbar', { name: 'Ações da seleção' })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Marcadores', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Revelar para todos', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Outras ações', exact: true })).toHaveCount(0);
+    const imageWidth = (await dialog.locator('.card-preview-image').boundingBox())!.width;
+    expect(Math.abs(hoverWidth - imageWidth)).toBeLessThan(45);
+    await page.setViewportSize({ width: 1024, height: 600 });
+    const scrolling = await dialog.evaluate(node => {
+      const actions = node.querySelector<HTMLElement>('.card-preview-actions')!;
+      const image = node.querySelector<HTMLElement>('.card-preview-image')!;
+      const before = image.getBoundingClientRect().top;
+      actions.scrollTop = actions.scrollHeight;
+      return { scrollable: actions.scrollHeight > actions.clientHeight, moved: image.getBoundingClientRect().top - before, outerScroll: node.scrollHeight > node.clientHeight };
+    });
+    expect(scrolling).toEqual({ scrollable: true, moved: 0, outerScroll: false });
   } finally {
     await Promise.all(contexts.map(context => context.close()));
   }

@@ -176,7 +176,6 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await hand.getByRole('button', { name: 'Island', exact: true }).first().click();
         await expect(preview).toBeVisible();
         await expect(article.getByRole('region', { name: /Cartas reveladas/ })).toHaveCount(0);
-        await preview.getByRole('button', { name: 'Outras ações', exact: true }).click();
         await preview.getByRole('button', { name: 'Revelar para todos', exact: true }).click();
         await expect(article.getByRole('region', { name: /Cartas reveladas/ })).toBeVisible();
         expect(await commander.boundingBox()).toEqual(bounds);
@@ -184,7 +183,6 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await expect(preview).toHaveCount(0);
         await expect(article.getByRole('region', { name: /Cartas reveladas/ })).toHaveCount(0);
         await hand.getByRole('button', { name: 'Island', exact: true }).first().click();
-        await preview.getByRole('button', { name: 'Outras ações', exact: true }).click();
         await preview.getByRole('button', { name: 'Revelar para todos', exact: true }).click();
         // Lose both automatic confirmations after the real server hides the card.
         // Retrying inside the modal must reuse the intent and restore its state.

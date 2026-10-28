@@ -9,7 +9,7 @@ import type { Card, Match, MarkerColor } from './roomsApi';
 import { MenuItem, PanelFeedback, PanelHeader, usePanelFocus } from './TablePanel';
 import { TableIcon, type TableIconName } from './TableIcon';
 
-type Step = 'view' | 'markers' | 'move' | 'more';
+type Step = 'view' | 'markers' | 'move';
 const destinations: { value: string; title: string; icon: TableIconName }[] = [
   { value: 'battlefield', title: 'Campo', icon: 'focus' },
   { value: 'hand', title: 'Mão', icon: 'hand' },
@@ -21,8 +21,7 @@ const destinations: { value: string; title: string; icon: TableIconName }[] = [
 ];
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ readingActions = false, mobileSheet = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onFocusOwner, onTransfer, onMoveToOwner, onMove }: {
-  readingActions?: boolean;
+export function CardPreview({ mobileSheet = false, card, editable = false, disabled = false, onCounter, onClose, onHide, onHideAll, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onFocusOwner, onTransfer, onMoveToOwner, onMove }: {
   mobileSheet?: boolean;
   card: Card | null;
   editable?: boolean;
@@ -30,6 +29,7 @@ export function CardPreview({ readingActions = false, mobileSheet = false, card,
   onCounter?: CardCounter;
   onClose: () => void;
   onHide?: (id: string) => Promise<boolean>;
+  onHideAll?: () => void;
   viewerId?: number;
   onStateChange?: CardStateChange;
   onCopy?: (id: string) => void;
@@ -72,7 +72,7 @@ export function CardPreview({ readingActions = false, mobileSheet = false, card,
   }, [cardId, step]);
 
   if (!card) return null;
-  const title = { view: card.name || 'Carta face para baixo', markers: 'Marcadores', move: 'Mover para…', more: 'Outras ações' }[step];
+  const title = { view: card.name || 'Carta face para baixo', markers: 'Marcadores', move: 'Mover para…' }[step];
   const zone = destinations.find(destination => destination.value === card.zone)?.title ?? 'Consulta do grimório';
   const controlled = card.controllerId === viewerId;
   const image = card.instanceKind || card.imageName ? cardImageURL(card) : deckApi.imageURL(imageName);
@@ -96,27 +96,21 @@ export function CardPreview({ readingActions = false, mobileSheet = false, card,
           {viewerId && onStateChange && card.zone === 'battlefield' && <CardStateControls mode="quick" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
           {onMove && <button className="secondary" disabled={disabled} onClick={() => setStep('move')}><TableIcon name="move" />Mover para…</button>}
         </div>}
-        {readingActions && controlled && <div className="portrait-card-actions" role="group" aria-label="Ações da carta">
-          {viewerId && onStateChange && card.zone === 'battlefield' && <button className="secondary" disabled={disabled} onClick={() => onStateChange('set_tapped', card, !card.tapped)}>{card.tapped ? 'Desvirar' : 'Virar'}</button>}
-          {viewerId && onStateChange && <button className="secondary" disabled={disabled} onClick={() => onStateChange('reveal_cards', card, !card.revealed)}>{card.revealed ? 'Ocultar revelação' : 'Revelar para todos'}</button>}
-          {card.ownerId === viewerId && onMove && destinations.filter(destination => destination.value !== card.zone).map(destination => <button key={destination.value} disabled={disabled} onClick={() => void onMove(card.id, destination.value)}>{destination.value === 'battlefield' ? 'Jogar no campo' : destination.title}</button>)}
-          {card.ownerId !== viewerId && viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
-        </div>}
         <div className="table-menu">
           {editable && onCounter && <MenuItem icon="markers" title="Marcadores" description="Marcadores de cor desta carta" disabled={disabled} onClick={() => setStep('markers')} />}
-          {(controlled || onCopy) && <MenuItem icon="actions" title="Outras ações" description="Revelação, faces, controle e cópias" onClick={() => setStep('more')} />}
+        </div>
+        <div className="panel-form">
+          {viewerId && onStateChange && <CardStateControls mode="other" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
+          {card.revealed && controlled && onHide && <label className="keep-revealed"><input type="checkbox" checked={keepRevealed} onChange={event => setKeepRevealed(event.target.checked)} />Manter revelada ao fechar (até passar o turno)</label>}
+          {viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
+          {onCopy && card.id && card.name && <MenuItem icon="copy" title="Criar cópia independente" description="Criar uma nova instância no seu campo" disabled={busy || disabled} onClick={() => onCopy(card.id)} />}
+          {onHideAll && <button className="secondary" disabled={disabled} onClick={onHideAll}>Ocultar todas reveladas</button>}
         </div>
       </>}
       {step === 'markers' && editable && onCounter && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
       {step === 'move' && controlled && <div className="table-menu">
         {card.ownerId === viewerId && destinations.filter(destination => destination.value !== card.zone).map(destination => <MenuItem key={destination.value} icon={destination.icon} title={destination.title} disabled={disabled} onClick={() => { void onMove?.(card.id, destination.value).then(ok => { if (ok) setStep('view'); }); }} />)}
         {card.ownerId !== viewerId && viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
-      </div>}
-      {step === 'more' && <div className="panel-form">
-        {viewerId && onStateChange && <CardStateControls mode="other" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} />}
-        {card.revealed && controlled && onHide && <label className="keep-revealed"><input type="checkbox" checked={keepRevealed} onChange={event => setKeepRevealed(event.target.checked)} />Manter revelada ao fechar (até passar o turno)</label>}
-        {viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
-        {onCopy && card.id && <MenuItem icon="copy" title="Criar cópia independente" description="Criar uma nova instância no seu campo" disabled={busy || disabled} onClick={() => onCopy(card.id)} />}
       </div>}
       </div>
     </div>

@@ -243,6 +243,7 @@
   .desktop-table .zone-column .zone-library:has(.library-bottom) { height: 41px; flex: 0 0 41px; }
   .desktop-table .library-bottom { display: flex; min-height: 18px; margin-top: 1px; font-size: 9px; }
   .desktop-table .zone-battlefield { margin: 34px 0 0 66px; padding: 8px 10px; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+  .desktop-table .table-revealed { margin-left: 66px; }
   .desktop-table .zone-battlefield > header { display: none; }
   .desktop-table .battlefield-fit { align-items: flex-start; justify-content: flex-start; overflow: visible; }
   .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .seat-number { top: 5px; left: 23px; width: 20px; height: 22px; }
@@ -283,10 +284,10 @@
   .desktop-table .log-turn summary { min-height: 27px; padding: 4px 0; }
   .desktop-table .log-turn summary strong { font-size: 12px; }
   .desktop-table .match-log li { margin-bottom: 8px; padding: 0 9px; border-radius: 0; border-left-color: #d9a94e66; background: transparent; font-size: 12px; line-height: 1.4; }
-  .desktop-table .card-hover-zoom { top: 70px; translate: none; width: 260px; max-height: calc(100vh - 160px); padding: 16px 12px; gap: 12px; border-color: #98763f; border-radius: 5px; background: #0b0e10f5; }
+  .desktop-table .card-hover-zoom { top: auto; bottom: 12px; translate: none; width: min(420px, 65vh, calc(50vw - 32px)); max-height: calc(100vh - 24px); padding: 12px; gap: 8px; border-color: #98763f; border-radius: 5px; background: #0b0e10f5; }
   .desktop-table .card-hover-zoom-left { left: 34px; }
   .desktop-table .card-hover-zoom-right { right: 34px; }
-  .desktop-table .card-hover-zoom img { width: 204px; max-width: 100%; border-radius: 4px; }
+  .desktop-table .card-hover-zoom img { width: 100%; max-width: 100%; max-height: calc(100vh - 100px); border-radius: 4px; }
   .desktop-table .card-hover-zoom h2 { align-self: stretch; font: 700 14px/1.2 Cinzel, serif; text-align: left; }
 }
 

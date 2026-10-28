@@ -115,3 +115,16 @@ Na revisão seguinte, o usuário substituiu a faixa inferior reservada por uma
 mão flutuante sobre o campo móvel. Pediu cartas um pouco maiores, leque
 centralizado quando couber, deslizamento horizontal em mãos grandes e remoção
 do botão de organizar no celular. A tela principal continua sem rolagem.
+
+## Inspeção de cartas revisada
+
+O usuário pediu que o clique abra diretamente a inspeção ilustrada, substituindo
+o formulário anterior; pediu também mostrar as ações antes agrupadas em
+“Outras ações” abaixo de Marcadores, manter a carta fixa durante a rolagem das
+ações e ampliar a prévia de hover no desktop. A barra de seleção não deve
+sobrepor a inspeção. Essas instruções substituem os requisitos anteriores de
+clique para seleção e de menu plano. Seleção em lote permanece disponível pelo
+modo Selecionar, Shift e seleção por área. A implementação aguarda 250 ms no
+clique simples de mouse em cartas controladas no campo para preservar o duplo
+clique de virar; esse intervalo é uma escolha de implementação, não uma medida
+específica aprovada pelo usuário.

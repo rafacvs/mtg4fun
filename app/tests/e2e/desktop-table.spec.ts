@@ -112,6 +112,7 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
     }
     await expect(own.getByRole('button', { name: 'Soldier Token', exact: true })).toHaveCount(9);
     const selectedCard = own.getByRole('button', { name: 'Soldier Token', exact: true }).first();
+    await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
     await selectedCard.click();
     await expect(selectedCard).toHaveAttribute('aria-pressed', 'true');
     const consultation = await contexts[0].request.post(`${path}/match/actions`, { data: { kind: 'consult', intentId: randomUUID(), consultFrom: 'top', count: 2 } });

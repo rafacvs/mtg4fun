@@ -4,7 +4,6 @@ import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { CardActionBar } from './CardActionBar';
-import { CardActionMenu } from './CardActionMenu';
 import { DragDestinations } from './DragDestinations';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
@@ -70,8 +69,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [zoomCardId, setZoomCardId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [cardMenuId, setCardMenuId] = useState<string | null>(null);
-  const closeCardMenu = useCallback(() => setCardMenuId(null), []);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
   const [selecting, setSelecting] = useState(false);
@@ -192,8 +189,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const ids = selectionIds.includes(card.id) ? selectionIds : [card.id];
       void setTapped(ids, !card.tapped);
     },
-    onInspect: (card, additive) => { if (!drag) { setHoverCardId(card.id); if (card.controllerId !== match?.viewerId) { setPreviewId(card.id); return; } setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : current.includes(card.id) ? current : [card.id]); } },
-    onOpenMenu: card => { setSelectionIds(current => current.includes(card.id) ? current : [card.id]); setCardMenuId(card.id); },
+    onInspect: (card, additive) => {
+      if (drag) return;
+      setHoverCardId(card.id);
+      if (card.controllerId === match?.viewerId) {
+        setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : [card.id]);
+        if (additive || selecting) return;
+      }
+      setPreviewId(card.id);
+    },
+    onOpenMenu: card => { if (card.controllerId === match?.viewerId) setSelectionIds(current => current.includes(card.id) ? current : [card.id]); setPreviewId(card.id); },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
     onDragCancel: () => setDrag(null),
@@ -212,7 +217,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     if (!cards.length) return false;
     const [zone, placement] = destination.split('-');
     const borrowed = cards.find(card => card.zone === 'battlefield' && card.ownerId !== match.viewerId);
-    if (borrowed && zone !== 'battlefield') { setCardMenuId(borrowed.id); setNotice('Escolha explicitamente a zona do dono para mover a carta.'); return false; }
+    if (borrowed && zone !== 'battlefield') { setPreviewId(borrowed.id); setNotice('Escolha explicitamente a zona do dono para mover a carta.'); return false; }
     return move(cards.map(card => card.id), zone, placement as 'top' | 'bottom' | undefined);
   }
 
@@ -355,13 +360,11 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       </div>}
     </div>
     {drag && <DragDestinations active={drag.zone} />}
-    {!drag && <CardActionBar cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed}
+    {!drag && !preview && <CardActionBar cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed}
       onTapped={(ids, tapped) => void setTapped(ids, tapped)} onReveal={ids => void revealCards(ids, true)}
       onMove={(ids, destination) => { void moveSelection(ids, destination); }}
       onMarker={ids => { void addMarkers(ids); }}
-      onMore={() => setCardMenuId(selectionIds[0])} onClear={() => setSelectionIds([])} />}
-    <CardActionMenu card={cardMenuId ? findCard(match, cardMenuId) : null} viewerId={match.viewerId} players={match.players} disabled={busy || unconfirmed} onClose={closeCardMenu}
-      onMove={moveSelection} onMoveToOwner={(id, destination) => { const [zone, placement] = destination.split('-'); void move([id], zone, placement as 'top' | 'bottom' | undefined).then(ok => { if (ok) setNotice(''); }); }} onCounter={counter} onStateChange={changeCardState} onCopy={id => void copyCard(id)} onTransfer={(id, playerId) => void transferControl(id, playerId)} onHideAll={() => void hideAllRevealed()} onInspect={setPreviewId} />
+      onMore={() => setPreviewId(selectionIds[0])} onClear={() => setSelectionIds([])} />}
     <LibraryConsultation
       open={libraryOpen}
       anchor={libraryAnchor}
@@ -396,7 +399,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
       return ok;
     }} onClose={closeCreation} />
-    <CardPreview mobileSheet={compact} readingActions={portrait} players={match.players} onFocusOwner={ownerId => { setFocusId(ownerId); setOverview(false); closePreview(); }} onMove={(cardId, destination) => {
+    <CardPreview mobileSheet={compact} players={match.players} onHideAll={() => void hideAllRevealed()} onFocusOwner={ownerId => { setFocusId(ownerId); setOverview(false); closePreview(); }} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
       const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
       return move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {

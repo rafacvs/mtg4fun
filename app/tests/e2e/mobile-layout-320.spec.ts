@@ -81,6 +81,7 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
       }
       await page.screenshot({ path: info.outputPath(`${name}-comandos.png`) });
       await panel.getByRole('button', { name: 'Fechar comandos', exact: true }).tap();
+      await page.getByRole('button', { name: 'Selecionar', exact: true }).tap();
       await cards.first().tap();
       await expect(bar).toBeVisible();
       const barBox = (await bar.boundingBox())!;
@@ -104,6 +105,7 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
       expect(await draw.evaluate(node => { const r = node.getBoundingClientRect(); const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return hit === node || node.contains(hit); })).toBe(true);
       await panel.getByRole('button', { name: 'Fechar comandos', exact: true }).tap();
       await bar.getByRole('button', { name: 'Limpar seleção', exact: true }).tap();
+      await page.getByRole('button', { name: 'Selecionar', exact: true }).tap();
     }
     await page.setViewportSize({ width: 320, height: 568 });
     await field.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).tap();
