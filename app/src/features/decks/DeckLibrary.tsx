@@ -3,6 +3,7 @@ import { useCardInspection } from './useCardInspection';
 import { useDecks } from './useDecks';
 import { DeckSummary } from './DeckSummary';
 import { DeleteDeckConfirmation } from './DeleteDeckConfirmation';
+import { deckApi } from './deckApi';
 import { GROUP_LABELS, GROUP_ORDER } from './deckDisplay';
 import './decks.css';
 
@@ -13,13 +14,15 @@ export function DeckLibrary({ library }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [importOpen, setImportOpen] = useState(true);
+  const [libraryQuery, setLibraryQuery] = useState('');
   const [query, setQuery] = useState('');
+  const [group, setGroup] = useState<string>('all');
   const [deleting, setDeleting] = useState<{ id: number; name: string } | null>(null);
   const chosen = library.decks.find(deck => deck.id === library.selected);
   const cardCount = chosen?.cards.reduce((sum, card) => sum + card.quantity, 0) ?? 0;
 
   useEffect(() => { if (!chosen) setImportOpen(true); }, [chosen]);
-  useEffect(() => { setQuery(''); }, [chosen?.id]);
+  useEffect(() => { setQuery(''); setGroup('all'); }, [chosen?.id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,7 +37,7 @@ export function DeckLibrary({ library }: Props) {
 
   return <section className="deck-library" aria-labelledby="decks-title">
     <div className="section-intro">
-      <div><p className="eyebrow">BIBLIOTECA</p><h2 id="decks-title">Seus decks, em um só lugar.</h2><p>Importe, consulte e organize seus decks Cockatrice.</p></div>
+      <div><p className="eyebrow">BIBLIOTECA</p><h2 id="decks-title">Seus decks</h2><p>Importe, consulte e organize seus decks Cockatrice.</p></div>
       <span className="deck-total">{library.decks.length} {library.decks.length === 1 ? 'deck salvo' : 'decks salvos'}</span>
     </div>
     <details className="import-card" open={importOpen} onToggle={event => setImportOpen(event.currentTarget.open)}>
@@ -53,13 +56,13 @@ export function DeckLibrary({ library }: Props) {
     {deleting && <DeleteDeckConfirmation name={deleting.name} busy={library.busy} error={library.error} onConfirm={() => library.remove(deleting.id)} onClose={() => setDeleting(null)} />}
     {library.error && <p role="alert" className="error">{library.error}</p>}
     {library.loading ? <p role="status">Carregando decks…</p> : library.decks.length === 0 ? <div className="empty-decks"><h3>Sua biblioteca começa aqui.</h3><p>Nenhum deck salvo. Importe seu primeiro arquivo.</p></div> : <div className="library-workspace">
-      <div className="saved-deck-grid" aria-label="Decks salvos">{library.decks.map(deck => <button key={deck.id} type="button" className="saved-deck-card secondary" aria-pressed={library.selected === deck.id} onClick={() => { inspection.close(); library.setSelected(deck.id); }}>
-        <span className="deck-emblem" aria-hidden="true">♧</span>
+      <div className="saved-deck-grid" aria-label="Decks salvos"><label className="library-search"><span className="sr-only">Buscar deck</span><input placeholder="Buscar deck" value={libraryQuery} onChange={event => setLibraryQuery(event.target.value)} /></label>{library.decks.filter(deck => deck.name.toLowerCase().includes(libraryQuery.toLowerCase())).map(deck => <button key={deck.id} type="button" className="saved-deck-card secondary" aria-pressed={library.selected === deck.id} onClick={() => { inspection.close(); library.setSelected(deck.id); }}>
+        <span className="deck-emblem" aria-hidden="true">{deck.cards.find(card => card.available) ? <img src={deckApi.imageURL(deck.commander || deck.cards.find(card => card.available)!.name)} alt="" /> : "♧"}</span>
         <span>
           <strong>{deck.name}</strong>
           <small>{deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cartas</small>
           <small>{deck.cards.some(card => !card.available) ? `${deck.cards.filter(card => !card.available).length} nomes fora do catálogo` : 'Cartas no catálogo'}</small>
-          <small>Prévia: {deck.cards.find(card => card.available)?.name ?? 'Nenhuma carta disponível'}</small>
+
         </span>
         <span aria-hidden="true">→</span>
       </button>)}</div>
@@ -72,10 +75,9 @@ export function DeckLibrary({ library }: Props) {
       </div>
       {chosen ? <article className="deck-detail">
         <div className="deck-detail-header">
-          <div><p className="eyebrow">DECK SELECIONADO</p><h3>{chosen.name}</h3><p>{cardCount} cartas · {chosen.cards.length} nomes</p></div>
+          <div className="deck-hero-title">{chosen.commander && <img className="deck-commander-image" src={deckApi.imageURL(chosen.commander)} alt={`Comandante ${chosen.commander}`} />}<div><p className="eyebrow">DECK SELECIONADO</p><h3>{chosen.name}</h3><p>{cardCount} cartas · {chosen.cards.length} nomes</p></div></div>
           <button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => { inspection.close(); setDeleting({ id: chosen.id, name: chosen.name }); }}>Excluir deck</button>
         </div>
-        <DeckSummary deck={chosen} />
         <div className="deck-columns">
           <section className="deck-preview" aria-label="Preview de carta">
             {inspection.card ? <>
@@ -85,9 +87,14 @@ export function DeckLibrary({ library }: Props) {
               {!inspection.imageFailed && <img src={inspection.imageURL} alt={`Imagem ampliada de ${inspection.card.name}`} onError={inspection.reportImageFailure} />}
               {inspection.imageFailed && <p role="status">A imagem não está disponível agora. O texto da carta continua acessível.</p>}
             </> : <><span className="eyebrow">PREVIEW</span><h4>Conheça cada carta.</h4><p>Selecione uma carta na lista para ver o texto e a imagem aqui.</p></>}
+            <DeckSummary deck={chosen} />
           </section>
           <section className="deck-card-list" aria-label={`Cartas de ${chosen.name}`}>
             <div className="card-list-heading"><h4>Lista de cartas</h4><span>{chosen.cards.length} nomes</span></div>
+            <div className="deck-filters" aria-label="Filtrar cartas por tipo">
+              <button type="button" aria-pressed={group === 'all'} onClick={() => setGroup('all')}>Tudo {cardCount}</button>
+              {GROUP_ORDER.filter(key => chosen.groups[key].length > 0).map(key => <button type="button" key={key} aria-pressed={group === key} onClick={() => setGroup(key)}>{GROUP_LABELS[key]} {chosen.groups[key].reduce((sum, card) => sum + card.quantity, 0)}</button>)}
+            </div>
             <div className="deck-card-search">
               <label htmlFor="deck-card-search">Buscar carta</label>
               <input id="deck-card-search" value={query} onChange={event => setQuery(event.target.value)} />
@@ -95,12 +102,12 @@ export function DeckLibrary({ library }: Props) {
             </div>
             <div className="deck-groups">{GROUP_ORDER.map(key => {
               const cards = chosen.groups[key].filter(card => card.name.toLowerCase().includes(query.trim().toLowerCase()));
-              if (cards.length === 0) return null;
+              if (cards.length === 0 || (group !== 'all' && group !== key)) return null;
               return <section key={key} aria-label={GROUP_LABELS[key]}>
                 <h4>{GROUP_LABELS[key]}</h4>
                 <ul>{cards.map(deckCard => <li key={deckCard.name}>
                   <span className="card-line">
-                    <span className="card-quantity">{deckCard.quantity} × </span>
+                    <span className="card-quantity">{deckCard.quantity} × </span>{deckCard.available ? <img className="deck-card-thumb" src={deckApi.imageURL(deckCard.name)} alt="" loading="lazy" /> : <span aria-hidden="true" />}
                     <button type="button" className="card-link" aria-label={`Consultar ${deckCard.name}`} aria-pressed={inspection.card?.name === deckCard.name} onClick={() => inspection.inspect(deckCard)}>{deckCard.name}</button>
                   </span>
                   {key !== 'commander' ? <button type="button" className="text-button" disabled={library.busy} aria-label={`Marcar comandante ${deckCard.name}`} onClick={() => void library.setCommander(chosen.id, deckCard.name)}>Marcar comandante</button> : null}

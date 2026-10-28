@@ -117,7 +117,7 @@ test('decks usam dados reais e confirmam exclusão sem alterar partida', async (
   expect(beforeDelete.id).toBe(deckId);
   expect(beforeDelete.name).toBe('Biblioteca real');
   await page.reload();
-  await page.getByLabel('Escolher deck salvo').selectOption(String(deckId));
+  await page.getByRole('button', { name: /Biblioteca real/ }).click();
   await expect(page.getByRole('heading', { name: 'Biblioteca real', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
   await confirmation.getByRole('button', { name: 'Confirmar exclusão', exact: true }).click();

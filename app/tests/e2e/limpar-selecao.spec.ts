@@ -50,10 +50,12 @@ test('clique no espaço vazio do campo limpa a seleção e preserva os gestos', 
   await selectCards();
   const first = (await field.locator(`[data-card-id="${ids[0]}"]`).boundingBox())!;
   const last = (await field.locator(`[data-card-id="${ids[3]}"]`).boundingBox())!;
+  await page.keyboard.down('Shift');
   await page.mouse.move(first.x - 8, first.y + 4);
   await page.mouse.down();
   await page.mouse.move(last.x + last.width + 4, last.y + last.height + 4, { steps: 8 });
   await page.mouse.up();
+  await page.keyboard.up('Shift');
   await expect(selected).toHaveCount(4);
   await field.locator(`[data-card-id="${ids[0]}"]`).dblclick();
   await expect(field.locator('.is-selected[data-tapped="true"]')).toHaveCount(4);

@@ -178,10 +178,12 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
       }) ?? null;
     });
     expect(area).not.toBeNull();
+    await page.keyboard.down('Shift');
     await page.mouse.move(area!.x, area!.y);
     await page.mouse.down();
     await page.mouse.move(area!.endX, area!.endY, { steps: 8 });
     await page.mouse.up();
+    await page.keyboard.up('Shift');
     await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
     await page.screenshot({ path: testInfo.outputPath('retangulo-selecao.png'), fullPage: true });
     await page.keyboard.press('Escape');

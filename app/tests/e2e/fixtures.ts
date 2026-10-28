@@ -170,10 +170,12 @@ export async function selectFieldArea(page: Page, field: Locator) {
     }) ?? null;
   });
   expect(area).not.toBeNull();
+  await page.keyboard.down('Shift');
   await page.mouse.move(area!.x, area!.y);
   await page.mouse.down();
   await page.mouse.move(area!.endX, area!.endY, { steps: 8 });
   await page.mouse.up();
+  await page.keyboard.up('Shift');
 }
 
 // A normal click opens the card inspection directly.

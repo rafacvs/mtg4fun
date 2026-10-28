@@ -25,7 +25,7 @@ numa carta e escolha **Mover para…** no detalhe. A mão própria permanece
 disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
 celular funciona na vertical e horizontal, com **Visão geral** em grade e toque
 para ampliar um campo. A partida atualiza
-a cada segundo. No campo, arraste uma área com mouse para selecionar várias
+a cada segundo. No campo, arraste o espaço vazio para navegar; segure Shift e arraste uma área para selecionar várias
 cartas. A seleção múltipla por toque não está disponível nesta revisão.
 Arrastar uma selecionada reposiciona o conjunto preservando sua disposição.
 Clicar no espaço vazio do campo ou pressionar Escape limpa a seleção.
