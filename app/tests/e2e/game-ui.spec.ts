@@ -139,7 +139,6 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await inspector.getByLabel('Poder', { exact: true }).fill('2');
     await inspector.getByLabel('Poder', { exact: true }).press('Enter');
     await expect(hand.getByLabel('Poder e resistência')).toHaveCount(0);
-    await inspector.getByRole('button', { name: 'Mover para…', exact: true }).click();
     await inspector.getByRole('button', { name: 'Campo', exact: true }).click();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
     await inspector.getByRole('button', { name: 'Fechar', exact: true }).click();

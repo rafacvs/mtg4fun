@@ -128,3 +128,11 @@ modo Selecionar, Shift e seleção por área. A implementação aguarda 250 ms n
 clique simples de mouse em cartas controladas no campo para preservar o duplo
 clique de virar; esse intervalo é uma escolha de implementação, não uma medida
 específica aprovada pelo usuário.
+
+Na revisão posterior, o usuário pediu que a inspeção siga o layout do protótipo,
+conservando o tamanho da carta e do modal: prévia dos marcadores, destinos e
+transferência no próprio painel, e remoção de “Ocultar todas reveladas” desse
+modal. Ao esclarecer a permissão de marcadores, decidiu manter a regra existente:
+no campo apenas o controlador edita marcadores, mesmo quando outro jogador é
+dono da carta; nas demais zonas aplica-se a permissão existente do dono. Os
+marcadores públicos continuam visíveis para consulta sem alterar permissões.

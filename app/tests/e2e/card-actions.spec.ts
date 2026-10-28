@@ -67,12 +67,12 @@ test('Mais e clique direito mostram a inspeção e atalhos agem na seleção', a
   await bar.getByRole('button', { name: 'Mais', exact: true }).click();
   const menu = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
   await expect(menu).toBeVisible();
-  for (const title of ['Colocar face para baixo', 'Revelar para todos', 'Criar cópia independente', 'Ocultar todas reveladas']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
+  for (const title of ['Colocar face para baixo', 'Revelar para todos', 'Criar cópia independente']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
+  await expect(menu.getByRole('button', { name: 'Ocultar todas reveladas', exact: true })).toHaveCount(0);
   await expect(menu.getByRole('textbox', { name: 'Poder', exact: true })).toBeVisible();
   await expect(menu.getByRole('button', { name: 'Voltar', exact: true })).toHaveCount(0);
   const titles = await menu.getByRole('button').allTextContents();
-  await menu.getByRole('button', { name: 'Mover para…', exact: true }).click();
-  for (const title of ['Mão', 'Cemitério', 'Exílio', 'Comando', 'Grimório — topo', 'Grimório — fundo']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
+  for (const title of ['Mão', 'Cemitério', 'Exílio', 'Comando', 'Topo', 'Fundo']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
   await menu.getByRole('button', { name: 'Fechar', exact: true }).click();
   await card.click({ button: 'right' });
   await expect(menu).toBeVisible();

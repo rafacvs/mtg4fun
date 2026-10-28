@@ -137,7 +137,6 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   });
   expect(layout).toEqual({ overflowX: false, outerScroll: false, imageMoved: 0 });
   await page.setViewportSize(priorViewport);
-  await preview.getByRole('button', { name: 'Mover para…', exact: true }).tap();
   const play = preview.getByRole('button', { name: 'Campo', exact: true });
   await expect(play).toBeVisible();
   expect((await play.boundingBox())!.height).toBeGreaterThanOrEqual(44);

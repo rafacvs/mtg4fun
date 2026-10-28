@@ -27,6 +27,7 @@ import './match.css';
 import './counters.css';
 import './mobile-table.css';
 import './desktop-table.css';
+import './card-preview.css';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 
@@ -399,7 +400,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
       return ok;
     }} onClose={closeCreation} />
-    <CardPreview mobileSheet={compact} players={match.players} onHideAll={() => void hideAllRevealed()} onFocusOwner={ownerId => { setFocusId(ownerId); setOverview(false); closePreview(); }} onMove={(cardId, destination) => {
+    <CardPreview mobileSheet={compact} players={match.players} onFocusOwner={ownerId => { setFocusId(ownerId); setOverview(false); closePreview(); }} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
       const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;
       return move([cardId], to, placement as 'top' | 'bottom' | undefined).then(ok => {
