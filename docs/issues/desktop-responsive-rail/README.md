@@ -63,11 +63,13 @@ explicitamente pelo usuário. A imagem representa:
 - um destaque circular em primeiro plano;
 - um carrinho dentro do círculo.
 
-A imagem completa, inclusive sua moldura dourada, é exibida dentro do botão. O
-asset mantém a proporção original com `object-fit: contain`, ocupa 36×36 px no
-botão desktop de 42×42 px e usa 30×30 px nos demais contextos. O texto
-alternativo é vazio porque o botão já possui o rótulo acessível **Comprar**. A
-ação, o atalho `D` e o comportamento de compra continuam inalterados.
+A imagem correta não possui moldura externa: mostra somente os dois cards e o
+carrinho sobre o fundo escuro. A borda continua sendo fornecida pelo próprio
+botão. O asset mantém a proporção original com `object-fit: contain`, ocupa
+36×36 px no botão desktop de 42×42 px e usa 30×30 px nos demais contextos. O
+texto alternativo é vazio porque o botão já possui o rótulo acessível
+**Comprar**. A ação, o atalho `D` e o comportamento de compra continuam
+inalterados.
 
 ## Responsividade
 
