@@ -267,6 +267,7 @@
   .desktop-table .card-action-bar { bottom: 124px; }
   .desktop-table .quick-actions { border: 0; gap: 18px; padding: 0; }
   .desktop-table .quick-actions button:not(:first-child) { position: relative; width: 42px; min-width: 42px; height: 42px; min-height: 42px; padding: 0; border-radius: 4px; background: #10171b; border-color: #a47d36aa; }
+  .desktop-table .quick-actions .draw-action-icon { width: 36px; height: 36px; flex-basis: 36px; }
   .desktop-table .quick-actions button:not(:first-child) span { position: absolute; top: 47px; font-size: 10px; color: #e1d5bc; }
   .desktop-table .quick-actions button:first-child { order: 1; width: 250px; min-height: 56px; padding: 0 20px; justify-content: space-between; color: #231905; background: linear-gradient(#f0ca74, #c78f2c); border: 1px solid #dfae4e; border-radius: 5px; font: 700 14px/1 Cinzel, serif; text-transform: uppercase; letter-spacing: .1em; }
   .desktop-table .quick-actions button:first-child .table-icon { order: 1; }

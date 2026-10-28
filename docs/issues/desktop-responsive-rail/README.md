@@ -56,18 +56,18 @@ jogador. Permissões e edição de vida/marcadores não mudam.
 
 ### Ícone da ação Comprar
 
-O antigo símbolo de seta para baixo foi substituído por um SVG vetorial que
-representa:
+O antigo símbolo de seta para baixo foi substituído pelo arquivo PNG fornecido
+explicitamente pelo usuário. A imagem representa:
 
 - dois cards sobrepostos;
 - um destaque circular em primeiro plano;
 - um carrinho dentro do círculo.
 
-A moldura externa da imagem fornecida não foi repetida dentro do SVG porque o
-botão já oferece borda, fundo e estados de foco/desabilitado. O ícone herda
-`currentColor`, espessura e dimensões do sistema `TableIcon`, mantendo contraste
-nos temas e nitidez em telas Retina ou com zoom. A ação, o atalho `D`, o rótulo
-acessível **Comprar** e o comportamento de compra continuam inalterados.
+A imagem completa, inclusive sua moldura dourada, é exibida dentro do botão. O
+asset mantém a proporção original com `object-fit: contain`, ocupa 36×36 px no
+botão desktop de 42×42 px e usa 30×30 px nos demais contextos. O texto
+alternativo é vazio porque o botão já possui o rótulo acessível **Comprar**. A
+ação, o atalho `D` e o comportamento de compra continuam inalterados.
 
 ## Responsividade
 
@@ -103,7 +103,9 @@ falha observada da implementação.
 
 - `app/src/features/rooms/desktop-table.css`: dimensões responsivas do trilho,
   vida, zonas, comandante e marcadores.
-- `app/src/features/rooms/TableIcon.tsx`: novo desenho vetorial de compra.
+- `app/src/assets/theme/draw-cards.png`: imagem fornecida para a ação de compra.
+- `app/src/features/rooms/TableQuickActions.tsx`: uso direto da imagem no botão.
+- `app/src/features/rooms/match.css`: encaixe compartilhado do novo asset.
 - `app/tests/e2e/desktop-table.spec.ts`: mínimos observáveis de largura e ícone.
 - `app/tests/e2e/contadores.spec.ts`: regressão de posição dos marcadores.
 - `docs/issues/desktop-responsive-rail/README.md`: contexto, escopo, impactos e
@@ -115,6 +117,5 @@ falha observada da implementação.
 - mudar regras de compra, turno, zonas ou marcadores;
 - detectar resolução física, modelo do monitor ou plataforma do usuário;
 - persistir dimensões ou preferências de layout no servidor;
-- incorporar a imagem raster fornecida ao bundle;
 - modificar a experiência mobile além do redimensionamento normal dos
   componentes compartilhados.
