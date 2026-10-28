@@ -292,21 +292,35 @@
 
 /* Desktop fields use the same readable rail as the focused mobile field. */
 @media (min-width: 1001px) {
-  .desktop-table .zone-column { overscroll-behavior: contain; }
+  .desktop-table .player-table { container-type: size; }
+  .desktop-table .seat-life-readout, .desktop-table .seat-life { top: 44px; height: 32px; font-size: 22px; line-height: 32px; }
+  .desktop-table .seat-life-mobile { display: block; font: inherit; }
+  .desktop-table .seat-markers,
+  .desktop-table .own-table-surface .seat-markers:not(:has(.marker-dot)),
+  .desktop-table .opponent-table-surface .seat-markers:not(:has(.marker-dot)) {
+    top: 40px; left: 5px; width: 55px; height: 38px; min-height: 38px;
+    padding: 0; border: 0; background: transparent;
+  }
+  .desktop-table .seat-markers .marker-dots { position: absolute; top: -30px; left: 0; }
+  .desktop-table .zone-column, .desktop-table .opponent-table-surface .zone-column,
+  .desktop-table .opponent-table-surface .player-table:has(.marker-dot) .zone-column {
+    --rail-unit: clamp(0px, calc(16.6667cqh - 15.667px), 36px);
+    top: 80px; height: calc(100% - 84px); max-height: none; gap: 2px; overflow: hidden;
+  }
   .desktop-table .zone-column .card-slot,
   .desktop-table .zone-column .zone-library,
-  .desktop-table .zone-column .zone-library .card-slot { flex: 0 0 36px; height: 36px; min-height: 36px; }
-  .desktop-table .zone-column .card-slot.zone-command { flex-basis: 60px; height: 60px; }
-  .desktop-table .rail-hand-count { flex-basis: 36px; height: 36px; color: #f4eee1; font: 700 12px/34px Geist, sans-serif; }
+  .desktop-table .zone-column .zone-library .card-slot { flex: 0 0 var(--rail-unit); height: var(--rail-unit); min-height: 0; }
+  .desktop-table .zone-column .card-slot.zone-command { flex-basis: clamp(0px, calc(25cqh - 23.5px), 60px); height: clamp(0px, calc(25cqh - 23.5px), 60px); }
+  .desktop-table .rail-hand-count { flex-basis: var(--rail-unit); height: var(--rail-unit); color: #f4eee1; font: 700 12px/1 Geist, sans-serif; display: flex; align-items: center; justify-content: center; }
   .desktop-table .zone-column .rail-hand-count svg { width: 18px; height: 18px; margin-right: 3px; }
   .desktop-table .zone-column .slot-label { display: flex; align-items: center; height: 100%; padding: 0 20px 0 5px; }
   .match-board .desktop-table .zone-column .slot-label::before { content: none; }
   .desktop-table .zone-column .slot-label .table-icon { width: 20px; height: 20px; flex: 0 0 20px; }
-  .desktop-table .zone-column .zone-count { top: 8px; right: 2px; min-width: 18px; padding: 3px 2px; color: #fff; background: #080b0eec; font-size: 12px; }
+  .desktop-table .zone-column .zone-count { top: 50%; transform: translateY(-50%); right: 2px; min-width: 18px; padding: 3px 2px; color: #fff; background: #080b0eec; font-size: 12px; }
   .desktop-table .zone-column .zone-command .slot-label { display: none; }
   .desktop-table .zone-column .zone-command .playing-card { opacity: 1; }
   .desktop-table .zone-column .zone-command .playing-card img { width: 100%; height: 100%; margin: 0; object-fit: contain; }
   .desktop-table .zone-column .zone-command .slot-empty { inset: 0; opacity: 1; }
   .desktop-table .zone-column .zone-command .slot-empty .table-icon { width: 23px; opacity: .9; }
-  .desktop-table .zone-column .zone-command .zone-count { top: auto; bottom: 1px; }
+  .desktop-table .zone-column .zone-command .zone-count { top: auto; bottom: 1px; transform: none; }
 }

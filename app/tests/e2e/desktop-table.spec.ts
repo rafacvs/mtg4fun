@@ -127,12 +127,18 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
       expect(cards.every(card => card.left >= fit!.x - 1 && card.right <= fit!.x + fit!.width + 1 && card.top >= fit!.y - 1 && card.bottom <= fit!.y + fit!.height + 1)).toBe(true);
     }).toPass();
     await expect.poll(async () => (await (await contexts[1].request.get(`${path}/match`)).json()).match.players.find((player: { name: string }) => player.name === 'Amigo da mesa').consulting).toBe(true);
-    const ownLife = own.getByRole('textbox', { name: 'Vida', exact: true });
+    await expect(own.getByRole('textbox', { name: 'Vida', exact: true })).toHaveCount(0);
+    await own.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).click();
+    const menu = page.getByRole('dialog', { name: 'Jogador Amigo da mesa', exact: true });
+    const ownLife = menu.getByRole('textbox', { name: 'Vida', exact: true });
     await ownLife.fill('37');
     await ownLife.press('Enter');
     await expect(own.getByLabel('Vida: 37', { exact: true })).toBeVisible();
+    await menu.getByRole('button', { name: 'Fechar jogador', exact: true }).click();
     await page.reload();
+    await own.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).click();
     await expect(ownLife).toHaveValue('37');
+    await menu.getByRole('button', { name: 'Fechar jogador', exact: true }).click();
     const card = own.getByRole('button', { name: 'Soldier Token', exact: true });
     await expect(page.getByRole('combobox', { name: 'Densidade', exact: true })).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Zoom do campo' })).toHaveCount(0);
@@ -185,6 +191,18 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
       await expect(page.locator('.seat-focus')).toHaveCount(0);
       await page.setViewportSize({ width: 1920, height: 1080 });
       for (const player of await page.getByRole('article').all()) await expect(player).toBeInViewport();
+      for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 600 }]) {
+        await page.setViewportSize(viewport);
+        for (const rail of await page.locator('.desktop-table .zone-column').all()) {
+          const result = await rail.evaluate(node => {
+            const bounds = node.getBoundingClientRect();
+            const children = [...node.children].map(child => child.getBoundingClientRect());
+            return { scrolls: node.scrollHeight > node.clientHeight, visible: children.every(box => box.height > 0 && box.top >= bounds.top - 1 && box.bottom <= bounds.bottom + 1) };
+          });
+          expect(result).toEqual({ scrolls: false, visible: true });
+        }
+      }
+      await page.setViewportSize({ width: 1920, height: 1080 });
       if (count === 1) await expect(strip).toHaveCount(0);
       else {
         await expect(strip.getByRole('article')).toHaveCount(count - 1);

@@ -501,6 +501,7 @@
 
 /* Focused fields reserve a narrow rail; its contents scroll independently. */
 @media (max-width: 1000px) {
+  .mobile-table .seat-life-mobile { display: block; }
   .mobile-table .focused-table .seat-heading::before { width: 54px; }
   .mobile-table .focused-table .seat-number { left: 18px; }
   .mobile-table .focused-table .seat-name { left: 61px; }
