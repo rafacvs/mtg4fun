@@ -166,6 +166,21 @@
 .mobile-table .zone-column .zone-command .slot-label { padding-right: 0; }
 .mobile-table .zone-column .zone-command .slot-label::before { font-size: 8px; }
 .mobile-table .zone-column .zone-command .zone-count { left: 6px; right: auto; top: 0; min-width: 7px; padding: 0; background: #08090de6; font-size: 7px; }
+
+/* Keep the focused mobile rail narrow while giving its icons and counts room. */
+@media (max-width: 1000px) {
+  .mobile-table .focused-table .rail-hand-count { color: #f4eee1; font-size: 12px; font-weight: 700; }
+  .mobile-table .focused-table .rail-hand-count svg { width: 18px; height: 18px; margin-right: 3px; }
+  .mobile-table .focused-table .zone-column .slot-label { display: flex; align-items: center; height: 100%; padding: 0 19px 0 3px; }
+  .match-board .mobile-table .focused-table .zone-column .slot-label::before { content: none; }
+  .mobile-table .focused-table .zone-column .slot-label .table-icon { width: 20px; height: 20px; flex: 0 0 20px; }
+  .mobile-table .focused-table .zone-column .zone-count { top: 12px; right: 1px; left: auto; min-width: 18px; padding: 3px 2px; color: #fff; background: #080b0eec; font-size: 12px; }
+  .mobile-table .focused-table .zone-column .zone-command .slot-label { display: none; }
+  .mobile-table .focused-table .zone-column .zone-command .playing-card img { width: 100%; height: 100%; margin: 0; object-fit: contain; }
+  .mobile-table .focused-table .zone-column .zone-command .slot-empty { inset: 0; opacity: 1; }
+  .mobile-table .focused-table .zone-column .zone-command .slot-empty .table-icon { width: 23px; opacity: .9; }
+  .mobile-table .focused-table .zone-column .zone-command .zone-count { top: auto; bottom: 1px; right: 1px; }
+}
 @media (min-width: 1001px), (max-width: 1000px) {
   .match-board .zone-column .zone-library .slot-label::before { content: ''; display: inline-block; width: 8px; height: 11px; vertical-align: middle; border: 1px solid #876c40; border-radius: 1px; background: url('/library-back.png') center / cover; }
   .match-board .zone-column .zone-graveyard .slot-label::before { content: ''; display: inline-block; width: 11px; height: 11px; vertical-align: middle; background: #ddd3bb; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2'%3E%3Cpath d='M6 21V10a6 6 0 0 1 12 0v11zM12 9v6M9.5 11.5h5M4 21h16'/%3E%3C/svg%3E") center / contain no-repeat; }
