@@ -10,11 +10,20 @@ Estas especificações consolidam o esboço inicial e as decisões da conversa d
 
 As três especificações formam uma única primeira versão, incluindo jogo completo no celular desde o início.
 
-A experiência vigente da mesa é a
-[nova experiência](05-nova-experiencia-da-mesa.md), aprovada em 24/10/2026.
-Ela substitui a apresentação da [mesa](02-mesa-e-interface.md) e a direção
-visual do [refinamento premium](04-refinamento-ui-mesa.md). As regras de jogo
-da mesa permanecem, com a consulta do grimório redefinida na spec nova.
+A apresentação-alvo vigente da mesa é a
+[paridade visual com o protótipo V2](07-paridade-visual-v2.md), aprovada em
+25/10/2026 e publicada na [issue 70](https://github.com/rafacvs/mtg4fun/issues/70).
+**O HTML V2 é referência visual obrigatória, com as exceções explícitas da
+spec. A implementação técnica está na branch de integração da issue #70; o
+aceite visual explícito do usuário continua pendente na issue #81.**
+
+A [nova experiência](05-nova-experiencia-da-mesa.md) registra a etapa anterior,
+seguida pela [spec da mesa V2 na issue 57](https://github.com/rafacvs/mtg4fun/issues/57),
+entregue pelo [PR 69](https://github.com/rafacvs/mtg4fun/pull/69). A spec nova
+corrige a exigência de paridade visual e preserva campo manual, cartas
+inteiras e contratos de jogo. Regras da [mesa](02-mesa-e-interface.md) e
+redefinição da consulta do grimório continuam onde não forem substituídas
+expressamente. O [refinamento premium](04-refinamento-ui-mesa.md) é histórico.
 
 ## Objetivo e direção
 

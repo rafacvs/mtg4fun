@@ -295,7 +295,6 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       if (await drawn.count()) {
         await drawn.first().tap();
         const preview = page.getByRole('dialog', { name: 'Imagem de Island' });
-        await preview.getByRole('button', { name: 'Mover para…', exact: true }).tap();
         await preview.getByRole('button', { name: 'Cemitério', exact: true }).tap();
         await preview.getByRole('button', { name: 'Fechar', exact: true }).tap();
       }

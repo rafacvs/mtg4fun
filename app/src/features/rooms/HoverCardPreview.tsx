@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { cardImageURL } from './cardImage';
 import type { Card } from './roomsApi';
 
@@ -15,12 +15,20 @@ export function HoverCardPreview({ card }: { card: Card | null }) {
 export function CardHoverZoom({ card }: { card: Card }) {
   const image = card.name ? cardImageURL(card) : '';
   const [failed, setFailed] = useState(false);
-  return <div className="card-hover-zoom" aria-hidden="true">
+  const [side, setSide] = useState<'left' | 'right'>('right');
+  useLayoutEffect(() => {
+    const source = document.querySelector<HTMLElement>(`[data-card-id="${CSS.escape(card.id)}"]`);
+    if (source) {
+      const box = source.getBoundingClientRect();
+      setSide(box.left + box.width / 2 < window.innerWidth / 2 ? 'right' : 'left');
+    }
+  }, [card.id]);
+  return <section className={`card-hover-zoom card-hover-zoom-${side}`} aria-label="Prévia da carta">
     {!card.name ? <p>Face para baixo</p>
       : failed || !image ? <p>{card.name}</p>
         : <img src={image} alt="" draggable={false} onError={() => setFailed(true)} />}
-    {card.name && <p>{card.name}</p>}
-  </div>;
+    {card.name && <h2>{card.name}</h2>}
+  </section>;
 }
 
 function HoverImage({ image, card }: { image: string; card: Card }) {

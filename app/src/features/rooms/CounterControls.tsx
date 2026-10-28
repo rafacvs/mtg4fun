@@ -122,9 +122,9 @@ export function PowerToughnessAdjust({ power, toughness, disabled, onApply, owed
   return <div className="pt-pair-block">
     <div className="pt-pair" role="group" aria-label="Poder e resistência">
       <button type="button" className="secondary" aria-label="Diminuir poder e resistência" disabled={controlsDisabled} onClick={() => void shift(-1)}>−</button>
-      <NumericField inputLabel="Poder" value={power} disabled={controlsDisabled} onApply={(operation, value) => onApply('power', operation, value)} textual />
+      <span className="pt-value" data-positive={power > 0}><NumericField inputLabel="Poder" value={power} disabled={controlsDisabled} onApply={(operation, value) => onApply('power', operation, value)} textual /></span>
       <span className="pt-slash" aria-hidden="true">/</span>
-      <NumericField inputLabel="Resistência" value={toughness} disabled={controlsDisabled} onApply={(operation, value) => onApply('toughness', operation, value)} textual />
+      <span className="pt-value" data-positive={toughness > 0}><NumericField inputLabel="Resistência" value={toughness} disabled={controlsDisabled} onApply={(operation, value) => onApply('toughness', operation, value)} textual /></span>
       <button type="button" className="secondary" aria-label="Aumentar poder e resistência" disabled={controlsDisabled} onClick={() => void shift(1)}>+</button>
     </div>
     {partial && <p role="alert" className="error">{partial}</p>}

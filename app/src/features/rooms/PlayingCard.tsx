@@ -29,6 +29,7 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
   const holdTimer = useRef<number | null>(null);
+  const clickTimer = useRef<number | null>(null);
   const holdShown = useRef(false);
   const pointerType = useRef('mouse');
   const suppressClick = useRef(false);
@@ -55,7 +56,7 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
     holdShown.current = false;
     handlers.current.onZoom?.(null);
   };
-  useEffect(() => () => { stopTracking.current?.(); clearHold(); }, []);
+  useEffect(() => () => { stopTracking.current?.(); clearHold(); if (clickTimer.current) window.clearTimeout(clickTimer.current); }, []);
   useEffect(() => setFailed(false), [card.imageName, card.name, card.faceIndex]);
 
   function pointerDown(event: React.PointerEvent<HTMLButtonElement>) {
@@ -102,7 +103,13 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
       suppressClick.current = true;
       stopTracking.current?.();
     };
+    const secondTouch = (pointer: PointerEvent) => {
+      if (pointer.pointerType !== 'touch' || pointer.pointerId === pointerId) return;
+      suppressClick.current = true;
+      stopTracking.current?.();
+    };
     const cleanup = () => {
+      window.removeEventListener('pointerdown', secondTouch);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
@@ -115,6 +122,7 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
       dragging.current = false;
     };
     window.addEventListener('pointermove', move);
+    window.addEventListener('pointerdown', secondTouch);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', cancel);
   }
@@ -137,11 +145,18 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
     onFocus={() => onHover?.(card)}
     onBlur={cancelZoom}
     onDoubleClick={() => {
+      if (clickTimer.current) window.clearTimeout(clickTimer.current);
+      clickTimer.current = null;
       if (draggable && card.zone === 'battlefield' && pointerType.current === 'mouse') onToggleTapped?.(card);
     }}
     onClick={event => {
       if (suppressClick.current) { suppressClick.current = false; return; }
-      handlers.current.onInspect(card, event.shiftKey);
+      if (event.detail > 1) return;
+      const additive = event.shiftKey;
+      if (pointerType.current === 'mouse' && event.detail === 1 && !additive && draggable && card.zone === 'battlefield') {
+        if (clickTimer.current) window.clearTimeout(clickTimer.current);
+        clickTimer.current = window.setTimeout(() => { clickTimer.current = null; handlers.current.onInspect(card, additive); }, 250);
+      } else handlers.current.onInspect(card, additive);
     }}
   >
     {card.faceDown || !card.name ? <span className="card-back">Face para baixo{card.revealed && <small>Revelada</small>}</span> : failed

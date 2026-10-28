@@ -18,7 +18,7 @@ export const test = base.extend<{}, { appURL: string }>({
       const executable = join(directory, 'mtg4fun');
       const database = JSON.parse(execFileSync('python3', [join(root, 'scripts/test-mysql.py')], { encoding: 'utf8', timeout: 420_000 })) as Record<string, string>;
       container = database.container;
-      const environment = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DB_'))), ...Object.fromEntries(Object.entries(database).filter(([key]) => key.startsWith('DB_'))), COOKIE_SECURE: 'false' };
+      const environment = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DB_'))), ...Object.fromEntries(Object.entries(database).filter(([key]) => key.startsWith('DB_'))), COOKIE_SECURE: 'false', IMAGE_CACHE: join(directory, 'images') };
       execFileSync('go', ['build', '-o', executable, './cmd/mtg4fun'], { cwd: join(root, 'api') });
       execFileSync(executable, ['migrate', 'up'], { env: environment });
       execFileSync(executable, ['create-user', '--login', 'amigo', '--name', 'Amigo da mesa', '--password', 'senha-do-navegador'], { env: environment });
@@ -64,6 +64,12 @@ export { expect };
 // The panels are controlled by their own tabs; compact screens show one at a time.
 export async function openMatchRail(page: Page, panel = 'Jogadores') {
   await expect(page.locator('.own-dock')).toBeAttached();
+  if ((page.viewportSize()?.width ?? 1280) > 1000 && panel === 'Registro') {
+    const chronicle = page.getByRole('button', { name: 'Abrir crônica', exact: true });
+    await expect(chronicle).toBeVisible();
+    await chronicle.click();
+    return;
+  }
   if ((page.viewportSize()?.width ?? 1280) <= 1000 && !await page.locator('#match-rail').isVisible()) {
     await openQuickActions(page);
     await page.getByRole('button', { name: 'Informações', exact: true }).click();
@@ -74,6 +80,11 @@ export async function openMatchRail(page: Page, panel = 'Jogadores') {
 }
 
 export async function closeMatchRail(page: Page) {
+  if ((page.viewportSize()?.width ?? 1280) > 1000) {
+    const chronicle = page.getByRole('button', { name: 'Fechar crônica', exact: true });
+    if (await chronicle.isVisible()) await chronicle.click();
+    return;
+  }
   if ((page.viewportSize()?.width ?? 1280) <= 1000) {
     const close = page.getByRole('button', { name: 'Fechar informações', exact: true });
     if (await close.isVisible()) await close.click();
@@ -101,15 +112,15 @@ export async function openQuickActions(page: Page) {
     await expect(page.getByRole('button', { name: 'Comandos', exact: true })).toHaveCount(0);
     return;
   }
-  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Mais', exact: true });
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Comandos', exact: true });
   await expect(toggle).toBeVisible();
   if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
 }
 
 export async function closeQuickActions(page: Page) {
   if ((page.viewportSize()?.width ?? 1280) > 1000) return;
-  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Mais', exact: true });
-  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+  const toggle = page.getByRole('navigation', { name: 'Controles da mesa', exact: true }).getByRole('button', { name: 'Comandos', exact: true });
+  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await page.getByRole('button', { name: 'Fechar comandos', exact: true }).click();
 }
 
 export async function returnOpeningHandToLibrary(request: APIRequestContext, roomId: number) {
@@ -165,9 +176,8 @@ export async function selectFieldArea(page: Page, field: Locator) {
   await page.mouse.up();
 }
 
-// Selection is immediate; inspection is an explicit action in the flat menu.
+// A normal click opens the card inspection directly.
 export async function inspectCard(page: Page, card: Locator) {
   await card.click();
-  await page.getByRole('toolbar', { name: 'Ações da seleção' }).getByRole('button', { name: 'Mais', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Ações da carta', exact: true }).getByRole('button', { name: 'Inspecionar carta', exact: true }).click();
+  await expect(page.locator('.card-preview[role="dialog"]')).toBeVisible();
 }

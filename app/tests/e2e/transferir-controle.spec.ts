@@ -58,14 +58,12 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     const ownerCard = ownerTable.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true });
     await inspectCard(page, ownerCard);
     const ownerPreview = page.getByRole('dialog', { name: 'Imagem de Island' });
-    await ownerPreview.getByRole('button', { name: 'Outras ações', exact: true }).click();
     const transfer = ownerPreview.getByRole('region', { name: 'Controle da carta' });
-    const target = transfer.getByLabel('Transferir controle para');
-    await expect(target.locator('option:checked')).toHaveText('Segundo amigo');
-    await target.selectOption({ label: 'Amigo 3' });
-    await page.waitForTimeout(1200);
-    await expect(target.locator('option:checked')).toHaveText('Amigo 3');
-    await activate(transfer.getByRole('button', { name: 'Transferir controle', exact: true }));
+    const target = transfer.getByRole('button', { name: 'Amigo 3', exact: true });
+    await expect(target).toHaveAttribute('aria-pressed', 'false');
+    await activate(target);
+    await expect(target).toHaveAttribute('aria-pressed', 'true');
+    await activate(transfer.getByRole('button', { name: 'Confirmar: passar para Amigo 3', exact: true }));
     await expect(ownerTable.getByRole('region', { name: 'Campo', exact: true }).getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
 
     await activate(ownerPreview.getByRole('button', { name: 'Fechar', exact: true }));
@@ -73,6 +71,14 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     const chosenField = chosenTable.getByRole('region', { name: 'Campo', exact: true });
     const controlledCard = chosenField.locator(`[data-card-id="${drawn.id}"]`);
     await expect(controlledCard).toBeVisible();
+    if (!info.project.use.hasTouch) {
+      const borrowed = page.getByRole('article', { name: 'Mesa de Amigo 3', exact: true }).locator(`[data-card-id="${drawn.id}"]`);
+      await borrowed.click();
+      const ownerReadOnly = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
+      await expect(ownerReadOnly.getByText('Marcadores de cor', { exact: true })).toBeVisible();
+      await expect(ownerReadOnly.getByRole('button', { name: /^(Adicionar|Editar)$/, exact: true })).toHaveCount(0);
+      await ownerReadOnly.getByRole('button', { name: 'Fechar', exact: true }).click();
+    }
     if (!info.project.use.hasTouch) {
       // Multiple-card selection is by mouse area; touch keeps individual actions.
       await selectFieldArea(chosenPage, chosenField);
@@ -108,7 +114,7 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     await expect(ownerTable.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
 
     const controllerPreview = chosenPage.getByRole('dialog', { name: 'Imagem de Island' });
-    await controllerPreview.getByRole('button', { name: 'Mover para…', exact: true }).click();
+    await expect(controllerPreview.getByRole('button', { name: /^(Adicionar|Editar)$/, exact: true })).toBeVisible();
     const ownerZones = controllerPreview.getByRole('region', { name: 'Controle da carta' });
     await expect(ownerZones.getByText('Mover para zona de Amigo da mesa', { exact: false })).toBeVisible();
     await ownerZones.getByLabel('Mover para zona de Amigo da mesa').selectOption('graveyard');

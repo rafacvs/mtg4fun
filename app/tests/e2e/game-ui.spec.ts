@@ -63,7 +63,15 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     expect(await quick.getByRole('button', { name: 'Comprar', exact: true }).evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(info.project.use.hasTouch ? 44 : 36);
     const handBox = (await hand.boundingBox())!;
     const quickBox = (await quick.boundingBox())!;
-    if (info.project.name === 'desktop') expect(quickBox.x).toBeGreaterThanOrEqual(handBox.x + handBox.width);
+    if (info.project.name === 'desktop') {
+      const dockBox = await page.locator('.own-dock').boundingBox();
+      expect(dockBox).not.toBeNull();
+      // V1's desktop dock is a fixed, compact 112px band: game controls and
+      // the hand remain reachable without consuming a field quadrant.
+      expect(dockBox!.height).toBeGreaterThanOrEqual(108);
+      expect(dockBox!.height).toBeLessThanOrEqual(116);
+      expect(quickBox.x).toBeGreaterThanOrEqual(handBox.x + handBox.width);
+    }
     else expect(quickBox.y + quickBox.height).toBeLessThanOrEqual(handBox.y);
     await closeQuickActions(page);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('01-mesa.png'), fullPage: true });
@@ -131,7 +139,6 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await inspector.getByLabel('Poder', { exact: true }).fill('2');
     await inspector.getByLabel('Poder', { exact: true }).press('Enter');
     await expect(hand.getByLabel('Poder e resistência')).toHaveCount(0);
-    await inspector.getByRole('button', { name: 'Mover para…', exact: true }).click();
     await inspector.getByRole('button', { name: 'Campo', exact: true }).click();
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
     await inspector.getByRole('button', { name: 'Fechar', exact: true }).click();

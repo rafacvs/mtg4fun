@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Browser, Page, APIRequestContext } from '@playwright/test';
 
 async function prepare(page: Page, browser: Browser, baseURL?: string) {
@@ -36,43 +36,64 @@ async function prepare(page: Page, browser: Browser, baseURL?: string) {
   return { path, act };
 }
 
+test('celular alterna campo próprio, visão geral e campo adversário mantendo a mão', async ({ page, browser, baseURL }, info) => {
+  test.skip(info.project.name === 'desktop', 'Navegação móvel.');
+  test.setTimeout(90_000);
+  await prepare(page, browser, baseURL);
+  const tables = page.getByRole('article', { name: /Mesa de/ });
+  const hand = page.getByRole('region', { name: 'Mão', exact: true });
+  const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+  const opponent = page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true });
+  await expect(own).toBeVisible();
+  await expect(opponent).toBeHidden();
+  await expect(hand).toBeInViewport();
+  await page.screenshot({ path: info.outputPath('campo-proprio.png') });
+  await page.getByRole('button', { name: 'Abrir visão geral', exact: true }).tap();
+  for (const table of await tables.all()) await expect(table).toBeVisible();
+  await expect(hand).toBeInViewport();
+  await page.screenshot({ path: info.outputPath('visao-geral.png') });
+  await opponent.getByRole('button', { name: 'Ampliar mesa de Segundo amigo', exact: true }).tap();
+  await expect(opponent).toBeVisible();
+  await expect(own).toBeHidden();
+  await expect(hand).toBeInViewport();
+  await page.screenshot({ path: info.outputPath('campo-adversario.png') });
+  await page.getByRole('button', { name: 'Voltar para meu campo', exact: true }).tap();
+  await expect(own).toBeVisible();
+  await expect(opponent).toBeHidden();
+  await page.getByRole('button', { name: 'Abrir visão geral', exact: true }).tap();
+  await page.getByRole('button', { name: 'Voltar para meu campo', exact: true }).tap();
+  await expect(own).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight && document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
 test('celular horizontal mostra oponentes, campo e comandos próprios sem perder a mão', async ({ page, browser, baseURL }, info) => {
   test.skip(info.project.name !== 'celular-horizontal', 'Composição de jogo horizontal.');
   test.setTimeout(90_000);
   const { path } = await prepare(page, browser, baseURL);
-  const opponents = page.getByRole('region', { name: 'Oponentes', exact: true });
-  await expect(opponents).toBeVisible();
-  await expect(opponents.getByRole('article')).toHaveCount(3);
-  // A visão conjunta não pode depender de rolar uma faixa de oponentes: as
-  // quatro mesas e as cartas públicas cabem na tela horizontal de jogo.
-  const tables = page.getByRole('article', { name: /Mesa de/ });
-  await expect(tables).toHaveCount(4);
-  for (const table of await tables.all()) await expect(table).toBeInViewport({ ratio: 1 });
-  for (const card of await opponents.getByRole('button', { name: 'Soldier Token', exact: true }).all()) await expect(card).toBeInViewport({ ratio: 1 });
   const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
-  const field = own.getByRole('region', { name: 'Campo', exact: true });
-  await expect(field.getByRole('button', { name: 'Soldier Token', exact: true })).toBeInViewport();
-  await expect(own.getByRole('textbox', { name: 'Vida', exact: true })).toBeVisible();
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
+  await expect(own).toBeVisible();
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(3);
-  await expect(hand.getByRole('button', { name: 'Island', exact: true }).first()).toBeInViewport();
+  const fieldBottom = await own.getByRole('region', { name: 'Campo', exact: true }).evaluate(node => node.getBoundingClientRect().bottom);
+  const dockTop = await hand.evaluate(node => node.getBoundingClientRect().top);
+  expect(fieldBottom).toBeGreaterThan(dockTop);
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
-  await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
+  await openQuickActions(page);
+  await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(4);
   const previousTurn = (await (await page.request.get(path)).json()).match.currentTurn.userId;
-  await nav.getByRole('button', { name: 'Passar a vez', exact: true }).tap();
+  await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Passar turno', exact: true }).tap();
   await expect.poll(async () => (await (await page.request.get(path)).json()).match.currentTurn.userId).not.toBe(previousTurn);
-  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await openQuickActions(page);
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Jogadores', exact: true }).tap();
   await page.getByRole('button', { name: /Ver campo de Segundo amigo/ }).tap();
   await expect(page.locator('.desktop-fields.has-field-focus')).toBeVisible();
-  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await openQuickActions(page);
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Jogadores', exact: true }).tap();
   await page.getByRole('button', { name: 'Ver campo de Segundo amigo', exact: true }).tap();
   await expect(page.locator('.desktop-fields.has-field-focus')).toHaveCount(0);
-  for (const table of await tables.all()) await expect(table).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('horizontal48.png') });
 });
@@ -82,46 +103,51 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   test.setTimeout(90_000);
   const { path, act } = await prepare(page, browser, baseURL);
   await expect(page.getByText('Gire o aparelho para jogar o campo', { exact: true })).toHaveCount(0);
-  const opponents = page.getByRole('region', { name: 'Oponentes', exact: true });
   const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
-  await expect(opponents).toBeVisible();
-  await expect(opponents.getByRole('article')).toHaveCount(3);
   await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
-  const ownFocus = own.getByRole('button', { name: 'Ampliar mesa de Amigo da mesa', exact: true });
-  await expect(ownFocus).toBeVisible();
-  await ownFocus.tap();
-  await expect(own.getByRole('button', { name: 'Voltar à visão geral', exact: true })).toBeVisible();
-  await expect(opponents).toBeVisible();
-  await own.getByRole('button', { name: 'Voltar à visão geral', exact: true }).tap();
+  await expect(page.getByRole('article', { name: 'Mesa de Segundo amigo', exact: true })).toBeHidden();
   const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
-  for (const label of ['Comprar', 'Desvirar', 'Passar a vez', 'Mais']) {
-    const button = nav.getByRole('button', { name: label, exact: true });
+  await openQuickActions(page);
+  for (const label of ['Comprar', 'Desvirar todas', 'Passar turno', 'Ações']) {
+    const button = page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: label, exact: true });
     await expect(button).toBeVisible();
-    expect(await button.innerText()).toContain(label);
     const box = (await button.boundingBox())!;
     expect(box.width).toBeGreaterThanOrEqual(44);
     expect(box.height).toBeGreaterThanOrEqual(44);
   }
+  await closeQuickActions(page);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   const ids = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')));
   await cards.first().tap();
-  await expect(page.getByRole('toolbar', { name: 'Ações da seleção', exact: true })).toBeVisible();
-  await page.getByRole('toolbar', { name: 'Ações da seleção', exact: true }).getByRole('button', { name: 'Mais', exact: true }).tap();
-  await page.getByRole('dialog', { name: 'Ações da carta', exact: true }).getByRole('button', { name: 'Inspecionar carta', exact: true }).tap();
   const preview = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
   await expect(preview).toBeVisible();
+  await expect(page.getByRole('toolbar', { name: 'Ações da seleção' })).toHaveCount(0);
   await expect(preview.getByRole('img', { name: 'Imagem ampliada de Island', exact: true })).toBeVisible();
-  const play = preview.getByRole('button', { name: 'Jogar no campo', exact: true });
+  const priorViewport = page.viewportSize()!;
+  await page.setViewportSize({ width: 320, height: 568 });
+  const layout = await preview.evaluate(node => {
+    const actions = node.querySelector<HTMLElement>('.card-preview-actions')!;
+    const image = node.querySelector<HTMLElement>('.card-preview-image')!;
+    const before = image.getBoundingClientRect().top;
+    actions.scrollTop = actions.scrollHeight;
+    const result = { overflowX: actions.scrollWidth > actions.clientWidth, outerScroll: node.scrollHeight > node.clientHeight, imageMoved: image.getBoundingClientRect().top - before };
+    actions.scrollTop = 0;
+    return result;
+  });
+  expect(layout).toEqual({ overflowX: false, outerScroll: false, imageMoved: 0 });
+  await page.setViewportSize(priorViewport);
+  const play = preview.getByRole('button', { name: 'Campo', exact: true });
   await expect(play).toBeVisible();
   expect((await play.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await play.tap();
   await expect(cards).toHaveCount(2);
   await preview.getByRole('button', { name: 'Fechar', exact: true }).tap();
-  await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
+  await openQuickActions(page);
+  await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(cards).toHaveCount(3);
-  await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
-  await expect(hand).toHaveClass(/is-organizing/);
+  await closeQuickActions(page);
+  await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toBeHidden();
   const before = (await (await page.request.get(path)).json()).match;
   const sameDocument = await page.evaluate(() => { (window as Window & { orientationCheck?: string }).orientationCheck = 'same'; return location.href; });
   await page.setViewportSize({ width: 839, height: 393 });
@@ -140,7 +166,7 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   await page.setViewportSize({ width: 393, height: 839 });
   await expect(cards).toHaveCount(3);
   await expect(own.getByRole('region', { name: 'Campo', exact: true })).toBeVisible();
-  await nav.getByRole('button', { name: 'Mais', exact: true }).tap();
+  await openQuickActions(page);
   await page.getByRole('button', { name: 'Informações', exact: true }).tap();
   await page.getByRole('button', { name: 'Registro', exact: true }).tap();
   await expect(page.getByRole('group', { name: 'Filtrar registro', exact: true })).toBeVisible();
@@ -167,8 +193,10 @@ test('toque seleciona várias cartas e a mão horizontal é um leque navegável'
   await expect(field.locator('[aria-pressed="true"]')).toHaveCount(2);
   await bar.getByRole('button', { name: 'Virar', exact: true }).tap();
   await expect(field.locator('[aria-pressed="true"][data-tapped="true"]')).toHaveCount(2);
-  const draw = page.getByRole('region', { name: 'Seus comandos', exact: true }).getByRole('button', { name: 'Comprar', exact: true });
+  await openQuickActions(page);
+  const draw = page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true });
   await draw.tap();
+  await closeQuickActions(page);
   await expect(cards).toHaveCount(2);
   const firstAngle = await cards.first().evaluate(node => getComputedStyle(node).rotate);
   const lastAngle = await cards.last().evaluate(node => getComputedStyle(node).rotate);

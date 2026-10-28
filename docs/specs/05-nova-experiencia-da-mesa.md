@@ -1,6 +1,10 @@
 # Nova experiência da mesa
 
-**Estado:** aprovada em 24/10/2026. A implementação ainda não começou. A construção segue `/implement-spec` numa branch de integração. Issue: https://github.com/rafacvs/mtg4fun/issues/39
+**Estado histórico:** aprovada em 24/10/2026, seguida pela mesa V2 da
+[issue 57](https://github.com/rafacvs/mtg4fun/issues/57), entregue no PR 69.
+A apresentação-alvo atual é a [paridade visual V2](07-paridade-visual-v2.md),
+ainda pendente de implementação corretiva. As seções abaixo preservam o
+planejamento original da issue https://github.com/rafacvs/mtg4fun/issues/39.
 
 Cards, na ordem em que podem começar:
 
@@ -49,12 +53,12 @@ A carta passa a ser a interface. O estado aparece nela. Virar, comprar, mover, m
 19. Como jogador, quero terreno, mágica e qualquer carta sem poder e resistência sem esse selo, para o campo não inventar um número.
 20. Como jogador, quero uma ficha 1/1 sem parecer que alguém somou +1/+1, para distinguir o valor impresso do modificador.
 21. Como jogador, quero o anel de quem controla a carta na cor do assento dessa pessoa, para ver controle emprestado sem abrir painel.
-22. Como jogador no computador, quero passar o mouse para inspecionar e clicar para selecionar, para a inspeção não atrasar a seleção.
-23. Como jogador, quero que o duplo clique continue virando a carta, sem o primeiro clique esperar por ele, para não perder o atalho de quem já o usa.
+22. Como jogador, quero abrir a inspeção ao clicar ou tocar uma carta e usar Selecionar ou Shift para ações em conjunto; no computador, passar o mouse mostra a prévia ampliada.
+23. Como jogador, quero que o duplo clique continue virando a carta. No campo, o clique simples de mouse aguarda brevemente para distinguir esse gesto.
 24. Como jogador, quero virar pela tecla T ou pelo botão da barra, para não depender do duplo clique.
 25. Como jogador com uma carta selecionada, quero uma barra com Virar, Mão, Cemitério, Exílio, Topo, +1 marcador e Mais, para as ações frequentes ficarem a um clique.
 26. Como jogador com uma carta na mão, quero a barra trocar para jogar no campo, revelar e os destinos, para a mão não oferecer os comandos do campo.
-27. Como jogador, quero o menu completo num único nível no clique direito e no Mais, para não atravessar subtelas.
+27. Como jogador, quero que o clique direito e Mais abram a mesma inspeção, com prévia dos marcadores, estado, destinos e transferência organizados no painel conforme o protótipo.
 28. Como jogador, quero arrastar e ver os destinos com nome, o destino sob o ponteiro na cor de ação, para não soltar a carta num alvo sem rótulo.
 29. Como jogador no computador, quero selecionar várias cartas por arraste no vazio ou com Shift, para movê-las juntas.
 30. Como jogador no toque, quero um modo Selecionar e tocar as cartas, para a seleção múltipla não depender de arraste de área.
@@ -110,7 +114,7 @@ A carta passa a ser a interface. O estado aparece nela. Virar, comprar, mover, m
 - Ação otimista é só no cliente: a carta muda na hora e volta se o servidor recusar, com estado pendente. Isso não é desfazer persistido.
 - O registro filtrado e agrupado é apresentação do log que já existe. Reposicionar, organizar e abrir consulta são ajustes e ficam fora da vista padrão.
 - Atalhos novos convivem com D, U e N. H passa a ser mão.
-- O clique seleciona na hora. O duplo clique ainda vira, sem segurar o clique.
+- O clique abre a inspeção; o modo Selecionar, Shift e a seleção por área mantêm ações em lote. O duplo clique no campo continua virando a seleção.
 - Vida direta, modificador de poder e resistência, confirmação por Enter ou saída do campo, falha parcial e permissão de quem edita continuam valendo dentro da barra, do assento e da inspeção.
 - Lobby, criação de sala, preparação, Meus decks e login ganham o visual. O que o servidor não guarda aparece com a marca exemplo e não é enviado. Nome, quantidade e carta fora do catálogo continuam reais. Criar sala continua criando a sala como hoje, com o criador sentado. Começar partida continua exigindo todos prontos. O botão só deixa de disparar o erro quando alguém falta.
 - Excluir deck pede confirmação. A exclusão não altera partida já iniciada, como já é o caso.

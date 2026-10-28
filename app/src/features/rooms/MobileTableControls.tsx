@@ -1,13 +1,10 @@
 import type { Ref } from 'react';
+import { TableIcon } from './TableIcon';
 
-export function MobileTableControls({ moreOpen, canDraw, disabled, moreRef, onDraw, onUntap, onTurn, onMore }: {
-  moreOpen: boolean; canDraw: boolean; disabled: boolean; moreRef?: Ref<HTMLButtonElement>;
-  onDraw: () => void; onUntap: () => void; onTurn: () => void; onMore: () => void;
+export function MobileTableControls({ moreOpen, moreRef, onMore }: {
+  moreOpen: boolean; moreRef?: Ref<HTMLButtonElement>; onMore: () => void;
 }) {
   return <nav className="mobile-table-controls" aria-label="Controles da mesa">
-    <button disabled={disabled || !canDraw} onClick={onDraw}>Comprar</button>
-    <button className="secondary" disabled={disabled} onClick={onUntap}>Desvirar</button>
-    <button className="secondary" disabled={disabled} onClick={onTurn}>Passar a vez</button>
-    <button ref={moreRef} className="secondary" aria-expanded={moreOpen} aria-controls="mobile-commands" onClick={onMore}>Mais</button>
+    <button ref={moreRef} className="secondary" aria-label="Comandos" title="Comandos" aria-expanded={moreOpen} aria-controls="mobile-commands" onClick={onMore}><TableIcon name="actions" /></button>
   </nav>;
 }

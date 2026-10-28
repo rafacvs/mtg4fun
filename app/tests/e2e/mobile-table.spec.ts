@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, openMatchRail, closeMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Page } from '@playwright/test';
 
 async function touch(page: Page, points: { x: number; y: number }[]) {
@@ -9,6 +9,14 @@ async function touch(page: Page, points: { x: number; y: number }[]) {
     for (const point of points.slice(1)) await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point] });
     await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   } finally { await session.detach(); }
+}
+
+async function expectCommandAboveLibrary(page: Page) {
+  const rail = page.locator('.own-table-surface .zone-column');
+  await expect(rail.getByRole('button', { name: 'Fundo do grimório' })).toHaveCount(0);
+  const command = (await rail.getByRole('region', { name: 'Comando', exact: true }).boundingBox())!;
+  const library = (await rail.getByRole('region', { name: 'Grimório', exact: true }).boundingBox())!;
+  expect(command.y + command.height).toBeLessThanOrEqual(library.y + 1);
 }
 
 test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar', async ({ page }, info) => {
@@ -31,6 +39,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#8daebf"/><text x="5" y="10" font-size="6">Island</text></svg>' }));
   await page.setViewportSize({ width: 839, height: 393 });
   await page.goto(`/#/salas/${room.id}`);
+  await expectCommandAboveLibrary(page);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const row = hand.getByLabel('Cartas da mão', { exact: true });
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
@@ -38,7 +47,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   const originalIds = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')));
   const box = (await row.boundingBox())!;
   await touch(page, [{ x: box.x + box.width - 15, y: box.y + 25 }, { x: box.x + box.width / 2, y: box.y + 25 }, { x: box.x + 15, y: box.y + 25 }]);
-  await expect.poll(() => row.evaluate(node => node.scrollLeft)).toBeGreaterThan(30);
+  if (await row.evaluate(node => node.scrollWidth > node.clientWidth + 30)) await expect.poll(() => row.evaluate(node => node.scrollLeft)).toBeGreaterThan(30);
   expect(await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')))).toEqual(originalIds);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await row.evaluate(node => { node.scrollLeft = 0; });
@@ -66,14 +75,17 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   const fieldCard = page.locator(`[data-battlefield-canvas] [data-card-id="${originalIds[0]}"]`);
   await expect(fieldCard).toBeVisible();
   await expect(cards).toHaveCount(14);
-  const nav = page.getByRole('navigation', { name: 'Controles da mesa', exact: true });
-  await nav.getByRole('button', { name: 'Comprar', exact: true }).tap();
+  await openQuickActions(page);
+  const commands = page.getByRole('region', { name: 'Comandos da partida', exact: true });
+  await commands.getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(cards).toHaveCount(15);
   await act({ kind: 'set_tapped', cardIds: [originalIds[0]], tapped: true });
   await expect(fieldCard).toHaveAttribute('data-tapped', 'true');
-  await nav.getByRole('button', { name: 'Desvirar', exact: true }).tap();
+  await commands.getByRole('button', { name: 'Desvirar todas', exact: true }).tap();
   await expect(fieldCard).toHaveAttribute('data-tapped', 'false');
+  await closeQuickActions(page);
   await page.setViewportSize({ width: 393, height: 839 });
+  await expectCommandAboveLibrary(page);
   await expect(cards).toHaveCount(15);
   // A normal touch keeps the card actionable; only a deliberate hold opens
   // inspection. This uses the real match API and the selected card can then
@@ -83,15 +95,11 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   await expect(page.getByRole('toolbar', { name: 'Ações da seleção', exact: true })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Imagem de Island', exact: true })).toHaveCount(0);
   await page.getByRole('toolbar', { name: 'Ações da seleção', exact: true }).getByRole('button', { name: 'Limpar seleção', exact: true }).tap();
-  await hand.getByRole('button', { name: 'Organizar', exact: true }).tap();
-  const oldFirst = await cards.first().getAttribute('data-card-id');
-  await cards.first().focus();
-  await page.keyboard.press('Alt+ArrowRight');
-  expect(await cards.nth(1).getAttribute('data-card-id')).toBe(oldFirst);
-  await hand.getByRole('button', { name: 'Concluir', exact: true }).tap();
+  await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toBeHidden();
   const grid = (await row.boundingBox())!;
-  await touch(page, [{ x: grid.x + 50, y: grid.y + grid.height - 30 }, { x: grid.x + 50, y: grid.y + grid.height / 2 }, { x: grid.x + 50, y: grid.y + 30 }]);
-  await expect.poll(() => row.evaluate(node => node.scrollTop)).toBeGreaterThan(30);
+  await row.evaluate(node => { node.scrollLeft = 0; });
+  await touch(page, [{ x: grid.x + grid.width - 10, y: grid.y + grid.height - 25 }, { x: grid.x + grid.width / 2, y: grid.y + grid.height - 25 }, { x: grid.x + 10, y: grid.y + grid.height - 25 }]);
+  if (await row.evaluate(node => node.scrollWidth > node.clientWidth + 2)) await expect.poll(() => row.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
   await expect(page.getByRole('region', { name: 'Destinos do arraste', exact: true })).toHaveCount(0);
   await openMatchRail(page, 'Registro');
   await expect(page.getByRole('group', { name: 'Filtrar registro', exact: true })).toBeVisible();

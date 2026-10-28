@@ -1,24 +1,53 @@
 /* A single table composition: opponents, own field, then the hand. */
 @media (min-width: 1001px) {
-  .desktop-table { --field-card-width: 82px; --hand-card-width: 94px; --opponent-card-width: 44px; --zone-card-width: var(--opponent-card-width); }
+  .desktop-table { --field-card-width: 76px; --hand-card-width: 60px; --opponent-card-width: 72px; --zone-card-width: var(--opponent-card-width); }
   .desktop-table .table-toolbar { grid-template-columns: minmax(0, 1fr) auto auto; }
   .desktop-table .observing-label { display: none; }
   .desktop-table .turn-order { max-width: 290px; white-space: normal; font-size: .62rem; }
-  .desktop-table .table-stage { padding: 10px; gap: 12px; }
-  .desktop-table .table-main { gap: 8px; }
+  .desktop-table .table-toolbar { height: 46px; min-height: 46px; padding: 0 10px; }
+  .desktop-table .table-toolbar { background: #0b0e10; border-bottom-color: #d9a94e29; box-shadow: none; }
+  .desktop-table .toolbar-leading a { width: 32px; min-width: 32px; min-height: 32px; border: 1px solid #8b713d66; border-radius: 4px; color: #e8ddc5; }
+  .desktop-table .toolbar-leading a span { display: none; }
+  .desktop-table .toolbar-leading a .table-icon { width: 14px; height: 14px; flex-basis: 14px; }
+  .desktop-table .table-room-label { padding: 0; border: 0; color: #efe8d8; font: 700 14px Cinzel, serif; letter-spacing: .06em; }
+  .desktop-table .table-toolbar button { min-height: 32px; border-radius: 4px; }
+  .desktop-table .table-stage { padding: 10px 10px 0; gap: 10px; }
+  .desktop-table .table-main { gap: 10px; }
+  .desktop-table .table-stage:has(> .side-rail) { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr) 112px; }
+  .desktop-table .table-stage:has(> .side-rail) .table-main { display: contents; }
+  .desktop-table .table-stage:has(> .side-rail) .desktop-fields { grid-column: 1; grid-row: 1; }
+  .desktop-table .table-stage:has(> .side-rail) .side-rail { grid-column: 2; grid-row: 1; width: auto; }
+  .desktop-table .table-stage:has(> .side-rail) .own-dock { grid-column: 1 / -1; grid-row: 2; }
   .desktop-fields { flex: 1; min-width: 0; min-height: 0; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); overflow: hidden; }
   /* The region remains semantic; its children join the desktop grid. */
   .opponent-strip { display: contents; }
   .opponent-table-surface, .own-table-surface { min-width: 0; min-height: 0; }
   .player-count-1 { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .player-count-2 { grid-template-columns: minmax(0, 1fr); }
   .player-count-2 .own-table-surface { grid-column: 1; grid-row: 2; }
   .player-count-3 .own-table-surface { grid-column: 1 / -1; grid-row: 2; }
   .player-count-4 .own-table-surface { grid-column: 1; grid-row: 2; }
+  .player-count-4:not(.has-field-focus) .opponent-table-surface:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .player-count-4:not(.has-field-focus) .opponent-table-surface:nth-child(2) { grid-column: 2; grid-row: 1; }
+  .player-count-4:not(.has-field-focus) .opponent-table-surface:nth-child(3) { grid-column: 2; grid-row: 2; }
   .player-count-5, .player-count-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .player-count-5 .own-table-surface, .player-count-6 .own-table-surface { grid-column: 1; grid-row: 2; }
-  .desktop-fields.has-field-focus { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
-  .desktop-fields.has-field-focus .focused-table-surface { grid-column: span 3; }
-  .desktop-fields.has-field-focus .focused-table-surface .player-table { --field-card-width: clamp(58px, 7vw, 108px); }
+  .desktop-fields.has-field-focus { grid-template-columns: minmax(0, 57fr) minmax(0, 43fr); grid-template-rows: minmax(0, 1.22fr) minmax(0, .5fr) minmax(0, .5fr); }
+  .desktop-fields.has-field-focus .focused-table-surface { grid-column: 1 / -1; grid-row: 1; }
+  .desktop-fields.has-field-focus .own-table-surface:not(.focused-table-surface) { grid-column: 1; grid-row: 2 / 4; }
+  .desktop-fields.has-field-focus.player-count-2 .own-table-surface:not(.focused-table-surface) { grid-column: 1 / -1; }
+  .desktop-fields.has-field-focus .opponent-table-surface:not(.focused-table-surface) { grid-column: 2; }
+  .desktop-fields.has-field-focus.player-count-5 { grid-template-rows: minmax(0, 1.22fr) repeat(3, minmax(0, .333fr)); }
+  .desktop-fields.has-field-focus.player-count-6 { grid-template-rows: minmax(0, 1.22fr) repeat(4, minmax(0, .25fr)); }
+  .desktop-fields.has-field-focus.player-count-5 .own-table-surface:not(.focused-table-surface),
+  .desktop-fields.has-field-focus.player-count-6 .own-table-surface:not(.focused-table-surface) { grid-row: 2 / -1; }
+  .desktop-fields.has-field-focus:has(.own-table-surface.focused-table-surface) { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: minmax(0, 1.35fr) minmax(0, 1fr); }
+  .desktop-fields.has-field-focus:has(.own-table-surface.focused-table-surface) .opponent-table-surface { grid-column: auto / span 2; grid-row: 2; }
+  .desktop-fields.has-field-focus.player-count-5:has(.own-table-surface.focused-table-surface),
+  .desktop-fields.has-field-focus.player-count-6:has(.own-table-surface.focused-table-surface) { grid-template-rows: minmax(0, 1.35fr) repeat(2, minmax(0, .5fr)); }
+  .desktop-fields.has-field-focus.player-count-5:has(.own-table-surface.focused-table-surface) .opponent-table-surface,
+  .desktop-fields.has-field-focus.player-count-6:has(.own-table-surface.focused-table-surface) .opponent-table-surface { grid-row: auto; }
+  .desktop-fields.has-field-focus .focused-table-surface .player-table { --field-card-width: 108px; }
   .desktop-fields.has-field-focus .focused-table-surface .zone-battlefield { --card-width: var(--field-card-width); }
   .desktop-table .player-table { border-radius: 8px; padding: 8px; background: linear-gradient(150deg, color-mix(in srgb, var(--seat-color) 8%, var(--panel)), var(--panel)); border-color: color-mix(in srgb, var(--seat-color) 24%, var(--line)); }
   .desktop-table .player-table.is-current-turn { border-color: var(--seat-color); box-shadow: inset 0 0 0 1px var(--seat-color), 0 0 15px color-mix(in srgb, var(--seat-color) 16%, transparent); }
@@ -40,7 +69,7 @@
   .opponent-table-surface .seat-heading { flex-wrap: wrap; gap: 4px 6px; }
   .opponent-table-surface .seat-markers { margin-left: auto; }
   .opponent-table-surface .seat-life-readout { font-size: 28px; }
-  .desktop-table .zone-battlefield { --card-width: var(--field-card-width); background: linear-gradient(180deg, color-mix(in srgb, var(--seat-color) 10%, transparent), transparent 65%), var(--bg); box-shadow: inset 0 0 50px #0006; border-color: color-mix(in srgb, var(--seat-color) 24%, var(--line)); padding: 6px; }
+  .desktop-table .zone-battlefield { --card-width: var(--field-card-width); background-image: linear-gradient(180deg, color-mix(in srgb, var(--seat-color) 14%, transparent), rgba(6, 8, 9, .56) 72%), var(--playmat-image); background-position: center; background-size: cover; box-shadow: inset 0 0 50px #0009; border-color: color-mix(in srgb, var(--seat-color) 38%, var(--line)); padding: 6px; }
   .desktop-table .zone-battlefield::before { display: none; }
   .desktop-table .zone-battlefield > header { font-size: .55rem; }
   .desktop-table .zone-column { --card-width: var(--zone-card-width); display: grid; width: calc(var(--zone-card-width) * 2 + 8px); flex-basis: calc(var(--zone-card-width) * 2 + 8px); grid-template-columns: repeat(2, var(--zone-card-width)); grid-auto-rows: max-content; align-content: start; gap: 8px; overflow: auto; }
@@ -57,11 +86,18 @@
   .opponent-table-surface .opponent-hand { display: none; }
   .opponent-table-surface .table-revealed { max-height: 50px; overflow: auto; }
   .desktop-table .playing-card img { object-fit: contain; }
-  .desktop-table .own-dock { border-radius: 8px; padding: 5px 8px; flex: 0 0 auto; }
+  /* V2 keeps the hand and controls in a compact 112px dock, leaving the
+     field quadrants available even when the hand grows. */
+  .desktop-table .own-dock { height: 112px; min-height: 112px; max-height: 112px; border-radius: 8px; padding: 4px 8px; flex: 0 0 112px; }
+  .desktop-table .own-dock .dock-content { height: 100%; gap: 8px; }
   .desktop-table .own-dock .zone-hand .zone-cards { --card-width: var(--hand-card-width); }
-  .desktop-table .own-dock .zone-hand > header { min-height: 22px; }
+  .desktop-table .own-dock .zone-hand > header { min-height: 16px; }
   .desktop-table .own-dock .zone-hand .hand-organize { min-height: 22px; padding: 2px 8px; font-size: .6rem; }
-  .desktop-table .side-rail { width: 240px; flex-basis: 240px; }
+  .desktop-table .quick-actions { flex: 0 0 auto; flex-direction: row; align-items: center; gap: 5px; padding-left: 8px; }
+  .desktop-table .quick-actions button { width: auto; min-width: 38px; min-height: 36px; padding: 4px 7px; justify-content: center; gap: 4px; }
+  .desktop-table .quick-actions kbd { display: none; }
+  .desktop-table .side-rail { width: 340px; flex-basis: 340px; }
+  .desktop-table .log-panel.is-open { flex-basis: 0; min-height: 0; }
   .desktop-table .hover-card-preview img { max-height: 280px; object-fit: contain; }
 }
 @media (min-width:1001px) and (max-height:800px) {
@@ -75,12 +111,217 @@
 .card-state-badges { position: absolute; top: 2px; left: 2px; right: 2px; display: flex; flex-wrap: wrap; gap: 2px; pointer-events: none; }
 .card-state-badges:empty { display: none; }
 .card-state-badges small { background: var(--label-bg); color: var(--text); padding: 1px 3px; border-radius: 2px; font-size: .45rem; line-height: 1.2; }
+.playing-card.without-image { display: flex; flex-direction: column-reverse; justify-content: flex-end; }
+.playing-card.without-image .card-fallback { flex: 1; min-height: 0; height: auto; padding: 2px; overflow: hidden; overflow-wrap: anywhere; }
+.playing-card.without-image .card-state-badges, .zone-battlefield .playing-card.without-image .card-state-badges { position: static; flex: 0 0 auto; max-width: 100%; padding: 2px; }
 .playing-card.borrowed-card { border-color: var(--controller-color); box-shadow: 0 0 0 2px var(--controller-color); }
 .playing-card { position: relative; }
+/* The V2 places counters above the card and power/toughness on its edge. */
+.zone-battlefield .playing-card { overflow: visible; }
+.zone-battlefield .playing-card > img { border-radius: 4px; }
+.zone-battlefield .playing-card.is-tapped > img { filter: saturate(.6) brightness(.72); }
+.zone-battlefield .playing-card .card-stats { position: static; }
+.zone-battlefield .playing-card .pt-modifier {
+  position: absolute; right: -4px; bottom: -5px; min-width: 28px;
+  border: 1px solid #8a6a2e; border-radius: 3px; background: #e9dfc4; color: #1b160d;
+  font: 700 11px/17px Cinzel, Georgia, serif; text-align: center; box-shadow: 0 2px 6px #0008;
+}
+.zone-battlefield .playing-card .pt-modifier[data-modified=true] { background: #e2b45c; border-color: #f4d58e; color: #1b1204; }
+.zone-battlefield .playing-card .marker-dots { position: absolute; top: -6px; left: -5px; gap: 2px; }
+.zone-battlefield .playing-card .marker-dot { width: 20px; min-width: 20px; height: 20px; border-radius: 4px; border: 1px solid #a5d3a6; font: 700 11px/18px Geist, sans-serif; box-shadow: 0 2px 6px #0008; }
+.zone-battlefield .playing-card .marker-green { background: #24583a; border-color: #6fbf8c; color: #e6f6ea; }
+.zone-battlefield .playing-card .card-state-badges { left: auto; right: 3px; justify-content: flex-end; max-width: 75%; }
+.zone-battlefield .playing-card .card-state-badges small { border: 1px solid #d9a94e66; border-radius: 2px; color: #efe8d8; font: 700 8px/1.2 Cinzel, serif; text-transform: uppercase; }
+.zone-battlefield .playing-card.is-tapped .pt-modifier { transform: rotate(-90deg); }
 @media (prefers-reduced-motion: no-preference) {
   .desktop-table .player-table { transition: border-color .18s, box-shadow .18s; }
   .playing-card { transition: transform .15s; }
 }
 
 .opponent-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); }
+.match-board .battlefield-fit.battlefield-scroll { display: block; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; }
+.match-board .battlefield-zoom-space { position: relative; }
+.match-board .field-center { position: absolute; right: 4px; top: 4px; z-index: 4; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 6px; border-radius: 4px; background: #0b0e10dd; }
+.match-board .field-center .table-icon { width: 16px; height: 16px; }
+@media (max-width: 1000px) {
+  .match-board .field-center { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .mobile-table .desktop-fields:not(.has-field-focus) .field-center { display: none; }
+}
 .opponent-canvas { position: relative; width: calc(var(--mat-width) * var(--card-width)); height: calc(var(--mat-height) * var(--card-width)); transform: scale(var(--mat-zoom)); transform-origin: 0 0; }
+
+.rail-hand-count { display: none; }
+.rail-hand-count svg { width: 11px; height: 11px; margin-right: 4px; vertical-align: middle; }
+.seat-activity::before { content: '◆'; margin-right: 4px; color: var(--seat-color); }
+.desktop-table .zone-column .zone-command .playing-card, .mobile-table .zone-column .zone-command .playing-card { inset: 0; width: 100%; height: 100%; opacity: 1; overflow: hidden; background: transparent; }
+.desktop-table .zone-column .zone-command .playing-card img, .mobile-table .zone-column .zone-command .playing-card img { width: 11px; height: calc(100% - 2px); margin: 1px 0 1px 2px; object-fit: contain; }
+.zone-column .zone-command .playing-card .card-state-badges,
+.zone-column .zone-command .playing-card .card-stats { display: none; }
+.match-board .zone-column .card-slot.zone-command { order: 0; }
+.match-board .zone-column .zone-library .card-slot .slot-label::before,
+.match-board .zone-column .card-slot.zone-graveyard .slot-label::before,
+.match-board .zone-column .card-slot.zone-exile .slot-label::before { content: none; }
+.match-board .zone-column .slot-label .table-icon { width: 16px; height: 16px; vertical-align: middle; }
+.desktop-table .zone-column .rail-hand-count svg { width: 16px; height: 16px; }
+.desktop-table .zone-column .zone-command .slot-label, .mobile-table .zone-column .zone-command .slot-label { padding-left: 14px; }
+.mobile-table .zone-column .zone-command .slot-label { padding-right: 0; }
+.mobile-table .zone-column .zone-command .slot-label::before { font-size: 8px; }
+.mobile-table .zone-column .zone-command .zone-count { left: 6px; right: auto; top: 0; min-width: 7px; padding: 0; background: #08090de6; font-size: 7px; }
+
+/* Keep the focused mobile rail narrow while giving its icons and counts room. */
+@media (max-width: 1000px) {
+  .mobile-table .focused-table .rail-hand-count { color: #f4eee1; font-size: 12px; font-weight: 700; }
+  .mobile-table .focused-table .rail-hand-count svg { width: 18px; height: 18px; margin-right: 3px; }
+  .mobile-table .focused-table .zone-column .slot-label { display: flex; align-items: center; height: 100%; padding: 0 19px 0 3px; }
+  .match-board .mobile-table .focused-table .zone-column .slot-label::before { content: none; }
+  .mobile-table .focused-table .zone-column .slot-label .table-icon { width: 20px; height: 20px; flex: 0 0 20px; }
+  .mobile-table .focused-table .zone-column .zone-count { top: 12px; right: 1px; left: auto; min-width: 18px; padding: 3px 2px; color: #fff; background: #080b0eec; font-size: 12px; }
+  .mobile-table .focused-table .zone-column .zone-command .slot-label { display: none; }
+  .mobile-table .focused-table .zone-column .card-slot.zone-command { flex-basis: 60px; height: 60px; }
+  .mobile-table .focused-table .zone-column .zone-command .playing-card img { width: 100%; height: 100%; margin: 0; object-fit: contain; }
+  .mobile-table .focused-table .zone-column .zone-command .slot-empty { inset: 0; opacity: 1; }
+  .mobile-table .focused-table .zone-column .zone-command .slot-empty .table-icon { width: 23px; opacity: .9; }
+  .mobile-table .focused-table .zone-column .zone-command .zone-count { top: auto; bottom: 1px; right: 1px; }
+}
+@media (min-width: 1001px), (max-width: 1000px) {
+  .match-board .zone-column .zone-library .slot-label::before { content: ''; display: inline-block; width: 8px; height: 11px; vertical-align: middle; border: 1px solid #876c40; border-radius: 1px; background: url('/library-back.png') center / cover; }
+  .match-board .zone-column .zone-graveyard .slot-label::before { content: ''; display: inline-block; width: 11px; height: 11px; vertical-align: middle; background: #ddd3bb; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2'%3E%3Cpath d='M6 21V10a6 6 0 0 1 12 0v11zM12 9v6M9.5 11.5h5M4 21h16'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .match-board .zone-column .zone-exile .slot-label::before { content: ''; display: inline-block; width: 11px; height: 11px; vertical-align: middle; background: #ddd3bb; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M12 8a4 4 0 1 1-4 4'/%3E%3C/svg%3E") center / contain no-repeat; }
+}
+/* Desktop V2: the identity and zones form a narrow rail over the playmat. */
+@media (min-width: 1001px) {
+  .desktop-table .player-table {
+    position: relative;
+    display: block;
+    padding: 0;
+    border-radius: 7px;
+    background: linear-gradient(#080a0994, #080a0994), var(--playmat-image) center 40% / cover;
+    border-color: color-mix(in srgb, var(--seat-color) 65%, #9a7940);
+    box-shadow: 0 14px 30px #0006;
+  }
+  .desktop-table .seat-heading { display: contents; }
+  .desktop-table .seat-heading::before {
+    content: ''; position: absolute; inset: 0 auto 0 0; width: 65px;
+    background: #0b0e108c; border-right: 1px solid #d5aa4433; z-index: 2;
+  }
+  .desktop-table .seat-number { position: absolute; z-index: 3; left: 21px; top: 13px; width: 24px; height: 28px; font-size: 10px; }
+  .desktop-table .seat-name { position: absolute; z-index: 3; top: 12px; left: 76px; right: 45px; }
+  .desktop-table .seat-name h2 { display: inline-block; max-width: 45%; vertical-align: middle; font: 600 13px/1.2 Geist, sans-serif; text-transform: none; letter-spacing: .02em; }
+  .desktop-table .seat-name small { margin-left: 8px; font-size: 10px; }
+  .desktop-table .seat-activity { margin-left: 8px; color: #d7c9a8; font: 10px Geist, sans-serif; }
+  .desktop-table .seat-turn { position: absolute; top: -4px; right: 0; display: block; margin: 0; padding: 3px 7px 5px; background: var(--seat-color); color: #0b0e10; clip-path: polygon(0 0,100% 0,100% 100%,50% 80%,0 100%); font: 700 8px/1 Cinzel, serif; text-transform: uppercase; letter-spacing: .12em; }
+  .desktop-table .seat-life-readout, .desktop-table .seat-life { position: absolute; z-index: 3; top: 49px; left: 5px; width: 55px; text-align: center; font: 600 28px/1 Cinzel, Georgia, serif; }
+  .desktop-table .seat-life { display: block; }
+  .desktop-table .seat-life > span { display: none; }
+  .desktop-table .seat-life .numeric-counter { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .desktop-table .seat-life .numeric-counter input { grid-column: 1 / -1; grid-row: 1; width: 100%; min-width: 0; height: 28px; min-height: 28px; padding: 0; font-size: 26px; }
+  .desktop-table .seat-life .numeric-counter button { width: 100%; min-width: 0; height: 20px; min-height: 20px; border-radius: 2px; font-size: 12px; }
+  .desktop-table .seat-markers { position: absolute; z-index: 4; top: 98px; left: 6px; width: 53px; min-height: 20px; padding: 0; }
+  .desktop-table .own-table-surface .seat-markers:not(:has(.marker-dot)) { top: 13px; left: 21px; width: 24px; height: 28px; border: 0; background: transparent; }
+  .desktop-table .seat-focus { position: absolute; z-index: 4; top: 8px; right: 8px; width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; overflow: hidden; font-size: 0; border-radius: 3px; }
+  .desktop-table .seat-focus::after { content: '⛶'; font-size: 14px; }
+  .desktop-table .table-zones, .desktop-table .playmat { height: 100%; min-height: 0; }
+  .desktop-table .playmat { gap: 0; }
+  .desktop-table .zone-column, .desktop-table .opponent-table-surface .zone-column {
+    position: absolute; z-index: 3; top: 126px; left: 6px; width: 53px; height: auto; max-height: calc(100% - 130px);
+    display: flex; flex-direction: column; gap: 3px; overflow: auto;
+  }
+  .desktop-table .opponent-table-surface .zone-column { top: 86px; max-height: calc(100% - 90px); }
+  .desktop-table .opponent-table-surface .seat-markers:not(:has(.marker-dot)) { top: 13px; left: 21px; width: 24px; height: 28px; }
+  .desktop-table .opponent-table-surface .player-table:has(.marker-dot) .zone-column { top: 120px; max-height: calc(100% - 124px); }
+  .desktop-table .zone-column .card-slot, .desktop-table .zone-column .zone-library { width: 100%; min-height: 20px; height: 20px; aspect-ratio: auto; border-radius: 2px; }
+  .desktop-table .zone-column .zone-library .card-slot { height: 20px; }
+  .desktop-table .zone-column .zone-command { order: 4; }
+  .desktop-table .rail-hand-count { display: block; order: -1; height: 20px; flex: 0 0 20px; border: 1px solid #92713766; border-radius: 2px; background: #090d10cc; color: #ddd3bb; text-align: center; font: 10px/18px Geist, sans-serif; }
+  .desktop-table .zone-column .slot-label { position: static; padding: 3px 18px 3px 3px; background: transparent; color: #ddd3bb; font: 0/12px Geist, sans-serif; white-space: nowrap; overflow: hidden; }
+  .desktop-table .zone-library .slot-label::before { content: '◉'; font-size: 11px; color: #a38bdf; }
+  .desktop-table .zone-graveyard .slot-label::before { content: '♙'; font-size: 11px; }
+  .desktop-table .zone-exile .slot-label::before { content: '⊘'; font-size: 11px; }
+  .desktop-table .zone-command .slot-label::before { content: 'Cmd'; font-size: 9px; }
+  .desktop-table .zone-column .zone-count { top: 1px; right: 1px; min-width: 16px; padding: 2px; border: 0; box-shadow: none; font-size: 9px; }
+  .desktop-table .zone-column .playing-card, .desktop-table .zone-column .library-stack, .desktop-table .zone-column .slot-empty { opacity: 0; }
+  .desktop-table .zone-column .library-consulting { font-size: 9px; }
+  .desktop-table .zone-column .zone-library:has(.library-bottom) { height: 41px; flex: 0 0 41px; }
+  .desktop-table .library-bottom { display: flex; min-height: 18px; margin-top: 1px; font-size: 9px; }
+  .desktop-table .zone-battlefield { margin: 34px 0 0 66px; padding: 8px 10px; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+  .desktop-table .table-revealed { margin-left: 66px; }
+  .desktop-table .zone-battlefield > header { display: none; }
+  .desktop-table .battlefield-fit { align-items: flex-start; justify-content: flex-start; overflow: visible; }
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .seat-number { top: 5px; left: 23px; width: 20px; height: 22px; }
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .seat-life-readout { top: 29px; font-size: 19px; }
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-battlefield { --card-width: 40px; }
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column { top: 52px; max-height: calc(100% - 54px); gap: 1px; }
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column .card-slot,
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column .zone-library,
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column .zone-library .card-slot,
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .rail-hand-count { height: 15px; min-height: 15px; flex-basis: 15px; line-height: 13px; }
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column .slot-label { padding-top: 0; padding-bottom: 0; }
+  .desktop-table .own-dock { border: 0; border-top: 1px solid #aa89402e; border-radius: 0; background: #090d10; box-shadow: none; padding: 10px 6px; overflow: hidden; }
+  .desktop-table .dock-toggle { position: absolute; left: 6px; top: 9px; color: #cbb77c; font: 9px/1.3 Cinzel, serif; text-transform: uppercase; letter-spacing: .14em; }
+  .desktop-table .dock-toggle small { display: block; margin-top: 5px; color: #a49f92; font: 11px/1 Geist, sans-serif; text-transform: none; letter-spacing: 0; }
+  .desktop-table .dock-toggle .table-icon { display: none; }
+  .desktop-table .own-dock .dock-content { margin-left: 100px; }
+  .desktop-table .own-dock .zone-hand .zone-cards { padding: 18px 4px 0; gap: 0; overflow-x: auto; overflow-y: hidden; }
+  .desktop-table .own-dock .zone-hand .playing-card { width: 76px; margin-right: -3px; transform: rotate(var(--fan-angle)); transform-origin: bottom center; }
+  .desktop-table .own-dock .zone-hand .playing-card:hover { transform: translateY(-8px) rotate(var(--fan-angle)); }
+  .desktop-table .own-dock .hand-hint { display: none; }
+  .desktop-table .card-action-bar { bottom: 124px; }
+  .desktop-table .quick-actions { border: 0; gap: 18px; padding: 0; }
+  .desktop-table .quick-actions button:not(:first-child) { position: relative; width: 42px; min-width: 42px; height: 42px; min-height: 42px; padding: 0; border-radius: 4px; background: #10171b; border-color: #a47d36aa; }
+  .desktop-table .quick-actions button:not(:first-child) span { position: absolute; top: 47px; font-size: 10px; color: #e1d5bc; }
+  .desktop-table .quick-actions button:first-child { order: 1; width: 250px; min-height: 56px; padding: 0 20px; justify-content: space-between; color: #231905; background: linear-gradient(#f0ca74, #c78f2c); border: 1px solid #dfae4e; border-radius: 5px; font: 700 14px/1 Cinzel, serif; text-transform: uppercase; letter-spacing: .1em; }
+  .desktop-table .quick-actions button:first-child .table-icon { order: 1; }
+  .desktop-table .side-rail { position: relative; overflow: hidden; border: 1px solid #98763f66; border-radius: 6px; background: #0d1012f7; box-shadow: inset 0 0 0 3px #0b0e10e6, inset 0 0 0 4px #d9a94e1a, 0 24px 50px #000a; }
+  .desktop-table .side-rail::before, .desktop-table .side-rail::after { content: ''; position: absolute; z-index: 1; left: -1px; width: 24px; height: 24px; background: url('../../assets/theme/corner-v2.svg') center / contain no-repeat; pointer-events: none; }
+  .desktop-table .side-rail::before { top: -1px; }
+  .desktop-table .side-rail::after { bottom: -1px; transform: scaleY(-1); }
+  .desktop-table .log-panel.is-open { border: 0; border-radius: 0; background: transparent; }
+  .desktop-table .log-panel .match-log { padding: 14px; background: transparent; }
+  .desktop-table .log-filters { align-items: center; justify-content: flex-end; gap: 5px; padding: 0; margin: 0 0 12px; border: 0; }
+  .desktop-table .log-filters::before { content: 'CRÔNICA'; margin-right: auto; color: #d9b971; font: 700 10px/1 Cinzel, serif; letter-spacing: .2em; }
+  .desktop-table .match-log .log-filters button { flex: 0 0 auto; min-height: 28px; padding: 4px 8px; border-radius: 3px; font-size: 10px; }
+  .desktop-table .log-filters button[aria-pressed='true'] { background: #e2b45c; color: #1b1204; border-color: #e2b45c; }
+  .desktop-table .log-turn { border: 0; }
+  .desktop-table .log-turn summary { min-height: 27px; padding: 4px 0; }
+  .desktop-table .log-turn summary strong { font-size: 12px; }
+  .desktop-table .match-log li { margin-bottom: 8px; padding: 0 9px; border-radius: 0; border-left-color: #d9a94e66; background: transparent; font-size: 12px; line-height: 1.4; }
+  .desktop-table .card-hover-zoom { top: auto; bottom: 12px; translate: none; width: min(420px, 65vh, calc(50vw - 32px)); max-height: calc(100vh - 24px); padding: 12px; gap: 8px; border-color: #98763f; border-radius: 5px; background: #0b0e10f5; }
+  .desktop-table .card-hover-zoom-left { left: 34px; }
+  .desktop-table .card-hover-zoom-right { right: 34px; }
+  .desktop-table .card-hover-zoom img { width: 100%; max-width: 100%; max-height: calc(100vh - 100px); border-radius: 4px; }
+  .desktop-table .card-hover-zoom h2 { align-self: stretch; font: 700 14px/1.2 Cinzel, serif; text-align: left; }
+}
+
+/* Desktop fields use the same readable rail as the focused mobile field. */
+@media (min-width: 1001px) {
+  .desktop-table .player-table { container-type: size; }
+  .desktop-table .seat-life-readout, .desktop-table .seat-life { top: 44px; height: 32px; font-size: 22px; line-height: 32px; }
+  .desktop-table .seat-life-mobile { display: block; font: inherit; }
+  .desktop-table .seat-markers,
+  .desktop-table .own-table-surface .seat-markers:not(:has(.marker-dot)),
+  .desktop-table .opponent-table-surface .seat-markers:not(:has(.marker-dot)) {
+    top: 40px; left: 5px; width: 55px; height: 38px; min-height: 38px;
+    padding: 0; border: 0; background: transparent;
+  }
+  .desktop-table .seat-markers .marker-dots { position: absolute; top: -30px; left: 0; }
+  .desktop-table .zone-column, .desktop-table .opponent-table-surface .zone-column,
+  .desktop-table .opponent-table-surface .player-table:has(.marker-dot) .zone-column {
+    --rail-unit: clamp(0px, calc(16.6667cqh - 15.667px), 36px);
+    top: 80px; height: calc(100% - 84px); max-height: none; gap: 2px; overflow: hidden;
+  }
+  .desktop-table .zone-column .card-slot,
+  .desktop-table .zone-column .zone-library,
+  .desktop-table .zone-column .zone-library .card-slot { flex: 0 0 var(--rail-unit); height: var(--rail-unit); min-height: 0; }
+  .desktop-table .zone-column .card-slot.zone-command { flex-basis: clamp(0px, calc(25cqh - 23.5px), 60px); height: clamp(0px, calc(25cqh - 23.5px), 60px); }
+  .desktop-table .rail-hand-count { flex-basis: var(--rail-unit); height: var(--rail-unit); color: #f4eee1; font: 700 12px/1 Geist, sans-serif; display: flex; align-items: center; justify-content: center; }
+  .desktop-table .zone-column .rail-hand-count svg { width: 18px; height: 18px; margin-right: 3px; }
+  .desktop-table .zone-column .slot-label { display: flex; align-items: center; height: 100%; padding: 0 20px 0 5px; }
+  .match-board .desktop-table .zone-column .slot-label::before { content: none; }
+  .desktop-table .zone-column .slot-label .table-icon { width: 20px; height: 20px; flex: 0 0 20px; }
+  .desktop-table .zone-column .zone-count { top: 50%; transform: translateY(-50%); right: 2px; min-width: 18px; padding: 3px 2px; color: #fff; background: #080b0eec; font-size: 12px; }
+  .desktop-table .zone-column .zone-command .slot-label { display: none; }
+  .desktop-table .zone-column .zone-command .playing-card { opacity: 1; }
+  .desktop-table .zone-column .zone-command .playing-card img { width: 100%; height: 100%; margin: 0; object-fit: contain; }
+  .desktop-table .zone-column .zone-command .slot-empty { inset: 0; opacity: 1; }
+  .desktop-table .zone-column .zone-command .slot-empty .table-icon { width: 23px; opacity: .9; }
+  .desktop-table .zone-column .zone-command .zone-count { top: auto; bottom: 1px; transform: none; }
+}

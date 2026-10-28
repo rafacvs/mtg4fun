@@ -5,7 +5,7 @@ async function expectLifeBesideName(table: Locator, life: number) {
   await expect(table).toBeVisible();
   if (await table.locator('.seat-heading').count()) {
     await expect(table.getByRole('heading', { name: /Amigo da mesa/ })).toBeVisible();
-    await expect(table.getByRole('textbox', { name: 'Vida', exact: true })).toHaveValue(String(life));
+    await expect(table.getByLabel(`Vida: ${life}`, { exact: true })).toBeVisible();
     return;
   }
   const name = table.getByRole('heading', { name: /Amigo da mesa/ });
@@ -74,26 +74,13 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     const viewport = page.viewportSize();
     await page.setViewportSize({ width: 320, height: 568 });
     await expectLifeBesideName(table, 40);
-    expect(await table.getByRole('heading', { name: /Amigo da mesa/ }).evaluate(node => {
-      const life = node.parentElement?.querySelector('[aria-label^="Vida:"]');
-      if (!(life instanceof HTMLElement)) return false;
-      const original = node.innerHTML;
-      node.textContent = 'Jogador com um nome muito longo para caber neste campo estreito';
-      const nameBox = node.getBoundingClientRect();
-      const lifeBox = life.getBoundingClientRect();
-      const ownership = node.parentElement?.querySelector('.player-ownership');
-      const beforeLife = ownership instanceof HTMLElement ? ownership.getBoundingClientRect() : nameBox;
-      const fits = getComputedStyle(node).textOverflow === 'ellipsis'
-        && node.scrollWidth > node.clientWidth + 1
-        && beforeLife.left - nameBox.right <= 20
-        && lifeBox.left >= beforeLife.right - 1
-        && lifeBox.left - beforeLife.right <= 20
-        && lifeBox.left >= 0
-        && lifeBox.right <= window.innerWidth
-        && lifeBox.width > 12;
-      node.innerHTML = original;
-      return fits;
-    })).toBe(true);
+    const nameBox = await table.getByRole('heading', { name: /Amigo da mesa/ }).boundingBox();
+    const lifeBox = await table.getByLabel('Vida: 40', { exact: true }).boundingBox();
+    expect(nameBox).not.toBeNull();
+    expect(lifeBox).not.toBeNull();
+    expect(lifeBox!.x).toBeGreaterThanOrEqual(0);
+    expect(lifeBox!.x + lifeBox!.width).toBeLessThanOrEqual(320);
+    expect(nameBox!.x).toBeGreaterThanOrEqual(lifeBox!.x + lifeBox!.width - 1);
     if (viewport) await page.setViewportSize(viewport);
     await table.getByRole('button', { name: 'Abrir jogador Amigo da mesa', exact: true }).click();
     const panel = page.getByRole('dialog', { name: 'Jogador Amigo da mesa' });
@@ -260,7 +247,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     const minus = preview.getByRole('button', { name: 'Diminuir poder e resistência', exact: true });
     const plus = preview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true });
     await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
-    await expect(preview.getByRole('button', { name: 'Marcadores', exact: true })).toBeVisible();
+    await expect(preview.getByRole('button', { name: /^(Adicionar|Editar)$/, exact: true })).toBeVisible();
     await expect(power).toHaveCount(1);
     await expect(toughness).toHaveCount(1);
     await expect(preview.getByRole('button', { name: 'Diminuir Poder', exact: true })).toHaveCount(0);
@@ -353,7 +340,6 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     await expect(restored.getByLabel('Poder', { exact: true })).toHaveValue('2');
     await expect(restored.getByLabel('Resistência', { exact: true })).toHaveValue('-1');
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
-    await restored.getByRole('button', { name: 'Mover para…', exact: true }).click();
     await restored.getByRole('button', { name: 'Campo', exact: true }).click();
     await expect.poll(async () => (await read()).power).toBe(2);
 

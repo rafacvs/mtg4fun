@@ -147,18 +147,10 @@ export function battlefieldLayout(cards: LayoutCard[], paddingX = MIN_PADDING, p
 // The visible field stays covered by cells, with at least two empty columns
 // and two empty rows beyond the last card.
 export function fitBattlefield(cards: LayoutCard[], visibleWidth: number, visibleHeight: number) {
-  let paddingX = MIN_PADDING;
-  let paddingY = MIN_PADDING;
-  let layout = battlefieldLayout(cards, paddingX, paddingY);
-  while (visibleWidth > layout.width && paddingX < MIN_PADDING + 60) {
-    paddingX += 1;
-    layout = battlefieldLayout(cards, paddingX, paddingY);
-  }
-  while (visibleHeight > layout.height && paddingY < MIN_PADDING + 60) {
-    paddingY += 1;
-    layout = battlefieldLayout(cards, paddingX, paddingY);
-  }
-  return layout;
+  const initial = battlefieldLayout(cards, MIN_PADDING, MIN_PADDING);
+  const extraColumns = Math.min(60, Math.max(0, Math.ceil((visibleWidth - initial.width) / (1 + CELL_GAP))));
+  const extraRows = Math.min(60, Math.max(0, Math.ceil((visibleHeight - initial.height) / (CARD_ASPECT + CELL_GAP))));
+  return extraColumns || extraRows ? battlefieldLayout(cards, MIN_PADDING + extraColumns, MIN_PADDING + extraRows) : initial;
 }
 
 export function dropCell(layout: FieldLayout, x: number, y: number) {
@@ -172,5 +164,6 @@ export function dropCell(layout: FieldLayout, x: number, y: number) {
 export function layoutFromCanvas(cards: Card[], canvas: HTMLElement) {
   const zoom = Number(canvas.dataset.zoom || '1') || 1;
   const cardWidth = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--card-width')) || 76;
-  return { projection: projectBattlefield(cards), cardWidth, zoom, box: canvas.getBoundingClientRect() };
+  const layout = fitBattlefield(cards, canvas.offsetWidth / cardWidth - 0.05, canvas.offsetHeight / cardWidth - 0.05);
+  return { layout, cardWidth, zoom, box: canvas.getBoundingClientRect() };
 }

@@ -23,13 +23,14 @@ async function table(api: APIRequestContext, page: Page) {
   return { act, read, path };
 }
 
-test('seleção imediata oferece barra da mão e do campo e duplo clique continua virando', async ({ page }, info) => {
+test('modo seleção oferece barra da mão e do campo e duplo clique continua virando', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'Gestos de mouse/teclado; toque exercitado pelo cenário específico.');
   test.setTimeout(60_000);
   const { read } = await table(page.request, page);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const first = hand.getByRole('button', { name: 'Island', exact: true }).first();
   const id = await first.getAttribute('data-card-id');
+  await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
   await first.click();
   const bar = page.getByRole('toolbar', { name: 'Ações da seleção' });
   await expect(bar).toBeVisible();
@@ -50,7 +51,7 @@ test('seleção imediata oferece barra da mão e do campo e duplo clique continu
   await expect(page.getByRole('dialog', { name: 'Imagem de Island' })).toHaveCount(0);
 });
 
-test('Mais e clique direito mostram o mesmo menu plano e atalhos agem na seleção', async ({ page }, info) => {
+test('Mais e clique direito mostram a inspeção e atalhos agem na seleção', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'Gestos de mouse/teclado; toque exercitado pelo cenário específico.');
   test.setTimeout(60_000);
   const { read } = await table(page.request, page);
@@ -58,18 +59,21 @@ test('Mais e clique direito mostram o mesmo menu plano e atalhos agem na seleç�
   const bar = page.getByRole('toolbar', { name: 'Ações da seleção' });
   const first = hand.getByRole('button', { name: 'Island', exact: true }).first();
   const id = await first.getAttribute('data-card-id');
+  await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
   await first.click();
   await bar.getByRole('button', { name: 'Jogar no campo', exact: true }).click();
   const card = page.locator(`[data-battlefield-canvas] [data-card-id="${id}"]`);
   await card.click();
   await bar.getByRole('button', { name: 'Mais', exact: true }).click();
-  const menu = page.getByRole('dialog', { name: 'Ações da carta', exact: true });
+  const menu = page.getByRole('dialog', { name: 'Imagem de Island', exact: true });
   await expect(menu).toBeVisible();
-  for (const title of ['Mão', 'Cemitério', 'Exílio', 'Comando', 'Topo do grimório', 'Fundo do grimório', 'Colocar face para baixo', 'Revelar para todos', 'Criar cópia independente', 'Ocultar todas reveladas']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
+  for (const title of ['Colocar face para baixo', 'Revelar para todos', 'Criar cópia independente']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
+  await expect(menu.getByRole('button', { name: 'Ocultar todas reveladas', exact: true })).toHaveCount(0);
   await expect(menu.getByRole('textbox', { name: 'Poder', exact: true })).toBeVisible();
   await expect(menu.getByRole('button', { name: 'Voltar', exact: true })).toHaveCount(0);
   const titles = await menu.getByRole('button').allTextContents();
-  await menu.getByRole('button', { name: 'Fechar ações da carta', exact: true }).click();
+  for (const title of ['Mão', 'Cemitério', 'Exílio', 'Comando', 'Topo', 'Fundo']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
+  await menu.getByRole('button', { name: 'Fechar', exact: true }).click();
   await card.click({ button: 'right' });
   await expect(menu).toBeVisible();
   expect(await menu.getByRole('button').allTextContents()).toEqual(titles);
@@ -83,11 +87,11 @@ test('Mais e clique direito mostram o mesmo menu plano e atalhos agem na seleç�
   await expect(bar.getByRole('button', { name: 'Mão', exact: true })).toBeEnabled();
   await page.keyboard.press('h');
   await expect(hand.locator(`[data-card-id="${id}"]`)).toHaveAttribute('data-pending', 'false');
-  await hand.locator(`[data-card-id="${id}"]`).click();
+  if (await hand.locator(`[data-card-id="${id}"]`).getAttribute('aria-pressed') !== 'true') await hand.locator(`[data-card-id="${id}"]`).click();
   await page.keyboard.press('g');
   const grave = page.getByRole('region', { name: 'Cemitério', exact: true });
   await expect(grave.locator(`[data-card-id="${id}"]`)).toHaveAttribute('data-pending', 'false');
-  await grave.locator(`[data-card-id="${id}"]`).click();
+  if (await grave.locator(`[data-card-id="${id}"]`).getAttribute('aria-pressed') !== 'true') await grave.locator(`[data-card-id="${id}"]`).click();
   await page.keyboard.press('e');
   await expect(page.getByRole('region', { name: 'Exílio', exact: true }).locator(`[data-card-id="${id}"]`)).toHaveAttribute('data-pending', 'false');
   await page.keyboard.press('Escape');
@@ -115,6 +119,7 @@ test('Shift mantém várias cartas e arraste mostra destinos com destaque antes 
   const field = page.locator('[data-battlefield-canvas]');
   const first = field.locator(`[data-card-id="${ids[0]}"]`), second = field.locator(`[data-card-id="${ids[1]}"]`);
   await expect(second).toBeVisible();
+  await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
   await first.click();
   await second.click({ modifiers: ['Shift'] });
   await expect(field.locator('[aria-pressed="true"]')).toHaveCount(2);
@@ -174,6 +179,7 @@ test('carta se move pendente antes da resposta real e volta se o servidor recusa
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const id = (await read()).players[0].hand![0].id;
   const bar = page.getByRole('toolbar', { name: 'Ações da seleção' });
+  await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
   for (const accepted of [false, true]) {
     let release!: () => void;
     let arrived!: () => void;
@@ -193,7 +199,7 @@ test('carta se move pendente antes da resposta real e volta se o servidor recusa
       try { await route.continue(accepted ? undefined : { postData: JSON.stringify({ ...body, to: 'zona-inexistente' }) }); } finally { settled(); }
     });
     try {
-      await hand.locator(`[data-card-id="${id}"]`).click();
+      if (await hand.locator(`[data-card-id="${id}"]`).getAttribute('aria-pressed') !== 'true') await hand.locator(`[data-card-id="${id}"]`).click();
       await bar.getByRole('button', { name: 'Cemitério', exact: true }).click();
       await sent;
       const pendingCard = page.getByRole('region', { name: 'Cemitério', exact: true }).locator(`[data-card-id="${id}"]`);

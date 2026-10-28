@@ -46,7 +46,6 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await expect(preview.getByLabel('Poder', { exact: true })).toHaveValue('0');
   await expect(preview.getByLabel('Resistência', { exact: true })).toHaveValue('0');
   await expect(preview.locator('img')).toHaveAttribute('src', '/token-default.svg');
-  await click(preview.getByRole('button', { name: 'Outras ações', exact: true }));
   await click(preview.getByRole('button', { name: 'Criar cópia independente' }));
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(2);
   await click(preview.getByRole('button', { name: 'Fechar', exact: true }));
