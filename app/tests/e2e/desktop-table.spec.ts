@@ -55,8 +55,9 @@ test('mesa de quatro mostra oponentes acima do campo próprio e da mão', async 
       const rail = (await table.locator('.zone-column').boundingBox())!;
       const field = (await table.locator('.battlefield-scroll').boundingBox())!;
       expect(rail.x + rail.width).toBeLessThanOrEqual(field.x + 1);
+      expect(rail.width).toBeGreaterThanOrEqual(60);
       const icon = (await table.locator('.zone-library .slot-label .table-icon').boundingBox())!;
-      expect(icon.width).toBeGreaterThanOrEqual(16);
+      expect(icon.width).toBeGreaterThanOrEqual(22);
     }
     const playmats = await page.getByRole('article', { name: /Mesa de/ }).evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundImage));
     expect(playmats).toHaveLength(4);
