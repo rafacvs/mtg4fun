@@ -34,6 +34,7 @@ type Room struct {
 	Format             string        `json:"format,omitempty"`
 	Seats              int           `json:"seats"`
 	Life               int           `json:"life"`
+	MulliganMode       string        `json:"mulliganMode"`
 	CreatorID          int64         `json:"creatorId"`
 	Status             string        `json:"status"`
 	Participants       []Participant `json:"participants"`
@@ -53,6 +54,7 @@ type roomState struct {
 	Format             string             `json:"format,omitempty"`
 	Seats              int                `json:"seats"`
 	Life               int                `json:"life"`
+	MulliganMode       string             `json:"mulliganMode"`
 	CreatorID          int64              `json:"creatorId"`
 	Status             string             `json:"status"`
 	Participants       []participantState `json:"participants"`
@@ -74,7 +76,11 @@ func (r roomState) view() Room {
 	for i, v := range r.Participants {
 		p[i] = Participant{v.ID, v.Name, v.Ready, v.DeckID}
 	}
-	return Room{CommanderToCommand: enabledSetting(r.CommanderToCommand), DrawOpeningHand: enabledSetting(r.DrawOpeningHand), ID: r.ID, Title: r.Title, Format: r.Format, Seats: r.Seats, Life: r.Life, CreatorID: r.CreatorID, Status: r.Status, Participants: p, Vacancies: r.Vacancies}
+	mode := r.MulliganMode
+	if mode == "" {
+		mode = "standard"
+	}
+	return Room{CommanderToCommand: enabledSetting(r.CommanderToCommand), DrawOpeningHand: enabledSetting(r.DrawOpeningHand), ID: r.ID, Title: r.Title, Format: r.Format, Seats: r.Seats, Life: r.Life, MulliganMode: mode, CreatorID: r.CreatorID, Status: r.Status, Participants: p, Vacancies: r.Vacancies}
 }
 
 type Turn struct {
@@ -118,6 +124,8 @@ type playerState struct {
 	Name             string      `json:"name"`
 	Life             int         `json:"life"`
 	Markers          colorCounts `json:"markers,omitempty"`
+	Mulligans        int         `json:"mulligans,omitempty"`
+	MulliganKept     bool        `json:"mulliganKept,omitempty"`
 	Library          []Card      `json:"library"`
 	Hand             []Card      `json:"hand"`
 	Battlefield      []Card      `json:"battlefield"`
@@ -136,6 +144,8 @@ type matchState struct {
 	InitialLife    int           `json:"initialLife"`
 	TurnOrder      []Turn        `json:"turnOrder"`
 	TurnIndex      int           `json:"turnIndex"`
+	MulliganMode   string        `json:"mulliganMode"`
+	MulliganOpen   bool          `json:"mulliganOpen"`
 	NextStackOrder int           `json:"nextStackOrder"`
 	Players        []playerState `json:"players"`
 }
@@ -148,6 +158,8 @@ type Match struct {
 	InitialLife    int           `json:"initialLife"`
 	TurnOrder      []Turn        `json:"turnOrder"`
 	CurrentTurn    Turn          `json:"currentTurn"`
+	MulliganMode   string        `json:"mulliganMode"`
+	MulliganOpen   bool          `json:"mulliganOpen"`
 	Players        []MatchPlayer `json:"players"`
 	Log            []MatchLog    `json:"log"`
 }
@@ -158,6 +170,8 @@ type MatchPlayer struct {
 	Name             string        `json:"name"`
 	Life             int           `json:"life"`
 	Markers          colorCounts   `json:"markers,omitempty"`
+	Mulligans        int           `json:"mulligans,omitempty"`
+	MulliganKept     bool          `json:"mulliganKept,omitempty"`
 	LibraryCount     int           `json:"libraryCount"`
 	HandCount        int           `json:"handCount"`
 	BattlefieldCount int           `json:"battlefieldCount"`
@@ -264,7 +278,7 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
+		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
 		for _, cards := range [][]Card{v.Hand, v.Library, v.Battlefield, v.Command, v.Graveyard, v.Exile} {
 			for _, card := range cards {
 				if card.Revealed {
@@ -305,7 +319,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	if len(m.TurnOrder) > 0 {
 		current = m.TurnOrder[m.TurnIndex%len(m.TurnOrder)]
 	}
-	return Match{Finished: m.Finished, FinishVotes: append([]int64{}, m.FinishVotes...), FinishRequired: (len(m.Players) + 1) / 2, RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, Players: p, Log: log}
+	return Match{Finished: m.Finished, FinishVotes: append([]int64{}, m.FinishVotes...), FinishRequired: (len(m.Players) + 1) / 2, RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, MulliganMode: m.MulliganMode, MulliganOpen: m.MulliganOpen, Players: p, Log: log}
 }
 
 type Service struct {
@@ -421,7 +435,7 @@ func (s *Service) create(ctx context.Context, u auth.User, draft roomDraft) (Roo
 		}
 		creator.DeckID = draft.DeckID
 	}
-	r := roomState{ID: id, Title: draft.Name, Format: draft.Format, Seats: draft.Seats, Life: draft.Life, CreatorID: u.ID, Status: "preparing", Participants: []participantState{creator}, Vacancies: draft.Seats - 1}
+	r := roomState{ID: id, Title: draft.Name, Format: draft.Format, Seats: draft.Seats, Life: draft.Life, MulliganMode: "standard", CreatorID: u.ID, Status: "preparing", Participants: []participantState{creator}, Vacancies: draft.Seats - 1}
 	if e = save(ctx, tx, r, u.ID, "created"); e != nil {
 		return Room{}, e
 	}
@@ -436,6 +450,33 @@ var errNotReady = errors.New("Todos os participantes precisam confirmar um deck.
 var errDeckNotFound = errors.New("Deck não encontrado.")
 var errDeckRequired = errors.New("Selecione um deck antes de confirmar.")
 var errReadyLocked = errors.New("Desfaça a prontidão para trocar de deck.")
+
+func (s *Service) setMulliganMode(ctx context.Context, id int64, mode string, u auth.User) (Room, error) {
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return Room{}, e
+	}
+	defer tx.Rollback()
+	r, e := lockedRoom(ctx, tx, id)
+	if e != nil {
+		return Room{}, e
+	}
+	if r.CreatorID != u.ID {
+		return Room{}, errNotCreator
+	}
+	if r.Status != "preparing" {
+		return Room{}, errRoomStarted
+	}
+	if mode != "standard" && mode != "aconchegaz" {
+		return Room{}, errCardNotFound
+	}
+	r.MulliganMode = mode
+	if e = save(ctx, tx, r, u.ID, "mulligan-mode"); e != nil {
+		return Room{}, e
+	}
+	e = tx.Commit()
+	return r.view(), e
+}
 
 func lockedRoom(ctx context.Context, tx *sql.Tx, id int64) (roomState, error) {
 	return readRoom(tx.QueryRowContext(ctx, "SELECT snapshot FROM rooms WHERE id=? FOR UPDATE", id))
@@ -670,7 +711,11 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e != nil {
 		return Match{}, e
 	}
-	m := matchState{RoomID: id, InitialLife: life, TurnOrder: order, Players: make([]playerState, 0, len(r.Participants))}
+	mode := r.MulliganMode
+	if mode == "" {
+		mode = "standard"
+	}
+	m := matchState{RoomID: id, InitialLife: life, TurnOrder: order, MulliganMode: mode, MulliganOpen: true, Players: make([]playerState, 0, len(r.Participants))}
 	for _, p := range r.Participants {
 		cards, e := deckCards(ctx, tx, p.DeckID, p.ID)
 		if e != nil {

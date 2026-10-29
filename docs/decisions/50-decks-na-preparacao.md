@@ -34,7 +34,7 @@ Esta decisão substitui o estado desabilitado descrito acima.
 
 Em 29/10/2026, o usuário autorizou editar a vida inicial, escolher se o
 comandante começa em comando e escolher a compra inicial de até sete cartas.
-Mulligan permanece como recurso futuro. O criador altera esses campos na
+Na época, mulligan permanecia como recurso futuro. O criador altera esses campos na
 preparação; os participantes acompanham os valores pelo SSE existente.
 A vida usa o intervalo inteiro de 1 a 999 já aplicado na criação da sala.
 
@@ -50,4 +50,21 @@ carta no grimório embaralhado; desligar a compra inicia com a mão vazia.
 A apresentação móvel usa uma mesa compacta e lista de jogadores, com painéis
 inferiores para escolher o deck e consultar as regras. A ação principal muda
 conforme prontidão e autoria da sala. A mesma configuração persistida e as
-mesmas permissões do desktop continuam em vigor; mulligan permanece futuro.
+mesmas permissões do desktop continuam em vigor, inclusive o tipo de mulligan.
+
+## Tipo de mulligan na preparação
+
+Em 29/10/2026, depois de a [decisão de mulligan](49-mulligan-e-selecao-da-mao.md)
+ser integrada à `master`, o usuário pediu que a configuração da sala nesta
+preparação refletisse o modo de mulligan usado ao iniciar a partida. O card
+**Mulligan** das regras deixa de ser um recurso futuro desabilitado e passa a
+oferecer **Padrão** e **Aconchegaz**, com o padrão selecionado inicialmente.
+Somente o criador escolhe; os demais veem a opção desabilitada e sincronizada.
+
+O card usa o endpoint existente `PUT /api/rooms/{id}/mulligan-mode`, sem
+incluir o modo em `PATCH /api/rooms/{id}/settings`. O modo gravado na sala é
+copiado para a partida ao iniciar, como já fazia o fluxo de mulligan.
+
+Limitação observada: o mulligan exige sete cartas na mão. Com a compra inicial
+desligada, a janela de mulligan existe, mas só pode ser usada se o jogador
+comprar sete cartas manualmente antes do primeiro avanço de turno.

@@ -45,9 +45,10 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 ### Salas e preparação
 
 A configuração editável da preparação e sua autorização posterior estão na
-[decisão de preparação](../decisions/49-decks-na-preparacao.md). O criador pode
+[decisão de preparação](../decisions/50-decks-na-preparacao.md). O criador pode
 alterar vida inicial (inteiro de 1 a 999), posicionamento inicial do comandante
-e compra inicial de até sete cartas; mulligan automático permanece fora do escopo.
+e compra inicial de até sete cartas, além do tipo de mulligan descrito na
+[decisão de mulligan](../decisions/49-mulligan-e-selecao-da-mao.md).
 
 - Várias salas simultâneas, com limite de seis jogadores por sala.
 - Qualquer usuário autenticado cria e entra em salas com vagas antes do início; não há aprovação individual ou senha adicional de sala.

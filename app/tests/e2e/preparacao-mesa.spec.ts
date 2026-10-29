@@ -21,7 +21,7 @@ test('jogadores preparam decks e iniciam a mesa', async ({ page, browser, baseUR
     await expect(table.getByLabel('Lugar livre')).toHaveCount(2);
     const rules = page.getByRole('region', { name: 'Regras da mesa' });
     await expect(rules.getByRole('button', { name: /Vida inicial: 40/ })).toBeVisible();
-    await expect(rules.getByRole('button', { name: 'Escolher mulligan' })).toBeDisabled();
+    await expect(rules.getByRole('radio', { name: 'Padrão' })).toHaveAttribute('aria-checked', 'true');
     await expect(page.getByRole('button', { name: 'Iniciar partida' })).toBeDisabled();
     const panel = page.getByRole('complementary', { name: 'Seu preparo' });
     const preview = panel.getByLabel('Deck escolhido');

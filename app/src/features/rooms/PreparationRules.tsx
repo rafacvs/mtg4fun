@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import type { Room } from './roomsApi';
 
 type Settings = Partial<Pick<Room, 'life' | 'commanderToCommand' | 'drawOpeningHand'>>;
+type MulliganMode = Room['mulliganMode'];
 
-export function PreparationRules({ room, editable, busy, onPendingChange, onChange }: { room: Room; editable: boolean; busy: boolean; onPendingChange: (pending: boolean) => void; onChange: (settings: Settings) => Promise<boolean> }) {
+const mulliganModes: Record<MulliganMode, { label: string; detail: string }> = {
+  standard: { label: 'Padrão', detail: 'Primeiro grátis; depois, uma carta ao fundo por mulligan' },
+  aconchegaz: { label: 'Aconchegaz', detail: 'Sempre sete cartas novas, sem redução' },
+};
+
+export function PreparationRules({ room, editable, busy, onPendingChange, onChange, onMulliganMode }: { room: Room; editable: boolean; busy: boolean; onPendingChange: (pending: boolean) => void; onChange: (settings: Settings) => Promise<boolean>; onMulliganMode: (mode: MulliganMode) => Promise<boolean> }) {
   const [life, setLife] = useState(String(room.life));
   const [invalid, setInvalid] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -34,7 +40,7 @@ export function PreparationRules({ room, editable, busy, onPendingChange, onChan
       </div>{invalid && <small role="alert">Use um inteiro de 1 a 999.</small>}</div>
       <div className="preparation-rule"><strong><span aria-hidden="true">♛</span> Comandante na zona de comando</strong><div className="preparation-rule-detail"><small>{room.commanderToCommand ? 'Começa na zona de comando' : 'Embaralhado no grimório'}</small><button type="button" role="switch" aria-checked={room.commanderToCommand} disabled={disabled} aria-label="Comandante na zona de comando" onClick={() => void onChange({ commanderToCommand: !room.commanderToCommand })}><span /></button></div></div>
       <div className="preparation-rule"><strong><span aria-hidden="true">▣</span> Comprar até 7 cartas</strong><div className="preparation-rule-detail"><small>{room.drawOpeningHand ? 'Compra ao começar' : 'Sem compra automática'}</small><button type="button" role="switch" aria-checked={room.drawOpeningHand} disabled={disabled} aria-label="Comprar até 7 cartas" onClick={() => void onChange({ drawOpeningHand: !room.drawOpeningHand })}><span /></button></div></div>
-      <div className="preparation-rule"><strong><span aria-hidden="true">⟳</span> Mulligan</strong><div className="preparation-rule-detail"><small>Sem mulligan automático</small><button type="button" disabled aria-label="Escolher mulligan">Em breve</button></div></div>
+      <div className="preparation-rule"><strong><span aria-hidden="true">⟳</span> Mulligan</strong><div className="preparation-rule-detail"><small>{mulliganModes[room.mulliganMode].detail}</small><div className="preparation-mulligan" role="radiogroup" aria-label="Tipo de mulligan">{(Object.keys(mulliganModes) as MulliganMode[]).map(mode => <button key={mode} type="button" role="radio" aria-checked={room.mulliganMode === mode} disabled={disabled} onClick={() => { if (room.mulliganMode !== mode) void onMulliganMode(mode); }}>{mulliganModes[mode].label}</button>)}</div></div></div>
     </div>
   </section>;
 }

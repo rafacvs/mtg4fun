@@ -6,7 +6,7 @@ está na [decisão 35](35-nova-experiencia-da-mesa.md); este registro descreve a
 implementação, sem aprovar requisitos novos.
 
 A apresentação da preparação e o compartilhamento limitado das identidades
-dos decks foram atualizados posteriormente na [decisão 49](49-decks-na-preparacao.md).
+dos decks foram atualizados posteriormente na [decisão 50](50-decks-na-preparacao.md).
 
 ## Implementação
 

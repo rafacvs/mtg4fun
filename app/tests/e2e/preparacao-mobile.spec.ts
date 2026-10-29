@@ -31,13 +31,16 @@ test('preparação móvel mantém mesa, deck e regras acessíveis', async ({ pag
     await expect(rules.getByRole('button', { name: /Vida inicial: 40/ })).toBeVisible();
     await rules.getByRole('button', { name: 'Aumentar vida inicial' }).tap();
     await expect(rules.getByRole('button', { name: /Vida inicial: 41/ })).toBeVisible();
-    await expect(rules.getByRole('button', { name: 'Escolher mulligan' })).toBeDisabled();
+    await rules.getByRole('radio', { name: 'Aconchegaz' }).tap();
+    await expect(rules.getByRole('radio', { name: 'Aconchegaz' })).toHaveAttribute('aria-checked', 'true');
     await page.screenshot({ path: info.outputPath('mobile-regras.png') });
     await rules.getByRole('button', { name: 'Concluído' }).tap();
     await guest.getByRole('button', { name: /Regras/ }).tap();
     const guestRules = guest.getByRole('dialog', { name: 'Regras da mesa' });
     await expect(guestRules.getByRole('button', { name: 'Vida inicial: 41' })).toBeDisabled();
     await expect(guestRules.getByRole('switch', { name: 'Comprar até 7 cartas' })).toBeDisabled();
+    await expect(guestRules.getByRole('radio', { name: 'Aconchegaz' })).toHaveAttribute('aria-checked', 'true');
+    await expect(guestRules.getByRole('radio', { name: 'Padrão' })).toBeDisabled();
     await guestRules.getByRole('button', { name: 'Fechar', exact: true }).tap();
     await guest.getByRole('button', { name: /Trocar/ }).tap();
     await guest.getByLabel('Deck para a partida').selectOption({ label: 'Deck do convidado' });

@@ -19,8 +19,8 @@ tempo real. O lobby lista salas; **Entrar na mesa** abre a URL da sala
 (`/#/salas/{id}`), com preparação dos decks e início pelo criador após todos
 confirmarem prontidão. Na preparação, o criador pode ajustar a vida inicial
 (de 1 a 999), a posição inicial do comandante e a compra automática de até
-sete cartas. Os participantes veem as alterações; mulligan automático ainda
-não está disponível.
+sete cartas, além do tipo de mulligan (padrão ou Aconchegaz). Os participantes
+veem as alterações.
 
 A mesa permite comprar cartas e movê-las entre mão, campo, cemitério, exílio,
 comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque

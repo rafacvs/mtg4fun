@@ -64,7 +64,7 @@ export function MobilePreparation({ room, participant, userId, deckId, setDeckId
         <div className="mobile-selected-deck" aria-label="Deck escolhido"><span className="mobile-selected-art">{selectedDeck ? <img src={artwork ? deckApi.imageURL(artwork) : '/library-back.png'} alt="" onError={event => { event.currentTarget.src = '/library-back.png'; }} /> : <span aria-hidden="true">✧</span>}</span><div>{selectedDeck ? <><span className="preparation-deck-label">DECK ESCOLHIDO</span><strong>{selectedDeck.name}</strong><small>{cardCount(selectedDeck.cards)} cartas</small></> : <strong>Sem deck</strong>}</div></div>
         <button type="button" disabled={!deckId || rooms.busy} onClick={closePanel}>Usar este deck</button>
       </div>}
-      {panel === 'rules' && <>{rooms.error && <p role="alert" className="error">{rooms.error}</p>}<PreparationRules room={room} editable={room.creatorId === userId} busy={rooms.busy} onPendingChange={setSettingsPending} onChange={settings => rooms.settings(room.id, settings)} /><button type="button" className="mobile-panel-done" disabled={settingsPending || rooms.busy} onClick={closePanel}>{room.creatorId === userId ? 'Concluído' : 'Fechar'}</button></>}
+      {panel === 'rules' && <>{rooms.error && <p role="alert" className="error">{rooms.error}</p>}<PreparationRules room={room} editable={room.creatorId === userId} busy={rooms.busy} onPendingChange={setSettingsPending} onChange={settings => rooms.settings(room.id, settings)} onMulliganMode={mode => rooms.setMulliganMode(room.id, mode)} /><button type="button" className="mobile-panel-done" disabled={settingsPending || rooms.busy} onClick={closePanel}>{room.creatorId === userId ? 'Concluído' : 'Fechar'}</button></>}
     </dialog>
   </section>;
 }

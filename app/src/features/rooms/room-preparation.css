@@ -171,6 +171,11 @@
 .preparation-rule button[role=switch] span { display: block; width: 17px; height: 18px; background: #ddd5c2; border-radius: 2px; }
 .preparation-rule button[role=switch][aria-checked=true] { background: #d3a74e; }
 .preparation-rule button[role=switch][aria-checked=true] span { margin-left: auto; background: #1a180f; }
+.preparation-mulligan { display: flex; flex: none; }
+.preparation-rule .preparation-mulligan button { border-radius: 0; }
+.preparation-rule .preparation-mulligan button:first-child { border-radius: 3px 0 0 3px; }
+.preparation-rule .preparation-mulligan button:last-child { border-left: 0; border-radius: 0 3px 3px 0; }
+.preparation-rule .preparation-mulligan button[aria-checked=true] { background: #d3a74e; color: #1a180f; }
 .preparation-life { gap: 5px; }
 .room-preparation .preparation-life .preparation-life-step { flex: none; display: grid; place-items: center; width: 28px; height: 28px; min-height: 28px; padding: 0; margin: 0; border: 1px solid #665737; border-radius: 4px; color: #ded3b9; background: #161a19; font-size: .8rem; }
 .room-preparation .preparation-life .preparation-life-value { flex: 1; min-width: 0; width: auto; min-height: 30px; padding: 0; margin: 0; border: 0; background: transparent; color: #e3bd6b; font: bold 1.3rem Georgia, serif; text-align: center; }

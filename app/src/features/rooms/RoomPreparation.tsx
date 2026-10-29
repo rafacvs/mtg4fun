@@ -63,7 +63,7 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
         </div>
         {room.vacancies > 0 && <p className="preparation-vacancies"><span aria-hidden="true">✧</span> {room.vacancies} {room.vacancies === 1 ? 'lugar disponível' : 'lugares disponíveis'} para seus amigos</p>}
       </section>
-      <PreparationRules room={room} editable={room.creatorId === userId} busy={rooms.busy} onPendingChange={setSettingsPending} onChange={settings => rooms.settings(room.id, settings)} />
+      <PreparationRules room={room} editable={room.creatorId === userId} busy={rooms.busy} onPendingChange={setSettingsPending} onChange={settings => rooms.settings(room.id, settings)} onMulliganMode={mode => rooms.setMulliganMode(room.id, mode)} />
       <aside className="preparation-controls" aria-label="Seu preparo">
         <p className="eyebrow">SEU LUGAR NA MESA</p><h3>Prepare seu deck</h3>
         {decks.error && <p role="alert" className="error">{decks.error}</p>}

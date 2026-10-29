@@ -6,6 +6,7 @@ export type Room = {
   life: number;
   commanderToCommand: boolean;
   drawOpeningHand: boolean;
+  mulliganMode: 'standard' | 'aconchegaz';
   creatorId: number;
   status: string;
   participants: { id: number; name: string; ready: boolean; deckId?: number }[];
@@ -25,7 +26,9 @@ export type Match = {
   initialLife: number;
   turnOrder: { userId: number; name: string; roll: number }[];
   currentTurn: { userId: number; name: string; roll: number };
-  players: { userId: number; name: string; life: number; markers?: Markers; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
+  mulliganMode: 'standard' | 'aconchegaz';
+  mulliganOpen: boolean;
+  players: { userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
 export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers };
@@ -39,11 +42,12 @@ export type CounterAction =
   | { target: 'card'; cardId: string; subject: 'marker'; color: MarkerColor; operation: 'set' | 'increment'; value: number };
 
 async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
-  const response = await fetch(path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) });
+  } catch {
+    throw new Error('A operação demorou demais. Tente novamente.');
+  }
   if (!response.ok) {
     const data = await response.json();
     throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
@@ -106,6 +110,7 @@ export const roomsApi = {
   create: (room: RoomDraft) => change('/api/rooms', 'POST', room),
   join: (id: number) => change(`/api/rooms/${id}/participants`),
   selectDeck: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/deck`, 'PUT', { deckId }),
+  setMulliganMode: (id: number, mode: 'standard' | 'aconchegaz') => change(`/api/rooms/${id}/mulligan-mode`, 'PUT', { mode }),
   ready: (id: number) => change(`/api/rooms/${id}/participants/me/ready`, 'PUT'),
   unready: (id: number) => change(`/api/rooms/${id}/participants/me/ready`, 'DELETE'),
   start: (id: number) => change(`/api/rooms/${id}/start`),
@@ -126,6 +131,8 @@ export const roomsApi = {
   copyCard: (id: number, cardId: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'copy-card', cardId }),
   counter: (id: number, input: CounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter', ...input }),
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
+  mulligan: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'mulligan' }),
+  keepHand: (id: number, cardIds: string[], intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'keep_hand', cardIds }),
   move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom', at?: { x: number; row: number }) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}), ...(at ? { x: at.x, row: at.row } : {}) }),
   transferControl: (id: number, cardId: string, controllerId: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'transfer_control', cardId, controllerId }),
   position: (id: number, cardIds: string[], x: number, row: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'position', ...(cardIds.length === 1 ? { cardId: cardIds[0] } : { cardIds }), x, row }),

@@ -174,10 +174,10 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
       const path = `/api/rooms/${roomId}`;
       expect((await api.post(`${path}/start`, { data: {} })).status()).toBe(201);
       await returnOpeningHandToLibrary(api, roomId);
-      const draw = await api.post(`${path}/match/actions`, { data: { kind: 'draw', intentId: randomUUID(), count: 4 } });
+      const draw = await api.post(`${path}/match/actions`, { data: { kind: 'draw', intentId: randomUUID(), count: 6 } });
       const { match } = await draw.json();
       const hand = match.players.find((player: { userId: number }) => player.userId === match.viewerId).hand;
-      for (const [index, to] of ['graveyard', 'exile', 'command'].entries()) expect((await api.post(`${path}/match/actions`, { data: { kind: 'move', intentId: randomUUID(), cardIds: [hand[index].id], to } })).ok()).toBe(true);
+      for (const [index, to] of ['graveyard', 'graveyard', 'exile', 'exile', 'command'].entries()) expect((await api.post(`${path}/match/actions`, { data: { kind: 'move', intentId: randomUUID(), cardIds: [hand[index].id], to } })).ok()).toBe(true);
       const page = await contexts[0].newPage();
       await page.goto(`/#/salas/${roomId}`);
       const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
@@ -186,10 +186,17 @@ test('a mesma composição atende um a seis e mantém os montes públicos', asyn
       for (const name of ['Cemitério', 'Exílio', 'Comando']) {
         const zone = own.getByRole('region', { name, exact: true });
         await expect(zone.getByRole('button', { name: 'Island', exact: true })).toBeVisible();
-        await expect(zone.getByLabel('1 cartas', { exact: true })).toBeVisible();
+        await expect(zone.getByLabel(`${name === 'Comando' ? 1 : 2} cartas`, { exact: true })).toBeVisible();
+      }
+      for (const name of ['Cemitério', 'Exílio']) {
+        await own.getByRole('region', { name, exact: true }).getByRole('button', { name: 'Island', exact: true }).click();
+        const dialog = page.getByRole('dialog', { name: `${name} de Amigo da mesa`, exact: true });
+        await expect(dialog.getByRole('button', { name: 'Ver imagem de Island', exact: true })).toHaveCount(2);
+        await expect(dialog.getByText('Topo', { exact: true })).toHaveCount(1);
+        await dialog.getByRole('button', { name: `Fechar ${name.toLocaleLowerCase('pt-BR')}`, exact: true }).click();
       }
       const library = own.getByRole('region', { name: 'Grimório', exact: true });
-      await expect(library.getByLabel('4 cartas', { exact: true })).toBeVisible();
+      await expect(library.getByLabel('2 cartas', { exact: true })).toBeVisible();
       await expect(library).not.toContainText('Island');
       await expect(library.locator('img')).toHaveCount(3);
       const strip = page.getByRole('region', { name: 'Oponentes', exact: true });

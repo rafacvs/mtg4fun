@@ -22,11 +22,15 @@ test('criador configura regras sincronizadas e a partida usa os valores salvos',
     const life = rules.getByRole('spinbutton', { name: 'Vida inicial' });
     const commander = rules.getByRole('switch', { name: 'Comandante na zona de comando' });
     const draw = rules.getByRole('switch', { name: 'Comprar até 7 cartas' });
+    const aconchegaz = rules.getByRole('radio', { name: 'Aconchegaz' });
     await expect(commander).toHaveAttribute('aria-checked', 'true');
     await expect(draw).toHaveAttribute('aria-checked', 'true');
     await expect(guestRules.getByRole('button', { name: 'Vida inicial: 40' })).toBeDisabled();
     await expect(guestRules.getByRole('button', { name: 'Aumentar vida inicial' })).toBeDisabled();
     await expect(guestRules.getByRole('switch', { name: 'Comprar até 7 cartas' })).toBeDisabled();
+    await expect(rules.getByRole('radio', { name: 'Padrão' })).toHaveAttribute('aria-checked', 'true');
+    await expect(guestRules.getByRole('radio', { name: 'Aconchegaz' })).toBeDisabled();
+    expect((await guest.request.put(`/api/rooms/${room.id}/mulligan-mode`, { data: { mode: 'aconchegaz' } })).status()).toBe(403);
     expect((await guest.request.patch(`/api/rooms/${room.id}/settings`, { data: { life: 99 } })).status()).toBe(403);
     expect((await page.request.patch(`/api/rooms/${room.id}/settings`, { data: { life: 0 } })).status()).toBe(400);
     expect((await page.request.patch(`/api/rooms/${room.id}/settings`, { data: { life: 2.5 } })).status()).toBe(400);
@@ -43,24 +47,30 @@ test('criador configura regras sincronizadas e a partida usa os valores salvos',
     await commander.click(); await expect(commander).toHaveAttribute('aria-checked', 'false');
     await draw.click(); await expect(draw).toHaveAttribute('aria-checked', 'false');
     await expect(guestRules.getByRole('switch', { name: 'Comprar até 7 cartas' })).toHaveAttribute('aria-checked', 'false');
+    await aconchegaz.click(); await expect(aconchegaz).toHaveAttribute('aria-checked', 'true');
+    await expect(guestRules.getByRole('radio', { name: 'Aconchegaz' })).toHaveAttribute('aria-checked', 'true');
+    await expect(guestRules).toContainText('Sempre sete cartas novas');
     await page.reload();
     await expect(page.getByRole('button', { name: /Vida inicial: 25/ })).toBeVisible();
     await expect(page.getByRole('switch', { name: 'Comandante na zona de comando' })).toHaveAttribute('aria-checked', 'false');
+    await expect(page.getByRole('radio', { name: 'Aconchegaz' })).toHaveAttribute('aria-checked', 'true');
     for (const client of [page, guest]) { await client.getByLabel('Deck para a partida').selectOption({ label: 'Deck de regras' }); await client.getByRole('button', { name: 'Estou pronto' }).click(); }
     await expect(page.getByRole('button', { name: 'Iniciar partida' })).toBeEnabled();
     await page.getByRole('button', { name: 'Iniciar partida' }).click();
     await expect(page.getByRole('region', { name: 'Mesa da partida' })).toBeVisible();
     const { match } = await (await page.request.get(`/api/rooms/${room.id}/match`)).json();
     expect(match.initialLife).toBe(25);
+    expect(match.mulliganMode).toBe('aconchegaz');
     for (const player of match.players) expect({ life: player.life, hand: player.handCount, library: player.libraryCount, command: player.commandCount }).toEqual({ life: 25, hand: 0, library: 8, command: 0 });
     expect((await page.request.patch(`/api/rooms/${room.id}/settings`, { data: { life: 40 } })).status()).toBe(409);
     const { room: defaults } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
-    expect(defaults.commanderToCommand).toBe(true); expect(defaults.drawOpeningHand).toBe(true);
+    expect(defaults.commanderToCommand).toBe(true); expect(defaults.drawOpeningHand).toBe(true); expect(defaults.mulliganMode).toBe('standard');
     const deck = (await (await page.request.get('/api/decks')).json()).decks.find((item: { name: string }) => item.name === 'Deck de regras');
     expect((await page.request.put(`/api/rooms/${defaults.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     expect((await page.request.post(`/api/rooms/${defaults.id}/start`, { data: {} })).status()).toBe(201);
     const initial = (await (await page.request.get(`/api/rooms/${defaults.id}/match`)).json()).match.players[0];
     expect({ hand: initial.handCount, library: initial.libraryCount, command: initial.commandCount }).toEqual({ hand: 7, library: 0, command: 1 });
+    expect((await (await page.request.get(`/api/rooms/${defaults.id}/match`)).json()).match.mulliganMode).toBe('standard');
     for (const settings of [{ commanderToCommand: false, drawOpeningHand: true }, { commanderToCommand: true, drawOpeningHand: false }]) {
       const { room: mixed } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
       expect((await page.request.patch(`/api/rooms/${mixed.id}/settings`, { data: settings })).ok()).toBe(true);
