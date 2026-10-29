@@ -35,6 +35,7 @@ export function useRooms() {
     create: (room: Parameters<typeof roomsApi.create>[0]) => act(() => roomsApi.create(room)),
     join: (id: number) => act(() => roomsApi.join(id)),
     selectDeck: (id: number, deckId: number) => act(() => roomsApi.selectDeck(id, deckId)),
+    setMulliganMode: (id: number, mode: 'standard' | 'aconchegaz') => act(() => roomsApi.setMulliganMode(id, mode)),
     ready: (id: number) => act(() => roomsApi.ready(id)),
     unready: (id: number) => act(() => roomsApi.unready(id)),
     start: (id: number) => act(() => roomsApi.start(id)),

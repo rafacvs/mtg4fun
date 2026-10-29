@@ -23,6 +23,7 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/deck", s.selectDeck)
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/ready", s.readyParticipant)
 	mux.HandleFunc("DELETE /api/rooms/{id}/participants/me/ready", s.unreadyParticipant)
+	mux.HandleFunc("PUT /api/rooms/{id}/mulligan-mode", s.updateMulliganMode)
 	mux.HandleFunc("POST /api/rooms/{id}/start", s.startMatch)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
 	mux.HandleFunc("GET /api/rooms/{id}/match/tokens", s.listTokens)
@@ -33,6 +34,37 @@ func (s *Service) Handler() http.Handler {
 		}
 		mux.ServeHTTP(w, r)
 	})
+}
+
+func (s *Service) updateMulliganMode(w http.ResponseWriter, r *http.Request) {
+	id, ok := roomID(w, r)
+	if !ok {
+		return
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+	decoder.DisallowUnknownFields()
+	var input struct {
+		Mode string `json:"mode"`
+	}
+	if decoder.Decode(&input) != nil || (input.Mode != "standard" && input.Mode != "aconchegaz") {
+		httpserver.WriteError(w, 400, "Tipo de mulligan inválido.")
+		return
+	}
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	room, err := s.setMulliganMode(r.Context(), id, input.Mode, user)
+	switch {
+	case errors.Is(err, errNotCreator):
+		httpserver.WriteError(w, 403, err.Error())
+	case errors.Is(err, errRoomStarted):
+		httpserver.WriteError(w, 409, err.Error())
+	case err != nil:
+		httpserver.InternalError(w, err)
+	default:
+		httpserver.WriteJSON(w, 200, map[string]Room{"room": room})
+	}
 }
 
 var intentIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
@@ -184,8 +216,13 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
-	case "coin", "finish":
+	case "coin", "finish", "mulligan":
 		if input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "keep_hand":
+		if input.Sides != 0 || input.Count != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
@@ -251,7 +288,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errMatchFinished), errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange):
+	case errors.Is(err, errMatchFinished), errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange), errors.Is(err, errMulliganClosed), errors.Is(err, errMulliganSelection):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)

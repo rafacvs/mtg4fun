@@ -23,6 +23,7 @@ import { LibraryConsultation } from './LibraryConsultation';
 import { dropCell, firstFreeCell, layoutFromCanvas } from './battlefieldLayout';
 import { OwnHand } from './OwnHand';
 import { ZoneColumn, type CardGesture } from './PlayerTable';
+import { MulliganPanel } from './MulliganPanel';
 import { PublicZoneViewer } from './PublicZoneViewer';
 import './match.css';
 import './counters.css';
@@ -34,7 +35,7 @@ type Drag = { card: Card; x: number; y: number; zone: string | null };
 type OpenZone = { playerId: number; zone: 'graveyard' | 'exile'; anchor: HTMLElement };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mulligan, keepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
   const match = synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [sides, setSides] = useState(20);
@@ -53,6 +54,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [creationOpen, setCreationOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [mulliganPanelOpen, setMulliganPanelOpen] = useState(false);
   const [openZone, setOpenZone] = useState<OpenZone | null>(null);
   const [hoverPreviewOpen, setHoverPreviewOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
   const [playersOpen, setPlayersOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
@@ -262,6 +264,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
 
   if (!match) return <p role={error ? 'alert' : 'status'}>{error || 'Carregando mesa…'}</p>;
   const own = match.players.find(player => player.userId === match.viewerId)!;
+  const mulliganAvailable = match.mulliganOpen !== false;
+  const mulliganCount = own.mulligans ?? 0;
+  const mulliganBottom = match.mulliganMode === 'standard' ? Math.max(0, mulliganCount - 1) : 0;
+  const canMulliganAgain = match.mulliganMode !== 'standard' || mulliganCount < 7;
   const focused = match.players.find(player => player.userId === (focusId ?? match.viewerId))!;
   const ownHidden = focused.userId !== match.viewerId;
   const preview = previewId ? findCard(match, previewId) : null;
@@ -274,8 +280,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
   };
   const togglePlayerFocus = (id: number) => focusPlayer(id);
-  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen}
+  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} canMulligan={mulliganAvailable && !own.mulliganKept && own.handCount === 7 && canMulliganAgain} canKeep={mulliganAvailable && !own.mulliganKept && mulliganCount > 0} keepLabel={mulliganBottom ? `Manter · ${mulliganBottom} ao fundo` : 'Manter mão'} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
+    onMulligan={() => { setSelectionIds([]); void mulligan().then(ok => { if (ok) setMulliganPanelOpen(true); }); }} onKeep={() => setMulliganPanelOpen(true)}
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
@@ -390,6 +397,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onInspect={card => setPreviewId(card.id)}
       onDismiss={closeLibrary}
     />
+    <MulliganPanel open={mulliganPanelOpen && mulliganAvailable && !own.mulliganKept} cards={own.hand ?? []} bottomCount={mulliganBottom} canMulliganAgain={canMulliganAgain} busy={busy || unconfirmed} onMulligan={mulligan} onKeep={ids => keepHand(ids).then(ok => { if (ok) { setMulliganPanelOpen(false); setSelectionIds([]); setNotice('Mão mantida.'); } return ok; })} onClose={() => setMulliganPanelOpen(false)} />
     {openZone && (() => {
       const player = match.players.find(item => item.userId === openZone.playerId);
       if (!player) return null;

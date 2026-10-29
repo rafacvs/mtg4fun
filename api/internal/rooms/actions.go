@@ -20,6 +20,8 @@ var errCardNotFound = errors.New("Carta não encontrada nesta zona.")
 var errInsufficientCards = errors.New("Não há cartas suficientes no grimório.")
 var errInvalidPosition = errors.New("Posição inválida no campo.")
 var errStackFull = errors.New("Essa pilha já tem 3 cartas.")
+var errMulliganClosed = errors.New("O período de mulligan já terminou.")
+var errMulliganSelection = errors.New("Selecione a quantidade correta de cartas para o fundo do grimório.")
 
 type matchAction struct {
 	IntentID         string
@@ -306,6 +308,74 @@ func drawCards(p *playerState, count int) (actionLogPayload, error) {
 	return actionLogPayload{Kind: "draw", From: "library", To: "hand", Count: count}, nil
 }
 
+func mulligan(m *matchState, p *playerState) (actionLogPayload, error) {
+	if !m.MulliganOpen || p.MulliganKept || len(p.Hand) != 7 || p.ConsultationFrom != "" {
+		return actionLogPayload{}, errMulliganClosed
+	}
+	if m.MulliganMode == "standard" && p.Mulligans >= 7 {
+		return actionLogPayload{}, errMulliganClosed
+	}
+	cards := append(append([]Card(nil), p.Library...), p.Hand...)
+	for i := range cards {
+		cards[i].Zone = "library"
+		cards[i].Revealed = false
+	}
+	if err := shuffle(cards); err != nil {
+		return actionLogPayload{}, err
+	}
+	p.Hand = append([]Card(nil), cards[:7]...)
+	for i := range p.Hand {
+		p.Hand[i].Zone = "hand"
+	}
+	p.Library = append([]Card(nil), cards[7:]...)
+	p.Mulligans++
+	return actionLogPayload{Kind: "mulligan", Count: p.Mulligans, Result: fmt.Sprintf("realizou o mulligan %d", p.Mulligans)}, nil
+}
+
+func keepMulliganHand(m *matchState, p *playerState, ids []string) (actionLogPayload, error) {
+	if !m.MulliganOpen || p.MulliganKept {
+		return actionLogPayload{}, errMulliganClosed
+	}
+	required := 0
+	if m.MulliganMode == "standard" && p.Mulligans > 1 {
+		required = p.Mulligans - 1
+	}
+	if len(ids) != required {
+		return actionLogPayload{}, errMulliganSelection
+	}
+	chosen := map[string]bool{}
+	for _, id := range ids {
+		if chosen[id] {
+			return actionLogPayload{}, errMulliganSelection
+		}
+		chosen[id] = true
+		found := false
+		for _, card := range p.Hand {
+			if card.ID == id {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return actionLogPayload{}, errMulliganSelection
+		}
+	}
+	kept := make([]Card, 0, len(p.Hand)-required)
+	bottom := make([]Card, 0, required)
+	for _, card := range p.Hand {
+		if chosen[card.ID] {
+			card.Zone = "library"
+			bottom = append(bottom, card)
+		} else {
+			kept = append(kept, card)
+		}
+	}
+	p.Hand = kept
+	p.Library = append(p.Library, bottom...)
+	p.MulliganKept = true
+	return actionLogPayload{Kind: "keep_hand", Count: required, Result: fmt.Sprintf("manteve a mão com %d carta(s)", len(p.Hand))}, nil
+}
+
 func randomResult(sides int) (int, error) {
 	value, err := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(sides)))
 	if err != nil {
@@ -339,6 +409,7 @@ func changeTurn(m *matchState, direction string) (actionLogPayload, error) {
 		return actionLogPayload{}, errCardNotFound
 	}
 	if direction == "next" {
+		m.MulliganOpen = false
 		m.TurnIndex = (m.TurnIndex + 1) % len(m.TurnOrder)
 		for i := range m.Players {
 			clearRevelations(&m.Players[i])
@@ -425,6 +496,10 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = changeCardState(p, input)
 	case "draw":
 		payload, err = drawCards(p, input.Count)
+	case "mulligan":
+		payload, err = mulligan(&m, p)
+	case "keep_hand":
+		payload, err = keepMulliganHand(&m, p, input.CardIDs)
 	case "move":
 		payload, err = moveCards(&m, p, input)
 	case "transfer_control":
