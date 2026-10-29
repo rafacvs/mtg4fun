@@ -207,6 +207,35 @@ Não há código montado nem Vite/Air neste modo. Com `local-db`, o MySQL é loc
 a conexão externa só ocorre se `COMPOSE_PROFILES` e `DB_*` forem configurados
 para ela.
 
+### Deploy manual pelo GitHub Actions
+
+O workflow `Deploy de produção` (`.github/workflows/deploy.yml`) só roda quando
+disparado em **Actions → Deploy de produção → Run workflow**, na branch escolhida.
+Ele compila as imagens `api-production` e `frontend-production` no runner,
+envia-as por SSH com `docker save | docker load`, copia `infra/compose.yaml` e
+executa [`infra/deploy.sh`](infra/deploy.sh) na VM: `migrate up` com a imagem
+nova e `up -d --no-build api app`. Se a migration falhar, os containers em
+execução continuam e a tag anterior da API é restaurada. Nada é compilado na VM.
+Faça backup antes de publicar versões com migrations novas; elas não são revertidas.
+
+Na VM, o diretório de deploy precisa apenas do `.env` de produção (modelo em
+`.env.oracle`); o script força `COMPOSE_FILE=infra/compose.yaml`. O usuário SSH
+precisa estar no grupo `docker`. No GitHub, crie o environment `production` em
+**Settings → Environments** com:
+
+| Tipo | Nome | Valor |
+|---|---|---|
+| Secret | `SSH_PRIVATE_KEY` | Conteúdo completo do arquivo `.key` usado no `ssh -i`. |
+| Secret | `SSH_HOST` | IP público da VM. |
+| Secret | `SSH_USER` | Usuário do SSH (`ubuntu` ou `opc`, conforme a imagem da VM). |
+| Secret | `SSH_KNOWN_HOSTS` | Saída de `ssh-keyscan <ip>`, conferida com a chave da VM. |
+| Variable | `DEPLOY_PATH` | Diretório com o `.env` na VM, por exemplo `/home/ubuntu/mtg4fun`. |
+| Variable | `DEPLOY_ARCH` | Opcional: `arm64` para VM Ampere; vazio para `amd64`. |
+
+As três últimas versões ficam na VM como `mtg4fun-release-api:<commit>` e
+`mtg4fun-release-app:<commit>`. Para voltar, rode o workflow na branch ou
+commit anterior. Contexto: [decisão do deploy manual](docs/decisions/51-deploy-manual.md).
+
 ### Criar conta em qualquer modo
 
 ```bash
