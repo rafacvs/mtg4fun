@@ -23,7 +23,7 @@ Oferecer autenticação simples, contas provisionadas pelo responsável pelo ser
 11. Como usuário autenticado, quero encontrar e entrar em uma sala com vaga antes do início, para participar sem aprovação adicional.
 12. Como jogador, quero confirmar que estou pronto, para indicar que meu deck foi escolhido.
 13. Como criador, quero iniciar após todos confirmarem, para evitar começar sem os participantes preparados.
-14. Como jogador, quero vida inicial configurada no servidor, para começar com o valor usado pelo grupo.
+14. Como jogador, quero vida inicial configurada na sala, para começar com o valor usado pelo grupo.
 15. Como participante desconectado, quero retomar meu lugar após autenticar novamente, para continuar a mesma partida.
 16. Como participante, quero que novos usuários não entrem no jogo iniciado, para preservar a composição da mesa.
 17. Como usuário, quero interface PT-BR, para compreender as operações independentemente do idioma das cartas.
@@ -44,13 +44,18 @@ Escolhas ainda abertas seguem a [política de decisões do AGENTS.md](../../AGEN
 
 ### Salas e preparação
 
+A configuração editável da preparação e sua autorização posterior estão na
+[decisão de preparação](../decisions/49-decks-na-preparacao.md). O criador pode
+alterar vida inicial (inteiro de 1 a 999), posicionamento inicial do comandante
+e compra inicial de até sete cartas; mulligan automático permanece fora do escopo.
+
 - Várias salas simultâneas, com limite de seis jogadores por sala.
 - Qualquer usuário autenticado cria e entra em salas com vagas antes do início; não há aprovação individual ou senha adicional de sala.
 - Cada participante escolhe um deck e confirma prontidão. O criador inicia quando todos estiverem prontos.
 - A quantidade mínima de jogadores para iniciar não foi explicitamente definida; não impor requisito de formato de Magic.
-- No início, carregar os decks, inicializar a vida pelo valor configurado no banco, embaralhar os grimórios e sortear a ordem de turnos.
-- Compra da mão inicial é manual pelo atalho de comprar X.
-- Não selecionar comandantes na preparação: jogadores consultam o grimório, movem as cartas para comando e embaralham.
+- No início, carregar os decks, inicializar a vida pelo valor configurado na sala, embaralhar os grimórios e sortear a ordem de turnos.
+- A compra inicial de até sete cartas é opcional conforme a configuração da sala; sem ela, a compra é manual.
+- O comandante definido no deck começa em comando quando a opção da sala está ligada; desligada, começa no grimório embaralhado.
 - Após o início, participantes ficam fixos. Desconexão não libera o lugar para outro usuário.
 - Um participante original pode autenticar novamente e recuperar seu estado.
 
@@ -94,4 +99,4 @@ Editor/exportador de decks, sideboard na mesa, aprovação de entradas antes do 
 
 O repositório original do Cockatrice foi consultado como referência local. Suas estruturas não determinam módulos, banco ou protocolo desta aplicação.
 
-A apresentação do login, do lobby, da preparação e de Meus decks segue a [nova experiência da mesa](05-nova-experiencia-da-mesa.md). Isso não cria formato, lugares, vida por sala, deck na criação, comandante, curva nem tipos persistidos. O que ainda não existe aparece como exemplo e não é salvo. Excluir um deck pede confirmação. O comportamento persistido desta spec permanece.
+A apresentação do login, do lobby, da preparação e de Meus decks segue a [nova experiência da mesa](05-nova-experiencia-da-mesa.md). Os dados e opções disponibilizados posteriormente são registrados nas decisões pertinentes; o que não existe não deve ser apresentado como disponível. Excluir um deck pede confirmação. O comportamento persistido desta spec permanece.

@@ -1,0 +1,178 @@
+/* Preparation shares the playmat, seat colors and gold accents of the game. */
+.room-screen:has(.room-preparation) { overflow-y: auto; background: #0a0f10; }
+.room-screen:has(.room-preparation) > .room-header { flex-shrink: 0; padding: 12px clamp(16px, 3vw, 42px); background: #090d0e; border-color: #6d592f66; }
+.room-screen:has(.room-preparation) > .room-header a { color: #cbb988; text-decoration: none; }
+.room-screen:has(.room-preparation) > .room-header h1 { font-family: Georgia, serif; font-variant: small-caps; letter-spacing: .07em; }
+.room-screen > .room-preparation { box-sizing: border-box; flex: none; width: min(1440px, calc(100% - 48px)); max-width: none; margin: 26px auto 40px; padding: 0; border: 0; background: transparent; }
+.preparation-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 22px; }
+.preparation-heading .eyebrow, .room-preparation .eyebrow { color: #c3a96f; letter-spacing: .16em; font-size: .68rem; }
+.preparation-heading h2 { margin: 0; font: small-caps clamp(2rem, 4vw, 3rem) Georgia, serif; letter-spacing: .04em; color: #eee6d4; }
+.preparation-heading p:last-child { margin: 8px 0 0; color: #a7aaa2; }
+.preparation-room-facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.preparation-room-facts span { padding: 7px 11px; border: 1px solid #8b744346; border-radius: 4px; color: #c5b894; font-size: .76rem; }
+.preparation-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 20px; align-items: stretch; }
+.preparation-table { min-width: 0; min-height: 510px; padding: 26px; border: 1px solid #806a3b; border-radius: 8px; background: linear-gradient(180deg, #101c1cdd, #0a1111ec), url('../../assets/theme/mat-forest.jpg') center / cover; box-shadow: inset 0 0 0 4px #0a0e0d, 0 20px 50px #0006; }
+.preparation-table-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #b79a5638; padding-bottom: 16px; }
+.preparation-table-heading h3, .preparation-controls h3 { margin: 0; color: #ece3d0; font: small-caps 1.7rem Georgia, serif; letter-spacing: .035em; }
+.preparation-table-heading > span { color: #c4ae78; font-size: .8rem; }
+.room-preparation .preparation-seats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 24px 0 0; padding: 0; list-style: none; }
+.room-preparation .preparation-seat { --seat: #6cb4f5; min-width: 0; padding: 16px; border: 1px solid color-mix(in srgb, var(--seat) 45%, #574d32); border-radius: 6px; background: linear-gradient(135deg, color-mix(in srgb, var(--seat) 10%, #101818), #0c1313 70%); box-shadow: inset 0 0 0 3px #101714; }
+.room-preparation .seat-color-1 { --seat: #f27bb0; } .room-preparation .seat-color-2 { --seat: #b49af7; } .room-preparation .seat-color-3 { --seat: #4fd1b0; } .room-preparation .seat-color-4 { --seat: #e07a3e; } .room-preparation .seat-color-5 { --seat: #c9d16a; }
+.preparation-seat-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.preparation-avatar { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--seat); color: #0b1010; font-weight: 800; box-shadow: 0 0 0 3px #111b1a, 0 0 0 4px color-mix(in srgb, var(--seat) 55%, transparent); }
+.preparation-seat-top > div { min-width: 0; flex: 1; }
+.preparation-seat-top strong, .preparation-seat-deck strong, .preparation-selected-deck strong { display: block; color: #ede6d7; overflow-wrap: anywhere; }
+.preparation-seat-top small, .preparation-seat-deck small, .preparation-selected-deck small { display: block; color: #a5a99e; font-size: .75rem; margin-top: 3px; overflow-wrap: anywhere; }
+.preparation-ready { flex: none; padding: 4px 7px; border: 1px solid #a385464f; border-radius: 3px; color: #c7b37f; font-size: .68rem; }
+.preparation-ready.is-ready { color: #8fd5a4; border-color: #4f956575; background: #4f95651a; }
+.preparation-seat-deck { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #c0aa6b25; }
+.preparation-card-back, .preparation-selected-art { flex: none; width: 50px; height: 70px; overflow: hidden; border: 1px solid #8c7440; border-radius: 4px; background: #171c1a; box-shadow: 0 5px 12px #0009; }
+.preparation-card-back img, .preparation-selected-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.preparation-deck-label { display: block; margin-bottom: 5px; color: #b8a276; letter-spacing: .12em; font-size: .62rem; font-weight: 700; }
+.preparation-vacancies { color: #b8ad90; font-size: .8rem; margin: 25px 0 0; }
+.preparation-vacancies span { color: #d4b565; font-size: 1.2rem; vertical-align: middle; }
+.preparation-controls { min-width: 0; padding: 24px; border: 1px solid #75623a; border-radius: 8px; background: linear-gradient(160deg, #1b2421, #101515 65%); box-shadow: inset 0 0 0 4px #0d1211, 0 20px 50px #0005; }
+.preparation-controls > p:not(.eyebrow):not(.error) { color: #a9aca2; font-size: .84rem; }
+.preparation-controls label { margin: 25px 0 8px; color: #d8d0be; }
+.room-preparation .preparation-controls select { margin: 0; border-radius: 4px; background: #0b1111; }
+.preparation-selected-deck { display: flex; align-items: center; gap: 14px; height: 120px; margin-top: 16px; padding: 14px; border: 1px solid #806b3d66; border-radius: 5px; background: #080e0dcc; }
+.preparation-selected-art { width: 65px; height: 90px; }
+.preparation-empty-art { display: grid; place-items: center; width: 100%; height: 100%; color: #b8a276; font-size: 1.5rem; background: #141c19; }
+.preparation-selected-info { min-width: 0; max-height: 90px; overflow-y: auto; }
+.room-preparation .preparation-controls button { width: 100%; min-height: 48px; border-radius: 4px; }
+.room-preparation .preparation-ready-action { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; }
+.preparation-start { border-top: 1px solid #a88b4e40; margin-top: 24px; padding-top: 8px; }
+.room-preparation .preparation-start [role=status] { color: #c5b992; line-height: 1.5; }
+.preparation-start small { color: #a5a99e; }
+@media (max-width: 800px) { .preparation-content { grid-template-columns: 1fr; } .preparation-controls { grid-row: 1; } .preparation-table { min-height: 0; } }
+@media (max-width: 520px) { .room-screen > .room-preparation { width: calc(100% - 24px); margin-top: 18px; } .preparation-heading h2 { font-size: 2rem; } .preparation-table, .preparation-controls { padding: 18px; } .room-preparation .preparation-seats { grid-template-columns: 1fr; } .preparation-seat-top { flex-wrap: wrap; } }
+.room-preparation .preparation-start button:not(:disabled) { background: linear-gradient(180deg, #efd080, #bf8d36); border-color: #e0bd6e; color: #211803; font-weight: 750; }
+.room-preparation .preparation-start button:not(:disabled):hover { background: linear-gradient(180deg, #f6dc99, #d4a751); }
+@media (min-width: 801px) and (max-height: 800px) {
+  .room-screen > .room-preparation { margin-top: 16px; }
+  .preparation-heading { margin-bottom: 14px; }
+  .preparation-heading h2 { font-size: 2.2rem; }
+  .preparation-table { min-height: 420px; }
+  .preparation-controls { padding: 18px; }
+  .preparation-controls label { margin-top: 14px; }
+  .preparation-selected-deck { height: 92px; margin-top: 10px; padding: 10px; }
+  .preparation-selected-info { max-height: 70px; }
+  .preparation-selected-art { width: 50px; height: 70px; }
+  .preparation-start { margin-top: 14px; }
+}
+
+/* Mesa oval e lugares distribuídos conforme a referência de preparação. */
+@media (min-width: 801px) {
+  .room-screen:has(.room-preparation) { background: #0a0f10 url('../../assets/theme/night.jpg') center bottom / cover fixed; }
+  .room-screen:has(.room-preparation) > .room-header { min-height: 46px; padding: 5px 20px; }
+  .room-screen:has(.room-preparation) > .room-header a { border: 1px solid #65542e; border-radius: 4px; padding: 7px 12px; font-size: .73rem; }
+  .room-screen > .room-preparation { width: min(1440px, calc(100% - 40px)); margin-top: 16px; }
+  .preparation-heading { margin: 0 340px 12px 0; min-height: 42px; }
+  .preparation-heading h2 { font-size: 1.65rem; }
+  .preparation-content { grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; }
+  .preparation-table { min-height: 470px; padding: 18px; position: relative; }
+  .preparation-table-heading { justify-content: flex-start; gap: 10px; border: 0; padding: 0; }
+  .preparation-table-heading .eyebrow { margin: 0; }
+  .preparation-table-heading h3 { font-size: 1rem; }
+  .preparation-arena { position: relative; height: 360px; margin: 0 28px; }
+  .preparation-oval { position: absolute; left: 21%; top: 21%; width: 58%; height: 60%; border: 4px double #8e713e; border-radius: 50%; background: radial-gradient(ellipse at center, #cab67922, transparent 65%), linear-gradient(#17262188, #08120edb), url('../../assets/theme/mat-forest.jpg') center / cover; box-shadow: 0 0 0 4px #0a0e0b, 0 8px 18px #000a; display: grid; place-items: center; }
+  .preparation-oval-center { display: grid; justify-items: center; color: #e2d2a8; font-family: Georgia, serif; }
+  .preparation-oval-center strong { font-size: 2rem; font-weight: 400; line-height: 1; }
+  .preparation-oval-center span { font-size: .6rem; letter-spacing: .16em; margin-top: 6px; }
+  .room-preparation .preparation-seats { display: contents; }
+  .room-preparation .preparation-seat, .room-preparation .preparation-empty-seat { position: absolute; width: 168px; min-height: 60px; margin: 0; }
+  .room-preparation .preparation-seat { display: flex; gap: 8px; align-items: center; padding: 4px; border-radius: 5px; background: #0a1011f2; }
+  .room-preparation .preparation-seat.is-own { border-color: #d4af60; }
+  .room-preparation .preparation-card-back { position: relative; width: 38px; height: 52px; overflow: visible; border-color: var(--seat); }
+  .preparation-card-back img { border-radius: 3px; }
+  .preparation-avatar { position: absolute; top: -5px; left: -5px; width: 16px; height: 18px; border-radius: 2px 2px 6px 6px; box-shadow: none; font-size: .55rem; }
+  .preparation-seat-copy { min-width: 0; line-height: 1.2; }
+  .preparation-seat-copy strong { color: #efe8d8; display: block; font-size: .75rem; overflow-wrap: anywhere; }
+  .preparation-seat-copy small { display: block; color: #a7aa9c; font-size: .62rem; overflow-wrap: anywhere; }
+  .preparation-seat-copy .preparation-you { display: inline; color: #d6bb7b; }
+  .preparation-ready { display: inline-block; margin-top: 3px; padding: 2px 5px; font: bold .55rem Georgia, serif; text-transform: uppercase; letter-spacing: .06em; }
+  .room-preparation .preparation-empty-seat { display: grid; place-content: center; color: #999b8c; border: 1px dashed #71634566; border-radius: 3px; background: #0a1010a6; font-size: .65rem; }
+  .seat-position-0 { top: 0; left: 50%; transform: translateX(-50%); }
+  .seat-position-1 { top: 20%; right: 0; }
+  .seat-position-2 { bottom: 16%; right: 0; }
+  .seat-position-3 { bottom: 0; left: 50%; transform: translateX(-50%); }
+  .seat-position-4 { bottom: 16%; left: 0; }
+  .seat-position-5 { top: 20%; left: 0; }
+  .preparation-vacancies { margin: 0; position: absolute; bottom: 14px; left: 18px; }
+  .preparation-controls { margin-top: -54px; display: flex; flex-direction: column; padding: 18px; background: #0b1111ee; }
+  .preparation-controls h3 { font-size: 1.2rem; }
+  .preparation-controls label { margin-top: 18px; font-size: .72rem; }
+  .room-preparation .preparation-controls select { min-height: 42px; font-size: .75rem; }
+  .preparation-selected-deck { flex: none; height: 270px; padding: 14px; margin-top: 10px; background: radial-gradient(ellipse at 60% 20%, #4f705641, transparent 70%), #09100e; }
+  .preparation-selected-art { width: min(58%, 154px); height: auto; aspect-ratio: 63 / 88; }
+  .preparation-selected-info { max-height: 210px; }
+  .preparation-selected-info strong { font: small-caps bold 1rem Georgia, serif; }
+  .room-preparation .preparation-ready-action { justify-content: center; gap: 18px; font-family: Georgia, serif; font-variant: small-caps; letter-spacing: .06em; }
+  .preparation-start { margin-top: auto; }
+}
+@media (min-width: 801px) and (max-width: 1020px) {
+  .preparation-arena { margin: 0; }
+  .room-preparation .preparation-seat, .room-preparation .preparation-empty-seat { width: 125px; }
+}
+.preparation-rules { min-width: 0; }
+.preparation-rules-heading { display: flex; justify-content: space-between; gap: 8px; align-items: center; color: #c3a96f; letter-spacing: .12em; font: bold .65rem Georgia, serif; border-bottom: 1px solid #8d733c55; padding-bottom: 8px; }
+.preparation-rules-heading small { color: #a49f92; font: .65rem Geist, sans-serif; letter-spacing: 0; text-align: right; }
+.preparation-rule-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.preparation-rule { min-width: 0; min-height: 90px; padding: 10px; border: 1px solid #6a593653; border-radius: 4px; background: #0b1111ee; }
+.preparation-rule strong { display: flex; align-items: center; gap: 8px; color: #e3ddcc; font-size: .7rem; line-height: 1.2; }
+.preparation-rule strong span { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border: 1px solid #65532d; border-radius: 4px; color: #d4b569; }
+.preparation-rule small { color: #9e9f94; font-size: .6rem; line-height: 1.25; }
+.preparation-rule-detail { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 7px; }
+.preparation-rule button { width: auto; min-height: 25px; margin: 0; padding: 3px 7px; border: 1px solid #645538; border-radius: 3px; background: #20201a; color: #b8ac8c; font-size: .65rem; }
+.preparation-life { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; }
+.preparation-life b { color: #e3bd6b; font: bold 1.3rem Georgia, serif; }
+@media (min-width: 801px) { .preparation-rules { grid-column: 1; grid-row: 2; } .preparation-controls { grid-column: 2; grid-row: 1 / span 2; } }
+@media (max-width: 800px) { .preparation-rule-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 400px) { .preparation-rule-grid { gap: 6px; } .preparation-rules-heading { align-items: start; } }
+@media (min-width: 801px) {
+  .preparation-heading .eyebrow { margin-bottom: 2px; }
+  .preparation-heading h2 { font-family: Cinzel, Georgia, serif; font-size: 1.5rem; }
+  .preparation-table { min-height: 470px; }
+  .preparation-controls { margin-top: -54px; }
+  .preparation-controls .eyebrow { margin-bottom: 6px; }
+  .preparation-controls h3, .preparation-table-heading h3 { font-family: Cinzel, Georgia, serif; }
+  .preparation-pile { position: absolute; width: 27px; height: 38px; border: 1px solid #a78a4d; border-radius: 4px; box-shadow: 0 3px 9px #000; }
+  .preparation-pile-0 { left: 13%; top: 24%; } .preparation-pile-1 { right: 13%; top: 24%; } .preparation-pile-2 { bottom: 4%; left: calc(50% - 14px); }
+  .preparation-pile-3 { top: 3%; left: calc(50% - 14px); } .preparation-pile-4 { bottom: 22%; left: 13%; } .preparation-pile-5 { bottom: 22%; right: 13%; }
+}
+@media (max-width: 800px) {
+  .preparation-oval { display: flex; justify-content: center; margin: 14px 0; padding: 18px; border: 2px solid #8e713e; border-radius: 50%; color: #e2d2a8; background: #101e17; }
+  .preparation-oval-center { display: grid; justify-items: center; font-family: Georgia, serif; }
+  .preparation-oval-center strong { font-size: 1.5rem; }
+  .preparation-oval-center span { font-size: .6rem; letter-spacing: .15em; }
+  .preparation-pile { display: none; }
+  .room-preparation .preparation-seats { margin-top: 12px; }
+  .room-preparation .preparation-seat { display: flex; align-items: center; gap: 12px; }
+  .room-preparation .preparation-card-back { position: relative; overflow: visible; border-color: var(--seat); }
+  .preparation-card-back img { border-radius: 3px; }
+  .preparation-avatar { position: absolute; top: -6px; left: -6px; width: 19px; height: 20px; border-radius: 3px; box-shadow: none; font-size: .65rem; }
+  .preparation-seat-copy { min-width: 0; }
+  .preparation-seat-copy strong, .preparation-seat-copy small { display: block; overflow-wrap: anywhere; }
+  .preparation-seat-copy small { color: #a5a99e; font-size: .75rem; }
+  .preparation-seat-copy .preparation-you { display: inline; }
+  .preparation-ready { display: inline-block; margin-top: 5px; }
+  .room-preparation .preparation-empty-seat { padding: 14px; border: 1px dashed #71634566; border-radius: 4px; color: #a5a99e; text-align: center; font-size: .8rem; }
+}
+@media (min-width: 801px) {
+  .room-screen > .room-preparation { margin-top: 9px; }
+  .preparation-content { row-gap: 10px; }
+}
+@media (min-width: 801px) {
+  .room-preparation .preparation-empty-seat { display: flex; justify-content: center; align-items: center; gap: 6px; }
+}
+.preparation-life input { width: 100%; min-height: 30px; padding: 2px 5px; border-radius: 3px; text-align: center; color: #e3bd6b; font: bold 1.3rem Georgia, serif; background: #0b1111; }
+.preparation-life input[aria-invalid=true] { border-color: #e99388; }
+.preparation-rule button[role=switch] { flex: none; position: relative; width: 42px; height: 24px; padding: 2px; background: #343832; border: 1px solid #786d4f; }
+.preparation-rule button[role=switch] span { display: block; width: 17px; height: 18px; background: #ddd5c2; border-radius: 2px; }
+.preparation-rule button[role=switch][aria-checked=true] { background: #d3a74e; }
+.preparation-rule button[role=switch][aria-checked=true] span { margin-left: auto; background: #1a180f; }
+.preparation-life { gap: 5px; }
+.room-preparation .preparation-life .preparation-life-step { flex: none; display: grid; place-items: center; width: 28px; height: 28px; min-height: 28px; padding: 0; margin: 0; border: 1px solid #665737; border-radius: 4px; color: #ded3b9; background: #161a19; font-size: .8rem; }
+.room-preparation .preparation-life .preparation-life-value { flex: 1; min-width: 0; width: auto; min-height: 30px; padding: 0; margin: 0; border: 0; background: transparent; color: #e3bd6b; font: bold 1.3rem Georgia, serif; text-align: center; }
+.room-preparation .preparation-life .preparation-life-value:disabled { opacity: 1; color: #e3bd6b; }
+.preparation-life input { flex: 1; width: 0; min-width: 0; }

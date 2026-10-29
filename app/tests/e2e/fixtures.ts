@@ -183,3 +183,11 @@ export async function inspectCard(page: Page, card: Locator) {
   await card.click();
   await expect(page.locator('.card-preview[role="dialog"]')).toBeVisible();
 }
+
+export async function choosePreparationDeck(page: Page, option: string | { label: string }) {
+  await expect(page.getByRole('region', { name: 'Preparação da sala' })).toBeVisible();
+  const mobile = await page.locator('.mobile-preparation').isVisible();
+  if (mobile) await page.getByRole('button', { name: /Trocar/ }).click();
+  await page.getByLabel('Deck para a partida').selectOption(option);
+  if (mobile) await page.getByRole('button', { name: 'Usar este deck' }).click();
+}

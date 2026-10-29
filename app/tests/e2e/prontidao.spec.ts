@@ -1,4 +1,4 @@
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, roomBody, choosePreparationDeck } from './fixtures';
 
 const deckFile = (name: string) => ({
   name: `${name}.cod`,
@@ -27,25 +27,32 @@ test('desfaz a prontidão, devolve o seletor e impede o início', async ({ page,
     await guest.goto(`/#/salas/${room.id}`);
     await page.goto(`/#/salas/${room.id}`);
     await expect(page.getByRole('region', { name: 'Preparação da sala' })).toBeVisible();
-    await page.getByLabel('Deck para a partida').selectOption(String(deck.id));
-    await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
+    const mobilePreparation = await page.locator('.mobile-preparation').isVisible();
+    await choosePreparationDeck(page, String(deck.id));
+    if (mobilePreparation) await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toHaveCount(0);
+    else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
     await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
     await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Segundo amigo' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
-    await guest.getByLabel('Deck para a partida').selectOption(String(first.id));
+    if (mobilePreparation) await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toHaveCount(0);
+    else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
+    await choosePreparationDeck(guest, String(first.id));
     await guest.getByRole('button', { name: 'Estou pronto', exact: true }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'Todos prontos para começar.' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: mobilePreparation ? 'Todos prontos.' : 'Todos prontos para começar.' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeEnabled();
-    await guest.getByRole('button', { name: 'Desfazer prontidão', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
+    const guestMobile = await guest.locator('.mobile-preparation').isVisible();
+    await guest.getByRole('button', { name: guestMobile ? 'desfazer pronto' : 'Desfazer prontidão', exact: true }).click();
+    if (mobilePreparation) await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toHaveCount(0);
+    else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
     await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Segundo amigo' })).toBeVisible();
+    if (guestMobile) await guest.getByRole('button', { name: /Trocar/ }).click();
     const selector = guest.getByLabel('Deck para a partida');
     await expect(selector).toBeEnabled();
     await expect(selector).toHaveValue(String(first.id));
     await selector.selectOption(String(second.id));
     await expect(selector).toHaveValue(String(second.id));
-    await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
+    if (mobilePreparation) await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toHaveCount(0);
+    else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
   } finally {
     await other.close();
   }

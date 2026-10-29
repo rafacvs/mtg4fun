@@ -3,6 +3,7 @@ import type { useDecks } from '../decks/useDecks';
 import { MatchBoard } from './MatchBoard';
 import { useRooms } from './useRooms';
 import { roomsApi } from './roomsApi';
+import { RoomPreparation } from './RoomPreparation';
 
 type Props = { roomId: number; userId: number; decks: ReturnType<typeof useDecks> };
 
@@ -23,29 +24,7 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
     {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
   </section>;
   if (room.status === 'started') return <MatchBoard roomId={roomId} />;
-  const waiting = room.participants.filter(value => !value.ready);
-  return <section className="room-preparation" aria-label="Preparação da sala">
-    <p className="eyebrow">PREPARAÇÃO</p><h2>{room.title}</h2>
-    <p>Escolha um deck. O criador pode iniciar quando todos estiverem prontos.</p>
-    <ul>{room.participants.map(value => <li key={value.id}>{value.name} · {value.ready ? 'Pronto' : 'Escolhendo deck'}</li>)}</ul>
-    {decks.error && <p role="alert" className="error">{decks.error}</p>}
-    {!decks.loading && decks.decks.length === 0 && <p><a href="/#/decks">Importe um deck</a> e volte a esta sala para confirmar.</p>}
-    <label htmlFor="room-deck">Deck para a partida</label>
-    <select id="room-deck" value={deckId} disabled={decks.loading || rooms.busy || participant.ready} onChange={event => {
-      const value = event.target.value;
-      setDeckId(value);
-      if (value) void rooms.selectDeck(roomId, Number(value));
-    }}>
-      <option value="">Selecione um deck</option>
-      {decks.decks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}</option>)}
-    </select>
-    {participant.ready
-      ? <button disabled={rooms.busy} onClick={() => void rooms.unready(roomId)}>Desfazer prontidão</button>
-      : <button disabled={rooms.busy || !deckId} onClick={() => void rooms.ready(roomId)}>Estou pronto</button>}
-    {room.creatorId === userId && <button className="secondary" disabled={rooms.busy || waiting.length > 0} aria-describedby="room-waiting" onClick={() => void rooms.start(roomId)}>Iniciar partida</button>}
-    <p id="room-waiting" role="status">{waiting.length ? `Ainda falta: ${waiting.map(value => value.name).join(", ")}.` : "Todos prontos para começar."}</p>
-    {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
-  </section>;
+  return <RoomPreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} />;
 }
 
 function MissingRoom({ roomId }: { roomId: number }) {

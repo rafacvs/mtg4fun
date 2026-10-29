@@ -1,4 +1,4 @@
-import { test, expect, openHand } from './fixtures';
+import { test, expect, openHand, choosePreparationDeck } from './fixtures';
 
 test('inicia com sete na mão e o comandante no comando', async ({ page }, testInfo) => {
   test.setTimeout(60_000);
@@ -24,7 +24,7 @@ test('inicia com sete na mão e o comandante no comando', async ({ page }, testI
   await panel.getByLabel('Nome da mesa').fill('Mesa de início');
   await panel.getByRole('button', { name: 'Criar e sentar' }).click();
   await page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'Mesa de início', exact: true }) }).getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
-  await page.getByLabel('Deck para a partida').selectOption({ label: 'Início' });
+  await choosePreparationDeck(page, { label: 'Início' });
   await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });

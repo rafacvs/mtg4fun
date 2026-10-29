@@ -11,7 +11,7 @@
 - [ ] Ordem é sorteada pelo servidor com D20, maior primeiro; somente empatados rolam novamente para resolver posições dentro do grupo, repetindo se necessário.
 - [ ] Resultado e ordem ficam registrados e persistidos; retomada não refaz sorteio ou embaralhamento.
 - [ ] Participantes ficam fixos após iniciar: novos usuários não entram e desconexão não libera vaga.
-- [ ] Renderizar campos e zonas iniciais em desktop e celular horizontal; compra inicial é manual, sem seleção especial de comandante.
+- [ ] Renderizar campos e zonas iniciais em desktop e celular horizontal; compra inicial e posicionamento do comandante seguem a [configuração aprovada](../decisions/49-decks-na-preparacao.md).
 - [ ] Salvar estado inicial e log atomicamente antes de confirmar/publicar início; falha não anuncia partida iniciada.
 - [ ] Partida instancia dados independentes da biblioteca: excluir deck ou atualizar catálogo não corrompe o jogo iniciado.
 - [ ] Não aplicar regras de formato, tamanho de deck ou condição de vitória; documentar mínimo de participantes escolhido como decisão de implementação.

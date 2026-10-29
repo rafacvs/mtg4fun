@@ -5,6 +5,9 @@ Issue: [44](https://github.com/rafacvs/mtg4fun/issues/44), parte da
 está na [decisão 35](35-nova-experiencia-da-mesa.md); este registro descreve a
 implementação, sem aprovar requisitos novos.
 
+A apresentação da preparação e o compartilhamento limitado das identidades
+dos decks foram atualizados posteriormente na [decisão 49](49-decks-na-preparacao.md).
+
 ## Implementação
 
 O lobby agrupa primeiro as mesas do usuário, depois as demais em preparação
