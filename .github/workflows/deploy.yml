@@ -1,0 +1,52 @@
+name: Deploy de produção
+
+# Somente manual: Actions → "Deploy de produção" → Run workflow, escolhendo a branch.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # A VM da OCI não compila: com 1 GB de RAM o build trava a máquina.
+    runs-on: ${{ vars.DEPLOY_ARCH == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    environment: production
+    env:
+      TAG: ${{ github.sha }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      SSH_TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build da API
+        run: docker build -f infra/Dockerfile --target api-production -t "mtg4fun-release-api:$TAG" .
+
+      - name: Build do frontend
+        run: docker build -f infra/Dockerfile --target frontend-production -t "mtg4fun-release-app:$TAG" .
+
+      - name: Configurar SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$DEPLOY_PATH" || { echo "Defina a variável DEPLOY_PATH no environment production." >&2; exit 1; }
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 0600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+          printf 'Host *\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n  ServerAliveInterval 30\n' > ~/.ssh/config
+          ssh "$SSH_TARGET" true
+
+      - name: Enviar imagens
+        run: docker save "mtg4fun-release-api:$TAG" "mtg4fun-release-app:$TAG" | gzip | ssh "$SSH_TARGET" 'gunzip | docker load'
+
+      - name: Enviar compose
+        run: ssh "$SSH_TARGET" "mkdir -p '$DEPLOY_PATH/infra' && cat > '$DEPLOY_PATH/infra/compose.yaml'" < infra/compose.yaml
+
+      - name: Aplicar migrations e reiniciar
+        run: ssh "$SSH_TARGET" sh -s -- "'$DEPLOY_PATH'" "$TAG" < infra/deploy.sh
