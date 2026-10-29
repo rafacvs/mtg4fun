@@ -121,6 +121,7 @@ Critérios observáveis:
 - No computador, a faixa mostra os oponentes da mesa de quatro e rola quando há cinco ou seis, mantendo a mão e as ações próprias. No celular, o horizontal joga e o vertical lê a mão.
 - Movimento encaixa a carta na coluna e na fileira; sobreposição de até três cartas não cria vínculo.
 - Seleção múltipla move cartas juntas sem impedir manipulação individual posterior.
+- O menu da seleção oferece +1/+1, -1/-1, poder/resistência no formato X/Y e marcadores de cor; as alterações são atômicas para as cartas selecionadas. Veja a [decisão de marcadores da seleção](../decisions/93-marcadores-selecao.md).
 - Consulta privada e cartas viradas para baixo não expõem identidade a oponentes.
 - Comprar X, consultar topo/fundo, reordenar e retornar cartas preservam quantidades e ordem esperada.
 - Frente/verso, fichas, cópias e contadores sincronizam para os observadores autorizados.

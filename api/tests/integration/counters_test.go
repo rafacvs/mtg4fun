@@ -288,3 +288,41 @@ func TestCountersRespectControllerAndHiddenMetadata(t *testing.T) {
 		t.Fatal("dono não alterou a carta na mão")
 	}
 }
+
+func TestBatchCountersAtomicAndRetry(t *testing.T) {
+	e, id, cookies, _ := counterMatch(t)
+	path := fmt.Sprintf("/api/rooms/%d/match/actions", id)
+	view := decodeCounters(t, e.request("POST", path, `{"intentId":"61000000-0000-4000-8000-000000000001","kind":"draw","count":2}`, cookies[0], nil))
+	a, b := view.Players[0].Hand[0].ID, view.Players[0].Hand[1].ID
+	body := fmt.Sprintf(`{"intentId":"61000000-0000-4000-8000-000000000002","kind":"counter_batch","cardIds":[%q,%q],"subject":"pair","operation":"increment","value":1,"secondValue":1}`, a, b)
+	view = decodeCounters(t, e.request("POST", path, body, cookies[0], nil))
+	view = decodeCounters(t, e.request("POST", path, body, cookies[0], nil))
+	for _, card := range view.Players[0].Hand[:2] {
+		if card.Power != 1 || card.Toughness != 1 {
+			t.Fatalf("retry reaplicou: %+v", card)
+		}
+	}
+	invalid := fmt.Sprintf(`{"intentId":"61000000-0000-4000-8000-000000000003","kind":"counter_batch","cardIds":[%q,"ausente"],"subject":"pair","operation":"set","value":7,"secondValue":8}`, a)
+	requireStatus(t, e.request("POST", path, invalid, cookies[0], nil), 409)
+	requireStatus(t, e.request("POST", path, strings.Replace(body, "000000000002", "000000000004", 1), cookies[1], nil), 409)
+	duplicate := fmt.Sprintf(`{"intentId":"61000000-0000-4000-8000-000000000005","kind":"counter_batch","cardIds":[%q,%q],"subject":"marker","color":"blue","operation":"increment","value":1}`, a, a)
+	requireStatus(t, e.request("POST", path, duplicate, cookies[0], nil), 409)
+	view = decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil))
+	for _, card := range view.Players[0].Hand[:2] {
+		if card.Power != 1 || card.Toughness != 1 || card.Markers.Blue != 0 {
+			t.Fatalf("falha alterou estado: %+v", card)
+		}
+	}
+	set := fmt.Sprintf(`{"intentId":"61000000-0000-4000-8000-000000000006","kind":"counter_batch","cardIds":[%q,%q],"subject":"pair","operation":"set","value":3,"secondValue":-2}`, a, b)
+	decodeCounters(t, e.request("POST", path, set, cookies[0], nil))
+	marker := fmt.Sprintf(`{"intentId":"61000000-0000-4000-8000-000000000007","kind":"counter_batch","cardIds":[%q,%q],"subject":"marker","color":"blue","operation":"increment","value":1}`, a, b)
+	decodeCounters(t, e.request("POST", path, marker, cookies[0], nil))
+	e.stop()
+	e.start(false)
+	view = decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[0], nil))
+	for _, card := range view.Players[0].Hand[:2] {
+		if card.Power != 3 || card.Toughness != -2 || card.Markers.Blue != 1 {
+			t.Fatalf("estado não persistiu: %+v", card)
+		}
+	}
+}

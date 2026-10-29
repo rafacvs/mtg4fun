@@ -35,6 +35,8 @@ export type Card = { pending?: boolean; type?: string; libraryPosition?: number;
 export type CatalogToken = { name: string; text?: string; power?: string; toughness?: string; imageName?: string };
 export type CustomToken = { name: string; description: string; power?: string; toughness?: string };
 
+export type BatchCounterAction = { cardIds: string[]; operation: 'set' | 'increment'; value: number } & ({ subject: 'pair'; secondValue: number } | { subject: 'marker'; color: MarkerColor });
+
 export type CounterAction =
   | { target: 'player'; playerId: number; subject: 'life'; operation: 'set' | 'increment'; value: number }
   | { target: 'player'; playerId: number; subject: 'marker'; color: MarkerColor; operation: 'set' | 'increment'; value: number }
@@ -129,6 +131,7 @@ export const roomsApi = {
   createToken: (id: number, tokenName: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'create-token', tokenName }),
   createCustomToken: (id: number, token: CustomToken, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'create-custom-token', ...token }),
   copyCard: (id: number, cardId: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'copy-card', cardId }),
+  batchCounter: (id: number, input: BatchCounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter_batch', ...input }),
   counter: (id: number, input: CounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter', ...input }),
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
   mulligan: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'mulligan' }),

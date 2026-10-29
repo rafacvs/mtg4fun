@@ -103,6 +103,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		Operation        string   `json:"operation"`
 		ControllerID     int64    `json:"controllerId"`
 		Value            *int64   `json:"value"`
+		SecondValue      *int64   `json:"secondValue"`
 		Tapped           *bool    `json:"tapped"`
 		FaceDown         *bool    `json:"faceDown"`
 		Revealed         *bool    `json:"revealed"`
@@ -132,6 +133,9 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	if raw.Value != nil {
 		input.Value = *raw.Value
 	}
+	if raw.SecondValue != nil {
+		input.SecondValue = *raw.SecondValue
+	}
 	if raw.Tapped != nil {
 		input.Tapped = *raw.Tapped
 	}
@@ -153,7 +157,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	input.HasPosition = raw.PositionX != nil || raw.Row != nil
 	counterFields := raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil
 	stateFields := input.Kind != "set_tapped" && raw.Tapped != nil || input.Kind != "set_face_down" && raw.FaceDown != nil || input.Kind != "reveal_cards" && raw.Revealed != nil || input.Kind != "set_face" && raw.FaceIndex != nil
-	if input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && counterFields || input.Kind != "transfer_control" && raw.ControllerID != 0 || stateFields {
+	if input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && input.Kind != "counter_batch" && counterFields || input.Kind != "counter_batch" && raw.SecondValue != nil || input.Kind != "transfer_control" && raw.ControllerID != 0 || stateFields {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
 	}
@@ -175,6 +179,13 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		}
 	case "counter":
 		if raw.Value == nil || !validCounterInput(input) || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Contador inválido.")
+			return matchAction{}, false
+		}
+	case "counter_batch":
+		validPair := input.Subject == "pair" && input.Color == "" && raw.SecondValue != nil && input.SecondValue >= -maxCounterValue && input.SecondValue <= maxCounterValue
+		validMarker := input.Subject == "marker" && validColor(input.Color) && raw.SecondValue == nil
+		if raw.Value == nil || input.Value < -maxCounterValue || input.Value > maxCounterValue || (input.Operation != "set" && input.Operation != "increment") || (!validPair && !validMarker) || len(input.CardIDs) == 0 || input.CardID != "" || input.Target != "" || input.PlayerID != 0 || input.Count != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.HasPosition || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Contador inválido.")
 			return matchAction{}, false
 		}

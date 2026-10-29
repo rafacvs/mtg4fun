@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createActionIntent } from './actionIntent';
 import { optimisticMove, optimisticPosition } from './optimisticMatch';
-import { roomsApi, UnconfirmedActionError, type CounterAction, type CustomToken, type Match } from './roomsApi';
+import { roomsApi, UnconfirmedActionError, type BatchCounterAction, type CounterAction, type CustomToken, type Match } from './roomsApi';
 
 export function useMatch(roomId: number) {
   const [match, setMatch] = useState<Match | null>(null);
@@ -99,6 +99,10 @@ export function useMatch(roomId: number) {
     copyCard: (cardId: string) => {
       const intentId = createActionIntent();
       return act(() => roomsApi.copyCard(roomId, cardId, intentId));
+    },
+    batchCounter: (input: BatchCounterAction) => {
+      const intentId = createActionIntent();
+      return act(() => roomsApi.batchCounter(roomId, input, intentId));
     },
     counter: (input: CounterAction) => {
       const intentId = createActionIntent();
