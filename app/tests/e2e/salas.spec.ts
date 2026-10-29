@@ -1,4 +1,4 @@
-import { test, expect, closeHand, closeMatchRail, closeQuickActions, openHand, openLibrary, openMatchRail, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, choosePreparationDeck, closeHand, closeMatchRail, closeQuickActions, openHand, openLibrary, openMatchRail, openQuickActions, returnOpeningHandToLibrary } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -81,10 +81,11 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   const room = page.getByRole('article').filter({ has: page.getByRole('heading', { name: created, exact: true }) });
   await room.getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
   await expect(page).toHaveURL(/#\/salas\/\d+$/);
-  await page.getByLabel('Deck para a partida').selectOption({ label: 'Movimentos' });
+  await choosePreparationDeck(page, { label: 'Movimentos' });
   await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Desfazer prontidão', exact: true })).toBeVisible();
-  await expect(page.getByRole('listitem').filter({ hasText: 'Amigo da mesa · Pronto' })).toBeVisible();
+  const mobilePreparation = await page.locator('.mobile-preparation').isVisible();
+  await expect(page.getByRole('button', { name: mobilePreparation ? 'desfazer pronto' : 'Desfazer prontidão', exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Amigo da mesa' }).filter({ hasText: 'Pronto' }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
   const board = page.getByRole('region', { name: 'Mesa da partida', exact: true });
   await expect(board).toBeVisible();

@@ -17,13 +17,34 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
   current.current = { cards, onSelectArea };
   useEffect(() => () => stopTracking.current?.(), []);
 
-  return <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} onClick={event => {
+  return <div className="battlefield-canvas" title="Arraste para navegar · Shift + arraste para selecionar cartas" data-battlefield-canvas data-zoom={zoom} onClick={event => {
     if ((event.target as Element).closest('.playing-card')) return;
     if (suppressClick.current) { suppressClick.current = false; return; }
     current.current.onSelectArea?.([]);
   }} onPointerDown={event => {
     suppressClick.current = false;
-    if (!enabled || event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('.playing-card')) return;
+    if (event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('.playing-card')) return;
+    if (!event.shiftKey) {
+      const scroll = event.currentTarget.closest<HTMLElement>('.battlefield-scroll');
+      if (!scroll) return;
+      event.preventDefault();
+      const start = { x: event.clientX, y: event.clientY, left: scroll.scrollLeft, top: scroll.scrollTop };
+      const id = event.pointerId;
+      const move = (pointer: PointerEvent) => {
+        if (pointer.pointerId !== id) return;
+        if (Math.hypot(pointer.clientX - start.x, pointer.clientY - start.y) >= 4) suppressClick.current = true;
+        scroll.scrollLeft = start.left - (pointer.clientX - start.x);
+        scroll.scrollTop = start.top - (pointer.clientY - start.y);
+      };
+      const cleanup = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('blur', cleanup); scroll.classList.remove('is-panning'); stopTracking.current = null; };
+      const up = (pointer: PointerEvent) => { if (pointer.pointerId === id) cleanup(); };
+      stopTracking.current?.();
+      stopTracking.current = cleanup;
+      scroll.classList.add('is-panning');
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up); window.addEventListener('blur', cleanup);
+      return;
+    }
+    if (!enabled) return;
     event.preventDefault();
     stopTracking.current?.();
     const canvas = event.currentTarget;

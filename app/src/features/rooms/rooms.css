@@ -55,11 +55,6 @@
 .room-preparation li { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
 .room-preparation button { min-height: 44px; }
 .room-preparation [role=status] { margin: 14px 0 0; font-size: .85rem; }
-.mulligan-mode { display: grid; gap: 6px; margin: 14px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
-.mulligan-mode legend { padding: 0 6px; color: var(--gold); font-weight: 700; }
-.mulligan-mode label { display: flex; align-items: center; gap: 8px; }
-.mulligan-mode input { width: auto; }
-.mulligan-mode small { margin: -2px 0 6px 24px; color: var(--muted); line-height: 1.35; }
 
 .lobby-room-group { margin-top: 28px; }
 .lobby-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -77,3 +72,26 @@
 .room-card .lobby-seat { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--seat); color: #0b0e10; font-weight: 800; flex-shrink: 0; }
 .lobby-seat-0 { --seat: #6cb4f5; } .lobby-seat-1 { --seat: #f27bb0; } .lobby-seat-2 { --seat: #b49af7; } .lobby-seat-3 { --seat: #4fd1b0; } .lobby-seat-4 { --seat: #e07a3e; } .lobby-seat-5 { --seat: #c9d16a; }
 .room-card > button, .room-card > .room-enter { min-height: 44px; }
+
+/* Lobby: mesas como espaços de jogo, com hierarquia clara para entrar. */
+.rooms { max-width: 1280px; margin: 34px auto 0; }
+.rooms-heading { position: relative; min-height: 180px; padding: 30px 34px; overflow: hidden; border: 1px solid #806b3b; border-radius: 8px; background: linear-gradient(90deg, #101819f2 5%, #17251dd9 65%, #101514a8), url('../../assets/theme/mat-forest.jpg') center 55% / cover; box-shadow: inset 0 0 0 3px #0b100e, 0 18px 50px #0005; }
+.rooms-heading::after { content: '✧'; position: absolute; right: 22%; top: -55px; font: 230px Georgia, serif; color: #d1ae5d0d; pointer-events: none; }
+.rooms-heading h2 { font: small-caps 2.5rem Georgia, serif; letter-spacing: .04em; margin: 0; }
+.rooms-heading .eyebrow { color: #d7b76e; letter-spacing: .18em; }
+.rooms-heading > button { position: relative; z-index: 1; padding: 13px 25px; }
+.lobby-room-group { margin-top: 36px; }
+.lobby-group-heading { border-bottom: 1px solid #705d364d; padding-bottom: 11px; }
+.lobby-group-heading h4 { font: small-caps 1.35rem Georgia, serif; letter-spacing: .06em; }
+.lobby-group-heading > span { color: #ae9a70; text-transform: uppercase; letter-spacing: .1em; }
+.lobby-room-group .room-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 15px; margin-top: 16px; }
+.room-card { position: relative; align-content: start; min-height: 220px; padding: 22px; border: 1px solid #6f5c38; border-radius: 7px; background: radial-gradient(ellipse at 90% 0%, #354a3766, transparent 60%), linear-gradient(145deg, #19201d, #101414 70%); box-shadow: inset 0 0 0 3px #0c1110, 0 8px 22px #0004; }
+.room-card::before { content: '✦'; color: #b89958; position: absolute; top: 5px; left: 9px; font-size: 10px; }
+.room-card h3 { font: small-caps 1.45rem Georgia, serif; letter-spacing: .025em; }
+.room-card .room-status { border: 1px solid #a58a4b55; border-radius: 3px; text-transform: uppercase; letter-spacing: .08em; }
+.room-card ul { border-top: 1px solid #b497592b; padding-top: 14px; min-height: 55px; }
+.room-card .lobby-seat { border: 2px solid #111917; box-shadow: 0 0 0 1px var(--seat); }
+.room-card > button, .room-card > .room-enter { border-radius: 4px; }
+.empty-rooms { min-height: 250px; align-content: center; background: radial-gradient(ellipse at center, #26372c80, transparent 70%), #101615; border: 1px solid #6f5c38; }
+.empty-rooms > span { font-size: 3rem; }
+@media (max-width: 600px) { .rooms-heading { padding: 24px; min-height: 0; } .rooms-heading h2 { font-size: 2rem; } }

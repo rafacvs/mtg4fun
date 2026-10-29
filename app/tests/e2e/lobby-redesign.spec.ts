@@ -46,9 +46,13 @@ test('envia e guarda nome, formato, lugares, vida e deck ao criar a mesa', async
   const card = page.getByRole('article', { name: 'Nome ilustrativo', exact: true });
   await expect(card.getByText('Você participa desta sala.')).toBeVisible();
   await card.getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
-  await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Preparação da sala' })).toBeVisible();
+  const mobilePreparation = await page.locator('.mobile-preparation').isVisible();
+  if (mobilePreparation) await page.getByRole('button', { name: /Trocar/ }).click();
+  else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
   await expect(page.getByLabel('Deck para a partida')).toHaveValue(String(deck.id));
+  if (mobilePreparation) await page.getByRole('button', { name: 'Usar este deck' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
   await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
@@ -117,7 +121,7 @@ test('decks usam dados reais e confirmam exclusão sem alterar partida', async (
   expect(beforeDelete.id).toBe(deckId);
   expect(beforeDelete.name).toBe('Biblioteca real');
   await page.reload();
-  await page.getByLabel('Escolher deck salvo').selectOption(String(deckId));
+  await page.getByRole('button', { name: /Biblioteca real/ }).click();
   await expect(page.getByRole('heading', { name: 'Biblioteca real', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
   await confirmation.getByRole('button', { name: 'Confirmar exclusão', exact: true }).click();

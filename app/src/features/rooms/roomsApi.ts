@@ -4,6 +4,8 @@ export type Room = {
   format?: string;
   seats: number;
   life: number;
+  commanderToCommand: boolean;
+  drawOpeningHand: boolean;
   mulliganMode: 'standard' | 'aconchegaz';
   creatorId: number;
   status: string;
@@ -99,6 +101,12 @@ export const roomsApi = {
   setFace: (id: number, cardId: string, faceIndex: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face', cardId, faceIndex }),
   setFaceDown: (id: number, cardIds: string[], faceDown: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face_down', cardIds, faceDown }),
   revealCards: (id: number, cardIds: string[], revealed: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal_cards', cardIds, revealed }),
+  settings: async (id: number, settings: Partial<Pick<Room, 'life' | 'commanderToCommand' | 'drawOpeningHand'>>): Promise<Room> => {
+    const response = await fetch(`/api/rooms/${id}/settings`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Não foi possível atualizar as regras.');
+    return data.room;
+  },
   create: (room: RoomDraft) => change('/api/rooms', 'POST', room),
   join: (id: number) => change(`/api/rooms/${id}/participants`),
   selectDeck: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/deck`, 'PUT', { deckId }),

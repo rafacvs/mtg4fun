@@ -17,7 +17,10 @@ catálogo Cockatrice compartilhado no servidor. Usuários autenticados criam e
 entram em salas persistentes de até seis participantes, com atualizações em
 tempo real. O lobby lista salas; **Entrar na mesa** abre a URL da sala
 (`/#/salas/{id}`), com preparação dos decks e início pelo criador após todos
-confirmarem prontidão.
+confirmarem prontidão. Na preparação, o criador pode ajustar a vida inicial
+(de 1 a 999), a posição inicial do comandante e a compra automática de até
+sete cartas, além do tipo de mulligan (padrão ou Aconchegaz). Os participantes
+veem as alterações.
 
 A mesa permite comprar cartas e movê-las entre mão, campo, cemitério, exílio,
 comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
@@ -25,7 +28,7 @@ numa carta e escolha **Mover para…** no detalhe. A mão própria permanece
 disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
 celular funciona na vertical e horizontal, com **Visão geral** em grade e toque
 para ampliar um campo. A partida atualiza
-a cada segundo. No campo, arraste uma área com mouse para selecionar várias
+a cada segundo. No campo, arraste o espaço vazio para navegar; segure Shift e arraste uma área para selecionar várias
 cartas. A seleção múltipla por toque não está disponível nesta revisão.
 Arrastar uma selecionada reposiciona o conjunto preservando sua disposição.
 Clicar no espaço vazio do campo ou pressionar Escape limpa a seleção.

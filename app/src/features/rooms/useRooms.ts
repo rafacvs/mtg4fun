@@ -32,6 +32,10 @@ export function useRooms() {
 
   return {
     rooms, connection, loading, busy, error,
+    settings: (id: number, settings: Parameters<typeof roomsApi.settings>[1]) => act(async () => {
+      const updated = await roomsApi.settings(id, settings);
+      setRooms(current => current.map(room => room.id === id ? updated : room));
+    }),
     create: (room: Parameters<typeof roomsApi.create>[0]) => act(() => roomsApi.create(room)),
     join: (id: number) => act(() => roomsApi.join(id)),
     selectDeck: (id: number, deckId: number) => act(() => roomsApi.selectDeck(id, deckId)),

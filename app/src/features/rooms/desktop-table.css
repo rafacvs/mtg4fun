@@ -337,3 +337,5 @@
   .desktop-table .zone-column .zone-command .slot-empty .table-icon { width: 26px; opacity: .9; }
   .desktop-table .zone-column .zone-command .zone-count { top: auto; bottom: 1px; transform: none; }
 }
+.battlefield-canvas { cursor: grab; }
+.battlefield-scroll.is-panning, .battlefield-scroll.is-panning .battlefield-canvas { cursor: grabbing; user-select: none; }

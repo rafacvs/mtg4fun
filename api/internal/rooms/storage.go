@@ -27,16 +27,18 @@ type Participant struct {
 	DeckID int64  `json:"deckId,omitempty"`
 }
 type Room struct {
-	ID           int64         `json:"id"`
-	Title        string        `json:"title"`
-	Format       string        `json:"format,omitempty"`
-	Seats        int           `json:"seats"`
-	Life         int           `json:"life"`
-	MulliganMode string        `json:"mulliganMode"`
-	CreatorID    int64         `json:"creatorId"`
-	Status       string        `json:"status"`
-	Participants []Participant `json:"participants"`
-	Vacancies    int           `json:"vacancies"`
+	CommanderToCommand bool          `json:"commanderToCommand"`
+	DrawOpeningHand    bool          `json:"drawOpeningHand"`
+	ID                 int64         `json:"id"`
+	Title              string        `json:"title"`
+	Format             string        `json:"format,omitempty"`
+	Seats              int           `json:"seats"`
+	Life               int           `json:"life"`
+	MulliganMode       string        `json:"mulliganMode"`
+	CreatorID          int64         `json:"creatorId"`
+	Status             string        `json:"status"`
+	Participants       []Participant `json:"participants"`
+	Vacancies          int           `json:"vacancies"`
 }
 type participantState struct {
 	ID     int64  `json:"id"`
@@ -45,16 +47,18 @@ type participantState struct {
 	Ready  bool   `json:"ready"`
 }
 type roomState struct {
-	ID           int64              `json:"id"`
-	Title        string             `json:"title"`
-	Format       string             `json:"format,omitempty"`
-	Seats        int                `json:"seats"`
-	Life         int                `json:"life"`
-	MulliganMode string             `json:"mulliganMode"`
-	CreatorID    int64              `json:"creatorId"`
-	Status       string             `json:"status"`
-	Participants []participantState `json:"participants"`
-	Vacancies    int                `json:"vacancies"`
+	CommanderToCommand *bool              `json:"commanderToCommand,omitempty"`
+	DrawOpeningHand    *bool              `json:"drawOpeningHand,omitempty"`
+	ID                 int64              `json:"id"`
+	Title              string             `json:"title"`
+	Format             string             `json:"format,omitempty"`
+	Seats              int                `json:"seats"`
+	Life               int                `json:"life"`
+	MulliganMode       string             `json:"mulliganMode"`
+	CreatorID          int64              `json:"creatorId"`
+	Status             string             `json:"status"`
+	Participants       []participantState `json:"participants"`
+	Vacancies          int                `json:"vacancies"`
 }
 
 type roomDraft struct {
@@ -65,6 +69,8 @@ type roomDraft struct {
 	DeckID int64
 }
 
+func enabledSetting(setting *bool) bool { return setting == nil || *setting }
+
 func (r roomState) view() Room {
 	p := make([]Participant, len(r.Participants))
 	for i, v := range r.Participants {
@@ -74,7 +80,7 @@ func (r roomState) view() Room {
 	if mode == "" {
 		mode = "standard"
 	}
-	return Room{ID: r.ID, Title: r.Title, Format: r.Format, Seats: r.Seats, Life: r.Life, MulliganMode: mode, CreatorID: r.CreatorID, Status: r.Status, Participants: p, Vacancies: r.Vacancies}
+	return Room{CommanderToCommand: enabledSetting(r.CommanderToCommand), DrawOpeningHand: enabledSetting(r.DrawOpeningHand), ID: r.ID, Title: r.Title, Format: r.Format, Seats: r.Seats, Life: r.Life, MulliganMode: mode, CreatorID: r.CreatorID, Status: r.Status, Participants: p, Vacancies: r.Vacancies}
 }
 
 type Turn struct {
@@ -733,7 +739,7 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 			return Match{}, e
 		}
 		command := []Card{}
-		if commander.String != "" {
+		if enabledSetting(r.CommanderToCommand) && commander.String != "" {
 			for i, card := range cards {
 				if card.Name == commander.String {
 					card.Zone = "command"
@@ -743,7 +749,10 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 				}
 			}
 		}
-		drawn := 7
+		drawn := 0
+		if enabledSetting(r.DrawOpeningHand) {
+			drawn = 7
+		}
 		if drawn > len(cards) {
 			drawn = len(cards)
 		}

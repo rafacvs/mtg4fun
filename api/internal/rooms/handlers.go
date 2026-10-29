@@ -19,6 +19,8 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("GET /api/rooms", s.listRooms)
 	mux.HandleFunc("POST /api/rooms", s.createRoom)
 	mux.HandleFunc("GET /api/rooms/events", s.events)
+	mux.HandleFunc("GET /api/rooms/{id}/preparation-decks", s.preparationDecks)
+	mux.HandleFunc("PATCH /api/rooms/{id}/settings", s.changePreparationSettings)
 	mux.HandleFunc("POST /api/rooms/{id}/participants", s.joinRoom)
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/deck", s.selectDeck)
 	mux.HandleFunc("PUT /api/rooms/{id}/participants/me/ready", s.readyParticipant)
