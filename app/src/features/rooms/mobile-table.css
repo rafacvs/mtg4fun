@@ -529,6 +529,13 @@
     border-radius: 6px; box-shadow: 0 4px 12px #0008;
   }
   .mobile-table .mobile-table-controls button .table-icon { width: 20px; height: 20px; flex-basis: 20px; }
+  .mobile-table .mobile-table-controls:has(.mulligan-action, .keep-hand-action) { width: auto; gap: 6px; }
+  .mobile-table .mobile-table-controls button:nth-child(n) {
+    grid-column: auto; grid-row: auto; color: #efe8d8; background: #10171bf2; border-color: #a47d36aa;
+    box-shadow: 0 4px 12px #0008; font: inherit; text-transform: none; letter-spacing: normal;
+  }
+  .mobile-table .mobile-table-controls button.mulligan-action,
+  .mobile-table .mobile-table-controls button.keep-hand-action { flex: 0 0 auto; width: auto; gap: 6px; padding: 8px 12px; font-size: 12px; white-space: nowrap; }
   .mobile-table .mobile-commands, .mobile-table.mobile-hand-open .mobile-commands {
     z-index: 30; right: 8px; width: min(300px, calc(100% - 16px)); display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 6px;

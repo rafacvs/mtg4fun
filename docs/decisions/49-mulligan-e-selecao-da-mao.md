@@ -17,7 +17,8 @@ opção inicial.
 - **Aconchegaz:** todos os mulligans devolvem a mão, embaralham e compram sete,
   sem redução ao manter.
 - O botão **Mulligan** fica imediatamente à esquerda de **Comprar** durante o
-  primeiro turno. O primeiro avanço de turno fecha a janela definitivamente;
+  primeiro turno; no celular, Mulligan e Manter mão aparecem nos controles
+  flutuantes, à esquerda de Comandos. O primeiro avanço de turno fecha a janela definitivamente;
   corrigir o indicador para trás não a reabre.
 - A configuração, a janela, o número de mulligans e a decisão de manter são
   persistidos no snapshot. As ações usam o endpoint idempotente existente e
