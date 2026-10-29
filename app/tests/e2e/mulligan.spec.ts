@@ -61,15 +61,16 @@ test('configura mulligan, seleciona a mão por área e fecha a janela no segundo
 });
 
 test('no celular toca para ler e segura para selecionar a carta', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'celular', 'Leitura por toque usa o celular vertical');
+  test.skip(!testInfo.project.use.hasTouch, 'Leitura por toque usa tela sensível ao toque');
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: process.env.E2E_LOGIN || 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
-  const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'mulligan-mobile.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Devourer of Destiny"/></zone></cockatrice_deck>') } } })).json();
+  const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'mulligan-mobile.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>') } } })).json();
   const roomId = (await (await api.post('/api/rooms', { data: { name: `Mulligan mobile ${Date.now()}`, format: 'Livre', seats: 1, life: 40 } })).json()).room.id;
   expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
   await page.goto(`/#/salas/${roomId}`);
-  await page.getByRole('button', { name: 'Mulligan', exact: true }).tap();
+  const controls = page.getByRole('navigation', { name: 'Controles da mesa' });
+  await controls.getByRole('button', { name: 'Mulligan', exact: true }).tap();
 
   const panel = page.getByRole('dialog', { name: 'Escolher mão do mulligan', exact: true });
   await panel.getByRole('button', { name: 'Mulligan novamente', exact: true }).tap();
@@ -80,11 +81,16 @@ test('no celular toca para ler e segura para selecionar a carta', async ({ page 
   await page.waitForTimeout(650);
   await card.dispatchEvent('pointerup', { pointerType: 'touch', pointerId: 1, clientX: box!.x + box!.width / 2, clientY: box!.y + box!.height / 2 });
   await expect(panel.getByText('1 de 1 selecionada(s) para o fundo', { exact: true })).toBeVisible();
-  await expect(page.getByRole('dialog', { name: 'Imagem de Devourer of Destiny', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Imagem de Gargos, Vicious Watcher', exact: true })).toHaveCount(0);
   await card.tap();
-  const reader = page.getByRole('dialog', { name: 'Imagem de Devourer of Destiny', exact: true });
-  await expect(reader.getByRole('img', { name: 'Imagem ampliada de Devourer of Destiny', exact: true })).toBeVisible();
-  await expect(reader.getByRole('heading', { name: 'Devourer of Destiny', exact: true })).toHaveCSS('text-overflow', 'ellipsis');
+  const reader = page.getByRole('dialog', { name: 'Imagem de Gargos, Vicious Watcher', exact: true });
+  await expect(reader.getByRole('img', { name: 'Imagem ampliada de Gargos, Vicious Watcher', exact: true })).toBeVisible();
+  await expect(reader.getByRole('heading', { name: 'Gargos, Vicious Watcher', exact: true })).toHaveCSS('text-overflow', 'ellipsis');
   await reader.getByRole('button', { name: 'Manter na mão', exact: true }).tap();
   await expect(panel.getByText('0 de 1 selecionada(s) para o fundo', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: 'Voltar à mesa', exact: true }).tap();
+  await expect(panel).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('mulligan-controles.png') });
+  await controls.getByRole('button', { name: 'Manter mão', exact: true }).tap();
+  await expect(panel).toBeVisible();
 });

@@ -280,9 +280,15 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     if (compact) { setHoverPreviewOpen(false); setPlayersOpen(false); setLogOpen(false); }
   };
   const togglePlayerFocus = (id: number) => focusPlayer(id);
-  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} canMulligan={mulliganAvailable && !own.mulliganKept && own.handCount === 7 && canMulliganAgain} canKeep={mulliganAvailable && !own.mulliganKept && mulliganCount > 0} keepLabel={mulliganBottom ? `Manter · ${mulliganBottom} ao fundo` : 'Manter mão'} actionsOpen={actionsOpen}
+  const mulliganActions = {
+    canMulligan: mulliganAvailable && !own.mulliganKept && own.handCount === 7 && canMulliganAgain,
+    canKeep: mulliganAvailable && !own.mulliganKept && mulliganCount > 0,
+    keepLabel: mulliganBottom ? `Manter · ${mulliganBottom} ao fundo` : 'Manter mão',
+    onMulligan: () => { setSelectionIds([]); void mulligan().then(ok => { if (ok) setMulliganPanelOpen(true); }); },
+    onKeep: () => setMulliganPanelOpen(true),
+  };
+  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} {...mulliganActions} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
-    onMulligan={() => { setSelectionIds([]); void mulligan().then(ok => { if (ok) setMulliganPanelOpen(true); }); }} onKeep={() => setMulliganPanelOpen(true)}
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
@@ -316,7 +322,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         </div>
         {compact && <>
           {(commandsOpen || informationOpen) && <div className="floating-panel-scrim" aria-hidden="true" onClick={closeFloatingPanel} />}
-          <MobileTableControls moreRef={moreControl} moreOpen={commandsOpen}
+          <MobileTableControls moreRef={moreControl} moreOpen={commandsOpen} disabled={busy || unconfirmed} {...mulliganActions}
             onMore={() => { setCommandsOpen(value => !value); setInformationOpen(false); }} />
           {commandsOpen && <section id="mobile-commands" className="mobile-commands" aria-label="Comandos da partida">
             <PanelHeader title="Comandos" closeLabel="Fechar comandos" onClose={() => setCommandsOpen(false)} />
