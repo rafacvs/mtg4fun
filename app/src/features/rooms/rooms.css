@@ -55,6 +55,11 @@
 .room-preparation li { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); }
 .room-preparation button { min-height: 44px; }
 .room-preparation [role=status] { margin: 14px 0 0; font-size: .85rem; }
+.mulligan-mode { display: grid; gap: 6px; margin: 14px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
+.mulligan-mode legend { padding: 0 6px; color: var(--gold); font-weight: 700; }
+.mulligan-mode label { display: flex; align-items: center; gap: 8px; }
+.mulligan-mode input { width: auto; }
+.mulligan-mode small { margin: -2px 0 6px 24px; color: var(--muted); line-height: 1.35; }
 
 .lobby-room-group { margin-top: 28px; }
 .lobby-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

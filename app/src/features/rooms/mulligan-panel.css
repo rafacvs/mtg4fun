@@ -1,0 +1,19 @@
+.mulligan-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 24px; background: #050708e8; backdrop-filter: blur(10px); }
+.mulligan-panel { width: min(1180px, 100%); max-height: calc(100dvh - 48px); display: flex; flex-direction: column; gap: 20px; overflow: hidden; padding: 24px; border: 1px solid var(--gold); border-radius: 14px; background: var(--panel); box-shadow: 0 28px 100px #000; }
+.mulligan-panel > header, .mulligan-panel > footer, .mulligan-panel > footer > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.mulligan-panel h2 { margin: 3px 0; }
+.mulligan-panel p { margin: 0; color: var(--muted); }
+.mulligan-cards { min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(90px, 1fr)); gap: 12px; overflow: auto; padding: 5px; }
+.mulligan-card { min-width: 0; display: flex; flex-direction: column; gap: 7px; padding: 6px; border: 2px solid transparent; background: var(--panel2); color: var(--text); }
+.mulligan-card img { width: 100%; aspect-ratio: 63 / 88; object-fit: contain; border-radius: 6px; }
+.mulligan-card span { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .72rem; }
+.mulligan-card.is-kept { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-glow); }
+.mulligan-card.is-kept span { color: var(--gold-light); font-weight: 800; }
+.mulligan-reader-backdrop { position: fixed; z-index: 2; inset: 0; display: none; place-items: center; padding: 16px; background: #050708d9; backdrop-filter: blur(6px); }
+.mulligan-reader { width: min(420px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; gap: 12px; overflow: auto; padding: 16px; border: 1px solid var(--gold); border-radius: 14px; background: var(--panel2); box-shadow: 0 24px 80px #000; }
+.mulligan-reader header { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mulligan-reader h2 { min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.05rem; }
+.mulligan-reader img { width: 100%; min-height: 0; max-height: 62dvh; object-fit: contain; border-radius: 8px; }
+.mulligan-reader p { overflow: visible; color: var(--text); white-space: pre-line; font-size: .8rem; line-height: 1.45; }
+@media (max-width: 800px) { .mulligan-backdrop { padding: 8px; } .mulligan-panel { max-height: calc(100dvh - 16px); padding: 14px; } .mulligan-cards { grid-template-columns: repeat(4, minmax(72px, 1fr)); } .mulligan-panel > footer { align-items: stretch; flex-direction: column; } .mulligan-panel > footer > div { display: grid; grid-template-columns: 1fr 1fr; } }
+@media (max-width: 800px), (hover: none) { .mulligan-reader-backdrop { display: grid; } }

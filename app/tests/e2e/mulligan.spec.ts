@@ -1,0 +1,90 @@
+import { randomUUID } from 'node:crypto';
+import { test, expect } from './fixtures';
+
+test('configura mulligan, seleciona a mão por área e fecha a janela no segundo turno', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Seleção por retângulo usa mouse');
+  const api = page.request;
+  expect((await api.post('/api/session', { data: { login: process.env.E2E_LOGIN || 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+  const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'mulligan.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Island"/></zone></cockatrice_deck>') } } })).json();
+  await page.goto('/#/salas');
+  await page.getByRole('button', { name: 'Criar sala', exact: true }).click();
+  const creation = page.getByRole('dialog', { name: 'Montar a mesa', exact: true });
+  const roomName = `Mesa de mulligan ${Date.now()}`;
+  await creation.getByLabel('Nome da mesa').fill(roomName);
+  await creation.getByLabel('Lugares').fill('1');
+  const createdResponse = page.waitForResponse(response => response.url().endsWith('/api/rooms') && response.request().method() === 'POST');
+  await creation.getByRole('button', { name: 'Criar e sentar', exact: true }).click();
+  const response = await createdResponse;
+  expect(response.status()).toBe(201);
+  await expect(creation).toHaveCount(0);
+  const rooms = (await (await api.get('/api/rooms')).json()).rooms as { id: number; title: string }[];
+  const room = rooms.find(candidate => candidate.title === roomName)!;
+  expect(room).toBeTruthy();
+  expect((await api.put(`/api/rooms/${room.id}/mulligan-mode`, { data: { mode: 'standard' } })).ok()).toBe(true);
+  expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
+  expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await page.goto(`/#/salas/${room.id}`);
+
+  await expect(page.getByRole('button', { name: 'Mulligan', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Mulligan', exact: true }).click();
+  const panel = page.getByRole('dialog', { name: 'Escolher mão do mulligan', exact: true });
+  await expect(panel.getByRole('heading', { name: 'Confira sua nova mão', exact: true })).toBeVisible();
+  await panel.locator('.mulligan-card').first().hover();
+  const hoverPreview = panel.locator('.card-hover-zoom');
+  await expect(hoverPreview).toBeVisible();
+  await expect(hoverPreview.getByRole('heading', { name: 'Island', exact: true })).toBeVisible();
+  await page.mouse.move(8, 8);
+  await expect(hoverPreview).toHaveCount(0);
+  await panel.getByRole('button', { name: 'Mulligan novamente', exact: true }).click();
+  await expect(panel.getByRole('heading', { name: 'Escolha 1 carta para o fundo', exact: true })).toBeVisible();
+  const choices = panel.locator('.mulligan-card');
+  await choices.first().click();
+  await expect(panel.getByText('1 de 1 selecionada(s) para o fundo', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: 'Manter mão', exact: true }).click();
+  await expect(panel).toHaveCount(0);
+
+  const hand = page.getByRole('region', { name: 'Mão', exact: true });
+  await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(6);
+  const canvas = await hand.getByLabel('Cartas da mão').boundingBox();
+  const first = await hand.getByRole('button', { name: 'Island', exact: true }).first().boundingBox();
+  await page.mouse.move(canvas!.x + 1, canvas!.y + 1);
+  await page.mouse.down();
+  await page.mouse.move(first!.x + first!.width / 2, first!.y + first!.height / 2, { steps: 4 });
+  await page.mouse.up();
+  await expect(hand.getByRole('button', { pressed: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Mulligan', exact: true })).toHaveCount(0);
+
+  const match = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
+  expect(match.players[0].libraryCount).toBe(14);
+  expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: randomUUID(), kind: 'turn', direction: 'next' } })).ok()).toBe(true);
+  expect((await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.mulliganOpen).toBe(false);
+});
+
+test('no celular toca para ler e segura para selecionar a carta', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'celular', 'Leitura por toque usa o celular vertical');
+  const api = page.request;
+  expect((await api.post('/api/session', { data: { login: process.env.E2E_LOGIN || 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+  const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'mulligan-mobile.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Devourer of Destiny"/></zone></cockatrice_deck>') } } })).json();
+  const roomId = (await (await api.post('/api/rooms', { data: { name: `Mulligan mobile ${Date.now()}`, format: 'Livre', seats: 1, life: 40 } })).json()).room.id;
+  expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
+  expect((await api.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+  await page.goto(`/#/salas/${roomId}`);
+  await page.getByRole('button', { name: 'Mulligan', exact: true }).tap();
+
+  const panel = page.getByRole('dialog', { name: 'Escolher mão do mulligan', exact: true });
+  await panel.getByRole('button', { name: 'Mulligan novamente', exact: true }).tap();
+  await expect(panel.getByRole('heading', { name: 'Escolha 1 carta para o fundo', exact: true })).toBeVisible();
+  const card = panel.locator('.mulligan-card').first();
+  const box = await card.boundingBox();
+  await card.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 1, clientX: box!.x + box!.width / 2, clientY: box!.y + box!.height / 2 });
+  await page.waitForTimeout(650);
+  await card.dispatchEvent('pointerup', { pointerType: 'touch', pointerId: 1, clientX: box!.x + box!.width / 2, clientY: box!.y + box!.height / 2 });
+  await expect(panel.getByText('1 de 1 selecionada(s) para o fundo', { exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Imagem de Devourer of Destiny', exact: true })).toHaveCount(0);
+  await card.tap();
+  const reader = page.getByRole('dialog', { name: 'Imagem de Devourer of Destiny', exact: true });
+  await expect(reader.getByRole('img', { name: 'Imagem ampliada de Devourer of Destiny', exact: true })).toBeVisible();
+  await expect(reader.getByRole('heading', { name: 'Devourer of Destiny', exact: true })).toHaveCSS('text-overflow', 'ellipsis');
+  await reader.getByRole('button', { name: 'Manter na mão', exact: true }).tap();
+  await expect(panel.getByText('0 de 1 selecionada(s) para o fundo', { exact: true })).toBeVisible();
+});

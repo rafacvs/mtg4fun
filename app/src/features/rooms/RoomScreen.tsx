@@ -28,6 +28,12 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
     <p className="eyebrow">PREPARAÇÃO</p><h2>{room.title}</h2>
     <p>Escolha um deck. O criador pode iniciar quando todos estiverem prontos.</p>
     <ul>{room.participants.map(value => <li key={value.id}>{value.name} · {value.ready ? 'Pronto' : 'Escolhendo deck'}</li>)}</ul>
+    <fieldset className="mulligan-mode"><legend>Tipo de mulligan</legend>
+      <label><input type="radio" name="mulligan-mode" value="standard" checked={room.mulliganMode === 'standard'} disabled={room.creatorId !== userId || rooms.busy} onChange={() => void rooms.setMulliganMode(roomId, 'standard')} /> Padrão</label>
+      <small>Primeiro gratuito; ao manter, coloque no fundo uma carta por mulligan adicional.</small>
+      <label><input type="radio" name="mulligan-mode" value="aconchegaz" checked={room.mulliganMode === 'aconchegaz'} disabled={room.creatorId !== userId || rooms.busy} onChange={() => void rooms.setMulliganMode(roomId, 'aconchegaz')} /> Aconchegaz</label>
+      <small>Sempre embaralhe a mão e compre sete novas cartas, sem redução.</small>
+    </fieldset>
     {decks.error && <p role="alert" className="error">{decks.error}</p>}
     {!decks.loading && decks.decks.length === 0 && <p><a href="/#/decks">Importe um deck</a> e volte a esta sala para confirmar.</p>}
     <label htmlFor="room-deck">Deck para a partida</label>
