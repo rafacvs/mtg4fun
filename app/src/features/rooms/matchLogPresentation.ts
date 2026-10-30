@@ -73,3 +73,14 @@ export function describeLogEntry(entry: { actorName: string; kind: string; from?
   if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;
   return 'Partida iniciada.';
 }
+
+// Rolls are logged as "D20: 17"; the game menu shows the die and its value.
+export function parseRoll(result = '') {
+  const match = /^D(\d+): (\d+)$/.exec(result);
+  return match ? { sides: Number(match[1]), value: Number(match[2]) } : null;
+}
+
+export function describeActionResult(entry: LogEntry) {
+  const roll = entry.kind === 'roll' ? parseRoll(entry.result) : null;
+  return roll ? `${entry.actorName} rolou um d${roll.sides}: ${roll.value}.` : describeLogEntry(entry);
+}

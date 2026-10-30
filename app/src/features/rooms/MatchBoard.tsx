@@ -8,7 +8,7 @@ import { DragDestinations } from './DragDestinations';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
 import { MatchLog } from './MatchLog';
-import { describeLogEntry } from './matchLogPresentation';
+import { describeActionResult, parseRoll } from './matchLogPresentation';
 import { GameActions } from './GameActions';
 import { CreateInstances } from './CreateInstances';
 import { PlayerMenu } from './PlayerMenu';
@@ -29,6 +29,7 @@ import './match.css';
 import './counters.css';
 import './mobile-table.css';
 import './desktop-table.css';
+import './hand-dock.css';
 import './card-preview.css';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
@@ -272,7 +273,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const ownHidden = focused.userId !== match.viewerId;
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
-  const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describeLogEntry(lastAction) : undefined;
+  const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describeActionResult(lastAction) : undefined;
+  const lastRoll = parseRoll(match.log.filter(entry => entry.kind === 'roll').at(-1)?.result)?.value;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
   const showingOverview = compact ? overview : focusId === null;
   const showOverview = () => {
@@ -313,7 +315,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <div className="table-main">
           <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : null} focusEnabled={compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
-            <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small>{own.handCount} cartas</small></span></div>
+            <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small><b>{own.handCount}</b> {own.handCount === 1 ? 'carta' : 'cartas'}</small></span></div>
             <div id="own-dock-content" className="dock-content">
               {!compact && quickActions}
               <OwnHand scrollAxis="x" orientation={portrait ? 'portrait' : 'landscape'} organizeEnabled={!compact} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
@@ -406,7 +408,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const title = openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio';
       return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />;
     })()}
-    <GameActions anchor={actionsAnchor} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
+    <GameActions anchor={actionsAnchor} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} lastRoll={lastRoll} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
     <PlayerMenu player={match.players.find(player => player.userId === menuPlayerId)} viewerId={match.viewerId} anchor={menuAnchor} disabled={busy || unconfirmed} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onCounter={counter} onClose={closePlayer} />
     <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={async name => {
       const cell = firstFreeCell(own.battlefield ?? []);

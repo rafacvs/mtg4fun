@@ -67,7 +67,7 @@ test('indica a atividade do participante certo quando nomes se repetem', async (
     await openQuickActions(other);
     await other.getByRole('button', { name: 'Ações', exact: true }).click();
     await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
-    await other.getByRole('button', { name: 'Rolar dado', exact: true }).click();
+    await other.getByRole('button', { name: /^Rolar d\d+$/ }).click();
     await expect(thumbnails.nth(1).getByText('Atividade recente', { exact: true })).toBeVisible();
     await expect(thumbnails.nth(0).getByText('Atividade recente', { exact: true })).toHaveCount(0);
     await expect(thumbnails.nth(0).getByRole('button', { name: 'Ver campo de Amigo da mesa' })).toHaveAttribute('aria-pressed', 'true');
@@ -133,7 +133,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
       await openQuickActions(other);
       await activate(other.getByRole('button', { name: 'Ações', exact: true }));
       await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
-      await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+      await activate(other.getByRole('button', { name: /^Rolar d\d+$/ }));
       await activate(other.getByRole('button', { name: 'Fechar ações', exact: true }));
       await page.setViewportSize({ width: 844, height: 390 });
       await openMatchRail(page, 'Registro');
@@ -198,7 +198,7 @@ test('observa seis mesas mantendo mão, ações e privacidade com sincronizaçã
     await openQuickActions(other);
     await activate(other.getByRole('button', { name: 'Ações', exact: true }));
     await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
-    await activate(other.getByRole('button', { name: 'Rolar dado', exact: true }));
+    await activate(other.getByRole('button', { name: /^Rolar d\d+$/ }));
     const recentActivity = secondThumbnail.locator('..').getByText('Atividade recente', { exact: true });
     if (testInfo.project.name === 'celular') await expect.poll(() => intersectsVisibleFocusNav(recentActivity)).toBe(true);
     else await expect(recentActivity).toBeVisible();

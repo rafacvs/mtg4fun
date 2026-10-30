@@ -1,0 +1,85 @@
+/* Desktop hand bar: a thin strip for the controls, with the hand fanned
+   above it so the cards rise over the bottom of the battlefield. */
+@media (min-width: 1001px) {
+  .desktop-table { --dock-bar-height: 80px; --hand-card: clamp(124px, 9.8vw, 172px); }
+  /* The lowered hand overflows the board; clip so focus or scrollIntoView never shifts the table. */
+  .desktop-table .match-content { overflow: clip; }
+  .desktop-table .own-dock {
+    position: relative; z-index: 6; flex: 0 0 var(--dock-bar-height); flex-direction: row; align-items: center; gap: 0;
+    height: var(--dock-bar-height); min-height: var(--dock-bar-height); max-height: var(--dock-bar-height);
+    margin: 0 -10px; padding: 0 10px 0 16px; overflow: visible;
+    border: 0; border-top: 1px solid #d9a94e24; border-radius: 0; background: #0a0d0f; box-shadow: none;
+  }
+  .desktop-table .own-dock .dock-toggle, .desktop-table .own-dock:not(.is-collapsed) .dock-toggle {
+    flex: 0 0 auto; display: block; min-height: 0; margin-right: 18px; padding: 0;
+    color: #c8b07a; font: 600 9px/1 Cinzel, serif; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap;
+  }
+  .desktop-table .dock-toggle .table-icon { display: none; }
+  .desktop-table .dock-toggle small { display: block; margin: 6px 0 0; color: var(--muted); font: 400 12px/1 Geist, sans-serif; letter-spacing: 0; text-transform: none; }
+  .desktop-table .dock-toggle small b { margin-right: 1px; color: var(--text); font: 700 17px/1 Cinzel, serif; }
+  .desktop-table .own-dock .dock-content { flex: 1; align-self: stretch; flex-direction: row; align-items: center; gap: 16px; height: 100%; min-width: 0; margin: 0; }
+  .desktop-table .own-dock .dock-content > .zone-hand { flex: 1; flex-direction: row; align-items: center; align-self: stretch; min-width: 0; }
+  .desktop-table .own-dock .zone-hand > header { position: static; flex: 0 0 auto; min-height: 0; text-transform: none; letter-spacing: 0; }
+  .desktop-table .own-dock .zone-hand > header > span { display: none; }
+  .desktop-table .own-dock .hand-hint { display: none; }
+
+  .match-board.desktop-table .hand-organize {
+    gap: 7px; min-height: 32px; height: 32px; padding: 0 11px; border: 1px solid var(--line); border-radius: 5px;
+    background: var(--panel2); color: #ddd4c0; font: 500 13px/1 Geist, sans-serif;
+  }
+  .desktop-table .hand-organize .table-icon { width: 14px; height: 14px; flex-basis: 14px; color: var(--muted); }
+  .match-board.desktop-table .hand-organize:hover:not(:disabled) { border-color: var(--gold); }
+  .match-board.desktop-table .hand-organize[aria-pressed='true'] { border-color: var(--gold); background: #d9a94e29; color: var(--gold); }
+  .desktop-table .hand-organize[aria-pressed='true'] .table-icon { color: var(--gold); }
+
+  /* The row is a size container so the overlap can shrink to fit any hand. */
+  .desktop-table .own-dock .zone-hand .zone-cards {
+    container-type: inline-size; flex: 1 1 auto; align-self: stretch; align-items: flex-end; gap: 0;
+    min-width: 0; height: calc(100% + 10px); margin-bottom: -10px; padding: 0 0 0 10px; overflow: visible;
+  }
+  .desktop-table .own-dock .zone-hand .playing-card {
+    --fan-t: calc(var(--fan-offset, 0) / max(1, (var(--hand-count, 1) - 1) / 2));
+    /* At rest only ~40% of the card shows; hovering raises it whole. */
+    --hand-rest-drop: calc(var(--hand-card) * 88 / 63 * .6 - 10px);
+    flex: 0 0 auto; width: var(--hand-card); border: 1px solid #000; border-radius: 8px;
+    box-shadow: 0 -2px 0 #ffffff0d, 0 14px 28px #000c;
+    transform: translateY(calc(var(--hand-rest-drop) + var(--fan-t) * var(--fan-t) * 9px)) rotate(calc(var(--fan-t) * 6deg));
+    transform-origin: 50% 100%;
+  }
+  .desktop-table .own-dock .zone-hand .playing-card:not(:first-child) {
+    margin-left: min(-14px, calc((100cqw - var(--hand-count, 1) * var(--hand-card)) / max(1, var(--hand-count, 1) - 1)));
+  }
+  .desktop-table .own-dock .zone-hand .playing-card img { border-radius: 7px; }
+  .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled) {
+    z-index: 2; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 18px 34px #000d;
+    transform: translateY(-26px) rotate(calc(var(--fan-t) * 2deg));
+  }
+  .desktop-table .own-dock .zone-hand .playing-card.is-selected { z-index: 1; outline: 2px solid var(--gold); outline-offset: 0; box-shadow: 0 0 18px var(--gold-glow), 0 14px 28px #000c; }
+  .desktop-table .own-dock .zone-hand .zone-placeholder { align-self: center; color: var(--muted); font-size: 12px; }
+
+  .desktop-table .quick-actions { order: 1; flex: 0 0 auto; flex-direction: row; align-items: center; gap: 9px; padding: 0; border: 0; }
+  .desktop-table .quick-actions kbd { display: none; }
+  .match-board.desktop-table .quick-actions .bar-action {
+    width: auto; min-width: 0; height: 44px; min-height: 44px; padding: 0 15px; gap: 9px; justify-content: center;
+    border: 1px solid var(--line); border-radius: 5px; background: var(--panel2); color: var(--text);
+    font: 500 14px/1 Geist, sans-serif; white-space: nowrap;
+  }
+  .desktop-table .quick-actions .bar-action .table-icon { width: 17px; height: 17px; flex-basis: 17px; color: var(--gold); }
+  .match-board.desktop-table .quick-actions .bar-action:hover:not(:disabled) { border-color: var(--gold); background: var(--panel2); }
+  .match-board.desktop-table .quick-actions .bar-action[aria-expanded='true'] { border-color: var(--gold); background: #d9a94e29; color: var(--gold); }
+  .match-board.desktop-table .quick-actions .turn-action {
+    width: 236px; height: 50px; min-height: 50px; margin-left: 8px; padding: 0 22px; justify-content: space-between;
+    border: 1px solid #f2d28c; border-radius: 5px; background: linear-gradient(#edc673, #c99439); color: #241906;
+    box-shadow: inset 0 0 0 2px #00000017, inset 0 1px #fff6, 0 6px 18px #0007;
+    font: 700 15px/1 Cinzel, serif; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+  }
+  .desktop-table .quick-actions .turn-action .table-icon { width: 17px; height: 17px; flex-basis: 17px; }
+  .match-board.desktop-table .quick-actions .turn-action:hover:not(:disabled) { background: linear-gradient(#f3d081, #d29d41); }
+  .match-board.desktop-table .quick-actions button:disabled { opacity: .45; }
+  .desktop-table .card-action-bar { bottom: calc(var(--dock-bar-height) + 12px); }
+}
+
+/* Mobile command grids keep turn passing as their first command. */
+@media (max-width: 1000px) {
+  .mobile-commands .quick-actions .turn-action { order: -1; }
+}

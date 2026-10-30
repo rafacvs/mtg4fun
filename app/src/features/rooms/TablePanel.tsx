@@ -31,7 +31,7 @@ export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean,
 }
 
 export function TablePanel({ open, label, anchor, wide = false, align = 'end', className = '', children, onClose }: {
-  open: boolean; label: string; anchor?: HTMLElement | null; wide?: boolean; align?: 'start' | 'end';
+  open: boolean; label: string; anchor?: HTMLElement | null; wide?: boolean; align?: 'start' | 'end' | 'above';
   className?: string; children: ReactNode; onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -53,7 +53,11 @@ export function TablePanel({ open, label, anchor, wide = false, align = 'end', c
       let left = (width - box.width) / 2;
       let top = offsetY + (height - box.height) / 2;
       if (origin && !wide) {
-        if (align === 'start') {
+        if (align === 'above') {
+          left = origin.right - box.width;
+          top = origin.top - box.height - 10;
+          if (top < minimumTop) top = origin.bottom + 8;
+        } else if (align === 'start') {
           left = origin.left;
           top = origin.bottom + 8;
           if (top + box.height > offsetY + height - 12) top = origin.top - box.height - 8;
@@ -99,20 +103,25 @@ export function PanelHeader({ title, subtitle, onClose, onBack, closeLabel = 'Fe
   title: string; subtitle?: string; onClose: () => void; onBack?: () => void; closeLabel?: string; children?: ReactNode;
 }) {
   return <header className="table-panel-header">
-    {onBack && <button className="secondary icon-button" type="button" aria-label="Voltar" onClick={onBack}><TableIcon name="back" /></button>}
+    {onBack && <button className="secondary icon-button" type="button" aria-label="Voltar" onClick={onBack}><TableIcon name="chevron-left" /></button>}
     <div>{subtitle && <p className="actions-kicker">{subtitle}</p>}<h2>{title}</h2>{children}</div>
     <button data-panel-close className="secondary icon-button panel-close" type="button" aria-label={closeLabel} onClick={onClose}><TableIcon name="close" /></button>
   </header>;
 }
 
-export function MenuItem({ icon, title, description, disabled, onClick }: {
-  icon: TableIconName; title: string; description?: string; disabled?: boolean; onClick: () => void;
+// The chevron marks items that open another screen; items without it act at once.
+export function MenuItem({ icon, title, description, disabled, opens = true, onClick }: {
+  icon: TableIconName; title: string; description?: string; disabled?: boolean; opens?: boolean; onClick: () => void;
 }) {
   return <button type="button" aria-label={title} className="table-menu-item secondary" disabled={disabled} onClick={onClick}>
     <span className="menu-item-icon"><TableIcon name={icon} /></span>
     <span className="menu-item-label"><strong>{title}</strong>{description && <small>{description}</small>}</span>
-    <TableIcon name="chevron" />
+    {opens && <TableIcon name="chevron" />}
   </button>;
+}
+
+export function PanelResult({ children }: { children: ReactNode }) {
+  return <p role="status" className="panel-result"><TableIcon name="clock" /><span>{children}</span></p>;
 }
 
 export type PanelFeedbackProps = { error: string; busy: boolean; unconfirmed: boolean; onRetry: () => Promise<boolean> };

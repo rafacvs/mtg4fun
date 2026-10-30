@@ -1,31 +1,36 @@
 /* Shared command surfaces. Open library and card detail keep their own size. */
-.match-board .table-panel { position: fixed; z-index: 22; bottom: auto; transform: none; width: min(320px, calc(100vw - 24px)); max-width: calc(100vw - 16px); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 12px; overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(145deg, var(--panel2), var(--panel) 65%); box-shadow: 0 20px 70px #000a, inset 0 1px var(--gold-glow); scrollbar-width: thin; scrollbar-color: var(--line-strong) var(--panel); }
+.match-board .table-panel { position: fixed; z-index: 22; bottom: auto; transform: none; width: min(360px, calc(100vw - 24px)); max-width: calc(100vw - 16px); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 10px; overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid #d9a94e4d; border-radius: 8px; background: #0e1113; box-shadow: 0 0 0 1px #000a, 0 24px 60px #000c, inset 0 1px #ffffff08; scrollbar-width: thin; scrollbar-color: var(--line-strong) var(--panel); }
 .match-board .table-panel-wide { width: min(820px, calc(100vw - 32px)); }
-.match-board .table-panel .table-panel-header, .card-preview .table-panel-header { position: static; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; gap: 10px; margin: 0; padding-bottom: 12px; border-bottom: 1px solid color-mix(in srgb, var(--gold) 28%, var(--line)); background: transparent; }
+.match-board .table-panel .table-panel-header, .card-preview .table-panel-header { position: static; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; gap: 12px; margin: 0 0 2px; padding: 0; border: 0; background: transparent; }
 .table-panel-header > div { flex: 1; min-width: 0; }
-.match-board .table-panel-header h2, .card-preview .table-panel-header h2 { margin: 0; color: var(--text); font-size: 1.05rem; font-weight: 650; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
-.actions-kicker { margin: 0 0 4px; color: var(--muted); font-size: .7rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
-.match-board .table-panel-header button, .card-preview .table-panel-header button { min-width: 44px; min-height: 44px; padding: 8px; background: #ffffff04; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); border-radius: 10px; color: var(--gold); }
-.match-board .table-panel-header button:hover:not(:disabled), .card-preview .table-panel-header button:hover:not(:disabled) { background: var(--gold-wash); border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
+.match-board .table-panel-header h2, .card-preview .table-panel-header h2 { margin: 0; color: var(--text); font: 700 20px/1.15 Cinzel, Georgia, serif; letter-spacing: .03em; overflow-wrap: anywhere; }
+.actions-kicker { margin: 0 0 5px; color: #b0915a; font: 600 9px/1.2 Cinzel, Georgia, serif; letter-spacing: .18em; text-transform: uppercase; }
+.match-board .table-panel-header button, .card-preview .table-panel-header button { flex: 0 0 34px; width: 34px; min-width: 34px; height: 34px; min-height: 34px; padding: 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; color: var(--text); }
+.table-panel-header button .table-icon { width: 15px; height: 15px; flex-basis: 15px; }
+.match-board .table-panel-header button:hover:not(:disabled), .card-preview .table-panel-header button:hover:not(:disabled) { background: var(--panel2); border-color: var(--gold); }
 .match-board .table-menu { display: flex; flex-direction: column; gap: 6px; overflow: visible; }
-.match-board .table-menu-item, .card-preview .table-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; padding: 10px; text-align: left; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: #ffffff03; font-weight: 550; }
-.match-board .table-menu-item:hover:not(:disabled), .card-preview .table-menu-item:hover:not(:disabled) { background: var(--gold-wash); border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
-.match-board .table-menu-item > .menu-item-icon, .card-preview .table-menu-item > .menu-item-icon { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); background: var(--gold-wash); border-radius: 9px; color: var(--gold); }
+.match-board .table-menu-item, .card-preview .table-menu-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 10px 12px; text-align: left; border: 1px solid #2c2f2b; border-radius: 6px; color: var(--text); background: var(--panel2); font-weight: 550; }
+.match-board .table-menu-item:hover:not(:disabled), .card-preview .table-menu-item:hover:not(:disabled) { background: color-mix(in srgb, var(--gold) 6%, var(--panel2)); border-color: var(--gold); }
+.match-board .table-menu-item > .menu-item-icon, .card-preview .table-menu-item > .menu-item-icon { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border: 1px solid #d9a94e47; background: #d9a94e1f; border-radius: 5px; color: var(--gold); }
+.table-menu-item > .menu-item-icon .table-icon { width: 19px; height: 19px; flex-basis: 19px; }
 .match-board .table-menu-item > .menu-item-label { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: 3px; margin: 0; }
-.table-menu-item .menu-item-label strong { display: block; color: var(--text); font-weight: 650; font-size: .8rem; line-height: 1.3; }
-.table-menu-item .menu-item-label small { display: block; color: var(--muted); font-size: .75rem; line-height: 1.4; font-weight: 400; }
-.table-menu-item > .table-icon:last-child { width: 14px; height: 14px; flex-basis: 14px; opacity: .4; }
+.table-menu-item .menu-item-label strong { display: block; color: var(--text); font-weight: 600; font-size: 13.5px; line-height: 1.3; }
+.table-menu-item .menu-item-label small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.35; font-weight: 400; }
+.table-menu-item > .table-icon:last-child { width: 14px; height: 14px; flex-basis: 14px; color: var(--muted); opacity: .7; }
 .match-board .panel-form, .match-board .library-setup, .match-board .creations-form { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
 .panel-form h3 { font-size: .85rem; margin: 0; }
 .match-board .panel-form p, .match-board .panel-form label, .match-board .library-setup > p, .match-board .library-command label, .match-board .creations-form label, .card-preview .card-state-controls p, .card-preview .card-state-controls label, .card-preview .card-control-transfer label { color: var(--muted); font-size: .75rem; }
 .panel-form p, .panel-hint { margin: 0; }
 .panel-hint { color: var(--muted); font-size: .75rem; line-height: 1.4; }
-.panel-result { margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); border-radius: 10px; background: var(--gold-wash); color: var(--gold); font-size: .75rem; line-height: 1.4; }
+.panel-result { display: flex; align-items: center; gap: 9px; margin: 0; padding: 10px 12px; border: 1px solid #d9a94e2e; border-radius: 6px; background: #0b0e10; color: var(--text); font-size: 12.5px; line-height: 1.4; }
+.panel-result > .table-icon { width: 15px; height: 15px; flex-basis: 15px; color: var(--muted); }
 .match-board .table-panel .error, .card-preview .error { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 10px 12px; border-radius: 10px; font-size: .75rem; line-height: 1.4; }
 .match-board .table-panel .error button, .card-preview .error button { min-width: 44px; min-height: 44px; margin: 0; }
 .match-board .draw-stepper, .match-board .library-stepper { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.match-board .draw-stepper button, .match-board .library-stepper button, .match-board .numeric-counter button, .card-preview .pt-pair > button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 10px; font-size: 1.25rem; line-height: 1; }
-.match-board .draw-stepper input, .match-board .library-stepper input { width: 72px; min-width: 44px; height: 44px; min-height: 44px; padding: 4px; text-align: center; font-size: 1rem; font-weight: 650; font-variant-numeric: tabular-nums; border-radius: 10px; }
+.match-board .draw-stepper button, .match-board .library-stepper button, .match-board .numeric-counter button, .card-preview .pt-pair > button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: var(--panel2); color: var(--text); font-size: 1.25rem; line-height: 1; }
+.match-board .draw-stepper input, .match-board .library-stepper input { width: 64px; min-width: 44px; height: 44px; min-height: 44px; padding: 4px; text-align: center; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); box-shadow: inset 0 2px 4px #0006; color: var(--text); font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; appearance: textfield; }
+.match-board .draw-stepper input::-webkit-inner-spin-button, .match-board .draw-stepper input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.match-board .draw-stepper input[data-changed=true] { color: var(--gold); }
 .match-board .numeric-counter input, .card-preview .pt-pair input { min-width: 44px; height: 44px; min-height: 44px; padding: 4px; text-align: center; font-size: 1rem; font-weight: 650; font-variant-numeric: tabular-nums; border-radius: 10px; }
 .match-board .table-panel input[aria-invalid=true], .card-preview input[aria-invalid=true] { border-color: var(--danger-text); }
 .match-board .table-panel input:disabled, .match-board .table-panel select:disabled, .match-board .table-panel textarea:disabled, .card-preview input:disabled, .card-preview select:disabled, .card-preview textarea:disabled { opacity: .56; cursor: not-allowed; }
@@ -53,6 +58,20 @@
 .card-preview .pt-pair input { flex: 1 1 0; width: 0; min-width: 44px; height: 44px; min-height: 44px; padding: 4px; text-align: center; font-variant-numeric: tabular-nums; }
 .card-preview .pt-pair .pt-slash { flex: 0 0 auto; margin: 0; color: var(--text); font-size: 1.25rem; font-weight: 750; line-height: 1; }
 .card-preview .pt-pair-block .error { margin: 0; }
+
+/* Primary action inside a panel: one per surface, in Cinzel. */
+.match-board .table-panel .panel-primary { width: 100%; min-height: 50px; border: 1px solid #f2d28c; border-radius: 5px; background: linear-gradient(#edc673, #c99439); color: #241906; box-shadow: inset 0 0 0 2px #00000017, inset 0 1px #fff6; font: 700 15px/1 Cinzel, Georgia, serif; letter-spacing: .14em; text-transform: uppercase; }
+.match-board .table-panel .panel-primary:hover:not(:disabled) { background: linear-gradient(#f3d081, #d29d41); }
+.match-board .table-panel .panel-primary:disabled { opacity: .45; }
+.match-board .dice-form { gap: 14px; }
+.dice-roll { display: flex; align-items: center; gap: 22px; padding: 4px 2px 0; }
+.die-face { position: relative; flex: 0 0 96px; width: 96px; height: 96px; display: grid; place-items: center; }
+.die-face svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-linejoin: round; }
+.die-face svg path:last-child { stroke-width: 1; opacity: .5; }
+.die-face strong { position: relative; top: 6px; color: var(--gold-light); font: 700 32px/1 Cinzel, Georgia, serif; font-variant-numeric: tabular-nums; }
+.dice-sides { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.match-board .dice-sides label { color: var(--text); font-size: 13px; }
+.match-board .dice-sides .draw-stepper { justify-content: flex-start; gap: 9px; }
 
 /* Library workspaces need room for cards; their command menu stays compact. */
 .match-board .table-panel.library-consultation:not(.library-active) { width: min(320px, calc(100vw - 24px)); height: auto; padding: 16px; }
@@ -147,4 +166,7 @@
 .table-panel-scrim { display: none; }
 @media (max-width: 1000px) {
   .table-panel-scrim { display: block; position: fixed; inset: 0; z-index: 21; background: #0004; }
+}
+@media (max-width: 1000px) {
+  .match-board .table-panel-header button { flex-basis: 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
 }
