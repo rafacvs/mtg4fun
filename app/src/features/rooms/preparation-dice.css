@@ -10,6 +10,59 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+.preparation-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.preparation-dice-action {
+  min-width: 0;
+}
+.room-preparation .preparation-start .dice-roll-button {
+  border-color: #b3914e;
+  color: #f0d28e;
+  min-width: 100px;
+  min-height: 40px;
+  width: auto;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.dice-roll-button .dice-roll-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  vertical-align: middle;
+  background: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+.dice-roll-button.is-charged {
+  box-shadow: 0 0 12px #e7bd5e88;
+}
+@media (max-width: 1100px) and (min-width: 801px) {
+  .room-preparation .preparation-start {
+    flex-wrap: wrap;
+  }
+  .preparation-table-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 800px) {
+  .mobile-preparation-footer > .preparation-dice-action {
+    width: 100%;
+  }
+  .mobile-preparation-footer .dice-roll-button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
 .preparation-arena {
   position: relative;
 }
@@ -103,8 +156,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin: 20px 0 0;
-    padding: 10px 12px;
+    margin: 12px 0 0;
+    padding: 8px 12px;
     border: 1px solid #8a754344;
     border-radius: 5px;
     background: #090f0ee8;
@@ -120,6 +173,7 @@
     font-size: 0.72rem;
   }
   .room-preparation .preparation-start button {
+    margin: 0;
     width: auto;
     min-width: 160px;
     min-height: 42px;
@@ -128,6 +182,8 @@
   }
   .preparation-shields {
     display: flex;
+    align-items: center;
+    flex: none;
     gap: 4px;
   }
   .preparation-shields i {
@@ -164,6 +220,57 @@
   background: #0b1111ee;
   color: #e8deca;
   min-width: 0;
+  box-shadow:
+    inset 0 0 0 3px #090e0c,
+    inset 0 0 0 4px #8c713834;
+  background-image:
+    url("../../assets/theme/corner-v2.svg"),
+    url("../../assets/theme/corner-v2.svg");
+  background-position:
+    left top,
+    right bottom;
+  background-size: 24px 24px;
+  background-repeat: no-repeat;
+}
+.dice-register-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #9b84452b;
+}
+.dice-register-heading .eyebrow {
+  margin: 0 0 6px;
+}
+.dice-register .dice-register-heading h3 {
+  margin: 0;
+  font-variant: small-caps;
+  font-size: 1.4rem;
+}
+.dice-register-phase {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid #c2a058;
+  border-radius: 3px;
+  background: linear-gradient(#e7c879, #b48b3f);
+  color: #201d13;
+  font-size: 0.7rem;
+}
+.dice-register .dice-register-note {
+  flex: none;
+  border-top: 1px solid #9b844533;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: #aaa594;
+}
+.dice-register > ol {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .dice-register h3 {
   font:
@@ -189,10 +296,55 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 8px;
-  border-bottom: 1px solid #bba36b22;
+  gap: 10px;
+  padding: 10px;
+  margin: 0 0 6px;
+  border: 1px solid #92804c36;
+  border-radius: 4px;
+  background: linear-gradient(120deg, #292b2055, #11191488);
   font-size: 0.8rem;
+}
+.dice-player-shield {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 30px;
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 85% 85%, 50% 100%, 15% 85%, 0 62%);
+  background: var(--player-color);
+  color: #10201d;
+  font:
+    bold 0.6rem Georgia,
+    serif;
+}
+.preparation-shields .dice-player-shield {
+  width: 14px;
+  height: 18px;
+  background: var(--seat, #6cb4f5);
+}
+.room-preparation .preparation-readiness > p[role="status"] {
+  margin: 0;
+  line-height: 18px;
+}
+.preparation-shields:empty {
+  display: none;
+}
+.dice-register-copy {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.dice-register-copy em {
+  color: #e4c986;
+  font-style: normal;
+  font-weight: bold;
+}
+.dice-result-icon {
+  flex: none;
+  width: 32px;
+  height: 36px;
+  color: var(--player-color);
 }
 .dice-register li.is-counting {
   border: 1px solid #bfa05a66;
@@ -576,5 +728,63 @@
     height: 70px;
     min-height: 60px;
     margin-bottom: 8px;
+  }
+}
+
+/* O registro ocupa somente o espaço reservado; regras não dependem do histórico. */
+@media (min-width: 801px) {
+  .room-screen > .room-preparation:not(.order-preparation) {
+    height: calc(100dvh - 92px);
+    min-height: 560px;
+  }
+  .room-preparation > .preparation-content {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .room-preparation .preparation-table {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+  .room-preparation .preparation-heading,
+  .room-preparation .preparation-start {
+    flex: none;
+  }
+  .room-preparation .preparation-arena {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+  .preparation-rules {
+    grid-row: 2;
+    align-self: end;
+  }
+  .preparation-sidebar {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .preparation-sidebar > .preparation-controls {
+    flex: none;
+  }
+  .preparation-sidebar > .dice-register {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .preparation-sidebar .dice-register > ol {
+    flex: 1;
+    height: 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .dice-register > h3,
+  .dice-register > .eyebrow,
+  .dice-register > button,
+  .dice-register > small {
+    flex: none;
   }
 }

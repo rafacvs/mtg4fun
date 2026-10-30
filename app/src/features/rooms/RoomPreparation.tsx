@@ -61,8 +61,10 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
           })}{[0, 5, 1, 4, 2].slice(room.participants.length - 1, room.seats - 1).map(seat => <li className={`preparation-empty-seat seat-position-${seat}`} key={`empty-${seat}`} aria-label="Lugar livre"><span aria-hidden="true">＋</span> Lugar livre</li>)}</ul>
         </div>
         <div className="preparation-start">
-          <div className="preparation-readiness"><span className="preparation-shields" aria-hidden="true">{room.participants.map((player,index)=><i key={player.id} className={`seat-color-${index % 6}`}>⬟</i>)}</span><p id="room-waiting" role="status"><b>{readyCount}/{room.participants.length} prontos</b> · {waiting.length ? `Ainda falta: ${waiting.map(value => value.name).join(', ')}.` : 'Todos prontos para começar.'}</p></div>
+          <div className="preparation-readiness"><span className="preparation-shields" aria-label="Jogadores da mesa">{room.participants.map((player,index)=><span key={player.id} className={`dice-player-shield seat-color-${index % 6}`} title={`${player.name}: ${player.ready ? 'pronto' : 'ainda não está pronto'}`} role="img" aria-label={`${player.name}: ${player.ready ? 'pronto' : 'ainda não está pronto'}`} />)}</span><p id="room-waiting" role="status">{waiting.length ? `Ainda falta: ${waiting.map(value => value.name).join(', ')}.` : 'Todos prontos para começar.'}</p></div>
+          <div className="preparation-table-actions"><div className="preparation-dice-action" />
           {room.creatorId === userId ? <button className="secondary" disabled={rooms.busy || settingsPending || waiting.length > 0} aria-describedby="room-waiting" onClick={() => void rooms.start(room.id)}>Iniciar partida <span aria-hidden="true">→</span></button> : <small>Aguardando {room.participants.find(player => player.id === room.creatorId)?.name} iniciar.</small>}
+          </div>
         </div>
       </section>
       <PreparationRules room={room} editable={room.creatorId === userId} busy={rooms.busy} onPendingChange={setSettingsPending} onChange={settings => rooms.settings(room.id, settings)} onMulliganMode={mode => rooms.setMulliganMode(room.id, mode)} />

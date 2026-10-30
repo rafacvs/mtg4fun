@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 import type { Room } from "./roomsApi";
 import type { useDecks } from "../decks/useDecks";
 import { deckApi } from "../decks/deckApi";
@@ -7,6 +13,8 @@ import { preparationDiceApi } from "./preparationDiceApi";
 import { createPortal } from "react-dom";
 import { DiceTable, type DiceTableHandle } from "./dice/DiceTable";
 import "./preparation-dice.css";
+import { DiceRollBadge } from "./DiceRollBadge";
+import d20Icon from "../../assets/theme/d20.svg";
 import { useDiceThrowGesture } from "./useDiceThrowGesture";
 
 const colors = [
@@ -40,6 +48,7 @@ export function PreparationDice({
   const [targets, setTargets] = useState<{
     arena: Element;
     controls: Element;
+    action: Element;
   } | null>(null);
   const [shared, setShared] = useState<
     { playerId: number; name: string; image?: string }[]
@@ -47,6 +56,8 @@ export function PreparationDice({
   const canvas = useRef<DiceTableHandle>(null);
   const surface = useRef<HTMLDivElement>(null);
   const seen = useRef(new Set<string>());
+  const logList = useRef<HTMLOListElement>(null);
+  const followLog = useRef(true);
   const initialized = useRef(false);
   const [geometry, setGeometry] = useState({
     cx: 400,
@@ -81,11 +92,14 @@ export function PreparationDice({
       const controls = document.querySelector(
         ".preparation-sidebar, .mobile-preparation",
       );
-      if (arena && controls)
+      const action = document.querySelector(".preparation-dice-action");
+      if (arena && controls && action)
         setTargets((old) =>
-          old?.arena === arena && old.controls === controls
+          old?.arena === arena &&
+          old.controls === controls &&
+          old.action === action
             ? old
-            : { arena, controls },
+            : { arena, controls, action },
         );
     };
     attach();
@@ -162,6 +176,10 @@ export function PreparationDice({
     return () => clearTimeout(timer);
   }, [finished, allConfirmed, rolls.length]);
   const action = (kind: "roll" | "confirm") => send(kind, own?.id);
+  useEffect(() => {
+    const list = logList.current;
+    if (list && followLog.current) list.scrollTop = list.scrollHeight;
+  }, [landed, deciding]);
   const throwGesture = useDiceThrowGesture(
     (fallOff) => void send("roll", own?.id, fallOff),
   );
@@ -170,59 +188,111 @@ export function PreparationDice({
       <DiceTable ref={canvas} table={geometry} dieRadius={23} />
     </div>
   );
+  const throwButton = (
+    <button
+      disabled={pending}
+      {...throwGesture.handlers}
+      className={`secondary dice-roll-button ${throwGesture.charged ? "is-charged" : ""}`}
+      aria-label={throwGesture.charged ? "Solte para cair da mesa" : undefined}
+      title="Segure por 3 segundos e solte para jogar para fora da mesa"
+    >
+      <span
+        className="dice-roll-icon"
+        style={{
+          maskImage: `url("${d20Icon}")`,
+          WebkitMaskImage: `url("${d20Icon}")`,
+        }}
+        aria-hidden="true"
+      />{" "}
+      Rolar D20
+    </button>
+  );
   const log = (
     <section className="dice-register" aria-label="Registro da mesa">
-      <p className="eyebrow">REGISTRO DA MESA</p>
-      <h3>
-        Dados rolados{" "}
-        <small>{deciding || finished ? "Valendo" : "Brincadeira"}</small>
-      </h3>
-      <ol aria-live="polite">
+      <header className="dice-register-heading">
+        <div>
+          <p className="eyebrow">REGISTRO DA MESA</p>
+          <h3>Dados rolados</h3>
+        </div>
+        {(deciding || finished) && (
+          <span className="dice-register-phase">Valendo</span>
+        )}
+      </header>
+      <ol
+        ref={logList}
+        aria-live="polite"
+        aria-label="Histórico das rolagens"
+        tabIndex={0}
+        onScroll={(event) => {
+          const list = event.currentTarget;
+          followLog.current =
+            list.scrollHeight - list.clientHeight - list.scrollTop < 24;
+        }}
+      >
         {rolls
           .filter((r) => landed.has(r.id))
-          .slice(-30)
-          .reverse()
           .map((r) => (
             <li
               key={r.id}
               className={r.phase === "determining_order" ? "is-counting" : ""}
+              style={
+                {
+                  "--player-color":
+                    colors[
+                      room.participants.findIndex(
+                        (player) => player.id === r.playerId,
+                      ) % 6
+                    ],
+                } as CSSProperties
+              }
             >
-              <span>
-                <b>{r.name}</b> rolou um d20
-                {confirmed[r.playerId] === r.id ? " · confirmou" : ""}
+              <span className="dice-player-shield" aria-hidden="true">
+                {r.name.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="dice-register-copy">
+                <span>
+                  <b>{r.name}</b>{" "}
+                  {confirmed[r.playerId] === r.id ? (
+                    <>
+                      confirmou <em>vale</em>
+                    </>
+                  ) : (
+                    <>
+                      rolou
+                      {rolls
+                        .slice(0, rolls.indexOf(r))
+                        .some(
+                          (previous) =>
+                            previous.playerId === r.playerId &&
+                            previous.phase === r.phase,
+                        )
+                        ? " de novo"
+                        : ""}
+                    </>
+                  )}
+                </span>
                 <small>
-                  {r.phase === "preparing" ? "Brincadeira" : "Valendo"}
+                  {r.phase === "determining_order"
+                    ? confirmed[r.playerId] === r.id
+                      ? "Valendo · resultado final · "
+                      : "Valendo · "
+                    : ""}
+                  {new Date(r.at).toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                   {r.value === 20 ? " · 20 natural!" : ""}
                 </small>
               </span>
-              <strong
-                style={{
-                  color:
-                    colors[
-                      room.participants.findIndex((p) => p.id === r.playerId) %
-                        6
-                    ],
-                }}
-              >
-                {r.value}
-              </strong>
+              <DiceRollBadge value={r.value} />
             </li>
           ))}
       </ol>
-      {!deciding && !finished && (
-        <>
-          <button
-            disabled={pending}
-            {...throwGesture.handlers}
-            className="secondary dice-roll-button"
-            title="Segure por 3 segundos e solte para jogar para fora da mesa"
-          >
-            {throwGesture.charged ? "Solte para cair da mesa" : "⬡ Rolar d20"}
-          </button>
-          <small>
-            Pode rolar quantos quiser. Só pra brincar, não vale nada.
-          </small>
-        </>
+      {(deciding || finished) && (
+        <p className="dice-register-note">
+          As rolagens valendo ficam marcadas em dourado. Todos veem cada
+          rolagem, inclusive as que foram refeitas.
+        </p>
       )}
       {error && <p role="alert">{error}</p>}
     </section>
@@ -234,6 +304,7 @@ export function PreparationDice({
         {preparation}
         {targets && createPortal(diceSurface, targets.arena)}
         {targets && createPortal(log, targets.controls)}
+        {targets && createPortal(throwButton, targets.action)}
       </>
     );
   return (
@@ -341,13 +412,20 @@ export function PreparationDice({
               <button
                 disabled={pending || rolling || !!confirmed[userId]}
                 {...throwGesture.handlers}
-                className="dice-roll-button"
+                className={`dice-roll-button ${throwGesture.charged ? "is-charged" : ""}`}
+                aria-label={
+                  throwGesture.charged ? "Solte para cair da mesa" : undefined
+                }
               >
-                {throwGesture.charged
-                  ? "Solte para cair da mesa"
-                  : own
-                    ? "Rolar de novo"
-                    : "Rolar d20"}
+                <span
+                  className="dice-roll-icon"
+                  style={{
+                    maskImage: `url("${d20Icon}")`,
+                    WebkitMaskImage: `url("${d20Icon}")`,
+                  }}
+                  aria-hidden="true"
+                />{" "}
+                Rolar D20
               </button>
               <button
                 className="secondary"

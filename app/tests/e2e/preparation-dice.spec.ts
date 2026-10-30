@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 test("preparação desktop acomoda mesa, faixa e painéis na altura disponível", async ({
   page,
 }, info) => {
+  test.setTimeout(90000);
   test.skip(info.project.name !== "desktop", "Composição desktop");
   await page.request.post("/api/session", {
     data: { login: "amigo", password: "senha-do-navegador" },
@@ -17,8 +18,18 @@ test("preparação desktop acomoda mesa, faixa e painéis na altura disponível"
   ]) {
     await page.setViewportSize(viewport);
     await page.goto(`/#/salas/${room.id}`);
-    await expect(page.getByRole("button", { name: /Rolar d20/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Rolar D20$/ })).toBeVisible();
     await expect(page.locator(".preparation-empty-seat")).toHaveCount(3);
+    await expect(
+      page
+        .getByRole("region", { name: "Jogadores à mesa" })
+        .getByRole("button", { name: /^Rolar D20$/ }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByRole("region", { name: "Registro da mesa" })
+        .getByRole("button"),
+    ).toHaveCount(0);
     const bounds = await page.evaluate(() => {
       const rect = (selector: string) =>
         document.querySelector(selector)!.getBoundingClientRect().toJSON();
@@ -39,6 +50,44 @@ test("preparação desktop acomoda mesa, faixa e painéis na altura disponível"
     expect(bounds.rules.bottom).toBeLessThanOrEqual(viewport.height);
     expect(bounds.button.bottom).toBeLessThanOrEqual(viewport.height);
     expect(bounds.overflow).toBe(false);
+    const previous = await page.locator(".dice-register li").count();
+    for (let i = 0; i < 12; i++) {
+      const response = await page.request.post(
+        `/api/rooms/${room.id}/preparation/actions`,
+        { data: { intentId: randomUUID(), kind: "roll" } },
+      );
+      expect(response.ok(), await response.text()).toBe(true);
+      await new Promise((resolve) => setTimeout(resolve, 230));
+    }
+    await expect(page.locator(".dice-register li")).toHaveCount(previous + 12, {
+      timeout: 20000,
+    });
+    const after = await page.evaluate(() => {
+      const list =
+        document.querySelector<HTMLOListElement>(".dice-register ol")!;
+      return {
+        rules: document
+          .querySelector(".preparation-rules")!
+          .getBoundingClientRect()
+          .toJSON(),
+        table: document
+          .querySelector(".preparation-table")!
+          .getBoundingClientRect()
+          .toJSON(),
+        button: document
+          .querySelector(".dice-roll-button")!
+          .getBoundingClientRect()
+          .toJSON(),
+        scrollable: list.scrollHeight > list.clientHeight,
+        scrollTop: list.scrollTop,
+      };
+    });
+    expect(after.rules.top).toBeCloseTo(bounds.rules.top, 0);
+    expect(after.rules.bottom).toBeCloseTo(bounds.rules.bottom, 0);
+    expect(after.table.height).toBeCloseTo(bounds.table.height, 0);
+    expect(after.button.bottom).toBeCloseTo(bounds.button.bottom, 0);
+    expect(after.scrollable).toBe(true);
+    expect(after.scrollTop).toBeGreaterThan(0);
     await page.screenshot({
       path: info.outputPath(`preparacao-${viewport.width}.png`),
       fullPage: true,
@@ -86,16 +135,16 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
       (await other.request.post(path + "/participants", { data: {} })).ok(),
     ).toBe(true);
     await page.goto(`/#/salas/${room.id}`);
-    await expect(page.getByRole("button", { name: /Rolar d20/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Rolar D20$/ })).toBeVisible();
     await page.screenshot({
       path: info.outputPath("preparacao.png"),
       fullPage: true,
     });
-    await page.getByRole("button", { name: /Rolar d20/ }).click();
+    await page.getByRole("button", { name: /^Rolar D20$/ }).click();
     await expect(page.locator(".dice-register li")).toHaveCount(1, {
       timeout: 15000,
     });
-    const throwButton = page.getByRole("button", { name: /Rolar d20/ });
+    const throwButton = page.getByRole("button", { name: /^Rolar D20$/ });
     await throwButton.hover();
     await page.mouse.down();
     await expect(
@@ -136,7 +185,7 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     await expect(
       page.getByRole("region", { name: "Quem começa?" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Rolar d20", exact: true }).click();
+    await page.getByRole("button", { name: "Rolar D20", exact: true }).click();
     await expect(page.getByRole("button", { name: /^Confirmar / })).toBeEnabled(
       { timeout: 15000 },
     );

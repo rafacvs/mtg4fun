@@ -59,6 +59,25 @@ orientações. O teste de layout confere cabeçalho e início dentro do quadro,
 painéis separados, regras e botão de rolar dentro da tela em 1440×900 e
 1280×720; capturas dessas duas dimensões foram inspecionadas.
 
+Na revisão seguinte, o usuário pediu regras em posição fixa e histórico com
+rolagem própria. No desktop, a grade reserva a linha inferior para as regras;
+o registro usa somente o espaço restante da lateral. O histórico é cronológico,
+sem remover entradas da visualização, e acompanha o fim enquanto o usuário
+não estiver consultando entradas anteriores. A lista tem rolagem interna
+por mouse, toque e teclado, sem expandir os painéis.
+
+Após aprovar o quadro da mesa, o usuário pediu o botão de rolagem dentro dele:
+o botão passou para a faixa inferior, ao lado de iniciar, mantendo o gesto
+de três segundos. O registro lateral apresenta somente o histórico e valores.
+No celular, a rolagem fica junto das ações de preparação.
+
+Nos ajustes finais, o botão compacto passou a usar o arquivo d20.svg
+fornecido e o rótulo Rolar D20. O registro perdeu a etiqueta Brincadeira e
+recebeu shields com a inicial, resultados em D20 facetado e destaque dourado
+para as rolagens valendo. A faixa inferior mostra shields de todos os
+participantes, mesmo antes da prontidão, e os nomes de quem falta. Os shields
+da faixa medem 14×18 px e ficam alinhados verticalmente ao texto.
+
 ## Verificação
 
 Teste HTTP com executável e MySQL reais cobre participantes, autorização do

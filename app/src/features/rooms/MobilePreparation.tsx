@@ -50,7 +50,7 @@ export function MobilePreparation({ room, participant, userId, deckId, setDeckId
         </li>;
       })}</ul>
     </section>
-    <footer className="mobile-preparation-footer"><div className="mobile-waiting"><span role="status">{waiting.length ? `Ainda falta: ${waiting.map(player => player.name).join(', ')}.` : 'Todos prontos.'}</span>{participant.ready && <button type="button" className="text-button" disabled={rooms.busy} onClick={() => void rooms.unready(room.id)}>desfazer pronto</button>}</div>
+    <footer className="mobile-preparation-footer"><div className="preparation-dice-action" /><div className="mobile-waiting"><span role="status">{waiting.length ? `Ainda falta: ${waiting.map(player => player.name).join(', ')}.` : 'Todos prontos.'}</span>{participant.ready && <button type="button" className="text-button" disabled={rooms.busy} onClick={() => void rooms.unready(room.id)}>desfazer pronto</button>}</div>
       {canStart ? <button type="button" disabled={rooms.busy || settingsPending} onClick={() => void rooms.start(room.id)}>Iniciar partida <span aria-hidden="true">→</span></button> : !participant.ready ? <button type="button" disabled={rooms.busy || !deckId} onClick={() => void rooms.ready(room.id)}>Estou pronto <span aria-hidden="true">→</span></button> : <p>{waiting.length ? 'Aguardando os demais jogadores.' : `Aguardando ${room.participants.find(player => player.id === room.creatorId)?.name} iniciar.`}</p>}
       {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
     </footer>
