@@ -242,13 +242,15 @@
   .desktop-table .zone-column .library-consulting { font-size: 9px; }
   .desktop-table .zone-column .zone-library:has(.library-bottom) { height: 41px; flex: 0 0 41px; }
   .desktop-table .library-bottom { display: flex; min-height: 18px; margin-top: 1px; font-size: 9px; }
-  .desktop-table .zone-battlefield { margin: 34px 0 0 74px; padding: 8px 10px; overflow: hidden; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+  /* The player identity and rail overlay the top and left edges of each playmat.
+     Keep the card viewport below and to the right of both overlays. */
+  .desktop-table .zone-battlefield { margin: 56px 0 0 74px; padding: 8px 10px; overflow: hidden; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
   .desktop-table .table-revealed { margin-left: 74px; }
   .desktop-table .zone-battlefield > header { display: none; }
   .desktop-table .battlefield-fit { align-items: flex-start; justify-content: flex-start; }
   .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .seat-number { top: 5px; left: 23px; width: 20px; height: 22px; }
   .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .seat-life-readout { top: 29px; font-size: 19px; }
-  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-battlefield { --card-width: 40px; }
+  .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-battlefield { --card-width: 40px; margin-top: 34px; }
   .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column { top: 52px; max-height: calc(100% - 54px); gap: 1px; }
   .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column .card-slot,
   .desktop-table .has-field-focus .opponent-table-surface:not(.focused-table-surface) .zone-column .zone-library,
