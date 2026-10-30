@@ -605,3 +605,16 @@
   .mobile-table .card-preview.mobile-card-sheet { height: min(88dvh, 720px); max-height: calc(100dvh - 16px); grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .mobile-table .mobile-card-sheet .card-preview-image img { height: min(28dvh, 180px); max-height: 180px; }
 }
+
+@media (max-width: 1000px) {
+  .mobile-table .card-action-bar { grid-template-columns: auto minmax(140px, 1fr) auto 44px; align-items: center; }
+  .mobile-table .selection-heading { padding-right: 6px; gap: 4px; }
+  .mobile-table .selection-fan { display: none; }
+  .mobile-table .selection-pair { min-width: 0; padding-right: 0; border-right: 0; }
+  .mobile-table .selection-pair-caption { display: none; }
+  .mobile-table .selection-stepper { width: 100%; min-width: 0; }
+  .mobile-table .selection-stepper input { flex: 1 1 40px; width: 40px; min-width: 0; }
+  .mobile-table .selection-stepper button { width: auto; flex: 0 0 44px; }
+  .mobile-table .selection-marker-button { width: auto; white-space: nowrap; padding: 3px 7px; }
+  .mobile-table .card-action-bar .selection-close { width: 44px; min-width: 44px; }
+}

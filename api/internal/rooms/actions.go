@@ -52,6 +52,7 @@ type matchAction struct {
 	Color            string
 	Operation        string
 	Value            int64
+	SecondValue      int64
 	ControllerID     int64
 }
 
@@ -490,6 +491,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = s.createCatalogToken(&m, p, input.TokenName)
 	case "counter":
 		payload, err = changeCounter(&m, p, input)
+	case "counter_batch":
+		payload, err = changeCounters(&m, p, input)
 	case "hide_all_revealed":
 		payload, err = actionLogPayload{Kind: input.Kind, Count: clearRevelations(p)}, nil
 	case "set_tapped", "untap_all", "set_face", "set_face_down", "reveal_cards":

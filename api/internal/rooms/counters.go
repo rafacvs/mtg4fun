@@ -161,3 +161,29 @@ func changeCounter(m *matchState, actor *playerState, input matchAction) (action
 	}
 	return actionLogPayload{}, errCardNotFound
 }
+
+// changeCounters runs within the match transaction; any failure discards the snapshot.
+func changeCounters(m *matchState, actor *playerState, input matchAction) (actionLogPayload, error) {
+	seen := make(map[string]bool, len(input.CardIDs))
+	for _, id := range input.CardIDs {
+		if id == "" || seen[id] {
+			return actionLogPayload{}, errInvalidCardState
+		}
+		seen[id] = true
+		one := input
+		one.CardID = id
+		one.Target = "card"
+		if input.Subject == "pair" {
+			one.Subject = "power"
+			if _, err := changeCounter(m, actor, one); err != nil {
+				return actionLogPayload{}, err
+			}
+			one.Subject = "toughness"
+			one.Value = input.SecondValue
+		}
+		if _, err := changeCounter(m, actor, one); err != nil {
+			return actionLogPayload{}, err
+		}
+	}
+	return actionLogPayload{Kind: "counter", Result: "contador de carta alterado"}, nil
+}

@@ -8,7 +8,7 @@ function formatModifier(value: number) {
 }
 
 export function powerToughnessText(power = 0, toughness = 0, printedPower?: string, printedToughness?: string) {
-  if (!printedPower || !printedToughness) return '';
+  if (!printedPower || !printedToughness) return power || toughness ? `${formatModifier(power)}/${formatModifier(toughness)}` : '';
   if (/^[+-]?\d+$/.test(printedPower) && /^[+-]?\d+$/.test(printedToughness)) {
     return `${BigInt(printedPower) + BigInt(power)}/${BigInt(printedToughness) + BigInt(toughness)}`;
   }

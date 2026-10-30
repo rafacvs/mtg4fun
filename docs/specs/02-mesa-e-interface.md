@@ -67,7 +67,7 @@ poder/resistência continuam editáveis como no
 - Observar outro campo não muda mão, ações próprias nem permissões.
 - Cartas encaixam em colunas e fileiras. A célula tem o tamanho da própria pilha: carta deitada e pilha de até três cartas ocupam mais espaço, e só empurram as cartas à direita na mesma fileira e as fileiras abaixo. O campo cresce para a direita e para baixo. Detalhe: [decisão 30](../decisions/30-grade-do-campo.md).
 - Sobreposição é apenas visual: não cria grupo, vínculo ou propagação automática de ações.
-- Seleção por área no desktop; modo explícito de seleção múltipla no celular, adicionando cartas por toque.
+- Seleção por área no desktop com Shift + arraste ou botão direito + arraste no espaço vazio; modo explícito de seleção múltipla no celular, adicionando cartas por toque.
 - Cartas selecionadas podem ser movidas juntas e receber ações coletivas aplicáveis.
 - Clique ou toque seleciona na hora e abre a barra. Arraste move. Inspeção é o mouse ou o toque longo. O duplo clique ainda vira, sem atrasar a seleção. Ações essenciais não dependem de gestos secretos.
 - Não há agrupamento permanente, vínculo de aura/equipamento ou inclinação acidental causada pelo posicionamento. Sobreposição e rotação para indicar carta virada são permitidas.
@@ -121,6 +121,7 @@ Critérios observáveis:
 - No computador, a faixa mostra os oponentes da mesa de quatro e rola quando há cinco ou seis, mantendo a mão e as ações próprias. No celular, o horizontal joga e o vertical lê a mão.
 - Movimento encaixa a carta na coluna e na fileira; sobreposição de até três cartas não cria vínculo.
 - Seleção múltipla move cartas juntas sem impedir manipulação individual posterior.
+- O menu da seleção oferece +1/+1, -1/-1, poder/resistência no formato X/Y e marcadores de cor; as alterações são atômicas para as cartas selecionadas. Veja a [decisão de marcadores da seleção](../decisions/93-marcadores-selecao.md).
 - Consulta privada e cartas viradas para baixo não expõem identidade a oponentes.
 - Comprar X, consultar topo/fundo, reordenar e retornar cartas preservam quantidades e ordem esperada.
 - Frente/verso, fichas, cópias e contadores sincronizam para os observadores autorizados.

@@ -1,7 +1,28 @@
-.card-action-bar { position: fixed; z-index: 45; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; width: max-content; max-width: calc(100vw - 24px); padding: 8px; background: var(--panel-overlay); border: 1px solid var(--gold); border-radius: 12px; box-shadow: 0 8px 30px #0009; }
-.card-action-bar > span { padding: 0 6px; font-size: .7rem; color: var(--muted); }
-.card-action-bar button { min-height: 36px; padding: 6px 10px; font-size: .75rem; }
-@media (pointer: coarse) { .card-action-bar button { min-height: 44px; } }
+ .card-action-bar { position: fixed; z-index: 45; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 15px; width: max-content; max-width: calc(100vw - 24px); padding: 9px 11px; color: #e6ddc6; background: linear-gradient(180deg, #121513f7, #080c0cf7); border: 1px solid #7b6637; border-radius: 6px; box-shadow: 0 8px 24px #000a, inset 0 0 0 3px #d6a74d0a; }
+.selection-heading { display: flex; align-items: center; gap: 9px; padding-right: 14px; border-right: 1px solid #a0803c45; white-space: nowrap; }
+.selection-heading div { display: grid; gap: 1px; }
+.selection-heading span:not(.selection-fan) { color: #a39d8c; font-size: .65rem; }
+.selection-heading strong { text-transform: uppercase; color: #e2bf72; font: 700 .8rem Cinzel, serif; }
+.selection-fan { position: relative; display: block; width: 45px; height: 42px; flex: none; }
+.selection-fan img { position: absolute; left: calc(var(--fan-index) * 7px); top: 1px; width: 28px; height: 39px; object-fit: cover; border: 1px solid #a38a50; border-radius: 3px; transform: rotate(calc((var(--fan-index) - 1.5) * 8deg)); box-shadow: 0 2px 4px #000b; background: #1c291b; }
+.selection-pair { display: flex; align-items: center; gap: 12px; padding-right: 14px; border-right: 1px solid #a0803c45; }
+.selection-pair-caption { display: grid; gap: 3px; white-space: nowrap; }
+.selection-pair-caption strong { color: #ccad6c; text-transform: uppercase; letter-spacing: .13em; font: 700 .58rem Cinzel, serif; }
+.selection-pair-caption span { color: #8d8a80; font-size: .63rem; }
+.selection-stepper { display: flex; align-items: stretch; border: 1px solid #695734; border-radius: 4px; overflow: hidden; }
+.selection-stepper input { width: 78px; height: 38px; min-height: 38px; padding: 4px; text-align: center; color: #e9dbb7; font: 700 .8rem Cinzel, serif; background: #0b0f10; border: 0; border-radius: 0; }
+.selection-stepper input::placeholder { color: #807b6d; opacity: 1; }
+.selection-stepper button { min-height: 38px; padding: 5px 11px; border: 0; border-radius: 0; background: #161a1b; color: #ede3c9; font: 700 .72rem Cinzel, serif; }
+.selection-stepper button:first-child { border-right: 1px solid #695734; }
+.selection-stepper button:last-child { border-left: 1px solid #695734; }
+.selection-marker-button { display: flex; align-items: center; gap: 7px; min-height: 38px; padding: 5px 10px; border-color: #a68748; border-radius: 4px; background: #28261d; color: #e5c479; font-size: .7rem; font-weight: 700; }
+.selection-marker-button svg { width: 15px; height: 15px; }
+.selection-marker-button svg:last-child { width: 12px; height: 12px; transform: rotate(-90deg); }
+.selection-marker-diamond { width: 9px; height: 9px; display: inline-block; transform: rotate(45deg); border: 1px solid #ffffff60; box-shadow: 0 0 6px currentColor; }
+.card-action-bar .selection-close { display: grid; place-items: center; width: 32px; min-width: 32px; height: 38px; min-height: 38px; padding: 8px; border: 1px solid #615335; border-radius: 4px; background: #101413; color: #a9a08b; }
+.selection-close svg { width: 14px; height: 14px; }
+.selection-marker-hint { margin: 0; color: #8c887d; font-size: .65rem; line-height: 1.4; }
+@media (max-width: 700px) { .card-action-bar { gap: 8px; padding: 8px; flex-wrap: wrap; justify-content: center; width: max-content; } .selection-heading { padding-right: 8px; } .selection-fan { width: 32px; transform: scale(.75); transform-origin: left center; margin-right: -8px; } .selection-pair { gap: 7px; padding-right: 8px; } .selection-pair-caption { display: none; } .selection-stepper input { width: 65px; } .selection-stepper button, .selection-marker-button, .card-action-bar .selection-close { min-height: 44px; } }
 .drag-destinations { position: fixed; z-index: 46; bottom: 82px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; width: max-content; max-width: calc(100vw - 24px); padding: 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--panel-overlay); box-shadow: 0 8px 30px #0009; }
 .drag-destinations > span { color: var(--muted); font-size: .75rem; }
 .drag-destinations button { min-height: 48px; min-width: 65px; padding: 10px; border: 2px solid var(--line); background: var(--panel2); color: var(--text); }
@@ -11,3 +32,23 @@
 .pending-action { position: absolute; z-index: 44; top: 54px; left: 50%; transform: translateX(-50%); padding: 4px 12px; border: 1px dashed var(--gold); border-radius: 8px; background: var(--panel-overlay); color: var(--gold-light); font-size: .75rem; pointer-events: none; }
 @media (prefers-reduced-motion: no-preference) { .positioned-card { transition: left .14s, top .14s; } }
 @media (prefers-reduced-motion: reduce) { .playing-card { transition: opacity .1s; } }
+.match-board .table-panel.selection-marker-panel { z-index: 46; }
+.match-board .selection-marker-panel, .match-board .player-markers-panel { border: 1px solid #786536; border-radius: 6px; background: linear-gradient(145deg, #101517, #090d0e); box-shadow: 0 12px 30px #000b; gap: 8px; padding: 10px; }
+.match-board .selection-marker-panel .table-panel-header, .match-board .player-markers-panel .table-panel-header { padding: 0 0 6px; border: 0; }
+.match-board .selection-marker-panel .table-panel-header > div { display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 8px; }
+.match-board .selection-marker-panel .actions-kicker { margin: 0; color: #8e8a7f; font: .65rem Geist, sans-serif; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.match-board .selection-marker-panel .table-panel-header h2, .match-board .player-markers-panel .table-panel-header h2 { color: #eadcb8; font: 700 .8rem Cinzel, serif; text-transform: uppercase; letter-spacing: 0; }
+.match-board .selection-marker-panel .panel-close { min-width: 30px; min-height: 30px; width: 30px; height: 30px; padding: 6px; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-rows { gap: 5px; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row { display: flex; min-height: 42px; gap: 8px; padding: 4px 5px 4px 10px; border: 1px solid #494334; border-radius: 4px; background: linear-gradient(90deg, #111619, #0c1112); }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row .marker-dot { display: block; width: 11px; height: 11px; min-width: 11px; border: 1px solid #ffffff70; border-radius: 1px; transform: rotate(45deg); box-shadow: 0 0 7px #ffffff55; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row-name { display: block; flex: 1; min-width: 0; color: #d9ccb0; text-transform: capitalize; font-size: .75rem; font-weight: 700; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row-count { display: block; color: #8c887d; font-size: .6rem; white-space: nowrap; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter { flex: none; display: grid; grid-template-columns: 32px 36px 32px; gap: 0; border: 1px solid #50452e; border-radius: 3px; overflow: hidden; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; border: 0; border-radius: 0; background: #161b1e; color: #e7dbc0; font-size: 1rem; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter input { width: 36px; min-width: 36px; height: 32px; min-height: 32px; padding: 0; border: 0; border-left: 1px solid #50452e; border-right: 1px solid #50452e; border-radius: 0; background: #0c1113; color: #e4c47d; font-size: .75rem; }
+@media (pointer: coarse) { .match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter { grid-template-columns: 44px 44px 44px; } .match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter button, .match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter input { width: 44px; min-width: 44px; height: 44px; min-height: 44px; } }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(5) { order: -2; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(4) { order: -1; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(2) { order: 2; }
+.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(3) { order: 1; }

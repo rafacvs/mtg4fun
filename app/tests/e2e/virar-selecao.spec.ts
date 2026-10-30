@@ -54,10 +54,12 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
     const last = field.locator(`[data-card-id="${ids[3]}"]`);
     const start = (await first.boundingBox())!;
     const end = (await last.boundingBox())!;
+    await page.keyboard.down('Shift');
     await page.mouse.move(start.x - 8, start.y + 4);
     await page.mouse.down();
     await page.mouse.move(end.x + end.width + 4, end.y + end.height + 4, { steps: 8 });
     await page.mouse.up();
+    await page.keyboard.up('Shift');
     await expect(selected).toHaveCount(4);
     const sent: { cardIds: string[]; tapped: boolean }[] = [];
     page.on('request', request => {
@@ -82,12 +84,29 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
       expect(seen.players.find(player => player.userId === ownId)!.battlefield!.slice(0, 4).every(card => Boolean(card.tapped) === tapped)).toBe(true);
       expect(seen.players.find(player => player.userId === otherId)!.battlefield![0].tapped ?? false).toBe(false);
     }
+    // Right-drag selects an area without opening the browser context menu.
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    const rightStart = (await first.boundingBox())!;
+    const rightEnd = (await last.boundingBox())!;
+    await page.mouse.move(rightStart.x - 8, rightStart.y + 4);
+    await page.mouse.down({ button: 'right' });
+    await page.mouse.move(rightEnd.x + rightEnd.width + 4, rightEnd.y + rightEnd.height + 4, { steps: 8 });
+    await page.mouse.up({ button: 'right' });
+    await expect(selected).toHaveCount(4);
+    await first.dblclick();
+    await expect(field.locator('.is-selected[data-tapped="true"]')).toHaveCount(4);
+    await first.dblclick();
+    await expect(field.locator('.is-selected[data-tapped="false"]')).toHaveCount(4);
+    await first.click({ button: 'right' });
+    await expect(page.getByRole('dialog', { name: 'Imagem de Island' })).toBeVisible();
+    await page.getByRole('dialog', { name: 'Imagem de Island' }).getByRole('button', { name: 'Fechar', exact: true }).click();
     // A double click outside the selection acts only on that card.
     const unselected = field.locator(`[data-card-id="${ids[4]}"]`);
     await unselected.dblclick();
     await expect(unselected).toHaveAttribute('data-tapped', 'true');
-    await expect(unselected).toHaveAttribute('aria-pressed', 'true');
-    await expect(selected).toHaveCount(1);
+    await expect(unselected).toHaveAttribute('aria-pressed', 'false');
+    await expect(selected).toHaveCount(4);
     expect((await read()).log.at(-1)).toMatchObject({ kind: 'set_tapped', count: 1 });
     await page.keyboard.press('Escape');
     await expect(selected).toHaveCount(0);

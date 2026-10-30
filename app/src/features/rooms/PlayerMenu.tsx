@@ -13,7 +13,7 @@ export function PlayerMenu({ player, viewerId, anchor, disabled, onCounter, onCl
   useEffect(() => { content.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }); }, [screen]);
   if (!player) return null;
   const own = viewerId === player.userId;
-  return <TablePanel open label={`Jogador ${player.name}`} anchor={anchor} align="start" className="player-menu" onClose={onClose}>
+  return <TablePanel open label={`Jogador ${player.name}`} anchor={anchor} align="start" className={`player-menu ${screen === 'markers' ? 'player-markers-panel' : ''}`} onClose={onClose}>
     <PanelHeader title={screen === 'markers' ? 'Marcadores' : player.name} subtitle={own ? 'Seu jogador' : 'Jogador · Somente leitura'} onClose={onClose} closeLabel="Fechar jogador" onBack={screen === 'markers' ? () => setScreen('menu') : undefined} />
     <PanelFeedback {...feedback} />
     <div ref={content}>

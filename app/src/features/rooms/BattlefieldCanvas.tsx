@@ -17,14 +17,15 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
   current.current = { cards, onSelectArea };
   useEffect(() => () => stopTracking.current?.(), []);
 
-  return <div className="battlefield-canvas" title="Arraste para navegar · Shift + arraste para selecionar cartas" data-battlefield-canvas data-zoom={zoom} onClick={event => {
+  return <div className="battlefield-canvas" title="Arraste para navegar · Shift ou botão direito + arraste para selecionar cartas" data-battlefield-canvas data-zoom={zoom} onContextMenu={event => { if (enabled && !(event.target as Element).closest('.playing-card')) event.preventDefault(); }} onClick={event => {
     if ((event.target as Element).closest('.playing-card')) return;
     if (suppressClick.current) { suppressClick.current = false; return; }
     current.current.onSelectArea?.([]);
   }} onPointerDown={event => {
     suppressClick.current = false;
-    if (event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('.playing-card')) return;
-    if (!event.shiftKey) {
+    if (event.pointerType !== 'mouse' || (event.button !== 0 && event.button !== 2) || (event.target as Element).closest('.playing-card')) return;
+    const rightButton = event.button === 2;
+    if (!event.shiftKey && !rightButton) {
       const scroll = event.currentTarget.closest<HTMLElement>('.battlefield-scroll');
       if (!scroll) return;
       event.preventDefault();
@@ -71,7 +72,7 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
       const left = Math.min(start.x, pointer.clientX), right = Math.max(start.x, pointer.clientX);
       const top = Math.min(start.y, pointer.clientY), bottom = Math.max(start.y, pointer.clientY);
       if (right - left >= 4 || bottom - top >= 4) {
-        suppressClick.current = true;
+        if (!rightButton) suppressClick.current = true;
         const selected = new Set<string>();
         // Use rendered bounds: stacks, rotation, zoom and spacing can shift
         // the visible card away from its persisted reference coordinates.

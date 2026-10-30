@@ -27,15 +27,15 @@ function integerText(raw: string) {
 }
 
 function NumericField({ inputLabel, value, disabled, onApply, textual = false }: {
-  inputLabel: string; value: number; disabled: boolean; onApply: Apply; textual?: boolean;
+  inputLabel: string; value: number | undefined; disabled: boolean; onApply: Apply; textual?: boolean;
 }) {
-  const [draft, setDraft] = useState(String(value));
+  const [draft, setDraft] = useState(value === undefined ? '' : String(value));
   const inputRef = useRef<HTMLInputElement>(null);
   const pending = useRef<number | null>(null);
   const submitted = useRef<number | null>(null);
   const restoreFocus = useRef(false);
   const numeric = integerText(draft);
-  useEffect(() => { if (document.activeElement !== inputRef.current) setDraft(String(value)); }, [value]);
+  useEffect(() => { if (document.activeElement !== inputRef.current) setDraft(value === undefined ? '' : String(value)); }, [value]);
   useEffect(() => { if (submitted.current === value) submitted.current = null; }, [value]);
   useEffect(() => {
     if (disabled || pending.current === null) return;
@@ -57,19 +57,19 @@ function NumericField({ inputLabel, value, disabled, onApply, textual = false }:
     submitted.current = numeric;
     void onApply('set', numeric);
   };
-  return <input ref={inputRef} aria-label={inputLabel} title="Digite um inteiro e pressione Enter" type={textual ? 'text' : 'number'} inputMode={textual ? 'decimal' : undefined} autoComplete="off" spellCheck={false} step={textual ? undefined : 1} value={draft} aria-invalid={numeric === null} disabled={disabled} onChange={event => {
+  return <input ref={inputRef} aria-label={inputLabel} title="Digite um inteiro e pressione Enter" type={textual ? 'text' : 'number'} inputMode={textual ? 'decimal' : undefined} autoComplete="off" spellCheck={false} step={textual ? undefined : 1} value={draft} placeholder={value === undefined ? '—' : undefined} aria-invalid={draft !== '' && numeric === null} disabled={disabled} onChange={event => {
     const next = event.target.value;
     setDraft(next);
     if (integerText(next) !== submitted.current) submitted.current = null;
   }} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); confirm(); } }} onBlur={event => {
     if (disabled || event.currentTarget.disabled) restoreFocus.current = true;
-    if (numeric === null) setDraft(String(value));
+    if (numeric === null) setDraft(value === undefined ? '' : String(value));
     else confirm();
   }} />;
 }
 
 export function NumericCounter({ label, inputLabel = label, value, disabled, onApply, textual = false }: {
-  label: string; inputLabel?: string; value: number; disabled: boolean; onApply: Apply; textual?: boolean;
+  label: string; inputLabel?: string; value: number | undefined; disabled: boolean; onApply: Apply; textual?: boolean;
 }) {
   return <div className="numeric-counter">
     <button type="button" className="secondary" aria-label={`Diminuir ${label}`} disabled={disabled} onClick={() => void onApply('increment', -1)}>−</button>
@@ -131,15 +131,17 @@ export function PowerToughnessAdjust({ power, toughness, disabled, onApply, owed
   </div>;
 }
 
-function MarkerRow({ name, color, value, disabled, onApply }: { name: string; color: MarkerColor; value: number; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
+function MarkerRow({ name, color, value, count, disabled, onApply }: { name: string; color: MarkerColor; value: number | undefined; count?: number; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
   return <div className="marker-row">
     <span className={`marker-dot marker-${color}`} aria-hidden="true" />
+    <span className="marker-row-name">{name}</span>
+    {count !== undefined && count > 0 && <span className="marker-row-count">em {count} carta{count === 1 ? '' : 's'}</span>}
     <NumericCounter label={`marcador ${name}`} value={value} disabled={disabled} onApply={(operation, value) => onApply(color, operation, value)} />
   </div>;
 }
 
-export function MarkerRows({ markers, disabled, onApply }: { markers?: Markers; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
+export function MarkerRows({ markers, mixedColors = [], counts, disabled, onApply }: { markers?: Markers; mixedColors?: MarkerColor[]; counts?: Partial<Record<MarkerColor, number>>; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
   return <div className="marker-rows">
-    {markerColors.map(item => <MarkerRow key={item.color} name={item.name} color={item.color} value={markerValue(markers, item.color)} disabled={disabled} onApply={onApply} />)}
+    {markerColors.map(item => <MarkerRow key={item.color} name={item.name} color={item.color} count={counts?.[item.color]} value={mixedColors.includes(item.color) ? undefined : markerValue(markers, item.color)} disabled={disabled} onApply={onApply} />)}
   </div>;
 }
