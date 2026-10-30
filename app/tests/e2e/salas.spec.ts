@@ -217,7 +217,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await openActions();
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await board.getByLabel('Faces do dado').fill('6');
-  await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
+  await activate(board.getByRole('button', { name: /^Rolar d\d+$/ }));
   await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
   const showLog = async () => {
     if (await actions.isVisible()) await activate(actions.getByRole('button', { name: 'Fechar ações', exact: true }));

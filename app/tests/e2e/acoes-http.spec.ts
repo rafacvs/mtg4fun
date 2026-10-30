@@ -70,7 +70,7 @@ for (const remoteHTTP of [false, true]) {
       });
       const actions = await openGameActions(page);
       await actions.getByRole('button', { name: 'Rolar dado', exact: true }).click();
-      await actions.getByRole('button', { name: 'Rolar dado', exact: true }).click();
+      await actions.getByRole('button', { name: /^Rolar d\d+$/ }).click();
       await expect.poll(async () => (await read()).log.filter(entry => entry.kind === 'roll').length).toBe(1);
       const rolls = sent.filter(action => action.kind === 'roll');
       expect(rolls).toHaveLength(2);

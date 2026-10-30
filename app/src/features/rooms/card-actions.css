@@ -33,22 +33,22 @@
 @media (prefers-reduced-motion: no-preference) { .positioned-card { transition: left .14s, top .14s; } }
 @media (prefers-reduced-motion: reduce) { .playing-card { transition: opacity .1s; } }
 .match-board .table-panel.selection-marker-panel { z-index: 46; }
-.match-board .selection-marker-panel, .match-board .player-markers-panel { border: 1px solid #786536; border-radius: 6px; background: linear-gradient(145deg, #101517, #090d0e); box-shadow: 0 12px 30px #000b; gap: 8px; padding: 10px; }
-.match-board .selection-marker-panel .table-panel-header, .match-board .player-markers-panel .table-panel-header { padding: 0 0 6px; border: 0; }
+.match-board .selection-marker-panel { border: 1px solid #786536; border-radius: 6px; background: linear-gradient(145deg, #101517, #090d0e); box-shadow: 0 12px 30px #000b; gap: 8px; padding: 10px; }
+.match-board .selection-marker-panel .table-panel-header { padding: 0 0 6px; border: 0; }
 .match-board .selection-marker-panel .table-panel-header > div { display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 8px; }
 .match-board .selection-marker-panel .actions-kicker { margin: 0; color: #8e8a7f; font: .65rem Geist, sans-serif; text-transform: none; letter-spacing: 0; white-space: nowrap; }
-.match-board .selection-marker-panel .table-panel-header h2, .match-board .player-markers-panel .table-panel-header h2 { color: #eadcb8; font: 700 .8rem Cinzel, serif; text-transform: uppercase; letter-spacing: 0; }
+.match-board .selection-marker-panel .table-panel-header h2 { color: #eadcb8; font: 700 .8rem Cinzel, serif; text-transform: uppercase; letter-spacing: 0; }
 .match-board .selection-marker-panel .panel-close { min-width: 30px; min-height: 30px; width: 30px; height: 30px; padding: 6px; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-rows { gap: 5px; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row { display: flex; min-height: 42px; gap: 8px; padding: 4px 5px 4px 10px; border: 1px solid #494334; border-radius: 4px; background: linear-gradient(90deg, #111619, #0c1112); }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row .marker-dot { display: block; width: 11px; height: 11px; min-width: 11px; border: 1px solid #ffffff70; border-radius: 1px; transform: rotate(45deg); box-shadow: 0 0 7px #ffffff55; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row-name { display: block; flex: 1; min-width: 0; color: #d9ccb0; text-transform: capitalize; font-size: .75rem; font-weight: 700; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row-count { display: block; color: #8c887d; font-size: .6rem; white-space: nowrap; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter { flex: none; display: grid; grid-template-columns: 32px 36px 32px; gap: 0; border: 1px solid #50452e; border-radius: 3px; overflow: hidden; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; border: 0; border-radius: 0; background: #161b1e; color: #e7dbc0; font-size: 1rem; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter input { width: 36px; min-width: 36px; height: 32px; min-height: 32px; padding: 0; border: 0; border-left: 1px solid #50452e; border-right: 1px solid #50452e; border-radius: 0; background: #0c1113; color: #e4c47d; font-size: .75rem; }
-@media (pointer: coarse) { .match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter { grid-template-columns: 44px 44px 44px; } .match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter button, .match-board :is(.selection-marker-panel, .player-markers-panel) .numeric-counter input { width: 44px; min-width: 44px; height: 44px; min-height: 44px; } }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(5) { order: -2; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(4) { order: -1; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(2) { order: 2; }
-.match-board :is(.selection-marker-panel, .player-markers-panel) .marker-row:nth-child(3) { order: 1; }
+.match-board .selection-marker-panel .marker-rows { gap: 5px; }
+.match-board .selection-marker-panel .marker-row { display: flex; min-height: 42px; gap: 8px; padding: 4px 5px 4px 10px; border: 1px solid #494334; border-radius: 4px; background: linear-gradient(90deg, #111619, #0c1112); }
+.match-board .selection-marker-panel .marker-row .marker-dot { display: block; width: 11px; height: 11px; min-width: 11px; border: 1px solid #ffffff70; border-radius: 1px; transform: rotate(45deg); box-shadow: 0 0 7px #ffffff55; }
+.match-board .selection-marker-panel .marker-row-name { display: block; flex: 1; min-width: 0; color: #d9ccb0; text-transform: capitalize; font-size: .75rem; font-weight: 700; }
+.match-board .selection-marker-panel .marker-row-count { display: block; color: #8c887d; font-size: .6rem; white-space: nowrap; }
+.match-board .selection-marker-panel .numeric-counter { flex: none; display: grid; grid-template-columns: 32px 36px 32px; gap: 0; border: 1px solid #50452e; border-radius: 3px; overflow: hidden; }
+.match-board .selection-marker-panel .numeric-counter button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; border: 0; border-radius: 0; background: #161b1e; color: #e7dbc0; font-size: 1rem; }
+.match-board .selection-marker-panel .numeric-counter input { width: 36px; min-width: 36px; height: 32px; min-height: 32px; padding: 0; border: 0; border-left: 1px solid #50452e; border-right: 1px solid #50452e; border-radius: 0; background: #0c1113; color: #e4c47d; font-size: .75rem; }
+@media (pointer: coarse) { .match-board .selection-marker-panel .numeric-counter { grid-template-columns: 44px 44px 44px; } .match-board .selection-marker-panel .numeric-counter button, .match-board .selection-marker-panel .numeric-counter input { width: 44px; min-width: 44px; height: 44px; min-height: 44px; } }
+.match-board .selection-marker-panel .marker-row:nth-child(5) { order: -2; }
+.match-board .selection-marker-panel .marker-row:nth-child(4) { order: -1; }
+.match-board .selection-marker-panel .marker-row:nth-child(2) { order: 2; }
+.match-board .selection-marker-panel .marker-row:nth-child(3) { order: 1; }
