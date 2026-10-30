@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -129,7 +130,7 @@ func TestCatalogTokenCreationIsPublicAndDurable(t *testing.T) {
 		t.Fatalf("ficha: %+v", card)
 	}
 	observer := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))[0]
-	if len(observer.Battlefield) != 1 || observer.Battlefield[0] != card {
+	if len(observer.Battlefield) != 1 || !reflect.DeepEqual(observer.Battlefield[0], card) {
 		t.Fatalf("sincronização: %+v", observer)
 	}
 	before := e.request("GET", path, "", cookies[0], nil)
@@ -140,7 +141,7 @@ func TestCatalogTokenCreationIsPublicAndDurable(t *testing.T) {
 		t.Fatalf("reenvio alterou estado/log: antes=%s depois=%s", before.body, replayed.body)
 	}
 	repeated := creationPlayers(t, e.request("POST", path+"/actions", body, cookies[0], nil))[0]
-	if len(repeated.Battlefield) != 1 || repeated.Battlefield[0] != card {
+	if len(repeated.Battlefield) != 1 || !reflect.DeepEqual(repeated.Battlefield[0], card) {
 		t.Fatalf("recuperação/reenvio: %+v", repeated)
 	}
 }
@@ -197,7 +198,7 @@ func TestCustomTokensAndCopiesAreIndependentAndRecoverable(t *testing.T) {
 		t.Fatalf("atributos: %+v", copy)
 	}
 	requireStatus(t, action(cookies[0], fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"graveyard"`, source.ID)), 200)
-	if actual := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))[1].Battlefield[0]; actual != copy {
+	if actual := creationPlayers(t, e.request("GET", path, "", cookies[1], nil))[1].Battlefield[0]; !reflect.DeepEqual(actual, copy) {
 		t.Fatalf("original alterou cópia: %+v", actual)
 	}
 	requireStatus(t, action(cookies[1], fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"hand"`, copy.ID)), 200)
