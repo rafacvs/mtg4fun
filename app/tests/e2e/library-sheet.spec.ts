@@ -87,7 +87,7 @@ test('ordena a faixa do topo, mostra posição do fundo e embaralha ao fechar', 
     await expect(panel).not.toBeVisible();
     await open();
     await panel.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
-    await panel.getByLabel('De onde').selectOption('bottom');
+    await panel.getByRole('group', { name: 'De onde' }).getByRole('button', { name: 'Fundo', exact: true }).click();
     await panel.getByLabel('Quantidade de cartas').fill('2');
     await panel.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }).click();
     expect((await read()).consulted.map((card: { libraryPosition: number }) => card.libraryPosition)).toEqual([3, 4]);

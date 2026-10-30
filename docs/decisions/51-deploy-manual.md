@@ -18,7 +18,7 @@ proposta neste PR e dependem da revisão do usuário.
 ## Implementação proposta
 
 - `.github/workflows/deploy.yml`, somente `workflow_dispatch`, no environment
-  `production`, um deploy por vez. Sem gatilho em push ou PR e sem merge.
+  `prod`, um deploy por vez. Sem gatilho em push ou PR e sem merge.
 - O runner compila os alvos `api-production` e `frontend-production` do
   `infra/Dockerfile` existente, sem alterar Dockerfile nem Compose.
 - Envio direto por SSH (`docker save | gzip | docker load`), sem registro de

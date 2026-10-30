@@ -1,23 +1,64 @@
-.creations-panel > header { align-items: center; }
-.creations-panel > p,
-.creations-panel .library-search,
-.creations-panel .library-order { margin: 0; }
-.creations-panel .library-empty { margin: 0 !important; }
-.creations-catalog { display: flex; flex-direction: column; gap: 10px; margin: 0; }
-.token-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; overflow: visible; }
-.token-list li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: center; padding: 7px; border: 1px solid var(--line); border-radius: 10px; background: #ffffff03; }
-.token-list li:hover { border-color: color-mix(in srgb, var(--gold) 55%, transparent); background: var(--gold-wash); }
-.token-thumb { display: block; width: 48px; min-height: 0; aspect-ratio: 63 / 88; padding: 0; border: 0; border-radius: 5px; overflow: hidden; background: var(--panel2); }
-.token-thumb:hover:not(:disabled) { background: var(--panel2); }
-.token-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.token-thumb span { display: flex; align-items: center; justify-content: center; height: 100%; padding: 2px; color: var(--text); font-size: .55rem; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
-.token-list li > div > strong, .token-list li > div > span { display: block; }
-.token-list li > div > span { margin: 2px 0 8px; color: var(--muted); font-size: .75rem; }
-.token-list li > div > button { width: 100%; min-height: 44px; border-radius: 10px; }
-.creations-form { display: flex; flex-direction: column; gap: 12px; margin: 0; }
-.creations-form label { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: .78rem; color: var(--muted); }
-.creations-form textarea { width: 100%; min-height: 72px; box-sizing: border-box; resize: vertical; padding: 11px 13px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; }
-.creations-form > button { width: 100%; margin-top: 0; }
-.token-stats { display: flex; gap: 12px; }
-.token-stats label { flex: 1; min-width: 0; }
+.creations-catalog .library-empty { margin: 0; }
+/* Both tabs share one fixed height so switching never resizes the popover. */
+.match-board .table-panel.game-actions-token { width: min(514px, calc(100vw - 24px)); height: 620px; }
+.token-creation { display: flex; flex: 1; flex-direction: column; gap: 12px; min-height: 0; }
+.token-creation > [role=tabpanel] { flex: 1; min-height: 0; }
+.match-board .table-panel .token-tabs button { gap: 8px; }
+.match-board .table-panel .token-tabs .table-icon { width: 14px; height: 14px; flex-basis: 14px; }
+.creations-catalog { display: flex; flex-direction: column; gap: 12px; min-height: 0; margin: 0; }
+.catalog-search { display: flex; align-items: center; gap: 10px; }
+.catalog-search .search-field { flex: 1; min-width: 0; }
+.match-board .table-panel .catalog-count { flex: 0 0 auto; margin: 0; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.catalog-count strong { margin-right: 3px; color: var(--text); font-weight: 700; }
+.creations-catalog .library-empty { margin: 0; }
+
+/* Catalog tokens are the cards themselves: clicking one creates it. */
+.token-grid { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 20px; flex: 1; min-height: 0; align-content: start; margin: 0; padding: 4px 6px 4px 4px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.token-grid li { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.match-board .table-panel .token-tile { position: relative; display: block; width: 100%; aspect-ratio: 63 / 88; height: auto; min-height: 0; padding: 0; border: 0; border-radius: 6px; background: var(--bg); box-shadow: 0 6px 14px #0009; }
+.match-board .table-panel .token-tile:hover:not(:disabled), .match-board .table-panel .token-tile:focus-visible { box-shadow: 0 0 0 2px var(--gold), 0 8px 18px #000b; }
+.token-art { display: block; width: 100%; height: 100%; border-radius: 6px; object-fit: cover; }
+.token-art-fallback { display: flex; align-items: center; justify-content: center; padding: 6px; border: 1px solid var(--line); color: var(--text); font-size: 11px; line-height: 1.2; text-align: center; overflow-wrap: anywhere; }
+.token-stats-badge { position: absolute; right: -5px; bottom: -5px; min-width: 28px; padding: 0 5px; border: 1px solid #8a6a2e; border-radius: 3px; background: #e9dfc4; color: #1b160d; font: 700 11px/18px Cinzel, Georgia, serif; text-align: center; box-shadow: 0 2px 6px #0008; }
+.token-create-hint { position: absolute; left: 50%; bottom: 18%; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid #f2d28c; border-radius: 4px; background: linear-gradient(#edc673, #c99439); color: #241906; font-size: 12px; font-weight: 600; white-space: nowrap; box-shadow: 0 4px 12px #000a; opacity: 0; translate: -50% 4px; transition: opacity .12s, translate .12s; pointer-events: none; }
+.token-create-hint .table-icon { width: 12px; height: 12px; flex-basis: 12px; }
+.token-tile:hover:not(:disabled) .token-create-hint, .token-tile:focus-visible .token-create-hint { opacity: 1; translate: -50% 0; }
+.token-name { overflow: hidden; color: var(--text); font-size: 13px; font-weight: 600; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.token-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 0 12px; border: 1px solid #d9a94e2e; border-radius: 6px; background: #0b0e10; }
+.token-footer .panel-result { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; }
+.token-footer small { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
+
+/* Custom token form. */
+.creations-form { display: flex; flex-direction: column; gap: 14px; margin: 0; overflow: auto; }
+.match-board .table-panel .creations-form .form-field { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.match-board .table-panel .creations-form .form-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: var(--text); font-size: 13px; font-weight: 600; }
+.creations-form .form-label small { color: var(--muted); font-size: 12px; font-weight: 400; }
+.match-board .table-panel .creations-form :is(input, textarea) { width: 100%; min-width: 0; height: 40px; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); box-shadow: inset 0 2px 5px #0007; color: var(--text); font: 400 14px Geist, sans-serif; }
+.match-board .table-panel .creations-form textarea { height: 72px; padding: 10px 12px; resize: vertical; }
+.match-board .table-panel .creations-form :is(input, textarea):focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-glow), inset 0 2px 5px #0007; outline: none; }
+.match-board .table-panel .creations-form :is(input, textarea)::placeholder { color: #77736a; }
+.token-stats { display: flex; align-items: center; gap: 10px; }
+.small-stepper { display: flex; align-items: center; }
+.small-stepper .pt-slash { margin-right: 10px; color: var(--muted); font-size: 1.1rem; font-weight: 400; }
+.match-board .table-panel .small-stepper button { width: 34px; min-width: 34px; height: 36px; min-height: 36px; padding: 0; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 16px; }
+.match-board .table-panel .small-stepper button:first-of-type { border-radius: 5px 0 0 5px; }
+.match-board .table-panel .small-stepper button:last-child { border-radius: 0 5px 5px 0; }
+.match-board .table-panel .small-stepper button:hover:not(:disabled) { border-color: var(--gold); }
+.match-board .table-panel .creations-form .small-stepper input { width: 46px; height: 36px; min-height: 36px; padding: 0; border-width: 1px 0; border-radius: 0; box-shadow: none; text-align: center; font-weight: 600; appearance: textfield; }
+.match-board .table-panel .creations-form .small-stepper input::-webkit-inner-spin-button, .match-board .table-panel .creations-form .small-stepper input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.match-board .table-panel .creations-form .small-stepper input:focus { border-width: 1px; }
+.match-board .table-panel .creations-form .panel-primary { gap: 10px; min-height: 44px; margin-top: 2px; }
+.creations-form .panel-primary .table-icon { width: 14px; height: 14px; flex-basis: 14px; }
+.match-board .table-panel .form-caption { margin: -6px 0 0; color: var(--muted); font-size: 11.5px; text-align: center; }
+@media (max-width: 1000px) {
+  .token-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .match-board .table-panel .small-stepper button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .match-board .table-panel .creations-form .small-stepper input { height: 44px; min-height: 44px; }
+}
+@media (max-width: 420px) {
+  .token-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (hover: none) {
+  .token-create-hint { opacity: 1; translate: -50% 0; }
+}
 .instance-text { white-space: pre-wrap; }

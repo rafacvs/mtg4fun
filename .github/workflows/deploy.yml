@@ -15,7 +15,7 @@ jobs:
   deploy:
     # A VM da OCI não compila: com 1 GB de RAM o build trava a máquina.
     runs-on: ${{ vars.DEPLOY_ARCH == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
-    environment: production
+    environment: prod
     env:
       TAG: ${{ github.sha }}
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
@@ -34,7 +34,7 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
-          test -n "$DEPLOY_PATH" || { echo "Defina a variável DEPLOY_PATH no environment production." >&2; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "Defina a variável DEPLOY_PATH no environment prod." >&2; exit 1; }
           install -d -m 0700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts

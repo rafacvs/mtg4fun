@@ -104,7 +104,8 @@ test('Mais e clique direito mostram a inspeção e atalhos agem na seleção', a
   await expect(page.getByRole('dialog', { name: 'Ações do jogo', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.keyboard.press('f');
-  await expect(page.getByRole('dialog', { name: 'Fichas', exact: true })).toBeVisible();
+  const tokens = page.getByRole('dialog', { name: 'Ações do jogo', exact: true });
+  await expect(tokens.getByRole('heading', { name: 'Criar ficha', exact: true })).toBeVisible();
 });
 
 test('Shift mantém várias cartas e arraste mostra destinos com destaque antes de mover o conjunto', async ({ page }, info) => {

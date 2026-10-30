@@ -223,7 +223,7 @@ Faça backup antes de publicar versões com migrations novas; elas não são rev
 
 Na VM, o diretório de deploy precisa apenas do `.env` de produção (modelo em
 `.env.oracle`); o script força `COMPOSE_FILE=infra/compose.yaml`. O usuário SSH
-precisa estar no grupo `docker`. No GitHub, crie o environment `production` em
+precisa estar no grupo `docker`. No GitHub, crie o environment `prod` em
 **Settings → Environments** com:
 
 | Tipo | Nome | Valor |

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Card } from './roomsApi';
 import type { CardGesture } from './PlayerTable';
 import { PlayingCard } from './PlayingCard';
+import { TableIcon } from './TableIcon';
 
 export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrollAxis = 'x', orientation, organizeEnabled = true }: { scrollAxis?: 'x' | 'y'; orientation?: 'portrait' | 'landscape'; organizeEnabled?: boolean; cards?: Card[]; count: number; hoverZone: string | null; viewerId: number; gesture: CardGesture }) {
   const row = useRef<HTMLDivElement>(null);
@@ -23,8 +24,8 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
     setOrder(ids);
   };
   return <section className={`table-zone zone-hand ${organizing ? 'is-organizing' : ''} ${hoverZone === 'hand' ? 'drop-hover' : ''}`} aria-label="Mão" data-drop-zone="hand">
-    <header><span>Mão · {count}</span>{organizeEnabled && <button className="hand-organize secondary" aria-pressed={organizing} onClick={() => setOrganizing(value => !value)}>{organizing ? 'Concluir' : 'Organizar'}</button>}</header>
-    <div ref={row} className="zone-cards hand-selection-canvas" tabIndex={0} aria-label="Cartas da mão" title={organizing ? 'Arraste ou use Alt + setas para ordenar uma carta focada' : 'Arraste no espaço vazio para selecionar várias cartas'} onPointerDown={event => {
+    <header><span>Mão · {count}</span>{organizeEnabled && <button className="hand-organize secondary" aria-pressed={organizing} onClick={() => setOrganizing(value => !value)}><TableIcon name="sort" /><span>{organizing ? 'Concluir' : 'Organizar'}</span></button>}</header>
+    <div ref={row} className="zone-cards hand-selection-canvas" style={{ '--hand-count': ordered.length } as CSSProperties} tabIndex={0} aria-label="Cartas da mão" title={organizing ? 'Arraste ou use Alt + setas para ordenar uma carta focada' : 'Arraste no espaço vazio para selecionar várias cartas'} onPointerDown={event => {
       if (organizing || event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('.playing-card')) return;
       const canvas = event.currentTarget, pointerId = event.pointerId, start = { x: event.clientX, y: event.clientY };
       const draw = (x: number, y: number) => { const box = canvas.getBoundingClientRect(); setSelectionBox({ left: Math.min(start.x, x) - box.left + canvas.scrollLeft, top: Math.min(start.y, y) - box.top + canvas.scrollTop, width: Math.abs(x - start.x), height: Math.abs(y - start.y) }); };
@@ -43,7 +44,7 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
       event.preventDefault();
       reorderAt(ordered[index], Math.min(ordered.length - 1, index + (event.key === 'ArrowLeft' ? -1 : 1)));
     }}>
-      {ordered.map((card, index) => <PlayingCard style={{ '--fan-angle': `${Math.max(-7, Math.min(7, (index - (ordered.length - 1) / 2) * 2))}deg` } as CSSProperties} key={card.id} card={card} draggable={card.controllerId === viewerId} selected={gesture.selectedIds?.includes(card.id)} scrollable={!organizing} scrollAxis={scrollAxis} {...gesture} onDragMove={(card, x, y) => {
+      {ordered.map((card, index) => <PlayingCard style={{ '--fan-angle': `${Math.max(-7, Math.min(7, (index - (ordered.length - 1) / 2) * 2))}deg`, '--fan-offset': index - (ordered.length - 1) / 2 } as CSSProperties} key={card.id} card={card} draggable={card.controllerId === viewerId} selected={gesture.selectedIds?.includes(card.id)} scrollable={!organizing} scrollAxis={scrollAxis} {...gesture} onDragMove={(card, x, y) => {
         const box = row.current?.getBoundingClientRect();
         if (box && organizing) {
           if (x < box.left + 32) row.current!.scrollLeft -= 12;

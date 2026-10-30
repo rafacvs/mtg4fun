@@ -66,10 +66,10 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     if (info.project.name === 'desktop') {
       const dockBox = await page.locator('.own-dock').boundingBox();
       expect(dockBox).not.toBeNull();
-      // V1's desktop dock is a fixed, compact 112px band: game controls and
-      // the hand remain reachable without consuming a field quadrant.
-      expect(dockBox!.height).toBeGreaterThanOrEqual(108);
-      expect(dockBox!.height).toBeLessThanOrEqual(116);
+      // The desktop bar is a thin 80px strip for the controls; the hand
+      // fans above it over the bottom of the field.
+      expect(dockBox!.height).toBeGreaterThanOrEqual(76);
+      expect(dockBox!.height).toBeLessThanOrEqual(84);
       expect(quickBox.x).toBeGreaterThanOrEqual(handBox.x + handBox.width);
     }
     else expect(quickBox.y + quickBox.height).toBeLessThanOrEqual(handBox.y);
@@ -110,7 +110,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     for (const name of ['Comprar cartas', 'Grimório', 'Embaralhar grimório', 'Vida', 'Marcadores']) await expect(actions.getByRole('button', { name, exact: true })).toHaveCount(0);
     await page.screenshot({ animations: 'disabled', path: info.outputPath('03-acoes.png'), fullPage: true });
     await actions.getByRole('button', { name: 'Rolar dado', exact: true }).click();
-    await actions.getByRole('button', { name: 'Rolar dado', exact: true }).click();
+    await actions.getByRole('button', { name: /^Rolar d\d+$/ }).click();
     await actions.getByRole('button', { name: 'Fechar ações' }).click();
     await expect(info.project.name === 'desktop' ? quick.getByRole('button', { name: 'Ações', exact: true }) : page.getByRole('button', { name: 'Comandos', exact: true })).toBeFocused();
 
@@ -121,12 +121,12 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
       const menuBox = (await playerMenu.boundingBox())!;
       const lifeBox = (await life.boundingBox())!;
       expect(Math.abs(menuBox.x - lifeBox.x)).toBeLessThan(48);
-      expect(menuBox.y).toBeGreaterThanOrEqual(lifeBox.y);
+      // Anchored to the trigger: below it, or above it when there is no room, never covering it.
+      expect(menuBox.y >= lifeBox.y || menuBox.y + menuBox.height <= lifeBox.y + 1, JSON.stringify({ menuBox, lifeBox })).toBe(true);
     }
     await expect(playerMenu.getByRole('button', { name: 'Vida', exact: true })).toHaveCount(0);
     await playerMenu.getByRole('button', { name: 'Diminuir vida', exact: true }).click();
     await expect(own.getByLabel('Vida: 39')).toBeVisible();
-    await playerMenu.getByRole('button', { name: 'Marcadores', exact: true }).click();
     await playerMenu.getByRole('button', { name: 'Aumentar marcador vermelho' }).click();
     await expect(own.getByLabel('marcador vermelho', { exact: true })).toHaveText('1');
     await page.screenshot({ animations: 'disabled', path: info.outputPath('04-jogador.png'), fullPage: true });
@@ -215,11 +215,21 @@ test('preserva leitura do registro, navega na mão e mantém menus acessíveis a
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
     const cardRow = hand.locator('.zone-cards');
     await expect(hand.getByRole('button', { name: 'Island', exact: true })).toHaveCount(14);
-    await cardRow.hover();
-    await page.mouse.wheel(600, 0);
-    await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
-    await page.mouse.wheel(-600, 0);
-    await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeLessThan(2);
+    if (info.project.name === 'desktop') {
+      // The desktop fan tightens its overlap so every card stays within the row.
+      const row = (await cardRow.boundingBox())!;
+      for (const card of await hand.locator('[data-card-id]').all()) {
+        const box = (await card.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(row.x - 24);
+        expect(box.x + box.width).toBeLessThanOrEqual(row.x + row.width + 24);
+      }
+    } else {
+      await cardRow.hover();
+      await page.mouse.wheel(600, 0);
+      await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+      await page.mouse.wheel(-600, 0);
+      await expect.poll(() => cardRow.evaluate(node => node.scrollLeft)).toBeLessThan(2);
+    }
 
     await openMatchRail(page, 'Registro');
     const log = page.getByRole('region', { name: 'Registro da partida', exact: true });
@@ -297,7 +307,8 @@ test('mesa e painéis cabem de 320 px ao tablet e desktop sem rolagem da página
       await expect(panel).toHaveCSS('animation-name', 'none');
       await panel.getByRole('button', { name: 'Fechar ações', exact: true }).click();
       await openHand(page);
-      await inspectCard(page, page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).first());
+      // The fan overlaps cards; the last one is the card shown whole.
+      await inspectCard(page, page.getByRole('region', { name: 'Mão', exact: true }).getByRole('button', { name: 'Island', exact: true }).last());
       const inspector = page.getByRole('dialog', { name: 'Imagem de Island' });
       await withinViewport(inspector);
       await inspector.getByRole('button', { name: 'Fechar', exact: true }).click();
