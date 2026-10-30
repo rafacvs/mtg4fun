@@ -20,3 +20,8 @@ o menu de cores reutiliza o painel e os controles de marcadores. Valores
 diferentes aparecem em branco. O campo X/Y mostra o par somente quando todas
 as cartas compartilham os dois modificadores. Cartas sem poder e resistência
 impressos também exibem o selo quando seu modificador não é zero.
+
+O usuário forneceu uma nova referência visual para a barra inferior e os
+painéis de marcadores da seleção e do jogador. A apresentação usa o mesmo
+componente de linhas para ambos. A referência mostra uma cor branca; o modelo
+existente conserva a cor amarela aprovada, sem alterar dados ou contratos.

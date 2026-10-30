@@ -41,3 +41,4 @@ button.marker-dot { min-height: 46px; }
 .pt-line { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .pt-line .pt-control { min-width: 0; margin: 0; font-size: .7rem; }
 .pt-line input { width: 100%; }
+.marker-row-name, .marker-row-count { display: none; }

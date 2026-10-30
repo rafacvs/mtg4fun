@@ -377,7 +377,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       </div>}
     </div>
     {drag && <DragDestinations active={drag.zone} />}
-    {!drag && !preview && <CardActionBar key={selectionIds.join('|')} cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} />}
+    {!drag && !preview && <CardActionBar key={selectionIds.join('|')} cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} onClear={() => setSelectionIds([])} />}
     <LibraryConsultation
       open={libraryOpen}
       anchor={libraryAnchor}

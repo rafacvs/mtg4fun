@@ -131,15 +131,17 @@ export function PowerToughnessAdjust({ power, toughness, disabled, onApply, owed
   </div>;
 }
 
-function MarkerRow({ name, color, value, disabled, onApply }: { name: string; color: MarkerColor; value: number | undefined; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
+function MarkerRow({ name, color, value, count, disabled, onApply }: { name: string; color: MarkerColor; value: number | undefined; count?: number; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
   return <div className="marker-row">
     <span className={`marker-dot marker-${color}`} aria-hidden="true" />
+    <span className="marker-row-name">{name}</span>
+    {count !== undefined && count > 0 && <span className="marker-row-count">em {count} carta{count === 1 ? '' : 's'}</span>}
     <NumericCounter label={`marcador ${name}`} value={value} disabled={disabled} onApply={(operation, value) => onApply(color, operation, value)} />
   </div>;
 }
 
-export function MarkerRows({ markers, mixedColors = [], disabled, onApply }: { markers?: Markers; mixedColors?: MarkerColor[]; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
+export function MarkerRows({ markers, mixedColors = [], counts, disabled, onApply }: { markers?: Markers; mixedColors?: MarkerColor[]; counts?: Partial<Record<MarkerColor, number>>; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
   return <div className="marker-rows">
-    {markerColors.map(item => <MarkerRow key={item.color} name={item.name} color={item.color} value={mixedColors.includes(item.color) ? undefined : markerValue(markers, item.color)} disabled={disabled} onApply={onApply} />)}
+    {markerColors.map(item => <MarkerRow key={item.color} name={item.name} color={item.color} count={counts?.[item.color]} value={mixedColors.includes(item.color) ? undefined : markerValue(markers, item.color)} disabled={disabled} onApply={onApply} />)}
   </div>;
 }
