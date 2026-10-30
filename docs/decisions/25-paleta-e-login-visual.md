@@ -78,3 +78,12 @@ preserva a ilustração e o acesso ao formulário.
 Não há alteração de backend, autenticação, contratos de rede, regras de jogo
 ou persistência. A suíte Go e o smoke Docker de produção não foram repetidos
 nesta entrega visual. Os testes de navegador usaram bancos descartáveis.
+
+## Surpresa da esfera verde
+
+Em 30/10/2026, o usuário forneceu uma imagem e pediu que ela fosse aberta em
+um popup ao clicar especificamente na esfera verde do login, corrigindo em
+seguida a referência inicial à esfera vermelha. A detecção acompanha a esfera
+na cena WebGL em movimento. O fallback sem WebGL oferece o mesmo botão, e o
+canvas permite abrir a surpresa por teclado. O diálogo fecha pelo botão,
+Escape ou clique no fundo, sem alterar autenticação ou sessão.

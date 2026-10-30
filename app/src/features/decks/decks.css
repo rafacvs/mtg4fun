@@ -134,15 +134,15 @@
 .deck-groups section h4 { border-bottom: 1px solid #68583466; padding-bottom: 5px; }
 .deck-card-list li { border-color: #ffffff0b; }
 @media (min-width: 1000px) {
-  .deck-library { display: grid; grid-template-columns: minmax(240px, 25%) minmax(0, 1fr); grid-template-rows: auto 1fr auto; gap: 0 20px; align-items: start; }
+  .deck-library { display: grid; grid-template-columns: minmax(240px, 25%) minmax(0, 1fr); grid-template-rows: auto auto auto; gap: 0 20px; align-items: start; }
   .section-intro { grid-column: 1; grid-row: 1; margin: 0; padding: 22px 20px 12px; background: #0e1313; border: 1px solid #6b572e; border-bottom: 0; border-radius: 8px 8px 0 0; }
   .section-intro p:last-child { display: none; }
   .deck-total { border: 0; padding: 0; color: var(--muted); }
   .library-workspace { display: contents; }
-  .saved-deck-grid { grid-column: 1; grid-row: 2; align-self: stretch; padding: 0 10px 16px; background: #0e1313; border: 1px solid #6b572e; border-top: 0; border-bottom: 0; }
+  .saved-deck-grid { grid-column: 1; grid-row: 3; align-self: stretch; padding: 14px 10px 16px; background: #0e1313; border: 1px solid #6b572e; border-top: 0; border-radius: 0 0 8px 8px; }
   .saved-deck-card { padding: 10px; }
   .deck-picker { display: none; }
-  .import-card { grid-column: 1; grid-row: 3; margin: 0; border: 1px solid #6b572e; border-radius: 0 0 8px 8px; }
+  .import-card { grid-column: 1; grid-row: 2; margin: 0; border: 1px solid #6b572e; border-top-color: #6b572e55; border-radius: 0; background: #0e1313; }
   .import-content { grid-template-columns: 1fr; }
   .deck-detail { grid-column: 2; grid-row: 1 / span 3; padding: 25px; min-height: 720px; }
   .deck-columns { grid-template-columns: minmax(0, 2fr) minmax(210px, .8fr); }

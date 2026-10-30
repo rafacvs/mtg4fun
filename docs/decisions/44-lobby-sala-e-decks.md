@@ -49,3 +49,11 @@ iniciar após prontidão e na API a vida padrão 40, apesar do exemplo 20.
 Build do frontend (incluindo typecheck) e `git diff --check` passaram.
 Capturas de criação e biblioteca foram conferidas no desktop e no celular.
 Não houve alteração de backend, infraestrutura ou integração externa.
+
+## Importação integrada ao cabeçalho da biblioteca
+
+Em 30/10/2026, o usuário pediu que o importador `.cod` ficasse no topo,
+visualmente unido a **Meus decks**, e apontou um vão indevido entre o cabeçalho
+e a busca. No desktop, cabeçalho, importador e lista agora formam uma única
+coluna contínua, nesta ordem, sem a linha flexível que expandia o espaço vazio.
+O fluxo, os limites e o contrato HTTP de importação permanecem os mesmos.

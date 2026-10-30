@@ -9,6 +9,14 @@ test('biblioteca e lobby apresentam dados reais', async ({ page }, info) => {
   await expect(page.getByText('A mesa dos amigos')).toBeVisible();
   await page.screenshot({ path: info.outputPath('lobby.png'), fullPage: true });
   await page.getByRole('link', { name: 'Meus decks' }).click();
+  const importCard = page.locator('.import-card');
+  const librarySearch = page.locator('.library-search');
+  await expect(importCard).toBeVisible();
+  await expect(librarySearch).toBeVisible();
+  const [importBounds, searchBounds] = await Promise.all([importCard.boundingBox(), librarySearch.boundingBox()]);
+  expect(importBounds).not.toBeNull();
+  expect(searchBounds).not.toBeNull();
+  expect(importBounds!.y + importBounds!.height).toBeLessThanOrEqual(searchBounds!.y + 1);
   await page.getByRole('button', { name: /Marés de Simic/ }).click();
   await expect(page.getByRole('heading', { name: 'Marés de Simic' })).toBeVisible();
   await page.screenshot({ path: info.outputPath('decks.png'), fullPage: true });
