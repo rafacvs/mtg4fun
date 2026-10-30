@@ -410,7 +410,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const title = openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio';
       return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />;
     })()}
-    <GameActions anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} onCreateToken={async name => {
+    <GameActions anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} actorName={own.name} onCreateToken={async name => {
       const cell = firstFreeCell(own.battlefield ?? []);
       const ok = await createToken(name);
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);

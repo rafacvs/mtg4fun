@@ -52,3 +52,23 @@ abria um painel no meio da tela em vez de seguir como subtela perto da mão.
 - **Mão:** em repouso, a caixa da carta tem 40% da altura e mostra o topo da
   arte; no hover, cresce até a carta inteira. Assim a área clicável fica toda
   na tela.
+
+## Terceira rodada — criar ficha em tela única com abas
+
+Pedido explícito do usuário em 30/10/2026: o formulário de ficha segue as
+pranchas "Criar ficha", com paridade 1:1, numa tela só com as abas "Do
+catálogo" e "Personalizada". Respostas do usuário às divergências levantadas:
+
+- **Linha de tipo e P/R embaixo da carta:** "não precisa colocar essa linha
+  com tipo de criatura e poder, deixe sem". A API não mudou.
+- **Busca:** placeholder fiel ao que a busca faz (só por nome), em vez de
+  "anjo, tesouro, 1/1…".
+- **Prévia da ficha personalizada:** "mantenha funcionamento como está hoje,
+  sem esse preview do design". O formulário ocupa a largura toda, sem a
+  coluna de prévia, e a ficha continua entrando no campo como antes.
+
+Implementado: catálogo em grade de 4 colunas (3 no celular, 2 abaixo de
+420px). Cada ficha tem selo de P/R e mostra "+ Criar" no hover. Clicar na
+ficha a cria, conforme a dica "clique na ficha para criar", por isso o modal
+de imagem do catálogo saiu. O rodapé traz o resultado ("rafa criou a ficha
+Beast (3/3).").

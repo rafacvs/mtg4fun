@@ -1,22 +1,20 @@
 import { useEffect, useState } from 'react';
-import { CatalogTokenPreview, CreateInstances, type TokenView } from './CreateInstances';
+import { CreateInstances } from './CreateInstances';
 import { MenuItem, PanelFeedback, PanelHeader, PanelResult, TablePanel, type PanelFeedbackProps } from './TablePanel';
-import type { CatalogToken, CustomToken } from './roomsApi';
+import type { CustomToken } from './roomsApi';
 
 const defaultSides = 20;
 
-export type GameActionsScreen = 'menu' | 'roll' | TokenView;
+export type GameActionsScreen = 'menu' | 'roll' | 'token';
 
 const headers: Record<GameActionsScreen, { title: string; subtitle: string; parent?: GameActionsScreen }> = {
   menu: { title: 'Ações do jogo', subtitle: 'Mesa manual' },
   roll: { title: 'Rolar dado', subtitle: 'Ações do jogo', parent: 'menu' },
   token: { title: 'Criar ficha', subtitle: 'Ações do jogo', parent: 'menu' },
-  'token-catalog': { title: 'Do catálogo', subtitle: 'Criar ficha', parent: 'token' },
-  'token-custom': { title: 'Personalizada', subtitle: 'Criar ficha', parent: 'token' },
 };
 
 type Props = PanelFeedbackProps & {
-  open: boolean; anchor: HTMLElement | null; initialScreen: GameActionsScreen; roomId: number;
+  open: boolean; anchor: HTMLElement | null; initialScreen: GameActionsScreen; roomId: number; actorName: string;
   sides: number; busy: boolean; unconfirmed: boolean;
   onSides: (sides: number) => void; onRoll: () => void; onCoin: () => void;
   onTurn: (direction: 'next' | 'previous') => void; onClose: () => void;
@@ -24,15 +22,13 @@ type Props = PanelFeedbackProps & {
   result?: string; lastRoll?: number;
 };
 
-export function GameActions({ open, anchor, initialScreen, roomId, sides, busy, unconfirmed, onSides, onRoll, onCoin, onTurn, onClose, onCreateToken, onCreateCustom, result, lastRoll, error, onRetry }: Props) {
+export function GameActions({ open, anchor, initialScreen, roomId, actorName, sides, busy, unconfirmed, onSides, onRoll, onCoin, onTurn, onClose, onCreateToken, onCreateCustom, result, lastRoll, error, onRetry }: Props) {
   const [screen, setScreen] = useState<GameActionsScreen>(initialScreen);
-  const [preview, setPreview] = useState<CatalogToken | null>(null);
   const canAct = !busy && !unconfirmed;
   const validSides = Number.isInteger(sides) && sides >= 2 && sides <= 100;
   const header = headers[screen];
-  const tokenScreen = screen === 'token' || screen === 'token-catalog' || screen === 'token-custom';
-  useEffect(() => { setScreen(open ? initialScreen : 'menu'); if (!open) setPreview(null); }, [open, initialScreen]);
-  return <>
+  useEffect(() => { setScreen(open ? initialScreen : 'menu'); }, [open, initialScreen]);
+  return (
     <TablePanel open={open} anchor={anchor} align="above" label="Ações do jogo" className={`game-actions game-actions-${screen}`} onClose={onClose}>
       <PanelHeader title={header.title} subtitle={header.subtitle} onClose={onClose} closeLabel="Fechar ações" onBack={header.parent ? () => setScreen(header.parent!) : undefined} />
       <PanelFeedback error={error} busy={busy} unconfirmed={unconfirmed} onRetry={onRetry} />
@@ -56,11 +52,10 @@ export function GameActions({ open, anchor, initialScreen, roomId, sides, busy, 
         </div>
         <button type="button" className="panel-primary" disabled={!canAct || !validSides} onClick={onRoll}>{validSides ? `Rolar d${sides}` : 'Rolar dado'}</button>
       </div>}
-      {tokenScreen && <CreateInstances view={screen} roomId={roomId} busy={!canAct} onView={setScreen} onPreview={setPreview} onCreateToken={onCreateToken} onCreateCustom={onCreateCustom} />}
-      {result && !tokenScreen && <PanelResult>{result}</PanelResult>}
+      {screen === 'token' && <CreateInstances roomId={roomId} busy={!canAct} actorName={actorName} onCreateToken={onCreateToken} onCreateCustom={onCreateCustom} />}
+      {result && screen !== 'token' && <PanelResult>{result}</PanelResult>}
     </TablePanel>
-    {open && preview && <CatalogTokenPreview token={preview} onClose={() => setPreview(null)} />}
-  </>;
+  );
 }
 
 function DieFace({ value }: { value?: number }) {
