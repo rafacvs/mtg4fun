@@ -239,6 +239,31 @@ As três últimas versões ficam na VM como `mtg4fun-release-api:<commit>` e
 `mtg4fun-release-app:<commit>`. Para voltar, rode o workflow na branch ou
 commit anterior. Contexto: [decisão do deploy manual](docs/decisions/51-deploy-manual.md).
 
+Depois de `up -d`, `infra/deploy.sh` confere se os containers usam as imagens da
+versão e se o Nginx serve `/` e responde `401` em `/api/session`. Se a verificação
+falhar, o deploy termina com erro e mostra os logs, sem reverter automaticamente.
+
+### Deploy a partir da máquina local
+
+`scripts/deploy.sh` executa os mesmos passos do workflow usando o Docker local.
+Crie `.env.deploy` na raiz do checkout (ignorado pelo Git):
+
+```dotenv
+SSH_KEY=~/.ssh/chave-da-vm.key
+SSH_TARGET=ubuntu@<ip-da-vm>
+# Caminho completo, sem ~.
+DEPLOY_PATH=/home/ubuntu/git/mtg4fun
+```
+
+```bash
+./scripts/deploy.sh                # publica o HEAD
+./scripts/deploy.sh master         # ou um commit, branch ou tag
+```
+
+O build usa o conteúdo do commit: alterações não commitadas não são publicadas.
+A arquitetura vem da VM, e a chave do host precisa já estar em `~/.ssh/known_hosts`.
+Em outra worktree, indique o arquivo com `DEPLOY_CONFIG=/caminho/.env.deploy`.
+
 ### Criar conta em qualquer modo
 
 ```bash
