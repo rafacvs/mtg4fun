@@ -36,7 +36,11 @@ export function useRooms() {
       const updated = await roomsApi.settings(id, settings);
       setRooms(current => current.map(room => room.id === id ? updated : room));
     }),
-    create: (room: Parameters<typeof roomsApi.create>[0]) => act(() => roomsApi.create(room)),
+    create: async (room: Parameters<typeof roomsApi.create>[0]) => {
+      let created: Room | undefined;
+      await act(async () => { created = await roomsApi.create(room); });
+      return created;
+    },
     join: (id: number) => act(() => roomsApi.join(id)),
     selectDeck: (id: number, deckId: number) => act(() => roomsApi.selectDeck(id, deckId)),
     setMulliganMode: (id: number, mode: 'standard' | 'aconchegaz') => act(() => roomsApi.setMulliganMode(id, mode)),

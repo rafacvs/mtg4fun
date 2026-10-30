@@ -90,7 +90,7 @@ A carta passa a ser a interface. O estado aparece nela. Virar, comprar, mover, m
 56. Como jogador, quero o campo com véu na cor do assento até as artes de playmat chegarem, para a mesa já ter identidade por pessoa.
 57. Como jogador, quero depois um playmat por cor de assento, seis no total, para a arte seguir o assento e não a cor de mana.
 58. Como usuário, quero o login com a moldura, a noite e o ouro novos, e as esferas de mana como estão, para a entrada parecer a mesma aplicação.
-59. Como usuário, quero o lobby na ordem das minhas mesas, das abertas e das que já começaram, para achar o que preciso fazer.
+59. Como usuário, quero o lobby separado em mesas livres, que ainda não iniciaram, e mesas em andamento, sem distinguir as minhas das demais, para achar o que preciso fazer.
 60. Como usuário, quero uma mesa em jogo sem promessa de vaga, para não achar que ainda dá para sentar.
 61. Como usuário, quero o painel de criar mesa com o visual da proposta, para ver nome, formato, lugares, vida e deck no mesmo passo.
 62. Como usuário, quero que formato, lugares, vida da sala e deck na criação apareçam como exemplo e não sejam salvos, para o visual não mentir que a sala guardou isso.

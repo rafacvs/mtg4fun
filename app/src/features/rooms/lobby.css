@@ -1,0 +1,188 @@
+/* Lobby: painel de mesas em fileiras. Assentos à vista, estado sempre no mesmo lugar. */
+.rooms {
+  --lobby-gold: #d9b56c;
+  --lobby-trim: #8d713566;
+  --lobby-live: #6cb4f5;
+  --lobby-ready: #6fdc9a;
+  min-width: 0;
+  margin-top: 26px;
+}
+.lobby-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Cabeçalho */
+.rooms-heading { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; padding: 22px 28px; overflow: hidden; border: 1px solid var(--lobby-trim); border-radius: 10px; background: linear-gradient(90deg, #0a100f 10%, #0a100fcc 45%, #0a100f66 100%), url('../../assets/theme/mat-forest.jpg') center 58% / cover; box-shadow: inset 0 0 0 3px #0a0f0ecc, inset 0 0 0 4px #d9b56c22, 0 18px 50px #0006; }
+.rooms-heading::after { content: ''; position: absolute; inset: auto 0 0; height: 1px; background: linear-gradient(90deg, transparent, var(--lobby-gold), transparent); opacity: .7; }
+.rooms-title { position: relative; min-width: 0; }
+.rooms-heading h2 { margin: 0; font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 600; letter-spacing: .03em; }
+.room-connection { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; color: #b5b0a2; font-size: .8rem; }
+.room-connection i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #8b887c; }
+.room-connection-live i { background: var(--lobby-ready); box-shadow: 0 0 0 0 #6fdc9a88; }
+.rooms-create { position: relative; z-index: 1; display: inline-flex; flex: none; align-items: center; gap: 9px; min-height: 46px; padding: 10px 24px 10px 20px; border-radius: 8px; box-shadow: 0 6px 26px #d9a94e4d; font-weight: 700; }
+.rooms-create span { font-size: 1.25rem; font-weight: 500; line-height: 1; }
+
+/* Filtros */
+.lobby-toolbar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; margin: 14px -8px 0; padding: 8px; border-radius: 12px; background: #0a0f10e0; backdrop-filter: blur(10px); }
+.lobby-tabs { display: flex; min-width: 0; gap: 2px; padding: 3px; border: 1px solid #ffffff14; border-radius: 10px; background: #0d1214; }
+.lobby-tabs .lobby-tab { display: inline-flex; align-items: center; gap: 9px; min-height: 38px; padding: 6px 13px; border: 0; border-radius: 7px; background: transparent; color: #a8a497; font-size: .85rem; font-weight: 600; white-space: nowrap; }
+.lobby-tabs .lobby-tab:hover:not(:disabled) { background: #ffffff0d; color: var(--text); }
+.lobby-tabs .lobby-tab b { min-width: 22px; padding: 0 6px; border-radius: 99px; background: #ffffff10; color: #cfcabb; font-size: .72rem; font-weight: 700; line-height: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+.lobby-tabs .lobby-tab[aria-pressed=true] { background: #1d2528; color: var(--text); box-shadow: inset 0 0 0 1px #ffffff1c; }
+.lobby-tabs .lobby-tab-preparing[aria-pressed=true] b { background: #d9b56c2b; color: var(--gold-light); }
+.lobby-tabs .lobby-tab-started[aria-pressed=true] b { background: #6cb4f52b; color: #a9d4fb; }
+.lobby-refine { display: flex; flex: 1 1 320px; justify-content: flex-end; min-width: 0; gap: 8px; }
+.lobby-search { position: relative; flex: 0 1 300px; min-width: 0; margin: 0; font-weight: 400; }
+.lobby-search svg { position: absolute; top: 50%; left: 12px; width: 16px; height: 16px; translate: 0 -50%; fill: none; stroke: #8e8a7e; stroke-width: 1.7; stroke-linecap: round; pointer-events: none; }
+.lobby-search input { min-height: 44px; padding: 8px 12px 8px 36px; border-color: #ffffff17; border-radius: 10px; background: #0d1214; font-size: .86rem; }
+.lobby-search input::placeholder { color: #84806f; }
+.lobby-refine .lobby-vacant { display: inline-flex; flex: none; align-items: center; gap: 9px; min-height: 44px; padding: 8px 13px; border: 1px solid #ffffff17; border-radius: 10px; background: #0d1214; color: #a8a497; font-size: .84rem; font-weight: 600; white-space: nowrap; }
+.lobby-refine .lobby-vacant:hover:not(:disabled) { background: #161c1f; color: var(--text); }
+.lobby-vacant i { position: relative; width: 26px; height: 15px; border-radius: 99px; background: #ffffff1c; }
+.lobby-vacant i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #b5b1a4; transition: translate .15s ease; }
+.lobby-refine .lobby-vacant[aria-pressed=true] { border-color: #d9b56c77; color: var(--gold-light); }
+.lobby-vacant[aria-pressed=true] i { background: #d9b56c66; }
+.lobby-vacant[aria-pressed=true] i::after { translate: 11px 0; background: var(--gold-light); }
+
+/* Grupos */
+.lobby-room-group { margin-top: 22px; }
+.lobby-group-heading { display: flex; align-items: center; gap: 10px; padding: 0 2px 9px; }
+.lobby-group-heading::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--lobby-trim), transparent); }
+.lobby-group-heading h4 { margin: 0; color: #dcd3bd; font-size: .86rem; font-weight: 600; letter-spacing: .08em; }
+.lobby-group-heading > span { color: #94907f; font-size: .76rem; font-variant-numeric: tabular-nums; }
+.room-list { display: grid; gap: 8px; }
+
+/* Fileira da mesa */
+.room-card { --mat: url('../../assets/theme/mat-forest.jpg'); --accent: var(--lobby-gold); position: relative; display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 372px) 150px 150px; align-items: center; gap: 8px 22px; min-height: 86px; padding: 11px 16px 11px 22px; overflow: hidden; isolation: isolate; border: 1px solid #ffffff12; border-radius: 10px; background: #0d1214f0; overflow-wrap: anywhere; transition: border-color .15s ease, background-color .15s ease, translate .15s ease; }
+.room-card[data-mat=sea] { --mat: url('../../assets/theme/mat-sea.jpg'); }
+.room-card[data-mat=mountain] { --mat: url('../../assets/theme/mat-mountain.jpg'); }
+.room-card[data-mat=swamp] { --mat: url('../../assets/theme/mat-swamp.jpg'); }
+.room-card::before { content: ''; position: absolute; inset: 0 auto 0 0; z-index: -1; width: min(46%, 460px); background: var(--mat) center / cover; opacity: .5; -webkit-mask-image: linear-gradient(90deg, #000, transparent); mask-image: linear-gradient(90deg, #000, transparent); transition: opacity .2s ease; }
+.room-card::after { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent); }
+.room-card.room-started { --accent: var(--lobby-live); }
+.room-card.room-started::before { filter: saturate(.55); opacity: .28; }
+.room-card:hover { border-color: #d9b56c66; background-color: #11171af5; }
+.room-card:hover::before { opacity: .72; }
+.room-card:has(.room-enter):hover { translate: 0 -1px; }
+
+.room-identity { min-width: 0; }
+.room-card h3 { margin: 0; overflow: hidden; color: #f3ecdc; font-size: 1.06rem; font-weight: 600; letter-spacing: .01em; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 8px #000; }
+.room-details { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin: 3px 0 0; color: #b1ac9d; font-size: .78rem; text-shadow: 0 1px 6px #000; }
+.room-pending { padding: 0 8px; border: 1px solid #d9b56c66; border-radius: 99px; background: #0c0f10cc; color: var(--gold-light); font-size: .7rem; font-weight: 600; line-height: 18px; text-shadow: none; white-space: nowrap; }
+
+/* Assentos */
+.lobby-seats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.lobby-seats li { display: grid; justify-items: center; gap: 3px; min-width: 0; }
+.lobby-seat { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--seat); color: #0b0e10; font-size: .84rem; font-weight: 800; box-shadow: 0 0 0 2px #0d1214, 0 0 0 3px #ffffff24; }
+.lobby-seat-0 { --seat: #6cb4f5; } .lobby-seat-1 { --seat: #f27bb0; } .lobby-seat-2 { --seat: #b49af7; } .lobby-seat-3 { --seat: #4fd1b0; } .lobby-seat-4 { --seat: #e07a3e; } .lobby-seat-5 { --seat: #c9d16a; }
+.lobby-seat-me .lobby-seat { box-shadow: 0 0 0 2px #0d1214, 0 0 0 3.5px var(--gold-light); }
+.lobby-seat-empty .lobby-seat { background: #ffffff08; box-shadow: none; border: 1px dashed #ffffff42; }
+.lobby-participant { max-width: 100%; overflow: hidden; color: #cdc8ba; font-size: .69rem; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.lobby-seat-me .lobby-participant { color: var(--gold-light); font-weight: 600; }
+.lobby-crown { position: absolute; top: -8px; left: 50%; width: 15px; height: 11px; translate: -50% 0; fill: var(--gold-light); stroke: #0d1214; stroke-width: 1.2; paint-order: stroke; }
+.lobby-ready { position: absolute; right: -3px; bottom: -3px; width: 15px; height: 15px; padding: 2px; border-radius: 50%; background: var(--lobby-ready); fill: none; stroke: #07210f; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; box-shadow: 0 0 0 2px #0d1214; }
+
+/* Estado */
+.room-state { min-width: 0; }
+.room-card .room-status { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--accent); font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.room-status i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.room-card .room-occupancy { margin: 2px 0 0 14px; color: #a6a193; font-size: .74rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.room-vacancies { color: #e7ca8c; }
+
+/* Ação */
+.room-action { display: flex; justify-content: flex-end; min-width: 0; }
+.room-enter, .room-action .room-join { display: inline-grid; place-items: center; width: 100%; min-height: 42px; padding: 6px 12px; border-radius: 8px; font-size: .84rem; font-weight: 700; line-height: 1.15; text-align: center; text-decoration: none; white-space: nowrap; }
+.room-enter { border: 1px solid #d9b56c88; background: #d9b56c14; color: var(--gold-light); }
+.room-preparing .room-enter, .room-action .room-join:hover:not(:disabled) { border: 1px solid transparent; background: linear-gradient(180deg, var(--gold-light), var(--gold-d)); color: #1b1405; }
+.room-action .room-join:disabled { border: 1px solid #ffffff1c; background: #ffffff0a; color: #8d897c; opacity: 1; }
+.room-enter::after { content: ''; position: absolute; inset: 0; }
+.room-closed { width: 100%; color: #7f7c70; font-size: .76rem; text-align: center; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .room-connection-live i { animation: lobby-pulse 2.6s ease-out infinite; }
+  .room-started .room-status i { animation: lobby-beat 2.6s ease-in-out infinite; }
+}
+@keyframes lobby-pulse { 70%, 100% { box-shadow: 0 0 0 7px #6fdc9a00; } }
+@keyframes lobby-beat { 50% { opacity: .35; } }
+
+/* Vazio */
+.empty-rooms { display: grid; justify-items: center; gap: 6px; padding: 54px 20px; margin-top: 16px; border: 1px dashed #d9b56c44; border-radius: 10px; background: #0d1214cc; text-align: center; }
+.empty-rooms > span { color: var(--lobby-gold); font-size: 1.8rem; }
+.empty-rooms h3 { margin: 0; font-size: 1.1rem; }
+.empty-rooms p { margin: 0; font-size: .88rem; }
+.empty-rooms-filtered { padding: 36px 20px; }
+.empty-rooms-filtered button { margin-top: 10px; min-height: 40px; }
+
+/* Largura: o conteúdo acompanha a barra superior. */
+@media (min-width: 760px) { .app-layout:has(.rooms) { width: min(100% - 48px, 1280px); } }
+
+/* Abaixo disso a fileira vira ficha: identidade e estado em cima, assentos no meio. */
+@media (max-width: 1040px) {
+  .room-card { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'identity state' 'seats seats' 'seats action'; padding: 13px 14px 13px 18px; }
+  .room-identity { grid-area: identity; }
+  .room-state { grid-area: state; justify-self: end; text-align: right; }
+  .room-card .room-status { justify-content: flex-end; }
+  .room-card .room-occupancy { margin-left: 0; }
+  .lobby-seats { grid-area: seats; margin-top: 4px; }
+  .room-action { grid-area: action; }
+  .room-card::before { width: 75%; }
+  .room-closed { display: none; }
+}
+@media (min-width: 600px) and (max-width: 1040px) {
+  .room-card { grid-template-columns: minmax(0, 1fr) 150px; grid-template-areas: 'identity state' 'seats action'; }
+  .lobby-seats { max-width: 372px; }
+}
+@media (max-width: 600px) {
+  .rooms { margin-top: 16px; }
+  .rooms-heading { padding: 14px 16px; }
+  .room-connection { font-size: .74rem; }
+  .rooms-create { padding: 8px 18px; }
+  .lobby-toolbar { position: static; margin: 10px 0 0; padding: 0; background: transparent; backdrop-filter: none; }
+  .lobby-tabs { width: 100%; }
+  .lobby-tabs .lobby-tab { flex: 1 1 auto; justify-content: center; gap: 6px; padding: 6px; font-size: .77rem; }
+  .lobby-tabs .lobby-tab b { min-width: 18px; padding: 0 4px; }
+  .lobby-refine { flex-basis: 100%; }
+  .lobby-search { flex: 1 1 auto; }
+  .room-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'state' 'seats' 'action'; gap: 6px; }
+  .room-state { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; justify-self: start; text-align: left; }
+  .room-card .room-occupancy { margin: 0; }
+  .room-card h3 { white-space: normal; overflow-wrap: anywhere; }
+  .lobby-seat { width: 32px; height: 32px; font-size: .78rem; }
+  .room-enter, .room-action .room-join { min-height: 40px; }
+  .room-action:has(.room-closed) { display: none; }
+}
+/* Telefone: o lobby dispensa o painel e o título repetido. */
+@media (max-width: 759px) {
+  .app-layout:has(.rooms) { padding-top: 12px; }
+  .app-layout:has(.rooms) > .brand { margin-bottom: 8px; font-size: 1.1rem; }
+  .app-layout:has(.rooms) .mark { width: 30px; height: 30px; border-radius: 8px; }
+  .app-layout:has(.rooms) > .panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .authenticated:has(.rooms) .app-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .authenticated:has(.rooms) .app-header { position: absolute; top: 14px; right: 16px; padding: 0; }
+  .authenticated:has(.rooms) .account-actions { margin: 0; flex-wrap: nowrap; }
+  .authenticated:has(.rooms) .app-nav { margin-top: 0; }
+  .authenticated:has(.rooms) .app-nav a { min-height: 38px; }
+}
+@media (max-width: 420px) {
+  .rooms-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+  .rooms-title { display: contents; }
+  .room-connection { grid-column: 1 / -1; grid-row: 2; position: relative; margin: 0; }
+}
+@media (max-width: 380px) {
+  .lobby-search input { padding-left: 32px; font-size: .78rem; }
+  .lobby-search svg { left: 10px; }
+  .lobby-tabs .lobby-tab { gap: 4px; padding: 6px 3px; font-size: .71rem; }
+  .lobby-tabs .lobby-tab b { min-width: 16px; padding: 0 3px; font-size: .64rem; }
+  .lobby-refine .lobby-vacant { padding: 8px 10px; font-size: .78rem; }
+}
+@media (max-height: 500px) { .lobby-toolbar { position: static; } }
+
+/* Criação de mesa */
+.create-room-panel { width: min(100% - 24px, 480px); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 0; color: var(--text); background: #0d1214; border: 1px solid #d9b56c55; border-radius: 12px; box-shadow: 0 30px 90px #000c; }
+.create-room-panel::backdrop { background: #000b; backdrop-filter: blur(6px); }
+.create-room-panel form { margin: 0; padding: 0 24px 24px; }
+.create-room-panel header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 -24px 8px; padding: 22px 24px 18px; border-bottom: 1px solid #ffffff12; background: linear-gradient(90deg, #0d1214 30%, #0d121499), url('../../assets/theme/mat-forest.jpg') center 58% / cover; }
+.create-room-panel header .eyebrow { margin-bottom: .35rem; }
+.create-room-panel h2 { margin: 0; font-size: 1.45rem; font-weight: 600; letter-spacing: .01em; }
+.create-room-panel input, .create-room-panel select { min-height: 44px; border-color: #ffffff22; border-radius: 8px; background: #0a0e0f; }
+.create-room-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.create-room-numbers > div { min-width: 0; }
+.create-room-panel button[type=submit] { width: 100%; margin-top: 22px; border-radius: 8px; font-weight: 700; }

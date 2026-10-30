@@ -43,7 +43,7 @@ export type CounterAction =
   | { target: 'card'; cardId: string; subject: 'power' | 'toughness'; operation: 'set' | 'increment'; value: number }
   | { target: 'card'; cardId: string; subject: 'marker'; color: MarkerColor; operation: 'set' | 'increment'; value: number };
 
-async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
+async function send(path: string, method: string, body: unknown): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) });
@@ -54,6 +54,11 @@ async function change(path: string, method = 'POST', body: unknown = {}): Promis
     const data = await response.json();
     throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
   }
+  return response;
+}
+
+async function change(path: string, method = 'POST', body: unknown = {}): Promise<void> {
+  await send(path, method, body);
 }
 
 class MatchActionResponseError extends Error {}
@@ -109,7 +114,7 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível atualizar as regras.');
     return data.room;
   },
-  create: (room: RoomDraft) => change('/api/rooms', 'POST', room),
+  create: async (room: RoomDraft): Promise<Room> => (await (await send('/api/rooms', 'POST', room)).json()).room,
   join: (id: number) => change(`/api/rooms/${id}/participants`),
   selectDeck: (id: number, deckId: number) => change(`/api/rooms/${id}/participants/me/deck`, 'PUT', { deckId }),
   setMulliganMode: (id: number, mode: 'standard' | 'aconchegaz') => change(`/api/rooms/${id}/mulligan-mode`, 'PUT', { mode }),
