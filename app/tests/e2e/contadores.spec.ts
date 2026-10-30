@@ -152,13 +152,13 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
     await preview.getByLabel('Poder', { exact: true }).fill('-1');
     await preview.getByLabel('Poder', { exact: true }).press('Enter');
-    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveText('-1/+0');
     const toughnessAmount = preview.getByLabel('Resistência', { exact: true });
     await toughnessAmount.fill('4');
     await toughnessAmount.press('Enter');
     await page.waitForTimeout(1_300);
     await expect(toughnessAmount).toBeFocused();
-    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveText('-1/+4');
     const otherPage = await observer.newPage();
     await otherPage.goto(`/#/salas/${room.id}`);
     if (info.project.use.hasTouch) {
@@ -192,7 +192,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await openHand(page);
     await expect(table.getByLabel('Vida: 16', { exact: true })).toBeVisible();
     await expect(table.getByLabel('marcador vermelho')).toHaveText('2');
-    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveText('-1/+4');
   } finally { await observer.close(); }
 });
 
@@ -304,7 +304,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     await toughness.fill('4');
     await toughness.blur();
     await expect.poll(read).toMatchObject({ power: -1, toughness: 4, changes: 2 });
-    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveText('-1/+4');
 
     await power.fill('2');
     await power.press('Enter');
@@ -314,7 +314,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     const activate = async (locator: Locator) => { if (info.project.use.hasTouch) await locator.tap(); else await locator.click(); };
     await activate(plus);
     await expect.poll(read).toMatchObject({ power: 3, toughness: 0, changes: 6 });
-    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveText('+3/+0');
     await activate(minus);
     await expect.poll(read).toMatchObject({ power: 2, toughness: -1, changes: 8 });
     await power.fill('0');
@@ -346,7 +346,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     const restored = page.getByRole('dialog', { name: 'Imagem de Island' });
     await expect(restored.getByLabel('Poder', { exact: true })).toHaveValue('2');
     await expect(restored.getByLabel('Resistência', { exact: true })).toHaveValue('-1');
-    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveText('+2/-1');
     await restored.getByRole('button', { name: 'Campo', exact: true }).click();
     await expect.poll(async () => (await read()).power).toBe(2);
 
@@ -357,7 +357,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
       await otherPage.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ }).tap();
     }
     const otherTable = otherPage.getByRole('article', { name: 'Mesa de Amigo da mesa' });
-    await expect(otherTable.getByLabel('Poder e resistência')).toHaveCount(0);
+    await expect(otherTable.getByLabel('Poder e resistência')).toHaveText('+2/-1');
     await inspectCard(otherPage, otherTable.getByRole('button', { name: 'Island', exact: true }));
     const readOnly = otherPage.getByRole('dialog', { name: 'Imagem de Island' });
     await expect(readOnly.getByLabel('Poder', { exact: true })).toHaveCount(0);

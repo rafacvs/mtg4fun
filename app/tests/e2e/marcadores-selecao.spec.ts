@@ -26,7 +26,8 @@ test('marcadores da seleção alteram todas as cartas e persistem', async ({ pag
     await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
     for (const id of ids.slice(0, 2)) await page.locator(`.own-table-surface [data-card-id="${id}"] .playing-card, .own-table-surface .playing-card[data-card-id="${id}"]`).first().click();
     const bar = page.getByRole('toolbar', { name: 'Ações da seleção' });
-    await expect(bar).toContainText('2 selecionadas');
+    await expect(bar).toContainText('2 cartas');
+    await expect(bar.getByLabel('Poder/resistência')).toHaveValue('0/0');
     await bar.getByRole('button', { name: '+1/+1', exact: true }).click();
     const getCards = async () => { const match: Match = (await (await page.request.get(path)).json()).match; return match.players.find(p => p.userId === match.viewerId)!.battlefield!.filter(c => ids.includes(c.id)); };
     await expect.poll(async () => (await getCards()).filter(c => c.power === 1 && c.toughness === 1).length).toBe(2);
@@ -34,10 +35,24 @@ test('marcadores da seleção alteram todas as cartas e persistem', async ({ pag
     await expect.poll(async () => (await getCards()).filter(c => (c.power ?? 0) === 0 && (c.toughness ?? 0) === 0).length).toBe(3);
     await bar.getByLabel('Poder/resistência').fill('3/-2'); await bar.getByLabel('Poder/resistência').press('Enter');
     await expect.poll(async () => (await getCards()).filter(c => c.power === 3 && c.toughness === -2).length).toBe(2);
+    for (const id of ids.slice(0, 2)) await expect(page.locator(`.own-table-surface .playing-card[data-card-id="${id}"] .pt-modifier`)).toHaveText('+3/-2');
     await bar.getByRole('button', { name: 'Marcadores', exact: true }).click();
-    await bar.getByRole('button', { name: 'Adicionar marcador azul' }).click();
+    const markers = page.getByRole('dialog', { name: 'Marcadores da seleção' });
+    await expect(markers.getByLabel('marcador azul', { exact: true })).toHaveValue('0');
+    await markers.getByRole('button', { name: 'Aumentar marcador azul' }).click();
     await expect.poll(async () => (await getCards()).filter(c => c.markers?.blue === 1).length).toBe(2);
+    await markers.getByRole('button', { name: 'Fechar menu' }).click();
+    await page.keyboard.press('Escape');
+    for (const id of ids.slice(0, 2)) await page.locator(`.own-table-surface .playing-card[data-card-id="${id}"]`).click();
+    await expect(bar.getByLabel('Poder/resistência')).toHaveValue('3/-2');
+    await page.locator(`.own-table-surface .playing-card[data-card-id="${ids[2]}"]`).click();
+    await expect(bar.getByLabel('Poder/resistência')).toHaveValue('');
+    await bar.getByRole('button', { name: 'Marcadores', exact: true }).click();
+    await expect(markers.getByLabel('marcador azul', { exact: true })).toHaveValue('');
+    await markers.getByLabel('marcador azul', { exact: true }).fill('4');
+    await markers.getByLabel('marcador azul', { exact: true }).press('Enter');
+    await expect.poll(async () => (await getCards()).filter(c => c.markers?.blue === 4).length).toBe(3);
     await page.reload();
-    await expect.poll(async () => (await getCards()).filter(c => c.power === 3 && c.toughness === -2 && c.markers?.blue === 1).length).toBe(2);
+    await expect.poll(async () => (await getCards()).filter(c => c.power === 3 && c.toughness === -2 && c.markers?.blue === 4).length).toBe(2);
   } finally { await other.close(); }
 });

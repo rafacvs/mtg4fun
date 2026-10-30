@@ -14,3 +14,9 @@ uma intenção confirmada não reaplica a alteração. O registro continua gené
 para proteger os dados de cartas privadas. Os contratos individuais permanecem.
 Os botões de cor incrementam ou decrementam cada carta a partir do próprio
 valor; o campo X/Y define o mesmo par para todas.
+
+Após o teste visual, o usuário pediu consistência com os painéis existentes:
+o menu de cores reutiliza o painel e os controles de marcadores. Valores
+diferentes aparecem em branco. O campo X/Y mostra o par somente quando todas
+as cartas compartilham os dois modificadores. Cartas sem poder e resistência
+impressos também exibem o selo quando seu modificador não é zero.
