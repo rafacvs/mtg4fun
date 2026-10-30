@@ -42,10 +42,8 @@ test('envia e guarda nome, formato, lugares, vida e deck ao criar a mesa', async
   expect(room.participants).toHaveLength(1);
   expect(room.participants[0].ready).toBe(false);
   expect(room.participants[0].deckId).toBe(deck.id);
+  await expect(page).toHaveURL(new RegExp(`#/salas/${room.id}$`));
   await page.reload();
-  const card = page.getByRole('article', { name: 'Nome ilustrativo', exact: true });
-  await expect(card.getByText('Você participa desta sala.')).toBeVisible();
-  await card.getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Preparação da sala' })).toBeVisible();
   const mobilePreparation = await page.locator('.mobile-preparation').isVisible();
   if (mobilePreparation) await page.getByRole('button', { name: /Trocar/ }).click();
@@ -65,7 +63,7 @@ test('envia e guarda nome, formato, lugares, vida e deck ao criar a mesa', async
   expect(player.commandCount).toBe(0);
 });
 
-test('prioriza as próprias mesas e não promete vagas em partidas iniciadas', async ({ page, browser, baseURL }) => {
+test('separa mesas livres das em andamento e não promete vagas em partidas iniciadas', async ({ page, browser, baseURL }) => {
   test.setTimeout(60_000);
   await signIn(page);
   const other = await browser.newContext({ baseURL });
@@ -78,16 +76,68 @@ test('prioriza as próprias mesas e não promete vagas em partidas iniciadas', a
     const { room: open } = await (await other.request.post('/api/rooms', { data: roomBody({ name: 'Mesa aberta' }) })).json();
     const { room: mine } = await (await page.request.post('/api/rooms', { data: roomBody({ name: 'Minha mesa' }) })).json();
     await expect(page.getByRole('article', { name: mine.title, exact: true })).toBeVisible();
-    const titles = await page.getByRole('region', { name: 'Salas', exact: true }).getByRole('article').locator('h3').allTextContents();
-    expect(titles.indexOf(mine.title)).toBeLessThan(titles.indexOf(open.title));
-    expect(titles.indexOf(open.title)).toBeLessThan(titles.indexOf(live.title));
+    const free = page.getByRole('region', { name: 'Mesas livres', exact: true });
+    const inProgress = page.getByRole('region', { name: 'Em andamento', exact: true });
+    await expect(free.getByRole('article', { name: mine.title, exact: true }).getByRole('link', { name: 'Entrar na mesa', exact: true })).toBeVisible();
+    await expect(free.getByRole('article', { name: open.title, exact: true }).getByRole('button', { name: 'Entrar na sala', exact: true })).toBeVisible();
+    await expect(inProgress.getByRole('article', { name: live.title, exact: true })).toBeVisible();
+    const { deck: myDeck } = await (await page.request.post('/api/decks', { multipart: { file: { name: 'minha.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><deckname>Minha</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>') } } })).json();
+    expect((await page.request.put(`/api/rooms/${mine.id}/participants/me/ready`, { data: { deckId: myDeck.id } })).ok()).toBe(true);
+    expect((await page.request.post(`/api/rooms/${mine.id}/start`, { data: {} })).status()).toBe(201);
+    await expect(inProgress.getByRole('article', { name: mine.title, exact: true }).getByRole('link', { name: 'Voltar à partida', exact: true })).toBeVisible();
+    await expect(free.getByRole('article', { name: mine.title, exact: true })).toHaveCount(0);
     const running = page.getByRole('article', { name: live.title, exact: true });
-    await expect(running).toContainText('Partida iniciada');
+    await expect(running).toContainText('Em andamento');
     await expect(running).not.toContainText(/vaga|livre/);
     await expect(running.getByRole('button', { name: 'Entrar na sala', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('region', { name: 'Minhas mesas', exact: true })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Mesas abertas', exact: true })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Em jogo', exact: true })).toBeVisible();
+  } finally { await other.close(); }
+});
+
+test('filtra as mesas por estado, vaga e busca sobre as salas reais', async ({ page, browser, baseURL }) => {
+  test.setTimeout(60_000);
+  await signIn(page);
+  const other = await browser.newContext({ baseURL });
+  try {
+    expect((await other.request.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+    const { deck } = await (await other.request.post('/api/decks', { multipart: { file: { name: 'filtros.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><deckname>Filtros</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>') } } })).json();
+    const stamp = Date.now();
+    const { room: live } = await (await other.request.post('/api/rooms', { data: roomBody({ name: `Filtro em jogo ${stamp}` }) })).json();
+    expect((await other.request.put(`/api/rooms/${live.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
+    expect((await other.request.post(`/api/rooms/${live.id}/start`, { data: {} })).status()).toBe(201);
+    const { room: open } = await (await other.request.post('/api/rooms', { data: roomBody({ name: `Filtro aberta ${stamp}` }) })).json();
+    const { room: full } = await (await other.request.post('/api/rooms', { data: roomBody({ name: `Filtro cheia ${stamp}`, seats: 1 }) })).json();
+    const rooms = page.getByRole('region', { name: 'Salas', exact: true });
+    const card = (title: string) => rooms.getByRole('article', { name: title, exact: true });
+    await expect(card(open.title)).toBeVisible();
+    await expect(card(live.title)).toBeVisible();
+    await expect(card(full.title).getByRole('button', { name: 'Entrar na sala', exact: true })).toBeDisabled();
+
+    await page.getByRole('button', { name: /^Em preparação/ }).click();
+    await expect(card(open.title)).toBeVisible();
+    await expect(card(live.title)).toHaveCount(0);
+
+    await page.getByRole('button', { name: /^Em andamento/ }).click();
+    await expect(card(live.title)).toBeVisible();
+    await expect(card(open.title)).toHaveCount(0);
+
+    await page.getByRole('button', { name: /^Todas/ }).click();
+    await page.getByRole('button', { name: 'Com vaga', exact: true }).click();
+    await expect(card(open.title)).toBeVisible();
+    await expect(card(full.title)).toHaveCount(0);
+    await expect(card(live.title)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Com vaga', exact: true }).click();
+
+    await page.getByRole('searchbox', { name: 'Buscar mesa ou jogador' }).fill(`FILTRO CHEIA ${stamp}`);
+    await expect(rooms.getByRole('article')).toHaveCount(1);
+    await expect(card(full.title)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Todas/ })).toContainText('1');
+
+    await page.getByRole('searchbox', { name: 'Buscar mesa ou jogador' }).fill(`inexistente ${stamp}`);
+    await expect(rooms.getByRole('article')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Limpar filtros', exact: true }).click();
+    await expect(card(open.title)).toBeVisible();
+    await expect(card(live.title)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   } finally { await other.close(); }
 });
 

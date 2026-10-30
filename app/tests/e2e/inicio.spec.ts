@@ -23,7 +23,7 @@ test('inicia com sete na mão e o comandante no comando', async ({ page }, testI
   const panel = page.getByRole('dialog', { name: 'Montar a mesa' });
   await panel.getByLabel('Nome da mesa').fill('Mesa de início');
   await panel.getByRole('button', { name: 'Criar e sentar' }).click();
-  await page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'Mesa de início', exact: true }) }).getByRole('link', { name: 'Entrar na mesa', exact: true }).click();
+  await expect(page).toHaveURL(/#\/salas\/\d+$/);
   await choosePreparationDeck(page, { label: 'Início' });
   await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();

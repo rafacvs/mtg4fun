@@ -3,7 +3,7 @@ import type { Deck } from '../decks/deckApi';
 import type { RoomDraft } from './roomsApi';
 
 export function CreateRoomPanel({ decks, busy, error, onCreate, onClose }: {
-  decks: Deck[]; busy: boolean; error: string; onCreate: (draft: RoomDraft) => Promise<boolean>; onClose: () => void;
+  decks: Deck[]; busy: boolean; error: string; onCreate: (draft: RoomDraft) => Promise<void>; onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { dialog.current?.showModal(); }, []);
@@ -17,7 +17,7 @@ export function CreateRoomPanel({ decks, busy, error, onCreate, onClose }: {
       seats: Number(data.get('seats')),
       life: Number(data.get('life')),
       ...(deckId ? { deckId } : {}),
-    }).then(created => { if (created) onClose(); });
+    });
   }
   return <dialog ref={dialog} className="create-room-panel" aria-labelledby="create-room-title" onCancel={onClose}>
     <form onSubmit={submit}>
