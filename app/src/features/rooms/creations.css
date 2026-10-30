@@ -1,6 +1,8 @@
 .creations-catalog .library-empty { margin: 0; }
-.match-board .table-panel.game-actions-token { width: min(514px, calc(100vw - 24px)); }
-.token-creation { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+/* Both tabs share one fixed height so switching never resizes the popover. */
+.match-board .table-panel.game-actions-token { width: min(514px, calc(100vw - 24px)); height: 620px; }
+.token-creation { display: flex; flex: 1; flex-direction: column; gap: 12px; min-height: 0; }
+.token-creation > [role=tabpanel] { flex: 1; min-height: 0; }
 .match-board .table-panel .token-tabs button { gap: 8px; }
 .match-board .table-panel .token-tabs .table-icon { width: 14px; height: 14px; flex-basis: 14px; }
 .creations-catalog { display: flex; flex-direction: column; gap: 12px; min-height: 0; margin: 0; }
@@ -11,7 +13,7 @@
 .creations-catalog .library-empty { margin: 0; }
 
 /* Catalog tokens are the cards themselves: clicking one creates it. */
-.token-grid { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 20px; max-height: min(400px, calc(100dvh - 340px)); min-height: 120px; margin: 0; padding: 4px 6px 4px 4px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.token-grid { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 20px; flex: 1; min-height: 0; align-content: start; margin: 0; padding: 4px 6px 4px 4px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 .token-grid li { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .match-board .table-panel .token-tile { position: relative; display: block; width: 100%; aspect-ratio: 63 / 88; height: auto; min-height: 0; padding: 0; border: 0; border-radius: 6px; background: var(--bg); box-shadow: 0 6px 14px #0009; }
 .match-board .table-panel .token-tile:hover:not(:disabled), .match-board .table-panel .token-tile:focus-visible { box-shadow: 0 0 0 2px var(--gold), 0 8px 18px #000b; }
@@ -27,7 +29,7 @@
 .token-footer small { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
 
 /* Custom token form. */
-.creations-form { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+.creations-form { display: flex; flex-direction: column; gap: 14px; margin: 0; overflow: auto; }
 .match-board .table-panel .creations-form .form-field { display: flex; flex-direction: column; gap: 8px; margin: 0; }
 .match-board .table-panel .creations-form .form-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: var(--text); font-size: 13px; font-weight: 600; }
 .creations-form .form-label small { color: var(--muted); font-size: 12px; font-weight: 400; }

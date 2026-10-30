@@ -116,7 +116,7 @@
 
 .match-board .segmented { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
 .match-board .table-panel .segmented button { flex: 1; min-height: 38px; padding: 0 12px; border: 0; border-radius: 4px; background: transparent; color: var(--text); font-size: 13px; font-weight: 500; }
-.match-board .table-panel .segmented button:hover:not(:disabled) { color: var(--gold); }
+.match-board .table-panel .segmented button:hover:not(:disabled):not([aria-pressed=true]):not([aria-selected=true]) { color: var(--gold); }
 .match-board .table-panel .segmented button:is([aria-pressed=true], [aria-selected=true]) { background: linear-gradient(#edc673, #c99439); color: #241906; font-weight: 600; }
 
 /* Library workspaces need room for cards; their command menu stays compact. */
