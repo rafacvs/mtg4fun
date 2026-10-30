@@ -140,6 +140,8 @@
 
 .opponent-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); }
 .match-board .battlefield-fit.battlefield-scroll { display: block; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; }
+.match-board .battlefield-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.match-board .battlefield-scroll::-webkit-scrollbar { display: none; }
 .match-board .battlefield-zoom-space { position: relative; }
 .match-board .field-center { position: absolute; right: 4px; top: 4px; z-index: 4; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 6px; border-radius: 4px; background: #0b0e10dd; }
 .match-board .field-center .table-icon { width: 16px; height: 16px; }
