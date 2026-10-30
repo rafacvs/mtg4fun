@@ -85,6 +85,7 @@ poder/resistência continuam editáveis como no
 - Consultar imagem ampliada e texto da carta.
 - Criar fichas do catálogo ou personalizadas. Fichas personalizadas têm nome, descrição, poder/resistência opcionais e imagem padrão.
 - Criar cópias independentes. Vida, cinco marcadores de cor e modificadores de poder/resistência são valores manuais, conforme a [decisão da issue 12](../decisions/12-vida-e-contadores.md).
+- A inspeção de uma carta oferece, abaixo da cópia independente, um botão para cada ficha do catálogo que essa carta cria.
 - Vida é alterável durante a partida, independentemente do valor inicial configurado.
 - Rolar dados, incluindo D20, e moedas, com resultados sincronizados e registrados.
 - Não há desfazer genérico ou operação especial de desfazer compra. Jogador move a carta de volta; log mostra ambas as ações.

@@ -7,4 +7,5 @@
 <card><name>Day Test</name><text>Front face.</text><set uuid="day-test">TST</set><related attach="transform">Night Test</related></card>
 <card><name>Night Test</name><text>Back face.</text><set uuid="day-test">TST</set><prop><side>back</side></prop><related attach="transform">Day Test</related></card>
 <card><name>Printed Test</name><prop><pt>2/3</pt></prop></card>
+<card><name>Mabel, Heir to Cragflame</name><text>When Mabel enters, create Cragflame.</text><prop><type>Legendary Creature — Mouse Soldier</type><maintype>Creature</maintype><pt>3/3</pt></prop></card>
 </cards></cockatrice_carddatabase>

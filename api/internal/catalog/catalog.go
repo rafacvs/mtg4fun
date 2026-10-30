@@ -24,6 +24,7 @@ type Card struct {
 	Power         string
 	Toughness     string
 	Faces         []string
+	CreatedTokens []string
 }
 
 type Catalog struct {
@@ -31,10 +32,11 @@ type Catalog struct {
 }
 
 type datasetCard struct {
-	Name    string       `xml:"name"`
-	Text    string       `xml:"text"`
-	Token   string       `xml:"token"`
-	Sets    []datasetSet `xml:"set"`
+	Name           string       `xml:"name"`
+	Text           string       `xml:"text"`
+	Token          string       `xml:"token"`
+	Sets           []datasetSet `xml:"set"`
+	ReverseRelated []string     `xml:"reverse-related"`
 	Related []struct {
 		Name   string `xml:",chardata"`
 		Attach string `xml:"attach,attr"`
@@ -59,6 +61,7 @@ type datasetSet struct {
 func Load(cardsPath, tokensPath string) (*Catalog, error) {
 	catalog := &Catalog{cards: map[string]Card{}}
 	relations := map[string][]string{}
+	createdTokens := map[string][]string{}
 	for _, path := range []string{cardsPath, tokensPath} {
 		if err := readDataset(path, func(card datasetCard) {
 			if _, ok := catalog.cards[card.Name]; !ok {
@@ -68,6 +71,14 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 				for _, related := range card.Related {
 					if related.Attach == "transform" {
 						relations[card.Name] = append(relations[card.Name], strings.TrimSpace(related.Name))
+					}
+				}
+				if card.Token == "1" {
+					for _, creator := range card.ReverseRelated {
+						creator = strings.TrimSpace(creator)
+						if creator != "" {
+							createdTokens[creator] = append(createdTokens[creator], card.Name)
+						}
 					}
 				}
 			}
@@ -91,6 +102,22 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 		if len(card.Faces) > 1 {
 			catalog.cards[name] = card
 		}
+	}
+	for creator, tokens := range createdTokens {
+		card, exists := catalog.cards[creator]
+		if !exists {
+			continue
+		}
+		seen := map[string]bool{}
+		for _, token := range tokens {
+			definition, exists := catalog.cards[token]
+			if exists && definition.Token && !seen[token] {
+				card.CreatedTokens = append(card.CreatedTokens, token)
+				seen[token] = true
+			}
+		}
+		sort.Strings(card.CreatedTokens)
+		catalog.cards[creator] = card
 	}
 	return catalog, nil
 }
