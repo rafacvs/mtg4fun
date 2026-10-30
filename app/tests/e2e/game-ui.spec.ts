@@ -224,10 +224,9 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     const library = page.getByRole('dialog', { name: 'Grimório', exact: true });
     await withinViewport(library);
     const menuBox = (await library.boundingBox())!;
-    expect(menuBox.width).toBeLessThanOrEqual(info.project.name === 'celular' ? 400 : 320);
+    expect(menuBox.width).toBeLessThanOrEqual(info.project.name === 'celular' ? 400 : 430);
     if (info.project.name !== 'celular-horizontal') expect(menuBox.height).toBeGreaterThan(menuBox.width);
-    const rows = await library.locator('.table-menu-item').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().x));
-    expect(new Set(rows).size).toBe(1);
+    await expect(library.locator('.library-tile')).toHaveCount(5);
     if (info.project.name === 'desktop') {
       const origin = (await trigger.boundingBox())!;
       expect(Math.abs(menuBox.x - origin.x - origin.width)).toBeLessThan(24);
@@ -235,7 +234,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await page.screenshot({ animations: 'disabled', path: info.outputPath('02-grimorio.png'), fullPage: true });
     await library.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
     await library.getByLabel('Quantidade de cartas').fill('2');
-    await library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }).click();
+    await library.getByRole('button', { name: 'Olhar 2 cartas do topo', exact: true }).click();
     await expect(library.locator('.library-card')).toHaveCount(2);
     await withinViewport(library);
     await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();

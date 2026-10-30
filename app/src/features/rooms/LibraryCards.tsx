@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { deckApi } from '../decks/deckApi';
 import type { Card } from './roomsApi';
+import { ReorderHandle } from './ReorderHandle';
 import { useLibraryDrag } from './useLibraryDrag';
 import { useLibrarySelectionGesture } from './useLibrarySelectionGesture';
 
 type Props = {
   cards: Card[];
-  layout: 'grid' | 'strip';
   filtered: Card[];
   selectedIDs: string[];
   busy: boolean;
@@ -21,7 +21,7 @@ export function LibraryCards(props: Props) {
   return (
     <div
       ref={drag.container}
-      className={`library-cards library-${props.layout}`}
+      className="library-cards library-strip"
       aria-label="Cartas da consulta"
     >
       {!props.filtered.length && (
@@ -58,39 +58,16 @@ export function LibraryCards(props: Props) {
               }
             }}
           >
-            <button
-              className="library-drag-handle"
-              aria-label={`Reordenar ${card.name}`}
-              title="Arraste para reordenar. No teclado, use as teclas de direção."
-              disabled={props.busy}
-              onClick={(event) => event.stopPropagation()}
-              onPointerDown={(event) => drag.start(event, card.id)}
-              onPointerMove={drag.move}
-              onPointerUp={drag.finish}
-              onPointerCancel={drag.cancel}
-              onLostPointerCapture={drag.cancel}
-              onKeyDown={(event) => {
-                event.stopPropagation();
-                const offset = ['ArrowLeft', 'ArrowUp'].includes(event.key)
-                  ? -1
-                  : ['ArrowRight', 'ArrowDown'].includes(event.key)
-                    ? 1
-                    : 0;
+            <ReorderHandle
+              name={card.name}
+              id={card.id}
+              busy={props.busy}
+              drag={drag}
+              onStep={(offset) => {
                 const target = props.cards[index + offset];
-                if (offset) {
-                  event.preventDefault();
-                  if (target && !props.busy) void props.onReorder(card.id, target.id);
-                }
+                if (target) void props.onReorder(card.id, target.id);
               }}
-            >
-              <svg viewBox="0 0 16 24" width="16" height="24" aria-hidden="true">
-                {[6, 12, 18].flatMap((y) =>
-                  [5, 11].map((x) => (
-                    <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" fill="currentColor" />
-                  )),
-                )}
-              </svg>
-            </button>
+            />
             <CardImage card={card} onInspect={props.onInspect} />
             <div className="library-card-info">
               <span className="library-position">

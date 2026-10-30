@@ -107,6 +107,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const closePreview = useCallback(() => setPreviewId(null), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
+  // A search in progress can only end through its own buttons, even after a reload.
+  const viewerSeat = match?.players.find(player => player.userId === match.viewerId);
+  const searchInProgress = viewerSeat?.consultationFrom === 'all' || (!viewerSeat?.consultationFrom && Boolean(viewerSeat?.consulted?.length));
+  useEffect(() => { if (searchInProgress && !libraryOpen) setLibraryOpen(true); }, [searchInProgress, libraryOpen]);
   const closePlayer = useCallback(() => setMenuPlayerId(null), []);
   const openPlayer = (id: number, anchor: HTMLElement) => {
     setMenuAnchor(anchor); setMenuPlayerId(id); setLibraryOpen(false); setActionsOpen(false);
@@ -378,6 +382,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     {!drag && !preview && selectionActionsOpen && <CardActionBar key={selectionIds.join('|')} cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} onClear={() => setSelectionIds([])} />}
     <LibraryConsultation
       open={libraryOpen}
+      match={match}
       anchor={libraryAnchor}
       cards={own.consulted ?? []}
       revealed={own.revealed ?? []}

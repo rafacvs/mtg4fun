@@ -112,8 +112,6 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
     const library = await openLibrary(page);
     const quantity = library.getByLabel('Quantidade de cartas');
     if (!(await quantity.isVisible())) {
-      const back = board.getByRole('button', { name: 'Voltar', exact: true });
-      if (await back.isVisible()) await activate(back);
       await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
     }
     await quantity.fill(amount);
@@ -126,7 +124,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   const library = await openLibrary(page);
   await library.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await library.getByLabel('Quantidade de cartas').fill('1000');
-  await expect(library.getByRole('button', { name: 'Comprar 1000 carta(s)', exact: true })).toBeDisabled();
+  await expect(library.getByRole('button', { name: 'Comprar 1000 cartas', exact: true })).toBeDisabled();
   expect(await ownHand()).toHaveLength(0);
   await library.getByLabel('Quantidade de cartas').fill('1');
   let lostResponses = 0;
@@ -138,9 +136,9 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
       await route.abort('failed');
     } else await route.continue();
   });
-  await activate(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true }));
+  await activate(library.getByRole('button', { name: 'Comprar 1 carta', exact: true }));
   await expect(library.getByRole('alert')).toContainText('Não foi possível confirmar');
-  await expect(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true })).toBeDisabled();
+  await expect(library.getByRole('button', { name: 'Comprar 1 carta', exact: true })).toBeDisabled();
   await activate(library.getByRole('button', { name: 'Tentar novamente', exact: true }));
   await page.unroute('**/match/actions');
   await expect(board.getByRole('alert')).toHaveCount(0);

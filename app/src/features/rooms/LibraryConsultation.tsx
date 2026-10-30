@@ -1,15 +1,24 @@
-import { MenuItem, PanelFeedback, PanelHeader, TablePanel } from './TablePanel';
+import { useEffect, useState } from 'react';
+import { PanelFeedback, PanelHeader, TablePanel } from './TablePanel';
 import { LibraryCards } from './LibraryCards';
-import type { Card } from './roomsApi';
+import { LibraryMenu } from './LibraryMenu';
+import { LibrarySearchSheet } from './LibrarySearchSheet';
+import { LibrarySetup } from './LibrarySetup';
+import { seatColors } from './PlayerSeat';
+import { TableIcon } from './TableIcon';
+import type { Card, Match } from './roomsApi';
 import {
   useLibraryConsultation,
   type LibraryOperations,
   type LibrarySource,
 } from './useLibraryConsultation';
+import './game-actions.css';
 import './library.css';
+import './library-menu.css';
 
 type Props = LibraryOperations & {
   open: boolean;
+  match: Match;
   anchor: HTMLElement | null;
   cards: Card[];
   revealed: Card[];
@@ -24,7 +33,7 @@ type Props = LibraryOperations & {
 };
 
 export function LibraryConsultation(props: Props) {
-  const { open, cards, revealed, consultationFrom, libraryCount, error, onInspect, onDismiss } =
+  const { open, match, cards, revealed, consultationFrom, libraryCount, error, onInspect, onDismiss } =
     props;
   const busy = props.busy || props.unconfirmed;
   const pool = [
@@ -34,15 +43,13 @@ export function LibraryConsultation(props: Props) {
   const state = useLibraryConsultation(pool, props, consultationFrom);
   const active = Boolean(consultationFrom || pool.length);
   const searching = consultationFrom === 'all' || (!consultationFrom && cards.length > 0);
+  const searchSheet = active && searching;
   const publicCount = pool.filter((card) => card.revealed).length;
+  const [closeAttempted, setCloseAttempted] = useState(false);
   const title = active
-    ? searching
-      ? consultationFrom
-        ? 'Buscar no grimório'
-        : 'Consulta em andamento'
-      : publicCount === pool.length && pool.length
-        ? 'Cartas reveladas'
-        : `Olhar cartas do ${consultationFrom === 'bottom' ? 'fundo' : 'topo'}`
+    ? publicCount === pool.length && pool.length
+      ? 'Cartas reveladas'
+      : `Olhar cartas do ${consultationFrom === 'bottom' ? 'fundo' : 'topo'}`
     : state.view === 'look'
       ? 'Olhar cartas'
       : state.view === 'reveal'
@@ -51,29 +58,50 @@ export function LibraryConsultation(props: Props) {
           ? 'Comprar cartas'
           : 'Grimório';
 
+  const { resetScreen } = state;
+  useEffect(() => { if (!open) resetScreen(); }, [open, resetScreen]);
+  useEffect(() => { if (!searchSheet) setCloseAttempted(false); }, [searchSheet]);
+
   if (!open) return null;
 
+  // The search only ends through its two buttons; every other way out just points at them.
+  if (searchSheet) {
+    return (
+      <TablePanel open anchor={props.anchor} wide blocking onClose={() => setCloseAttempted(true)} label="Grimório" className="library-consultation library-active library-search-sheet">
+        <LibrarySearchSheet
+          state={state}
+          pool={pool}
+          consultedIDs={cards.map((card) => card.id)}
+          libraryCount={libraryCount}
+          closeAttempted={closeAttempted}
+          error={error}
+          busy={props.busy}
+          unconfirmed={props.unconfirmed}
+          onRetry={props.onRetry}
+          onInspect={onInspect}
+          onClosed={onDismiss}
+        />
+      </TablePanel>
+    );
+  }
+
   const selectedCount = state.selectedIDs.length;
-  const validCount =
-    Number.isInteger(state.count) && state.count >= 1 && state.count <= libraryCount;
+  const viewers = match.players.filter(player => player.userId !== match.viewerId).map(player => ({
+    userId: player.userId,
+    name: player.name,
+    position: match.turnOrder.findIndex(item => item.userId === player.userId) + 1,
+    color: seatColors[match.players.indexOf(player) % seatColors.length],
+  })).sort((first, second) => first.position - second.position);
   return (
     <TablePanel
       open={open}
       anchor={props.anchor}
-      wide={active}
+      aboveDock
       onClose={onDismiss}
       label="Grimório"
-      className={`library-consultation ${active ? 'library-active' : ''}`}
+      className={`library-consultation library-framed ${active ? 'library-active' : ''}`}
     >
-      <PanelHeader title={title} subtitle={libraryCount === 1 ? '1 carta' : `${libraryCount} cartas`} onClose={onDismiss} closeLabel={active ? "Minimizar consulta" : "Fechar painel do grimório"} onBack={!active && state.view !== 'menu' ? () => state.choose('menu') : undefined}>
-      {active && (
-            <p className={`library-visibility ${publicCount ? 'public' : ''}`}>
-              {publicCount
-                ? `${publicCount} carta(s) visível(is) para todos`
-                : 'Só você vê estas cartas'}
-            </p>
-          )}
-      </PanelHeader>
+      <PanelHeader title={title} subtitle={libraryCount === 1 ? '1 carta' : `${libraryCount} cartas`} onClose={onDismiss} closeLabel={active ? "Minimizar consulta" : "Fechar painel do grimório"} />
       <PanelFeedback error={error} busy={props.busy} unconfirmed={props.unconfirmed} onRetry={props.onRetry} />
       {state.notice && (
         <p role="status" className="panel-result">
@@ -81,118 +109,45 @@ export function LibraryConsultation(props: Props) {
         </p>
       )}
       {!active && state.view === 'menu' && (
-        <div className="table-menu library-menu">
-          <MenuItem icon="draw" title="Comprar cartas" description="Do topo para sua mão" disabled={busy || !libraryCount} onClick={() => state.choose('draw')} />
-          <MenuItem icon="shuffle" title="Embaralhar" description="Embaralhar apenas o grimório" disabled={busy} opens={false} onClick={() => void state.finish(true)} />
-          <MenuItem icon="eye" title="Olhar cartas" description="Topo ou fundo · Em privado" disabled={busy || !libraryCount} onClick={() => state.choose('look')} />
-          <MenuItem icon="search" title="Buscar no grimório" description="Consultar todas · Em privado" disabled={busy || !libraryCount} onClick={() => void state.searchLibrary()} />
-          <MenuItem icon="reveal" title="Revelar cartas" description="Do topo · Todos veem" disabled={busy || !libraryCount} onClick={() => state.choose('reveal')} />
-        </div>
+        <LibraryMenu
+          disabled={busy}
+          empty={!libraryCount}
+          onDraw={() => state.choose('draw')}
+          onShuffle={() => void state.finish(true)}
+          onLook={() => state.choose('look')}
+          onSearch={() => void state.searchLibrary()}
+          onReveal={() => state.choose('reveal')}
+        />
       )}
       {!active && state.view !== 'menu' && (
-        <div className="library-setup">
-          <p>
-            {state.view === 'look'
-              ? 'Só você verá estas cartas.'
-              : state.view === 'reveal'
-                ? 'Estas cartas serão mostradas a todos os jogadores.'
-                : 'Coloque cartas do topo na sua mão.'}
-          </p>
-          <div className="library-command">
-            {state.view === 'look' && (
-              <div className="panel-field">
-                <span className="panel-label" id="library-source-label">De onde</span>
-                <div className="segmented" role="group" aria-labelledby="library-source-label">
-                  {(['top', 'bottom'] as const).map(source => <button key={source} type="button" aria-pressed={state.source === source} disabled={busy} onClick={() => state.setSource(source)}>{source === 'top' ? 'Topo' : 'Fundo'}</button>)}
-                </div>
-              </div>
-            )}
-            <div className="panel-field">
-              <span className="panel-label">Quantidade</span>
-              <div className="library-stepper">
-                <button
-                  className="secondary"
-                  aria-label="Diminuir quantidade"
-                  disabled={busy || state.count <= 1}
-                  onClick={() => state.setCount(state.count - 1)}
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  aria-label="Quantidade de cartas"
-                  min="1"
-                  max={libraryCount}
-                  disabled={busy}
-                  value={state.count}
-                  onChange={(event) => state.setCount(Number(event.target.value))}
-                />
-                <button
-                  className="secondary"
-                  aria-label="Aumentar quantidade"
-                  disabled={busy || state.count >= libraryCount}
-                  onClick={() => state.setCount(state.count + 1)}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="library-setup-actions">
-            <button className="panel-primary" disabled={busy || !validCount} onClick={() => void state.begin()}>
-              {state.view === 'look' ? 'Olhar' : state.view === 'reveal' ? 'Revelar' : 'Comprar'}{' '}
-              {state.count || ''} carta(s)
-            </button>
-          </div>
-        </div>
+        <LibrarySetup
+          view={state.view}
+          source={state.source}
+          count={state.count}
+          libraryCount={libraryCount}
+          busy={busy}
+          viewers={viewers}
+          onSource={state.setSource}
+          onCount={state.setCount}
+          onBegin={() => void state.begin()}
+          onCancel={() => state.choose('menu')}
+        />
+      )}
+      {active && (
+        <p className={`library-pill ${publicCount ? 'public' : ''}`}>
+          <TableIcon name={publicCount ? 'sun' : 'lock'} />
+          {publicCount ? `${publicCount} carta(s) visível(is) para todos` : 'Só você vê estas cartas'}
+        </p>
       )}
       {active && (
         <>
           <div className="library-body">
           <div className="grimorio-workspace">
-            {searching && (
-              <div className="library-search">
-                <input
-                  aria-label="Buscar no grimório"
-                  placeholder="Buscar por nome"
-                  disabled={busy}
-                  value={state.search}
-                  onChange={(event) => state.setSearch(event.target.value)}
-                />
-                <label>Tipo
-                  <select aria-label="Filtrar por tipo" value={state.typeFilter} disabled={busy} onChange={event => state.setTypeFilter(event.target.value)}>
-                    <option value="">Todos os tipos</option>
-                    <option value="Creature">Criaturas</option>
-                    <option value="Land">Terrenos</option>
-                    <option value="Artifact">Artefatos</option>
-                    <option value="Enchantment">Encantamentos</option>
-                    <option value="Instant">Instantâneas</option>
-                    <option value="Sorcery">Feitiços</option>
-                    <option value="Planeswalker">Planeswalkers</option>
-                    <option value="Battle">Batalhas</option>
-                    <option value="unknown">Tipo indisponível</option>
-                  </select>
-                </label>
-                <button
-                  className="text-button"
-                  disabled={busy || !state.filtered.length}
-                  onClick={state.selectResults}
-                >
-                  {state.filtered.length &&
-                  state.filtered.every((card) => state.selectedIDs.includes(card.id))
-                    ? 'Desmarcar resultados'
-                    : 'Selecionar resultados'}
-                </button>
-              </div>
-            )}
-            {!searching && (
-              <p className="library-order">
-                Ordem no grimório: primeira → última · Arraste pela alça ou use as teclas de direção.
-              </p>
-            )}
+            <p className="library-order">
+              Ordem no grimório: primeira → última · Arraste pela alça ou use as teclas de direção.
+            </p>
             <LibraryCards
               cards={pool}
-              layout={searching ? 'grid' : 'strip'}
               filtered={state.filtered}
               selectedIDs={state.selectedIDs}
               busy={busy}
@@ -231,14 +186,13 @@ export function LibraryConsultation(props: Props) {
             </div>
             <div className="library-finish-actions">
               <button
-                className={searching ? '' : 'secondary'}
+                className="secondary"
                 disabled={busy}
                 onClick={() => void state.finish(true).then(succeeded => { if (succeeded) onDismiss(); })}
               >
                 Embaralhar e fechar
               </button>
               <button
-                className={searching ? 'secondary' : ''}
                 disabled={busy}
                 onClick={() => void state.finish().then(succeeded => { if (succeeded) onDismiss(); })}
               >

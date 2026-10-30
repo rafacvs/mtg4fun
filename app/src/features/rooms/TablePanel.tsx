@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { TableIcon, type TableIconName } from './TableIcon';
 import './table-panels.css';
 
@@ -30,13 +30,14 @@ export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean,
   }, [open, ref, returnFocus]);
 }
 
-export function TablePanel({ open, label, anchor, wide = false, fitViewport = false, align = 'end', className = '', children, onClose }: {
+export function TablePanel({ open, label, anchor, wide = false, fitViewport = false, aboveDock = false, blocking = false, align = 'end', className = '', children, onClose }: {
   open: boolean; label: string; anchor?: HTMLElement | null; wide?: boolean; align?: 'start' | 'end' | 'above';
-  fitViewport?: boolean;
+  fitViewport?: boolean; aboveDock?: boolean; blocking?: boolean;
   className?: string; children: ReactNode; onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<{ left: number; top: number; maxHeight?: number }>({ left: 12, top: 12 });
+  const [anchorY, setAnchorY] = useState<number | null>(null);
   usePanelFocus(ref, open, onClose, anchor?.matches('button, a[href], input, select, [tabindex]') ? anchor : undefined);
   useLayoutEffect(() => {
     if (!open || !ref.current) return;
@@ -70,7 +71,13 @@ export function TablePanel({ open, label, anchor, wide = false, fitViewport = fa
           top = origin.top;
         }
       }
-      setPlacement({ left: Math.max(12, Math.min(left, width - box.width - 12)), top: Math.max(minimumTop, Math.min(top, offsetY + height - box.height - 12)), maxHeight: maximumHeight });
+      // Rests above the hand when it fits there; otherwise only the screen limits it.
+      const dockTop = aboveDock ? document.querySelector('.own-dock')?.getBoundingClientRect().top : undefined;
+      const bottom = dockTop !== undefined && dockTop - 8 - box.height >= minimumTop ? dockTop - 8 : offsetY + height - 12;
+      const finalLeft = Math.max(12, Math.min(left, width - box.width - 12));
+      const finalTop = Math.max(minimumTop, Math.min(top, bottom - box.height));
+      setPlacement({ left: finalLeft, top: finalTop, maxHeight: maximumHeight });
+      setAnchorY(origin && !wide && finalLeft >= origin.right ? Math.max(20, Math.min(origin.top + origin.height / 2 - finalTop, box.height - 20)) : null);
     };
     position();
     const observer = new ResizeObserver(position);
@@ -86,7 +93,7 @@ export function TablePanel({ open, label, anchor, wide = false, fitViewport = fa
       window.visualViewport?.removeEventListener('resize', position);
       window.visualViewport?.removeEventListener('scroll', position);
     };
-  }, [open, anchor, wide, fitViewport, align]);
+  }, [open, anchor, wide, fitViewport, aboveDock, align]);
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => {
@@ -98,7 +105,7 @@ export function TablePanel({ open, label, anchor, wide = false, fitViewport = fa
     return () => document.removeEventListener('pointerdown', outside);
   }, [open, anchor, onClose]);
   if (!open) return null;
-  return <><div className="table-panel-scrim" aria-hidden="true" onPointerDown={event => event.stopPropagation()} onClick={onClose} /><div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={placement}>{children}</div></>;
+  return <><div className={`table-panel-scrim ${blocking ? 'blocking' : ''}`} aria-hidden="true" onPointerDown={event => event.stopPropagation()} onClick={onClose} /><div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={{ ...placement, ...(anchorY === null ? {} : { '--anchor-y': `${anchorY}px`, '--anchor-opacity': 1 }) } as CSSProperties}>{children}</div></>;
 }
 
 export function PanelHeader({ title, subtitle, onClose, onBack, closeLabel = 'Fechar menu', children }: {
