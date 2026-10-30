@@ -18,7 +18,9 @@ test("preparação desktop acomoda mesa, faixa e painéis na altura disponível"
   ]) {
     await page.setViewportSize(viewport);
     await page.goto(`/#/salas/${room.id}`);
-    await expect(page.getByRole("button", { name: /^Rolar D20$/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^Rolar D20$/ }),
+    ).toBeVisible();
     await expect(page.locator(".preparation-empty-seat")).toHaveCount(3);
     await expect(
       page
@@ -135,7 +137,9 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
       (await other.request.post(path + "/participants", { data: {} })).ok(),
     ).toBe(true);
     await page.goto(`/#/salas/${room.id}`);
-    await expect(page.getByRole("button", { name: /^Rolar D20$/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^Rolar D20$/ }),
+    ).toBeVisible();
     await page.screenshot({
       path: info.outputPath("preparacao.png"),
       fullPage: true,
@@ -189,6 +193,7 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     await expect(page.getByRole("button", { name: /^Confirmar / })).toBeEnabled(
       { timeout: 15000 },
     );
+    await expect(page.locator(".own-roll strong")).toHaveText("Amigo da mesa");
     await page.screenshot({
       path: info.outputPath("ordem.png"),
       fullPage: true,
@@ -242,5 +247,152 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     });
   } finally {
     await other.close();
+  }
+});
+
+test("confirmação com quatro jogadores mantém mesa, ordem e registro na tela", async ({
+  page,
+  browser,
+  baseURL,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "Composição desktop");
+  test.setTimeout(90000);
+  const contexts = await Promise.all(
+    [0, 1, 2].map(() => browser.newContext({ baseURL })),
+  );
+  try {
+    const requests = [
+      page.request,
+      ...contexts.map((context) => context.request),
+    ];
+    const logins = ["amigo", "segundo", "amigo3", "amigo4"];
+    const deckIds: number[] = [];
+    for (const [index, request] of requests.entries()) {
+      await request.post("/api/session", {
+        data: { login: logins[index], password: "senha-do-navegador" },
+      });
+      const response = await request.post("/api/decks", {
+        multipart: {
+          file: {
+            name: "ordem.cod",
+            mimeType: "application/xml",
+            buffer: Buffer.from(
+              '<cockatrice_deck><deckname>Deck da confirmação</deckname><zone name="main"><card number="10" name="Island"/></zone></cockatrice_deck>',
+            ),
+          },
+        },
+      });
+      expect(response.ok()).toBe(true);
+      deckIds.push((await response.json()).deck.id);
+    }
+    const { room } = await (
+      await page.request.post("/api/rooms", {
+        data: roomBody({ seats: 4, deckId: deckIds[0] }),
+      })
+    ).json();
+    const path = `/api/rooms/${room.id}`;
+    for (const [index, request] of requests.entries()) {
+      if (index)
+        expect(
+          (await request.post(path + "/participants", { data: {} })).ok(),
+        ).toBe(true);
+      expect(
+        (
+          await request.put(path + "/participants/me/ready", {
+            data: { deckId: deckIds[index] },
+          })
+        ).ok(),
+      ).toBe(true);
+    }
+    expect(
+      (await page.request.post(path + "/preparation/start", { data: {} })).ok(),
+    ).toBe(true);
+    await page.goto(`/#/salas/${room.id}`);
+    await expect(page.locator(".order-seat")).toHaveCount(4);
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 1280, height: 720 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const bounds = await page.evaluate(() => {
+        const rect = (selector: string) =>
+          document.querySelector(selector)!.getBoundingClientRect().toJSON();
+        return {
+          table: rect(".order-table"),
+          ranking: rect(".order-ranking"),
+          sidebar: rect(".order-sidebar"),
+          footer: rect(".order-table footer"),
+          button: rect(".order-result .dice-roll-button"),
+          overflow: document.documentElement.scrollWidth > innerWidth,
+        };
+      });
+      expect(bounds.ranking.bottom).toBeLessThanOrEqual(viewport.height);
+      expect(bounds.sidebar.bottom).toBeLessThanOrEqual(viewport.height);
+      expect(bounds.footer.bottom).toBeLessThan(bounds.table.bottom);
+      expect(bounds.ranking.top).toBeGreaterThan(bounds.table.bottom);
+      expect(bounds.button.bottom).toBeLessThanOrEqual(viewport.height);
+      expect(bounds.overflow).toBe(false);
+      await page.screenshot({
+        path: info.outputPath(`confirmacao-${viewport.width}.png`),
+        fullPage: true,
+      });
+    }
+    await expect(
+      page.locator(".order-preparation .preparation-panel-corners > img"),
+    ).toHaveCount(12);
+    const values = new Set<number>();
+    let highestValue = 0;
+    let leaderName = "";
+    for (const [index, request] of requests.entries()) {
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const response = await request.post(path + "/preparation/actions", {
+          data: { kind: "roll", intentId: randomUUID() },
+        });
+        expect(response.ok()).toBe(true);
+        const state = await (await request.get(path + "/preparation")).json();
+        const roll = state.rolls.at(-1);
+        if (values.has(roll.value)) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          continue;
+        }
+        await expect(
+          page
+            .locator(".order-seat")
+            .nth(index)
+            .getByRole("img", { name: `D20: ${roll.value}`, exact: true }),
+        ).toBeVisible({ timeout: 15000 });
+        if (roll.value > highestValue) {
+          highestValue = roll.value;
+          leaderName = roll.name;
+        }
+        await expect(page.locator(".own-roll strong")).toHaveText(leaderName);
+        expect(
+          (
+            await request.post(path + "/preparation/actions", {
+              data: {
+                kind: "confirm",
+                intentId: randomUUID(),
+                rollId: roll.id,
+              },
+            })
+          ).ok(),
+        ).toBe(true);
+        values.add(roll.value);
+        break;
+      }
+    }
+    await expect(page.locator(".order-result h3")).toContainText(
+      "Você joga em",
+    );
+    await expect(page.locator(".own-roll strong")).toHaveText(/^[1-4]º$/);
+    await expect(page.locator(".order-felt strong")).toContainText("começa");
+    await expect(page.locator(".order-result-summary")).toContainText("Ordem:");
+    await page.screenshot({
+      path: info.outputPath("ordem-definida-4.png"),
+      fullPage: true,
+    });
+    await expect(page.locator(".own-dock")).toBeVisible({ timeout: 20000 });
+  } finally {
+    await Promise.all(contexts.map((context) => context.close()));
   }
 });

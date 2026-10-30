@@ -92,3 +92,28 @@ celular vertical/horizontal; o desktop foi repetido após corrigir a
 reconstrução do mapa de confirmações. Capturas de preparação e ordem foram
 inspecionadas; o aro contínuo foi conferido nessas capturas. A suíte completa
 de regressão de navegador não foi executada.
+
+## Revisão da confirmação da ordem em 30/10/2026
+
+O usuário pediu que a confirmação se aproximasse da referência com quatro
+jogadores ao redor do oval, classificação abaixo do quadro e dois painéis
+laterais. Pediu também a padronização dos quatro cantos dos painéis e que
+“Quem começa?” destaque a pessoa com a maior rolagem, em vez do número isolado.
+Essa autorização cobre apresentação; os contratos e as regras de confirmação
+permanecem os já aprovados acima.
+
+A composição agora reserva altura para a classificação, alinha informações da
+sala no cabeçalho e usa shields e D20 facetados nos lugares e na classificação.
+Os três quadros usam o mesmo ornamento, rotacionado em cada canto e afastado
+da borda. Antes da definição, o destaque apresenta os nomes com a maior
+rolagem já concluída, indicando empate quando houver. Após todos confirmarem,
+mostra a posição pessoal, a sequência e o progresso até a abertura automática.
+O histórico preserva rolagem interna.
+
+Verificação desta revisão: build/typecheck e `git diff --check` passaram.
+A suíte focada de navegador passou com API e MySQL reais: fluxo completo
+no desktop e celular vertical/horizontal, mais composição de quatro jogadores
+em 1440×900 e 1280×720. As capturas da ordem provisória e definida foram
+inspecionadas. O teste verifica o destaque do nome da maior rolagem concluída,
+a posição final e a abertura da mesa. Os cenários exclusivos de desktop são
+omitidos nas duas orientações móveis. A regressão completa não foi executada.
