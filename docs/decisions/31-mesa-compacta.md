@@ -131,3 +131,73 @@ e abertura de suas ações. Sem alteração da partida. Para revisar visualmente
 todos os ícones vazios, foi usado um snapshot controlado somente no navegador,
 sem gravação no servidor; essa captura não comprova esvaziamento pela API.
 Capturas em `app/test-results/zones-standard-*.png`. Sem build ou suíte completa.
+
+## Contagem da mão e emblemas das zonas
+
+Em 30/10/2026, o usuário pediu mover a contagem de cartas da mão para o
+cabeçalho de cada jogador, junto ao nome, e destacar grimório, cemitério e
+exílio com ícones maiores e centralizados e a contagem em uma pequena bolha
+circular. A mudança é de apresentação; a privacidade do conteúdo da mão e as
+cartas do topo visíveis nas zonas públicas permanecem.
+
+A contagem usa o ícone de mão ao lado do nome nos cabeçalhos. A coluna de zonas
+deixa de repetir a mão. Grimório, cemitério e exílio recebem emblemas centrais
+e contadores circulares; nas faixas compactas do celular, os emblemas continuam
+visíveis em alvos de zona maiores e roláveis.
+
+## Acabamento seguinte da mão
+
+Em 30/10/2026, o usuário pediu retirar os subtítulos “Você” e “Mão privada”
+dos cabeçalhos, remover “Organizar”, deixar as cartas da mão um pouco mais
+visíveis sobre o campo, e trocar a ordem ao soltar uma carta em qualquer ponto
+de outra. Também pediu reduzir em 50% o tempo de hover para abrir o preview.
+
+Os subtítulos e o modo/botão de organização foram removidos. Sobrepor uma carta
+a outra troca suas posições; soltar no espaço entre cartas mantém a inserção
+por posição. A mão sobe discretamente: a carta mostra 43% da altura em repouso,
+antes 40%, e fica alguns pixels sobre a borda do campo. O preview por hover abre
+em 375 ms, antes 750 ms. O selo de turno mantém sua posição no canto direito e
+seu estilo original. O botão de centralizar zoom alinha com o topo visível do
+campo, acima da margem interna reservada à faixa do jogador.
+
+Em seguida, o usuário pediu um recuo superior igual ao recuo lateral, a tag de
+vez junto dos controles à direita e um pin por campo para alternar entre foco
+exclusivo e visão geral. Os controles usam 2 px de recuo superior e lateral;
+da esquerda para a direita ficam pin, ajuste do campo e tag de vez (quando
+aplicável). O pin alterna entre o campo próprio ou de qualquer adversário e a
+visão geral. No desktop, o foco mostra somente o campo escolhido; no celular,
+os controles de foco existentes continuam disponíveis.
+
+Verificação: `docker compose exec -T app npm run build` passou, incluindo
+TypeScript. Um teste Playwright Chromium com API e MySQL descartáveis confirmou
+a ausência do botão/subtítulos, a troca ao soltar no canto da carta-alvo, a
+altura da mão, controles no topo direito e ausência de erros JavaScript. Outro
+cenário com dois jogadores confirmou foco no campo próprio e adversário e o
+retorno à visão geral. Captura inspecionada em
+`app/test-results/game-ui-mão-zonas-e-contro-c4593-em-corretamente-em-Chromium-desktop/mesa-mao-e-zonas.png`.
+O cenário mais amplo `posicionamento.spec.ts` confirmou a troca da ordem, mas
+terminou com timeout numa etapa posterior de reposicionamento de cartas no
+campo (linha 161); essa etapa não é a ordenação da mão. Não foi alterado o banco
+pessoal. Trabalho permanece local, sem commit ou push.
+
+## Campos sem espaçamento externo
+
+Em 30/10/2026, o usuário pediu remover o espaço entre campos e entre a barra
+superior, os campos e a mão para aproveitar a área disponível. No layout
+desktop, os campos ficam contíguos; a área da mesa começa logo abaixo da barra
+e a mão começa logo após os campos. O painel lateral mantém uma separação
+estreita própria quando aberto. Os espaçamentos de toque e segurança do layout
+mobile foram preservados.
+
+Verificação: build e TypeScript passaram. Um teste Playwright Chromium com dois
+jogadores conferiu limites contíguos entre barra/campo, campos/campos e
+campo/mão. Captura inspecionada em
+`app/test-results/game-ui-o-pin-foca-qualquer-campo-e-retorna-à-visão-geral-desktop/campos-sem-gaps.png`.
+
+Após revisar a captura, o usuário pediu uma margem pequena à esquerda e abaixo
+para revelar as bordas externas nesses cantos. O layout desktop agora reserva
+3 px nesses dois lados; os campos continuam encostados entre si, na barra e na
+mão. Após feedback, a etiqueta “Sua mão” ganhou mais recuo à esquerda, largura
+mínima e fica acima das cartas para não ser encoberta. Build e teste Chromium
+passaram; a geometria confirma os recuos e a etiqueta permanece visível dentro
+da barra.

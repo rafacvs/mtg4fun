@@ -28,3 +28,12 @@ na mesa. Os controles ficam no painel de ações da sala, junto da compra.
 O armazenamento `match_intents` usa chave primária por partida, participante e
 UUID. A tabela não contém conteúdo de cartas nem dados privados; a autorização
 continua exigindo participação na partida.
+
+## Ajuste local do menu de ações
+
+Em 30/10/2026, o usuário solicitou submenus de dado, moeda e ficha no mesmo
+painel, com seleção de cara ou coroa conforme a referência e botões de cancelar
+ou confirmar. A escolha do lado é visual e local: a operação existente continua
+sorteando e registrando cara ou coroa no servidor, sem enviar ou persistir a
+escolha do jogador e sem calcular vitória. A confirmação continua necessária
+para efetuar o sorteio. Não houve alteração de contrato ou de aleatoriedade.

@@ -6,9 +6,8 @@ import { CardPreview } from './CardPreview';
 import { CardActionBar } from './CardActionBar';
 import { DragDestinations } from './DragDestinations';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
-import { FinishMatch } from './FinishMatch';
 import { MatchLog } from './MatchLog';
-import { describeActionResult, parseRoll } from './matchLogPresentation';
+import { describeActionResult } from './matchLogPresentation';
 import { GameActions, type GameActionsScreen } from './GameActions';
 import { PlayerMenu } from './PlayerMenu';
 import { MobileTableControls } from './MobileTableControls';
@@ -43,6 +42,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1000px)').matches);
   const [portrait, setPortrait] = useState(() => window.matchMedia('(max-width: 1000px) and (orientation: portrait)').matches);
   const [overview, setOverview] = useState(false);
+  const [fitAllRequest, setFitAllRequest] = useState(0);
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [informationOpen, setInformationOpen] = useState(false);
   const [informationTab, setInformationTab] = useState<'preview' | 'players' | 'log'>('preview');
@@ -79,7 +79,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
   const [selectionActionsOpen, setSelectionActionsOpen] = useState(false);
   const [selecting, setSelecting] = useState(false);
-  useEffect(() => setSelectionActionsOpen(false), [selectionIds.join('|')]);
+  useEffect(() => {
+    setSelectionActionsOpen(selectionIds.length > 1 && selectionIds.every(id => match && findCard(match, id)?.zone === 'battlefield'));
+  }, [selectionIds.join('|')]);
   const selectionControllers = useRef(new Map<string, number>());
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const moreControl = useRef<HTMLButtonElement>(null);
@@ -278,7 +280,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const preview = previewId ? findCard(match, previewId) : null;
   const lastAction = match.log.at(-1);
   const actionResult = lastAction && ['roll', 'coin', 'turn'].includes(lastAction.kind) ? describeActionResult(lastAction) : undefined;
-  const lastRoll = parseRoll(match.log.filter(entry => entry.kind === 'roll').at(-1)?.result)?.value;
   const zoomCard = !previewId && !drag && zoomCardId ? findCard(match, zoomCardId) : null;
   const showingOverview = compact ? overview : focusId === null;
   const showOverview = () => {
@@ -293,36 +294,25 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     onMulligan: () => { setSelectionIds([]); void mulligan().then(ok => { if (ok) setMulliganPanelOpen(true); }); },
     onKeep: () => setMulliganPanelOpen(true),
   };
-  const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} {...mulliganActions} actionsOpen={actionsOpen}
-    onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
+  const quickActions = <TableQuickActions onFitAll={() => setFitAllRequest(value => value + 1)} disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} {...mulliganActions} actionsOpen={actionsOpen} logOpen={logOpen && (!compact || informationOpen)} onChronicle={() => { if (compact) { setInformationTab('log'); setLogOpen(true); setHoverPreviewOpen(false); setPlayersOpen(false); setInformationOpen(true); setCommandsOpen(false); } else setLogOpen(value => !value); }}
+    onTurn={() => void turn('next')} onPreviousTurn={() => void turn('previous')} onDraw={drawOne} onUntap={() => void untapAll()}
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsScreen('menu'); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
   return <section className={`match-board ${drag ? 'dragging' : ''} ${compact ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} aria-label="Mesa da partida">
     <div className="match-content">
-      <div className="table-toolbar">
-        <div className="toolbar-leading"><a href="/#/salas" aria-label="Voltar ao lobby" title="Voltar ao lobby"><TableIcon name="back" /><span>Lobby</span></a><strong className="table-room-label">Sala {roomId}</strong><button className="secondary selection-mode" aria-pressed={selecting} onClick={() => setSelecting(value => !value)}>Selecionar</button><span className="observing-label">Observando: <strong>{showingOverview ? 'Todas as mesas' : focused.name}</strong></span></div>
-        <div className="toolbar-trailing">
-          {compact && !overview && ownHidden && <button className="secondary mobile-own-field" aria-label="Voltar para meu campo" title="Voltar para meu campo" onClick={() => { setFocusId(match.viewerId); setOverview(false); }}><TableIcon name="back" /></button>}
-          {compact && <button className="secondary mobile-view-toggle" aria-label={overview ? 'Voltar para meu campo' : 'Abrir visão geral'} title={overview ? 'Voltar para meu campo' : 'Abrir visão geral'} onClick={() => { if (overview) { setFocusId(match.viewerId); setOverview(false); } else showOverview(); }}><TableIcon name={overview ? 'focus' : 'grid'} /></button>}
-          <span className="toolbar-turn"><span className="turn-light" />Turno atual: <strong>{match.currentTurn.name}</strong></span>
-          <span className="turn-order" title={match.turnOrder.map(player => player.name).join(' → ')}>Ordem: {match.turnOrder.map(player => player.name).join(' → ')}</span>
-          {!compact && <button className="secondary chronicle-toggle" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => setLogOpen(value => !value)}>{logOpen ? 'Fechar crônica' : 'Abrir crônica'}</button>}
-          <FinishMatch match={match} busy={busy} unconfirmed={unconfirmed} error={error} onConfirm={finish} onRetry={retry} />
-        </div>
-      </div>
       {match.finishVotes.length > 0 && <p className="finish-vote-notice" role="status">Encerramento solicitado: {match.finishVotes.length} de {match.finishRequired} concordância(s). Use Finalizar para acompanhar ou concordar.</p>}
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
       {optimisticPending && <p className="pending-action" role="status">Ação pendente · aguardando confirmação</p>}
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : null} focusEnabled={compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} selectionActions={{ count: selectionIds.length, open: selectionActionsOpen, onToggle: () => setSelectionActionsOpen(open => !open) }} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <TableFields fitAllRequest={fitAllRequest} match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : focusId} focusEnabled={compact} fieldFocusEnabled={!compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} selectionActions={{ count: selectionIds.length, open: selectionActionsOpen, onToggle: () => setSelectionActionsOpen(open => !open) }} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small><b>{own.handCount}</b> {own.handCount === 1 ? 'carta' : 'cartas'}</small></span></div>
             <div id="own-dock-content" className="dock-content">
               {!compact && quickActions}
-              <OwnHand scrollAxis="x" orientation={portrait ? 'portrait' : 'landscape'} organizeEnabled={!compact} key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+              <OwnHand scrollAxis="x" key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
             </div>
           </section>
         </div>
@@ -333,6 +323,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           {commandsOpen && <section id="mobile-commands" className="mobile-commands" aria-label="Comandos da partida">
             <PanelHeader title="Comandos" closeLabel="Fechar comandos" onClose={() => setCommandsOpen(false)} />
             <button className="secondary" onClick={() => { toggleRailPanel(informationTab); setInformationOpen(true); setCommandsOpen(false); }}>Informações</button>
+            <button className="secondary" onClick={() => { if (overview || ownHidden) { setFocusId(match.viewerId); setOverview(false); } else showOverview(); setCommandsOpen(false); }}>{overview || ownHidden ? 'Voltar para meu campo' : 'Abrir visão geral'}</button>
+            <button className="secondary selection-mode" aria-pressed={selecting} onClick={() => { setSelecting(value => !value); setCommandsOpen(false); }}>Selecionar cartas</button>
             <button className="secondary" onClick={() => { setCommandsOpen(false); openLibrary(); }}>Grimório</button>
             <button className="secondary" onClick={event => { setCommandsOpen(false); openPlayer(own.userId, event.currentTarget); }}>Vida e marcadores</button>
             {quickActions}
@@ -412,7 +404,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const title = openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio';
       return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} viewerId={match.viewerId} disabled={busy || unconfirmed} gesture={gesture} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />;
     })()}
-    <GameActions anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} actorName={own.name} onCreateToken={async name => {
+    <GameActions match={match} onFinish={finish} anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} actorName={own.name} onCreateToken={async name => {
       const cell = firstFreeCell(own.battlefield ?? []);
       const ok = await createToken(name);
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
@@ -422,7 +414,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const ok = await createCustomToken(token);
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
       return ok;
-    }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} lastRoll={lastRoll} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
+    }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} resultKind={lastAction?.kind} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onClose={closeActions} />
     <PlayerMenu player={match.players.find(player => player.userId === menuPlayerId)} viewerId={match.viewerId} anchor={menuAnchor} disabled={busy || unconfirmed} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onCounter={counter} onClose={closePlayer} />
     <CardPreview mobileSheet={compact} players={match.players} onFocusOwner={ownerId => { setFocusId(ownerId); setOverview(false); closePreview(); }} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
@@ -471,6 +463,9 @@ function canEditCounter(card: Card, viewerId: number) {
 
 function dropZoneAt(x: number, y: number) {
   for (const element of document.elementsFromPoint(x, y)) {
+    // The zone viewer covers the battlefield: dropping inside it must not
+    // fall through to a destination behind the panel.
+    if (element.closest('.public-zone-viewer')) return null;
     const zone = element.closest('[data-drop-zone]')?.getAttribute('data-drop-zone');
     if (zone) return zone;
   }

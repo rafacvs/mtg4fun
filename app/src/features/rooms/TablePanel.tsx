@@ -30,8 +30,9 @@ export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean,
   }, [open, ref, returnFocus]);
 }
 
-export function TablePanel({ open, label, anchor, wide = false, align = 'end', className = '', children, onClose }: {
+export function TablePanel({ open, label, anchor, wide = false, fitViewport = false, align = 'end', className = '', children, onClose }: {
   open: boolean; label: string; anchor?: HTMLElement | null; wide?: boolean; align?: 'start' | 'end' | 'above';
+  fitViewport?: boolean;
   className?: string; children: ReactNode; onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -56,7 +57,7 @@ export function TablePanel({ open, label, anchor, wide = false, align = 'end', c
         if (align === 'above') {
           // Opens upward from the bar; a tall screen scrolls inside instead of covering the button.
           left = origin.right - box.width;
-          maximumHeight = Math.max(80, origin.top - 10 - minimumTop);
+          if (!fitViewport) maximumHeight = Math.max(80, origin.top - 10 - minimumTop);
           top = Math.max(minimumTop, origin.top - Math.min(box.height, maximumHeight) - 10);
         } else if (align === 'start') {
           left = origin.left;
@@ -85,7 +86,7 @@ export function TablePanel({ open, label, anchor, wide = false, align = 'end', c
       window.visualViewport?.removeEventListener('resize', position);
       window.visualViewport?.removeEventListener('scroll', position);
     };
-  }, [open, anchor, wide, align]);
+  }, [open, anchor, wide, fitViewport, align]);
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => {

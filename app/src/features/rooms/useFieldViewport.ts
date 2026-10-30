@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { battlefieldLayout, CARD_ASPECT, fitBattlefield } from './battlefieldLayout';
 import type { Card } from './roomsApi';
 
-export function useFieldViewport(cards: Card[], cancelDrag: () => void) {
+export function useFieldViewport(cards: Card[], cancelDrag: () => void, fitAllRequest = 0) {
   const ref = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
@@ -95,5 +95,12 @@ export function useFieldViewport(cards: Card[], cancelDrag: () => void) {
     setZoom(next);
     if (next === zoom) { node.scrollLeft = centerTarget.current.left; node.scrollTop = centerTarget.current.top; centerTarget.current = null; }
   };
+  const lastFitRequest = useRef(0);
+  useLayoutEffect(() => {
+    if (fitAllRequest === lastFitRequest.current || !size.width || !size.height) return;
+    lastFitRequest.current = fitAllRequest;
+    center();
+  }, [fitAllRequest, size]);
+
   return { ref, layout, zoom, center };
 }

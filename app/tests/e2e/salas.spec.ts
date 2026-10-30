@@ -218,7 +218,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await board.getByLabel('Faces do dado').fill('6');
   await activate(board.getByRole('button', { name: /^Rolar d\d+$/ }));
-  await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
+  await activate(actions.getByRole('button', { name: 'Cancelar', exact: true }));
   const showLog = async () => {
     if (await actions.isVisible()) await activate(actions.getByRole('button', { name: 'Fechar ações', exact: true }));
     await openMatchRail(page, 'Registro');
@@ -228,6 +228,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await closeMatchRail(page);
   await openActions();
   await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
+  await activate(actions.getByRole('button', { name: 'Jogar moeda', exact: true }));
   await showLog();
   await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);
   await closeMatchRail(page);
@@ -236,7 +237,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await showLog();
   await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa e ocultou todas as revelações.');
   await closeMatchRail(page);
-  await openActions();
+  await openQuickActions(page);
   await activate(board.getByRole('button', { name: 'Corrigir turno', exact: true }));
   await showLog();
   await expect(log).toContainText('Amigo da mesa corrigiu para o turno de Amigo da mesa.');

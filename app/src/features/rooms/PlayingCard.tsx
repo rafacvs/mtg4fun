@@ -50,7 +50,7 @@ export function PlayingCard({ card, draggable, ariaLabel, style, scrollable = fa
       holdShown.current = true;
       if (pointerType.current === 'mouse') handlers.current.onZoom?.(card);
       else { suppressClick.current = true; handlers.current.onPreview?.(card); }
-    }, 750);
+    }, 375);
   };
   const cancelZoom = () => {
     clearHold();

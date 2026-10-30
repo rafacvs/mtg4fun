@@ -147,11 +147,10 @@ test('vertical mantém todos os campos jogáveis, mão e foco durante a mudança
   await page.getByRole('region', { name: 'Comandos da partida' }).getByRole('button', { name: 'Comprar', exact: true }).tap();
   await expect(cards).toHaveCount(3);
   await closeQuickActions(page);
-  await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toBeHidden();
+  await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toHaveCount(0);
   const before = (await (await page.request.get(path)).json()).match;
   const sameDocument = await page.evaluate(() => { (window as Window & { orientationCheck?: string }).orientationCheck = 'same'; return location.href; });
   await page.setViewportSize({ width: 839, height: 393 });
-  await expect(hand).not.toHaveClass(/is-organizing/);
   await expect(hand).toBeVisible();
   await expect(cards).toHaveCount(3);
   expect(await page.evaluate(() => (window as Window & { orientationCheck?: string }).orientationCheck)).toBe('same');

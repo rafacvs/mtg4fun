@@ -51,7 +51,7 @@ function canDrag(card: Card, viewerId: number) {
   return card.controllerId === viewerId;
 }
 
-export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZone, gesture, fieldZoom, onFieldZoom, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, onLibrary, onDraw, onHideRevealed, onOpenZone, selectionActions, disabled, seat }: { seat?: ReactNode; player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; onFocus?: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; onOpenZone?: ZoneProps['onOpenZone']; selectionActions?: ZoneProps['selectionActions']; disabled?: boolean }) {
+export function PlayerTable({ fitAllRequest = 0, player, focused, expanded, own, viewerId, hoverZone, gesture, fieldZoom, onFieldZoom, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, fieldFocusEnabled = false, onLibrary, onDraw, onHideRevealed, onOpenZone, selectionActions, disabled, seat }: { fitAllRequest?: number; seat?: ReactNode; player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; onFocus?: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; fieldFocusEnabled?: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; onOpenZone?: ZoneProps['onOpenZone']; selectionActions?: ZoneProps['selectionActions']; disabled?: boolean }) {
   return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
     {seat ?? <header className="player-heading">
       <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}>
@@ -72,9 +72,8 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
     <div className="table-zones" aria-label={`Zonas de ${player.name}`}>
       <div className="playmat">
         <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={player.consulting ? undefined : onDraw} onOpenZone={onOpenZone} selectionActions={selectionActions} disabled={disabled} />
-        <Battlefield player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} />
+        <Battlefield fitAllRequest={fitAllRequest} player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} focused={focused} currentTurn={currentTurn} onFocus={onFocus} focusEnabled={fieldFocusEnabled} />
       </div>
-      {!own && <div className="opponent-hand" aria-label={`Mão de ${player.name}`}>Mão: {player.handCount} carta(s) · Privada</div>}
       {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
@@ -82,34 +81,36 @@ export function PlayerTable({ player, focused, expanded, own, viewerId, hoverZon
 
 export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, onOpenZone, selectionActions, disabled }: ZoneProps) {
   return <div className="zone-column">
-    <span className="rail-hand-count" aria-label={`Mão: ${player.handCount} cartas`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><rect x="4" y="5" width="10" height="14" rx="1.5" /><path d="M10 5l7 1.5a2 2 0 0 1 1.5 2.4L16 19" /></svg>{player.handCount}</span>
-    <CardSlot zone="command" title="Comandante" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
+    <CardSlot zone="command" title="Comando" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
     <CardSlot zone="graveyard" title="Cemitério" count={player.graveyardCount} card={topCard(player.graveyard)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} onOpen={onOpenZone ? anchor => onOpenZone(player, 'graveyard', anchor) : undefined} />
     <CardSlot zone="exile" title="Exílio" count={player.exileCount} card={topCard(player.exile)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} onOpen={onOpenZone ? anchor => onOpenZone(player, 'exile', anchor) : undefined} />
-    {selectionActions && <button type="button" className="card-slot selection-actions-slot secondary" aria-label="Ações da seleção" aria-expanded={selectionActions.open} disabled={disabled || selectionActions.count === 0} onClick={selectionActions.onToggle}>
+    {selectionActions && <button type="button" className="card-slot selection-actions-slot secondary" data-empty={selectionActions.count === 0} aria-label="Ações da seleção" aria-expanded={selectionActions.open} disabled={disabled || selectionActions.count === 0} onClick={selectionActions.onToggle}>
       <span className="slot-label"><TableIcon name="adjust" />Ações</span>
       <strong className="zone-count" aria-label={`${selectionActions.count} cartas selecionadas`}>{selectionActions.count}</strong>
     </button>}
   </div>;
 }
 
-function Battlefield({ player, viewerId, droppable, hoverZone, gesture }: ZoneProps & { fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void }) {
+function Battlefield({ fitAllRequest, player, viewerId, droppable, hoverZone, gesture, focused, currentTurn, onFocus, focusEnabled }: ZoneProps & { fitAllRequest: number; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; focused: boolean; currentTurn: boolean; onFocus?: () => void; focusEnabled: boolean }) {
   const cards = player.battlefield ?? [];
-  const { ref, layout, zoom, center } = useFieldViewport(cards, gesture.onDragCancel);
+  const { ref, layout, zoom, center } = useFieldViewport(cards, gesture.onDragCancel, fitAllRequest);
   return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
     <header>
       <span>Campo</span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
     </header>
-    <button type="button" className="field-center secondary" aria-label={`Centralizar campo de ${player.name}`} title="Mostrar todas as cartas" onClick={center}><TableIcon name="focus" /></button>
+    <div className="field-tools">
+      {focusEnabled && <button type="button" className="field-focus secondary" aria-pressed={focused} aria-label={focused ? 'Voltar à visão geral' : `Focar campo de ${player.name}`} title={focused ? 'Voltar à visão geral' : `Focar campo de ${player.name}`} onClick={onFocus}><TableIcon name="pin" /></button>}
+      <button type="button" className="field-center secondary" aria-label={`Centralizar campo de ${player.name}`} title="Mostrar todas as cartas" onClick={center}><TableIcon name="focus" /></button>
+    </div>
     <div className="battlefield-fit battlefield-scroll" ref={ref}>
       <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': zoom } as CSSProperties}>
         <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
-          {cards.map(card => {
+          {previewIds => cards.map(card => {
             const place = layout.cards.get(card.id);
             if (!place) return null;
-            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={place.size} style={{ left: `calc(${place.x} * var(--card-width))`, top: `calc(${place.y} * var(--card-width))`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={droppable && canDrag(card, viewerId)} selected={gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
+            return <div key={card.id} className={`positioned-card ${card.tapped ? 'tapped-slot' : ''}`} data-pos-x={card.positionX} data-row={card.row} data-stack-size={place.size} style={{ left: `calc(${place.x} * var(--card-width))`, top: `calc(${place.y} * var(--card-width))`, zIndex: card.stackOrder }}><PlayingCard card={card} draggable={droppable && canDrag(card, viewerId)} selected={previewIds !== null ? previewIds.includes(card.id) && canDrag(card, viewerId) : gesture.selectedIds?.includes(card.id)} {...gesture} /></div>;
           })}
         </BattlefieldCanvas>
       </div>
@@ -127,7 +128,7 @@ function LibraryPile({ count, droppable, hoverZone, onOpen, onDraw, disabled }: 
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => { gesture.current.cancel(); clearTimeout(feedbackTimer.current); }, []);
   return <section className={`table-zone zone-library ${feedback ? 'draw-feedback' : ''} ${droppable && hoverZone === 'library' ? 'drop-hover' : ''}`} aria-label="Grimório" data-drop-zone={droppable ? 'library' : undefined}>
-    <div className="card-slot library-pile">
+    <div className="card-slot library-pile" data-empty={count === 0}>
       <ZoneLabel title="Grimório" count={count} />
       {count > 0 ? <div className="library-stack" role={onOpen ? undefined : 'img'} aria-label={onOpen ? undefined : 'Pilha do grimório'}>{[0, 1, 2].map(layer => <span key={layer}><img src="/library-back.png" alt="" draggable={false} /></span>)}</div>
         : <span className="slot-empty" aria-hidden="true"><TableIcon name="book-open" /></span>}
@@ -144,19 +145,20 @@ function LibraryPile({ count, droppable, hoverZone, onOpen, onDraw, disabled }: 
 const emptyZoneIcons = { command: 'crown', graveyard: 'skull', exile: 'orbit' } satisfies Record<string, TableIconName>;
 
 function ZoneLabel({ title, count, onOpen }: { title: string; count: number; onOpen?: (anchor: HTMLElement) => void }) {
-  const icon = ({ 'Grimório': 'book-open', 'Cemitério': 'graveyard', 'Exílio': 'exile' } as const)[title as 'Grimório' | 'Cemitério' | 'Exílio'];
+  const icon = ({ 'Grimório': 'rail-library', 'Cemitério': 'rail-graveyard', 'Exílio': 'rail-exile' } as const)[title as 'Grimório' | 'Cemitério' | 'Exílio'];
   return <>
     <strong className="zone-count" aria-label={`${count} cartas`}>{count}</strong>
+    {icon && <span className="zone-emblem" aria-hidden="true"><TableIcon name={icon} /></span>}
     {onOpen
-      ? <button type="button" className="slot-label zone-open" aria-label={`Ver ${title.toLocaleLowerCase('pt-BR')} de ${count} carta(s)`} onClick={event => onOpen(event.currentTarget)}>{icon && <TableIcon name={icon} />}{title}</button>
-      : <span className="slot-label">{icon && <TableIcon name={icon} />}{title}</span>}
+      ? <button type="button" className="slot-label zone-open" aria-label={`Ver ${title.toLocaleLowerCase('pt-BR')} de ${count} carta(s)`} onClick={event => onOpen(event.currentTarget)}>{title}</button>
+      : <span className="slot-label">{title}</span>}
   </>;
 }
 
 function CardSlot({ zone, title, count, card, viewerId, droppable, hoverZone, gesture, onOpen }: { zone: keyof typeof emptyZoneIcons; title: string; count: number; card?: Card; viewerId: number; droppable: boolean; hoverZone: string | null; gesture: CardGesture; onOpen?: (anchor: HTMLElement) => void }) {
   const slot = useRef<HTMLElement>(null);
   const cardGesture = onOpen ? { ...gesture, onInspect: () => { if (slot.current) onOpen(slot.current); } } : gesture;
-  return <section ref={slot} className={`card-slot zone-${zone} ${droppable && hoverZone === zone ? 'drop-hover' : ''}`} aria-label={zoneNames[zone]} data-drop-zone={droppable ? zone : undefined}>
+  return <section ref={slot} className={`card-slot zone-${zone} ${droppable && hoverZone === zone ? 'drop-hover' : ''}`} aria-label={zoneNames[zone]} data-empty={count === 0} data-drop-zone={droppable ? zone : undefined}>
     <ZoneLabel title={title} count={count} onOpen={count > 0 ? onOpen : undefined} />
     {card ? <PlayingCard card={card} draggable={canDrag(card, viewerId)} {...cardGesture} /> : <span className="slot-empty" aria-hidden="true"><TableIcon name={emptyZoneIcons[zone]} /></span>}
   </section>;

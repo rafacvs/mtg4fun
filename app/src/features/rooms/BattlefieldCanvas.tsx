@@ -8,16 +8,21 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
   zoom: number;
   enabled: boolean;
   onSelectArea?: (cards: Card[]) => void;
-  children: ReactNode;
+  children: (previewIds: string[] | null) => ReactNode;
 }) {
   const [rectangle, setRectangle] = useState<{ start: Point; end: Point } | null>(null);
+  const [previewIds, setPreviewIds] = useState<string[] | null>(null);
   const stopTracking = useRef<(() => void) | null>(null);
   const suppressClick = useRef(false);
   const current = useRef({ cards, onSelectArea });
   current.current = { cards, onSelectArea };
   useEffect(() => () => stopTracking.current?.(), []);
 
-  return <div className="battlefield-canvas" title="Arraste para navegar · Shift ou botão direito + arraste para selecionar cartas" data-battlefield-canvas data-zoom={zoom} onContextMenu={event => { if (enabled && !(event.target as Element).closest('.playing-card')) event.preventDefault(); }} onClick={event => {
+  return <div className="battlefield-canvas" data-battlefield-canvas data-zoom={zoom} onClickCapture={event => {
+    if (suppressClick.current && event.detail > 0) { suppressClick.current = false; event.preventDefault(); event.stopPropagation(); }
+  }} onContextMenuCapture={event => {
+    if (suppressClick.current) { event.preventDefault(); event.stopPropagation(); }
+  }} onContextMenu={event => { if (enabled && !(event.target as Element).closest('.playing-card')) event.preventDefault(); }} onClick={event => {
     if ((event.target as Element).closest('.playing-card')) return;
     if (suppressClick.current) { suppressClick.current = false; return; }
     current.current.onSelectArea?.([]);
@@ -55,9 +60,24 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
       const box = canvas.getBoundingClientRect();
       return { x: (point.x - box.left) / zoom, y: (point.y - box.top) / zoom };
     };
+    const cardsInArea = (end: Point) => {
+      const left = Math.min(start.x, end.x), right = Math.max(start.x, end.x);
+      const top = Math.min(start.y, end.y), bottom = Math.max(start.y, end.y);
+      const selected = new Set<string>();
+      // Rendered bounds account for stacks, rotation and zoom.
+      canvas.querySelectorAll<HTMLElement>('[data-card-id]').forEach(node => {
+        const box = node.getBoundingClientRect();
+        if (box.right >= left && box.left <= right && box.bottom >= top && box.top <= bottom) selected.add(node.dataset.cardId!);
+      });
+      return current.current.cards.filter(card => selected.has(card.id));
+    };
+    setPreviewIds([]);
     setRectangle({ start: local(start), end: local(start) });
     const move = (pointer: PointerEvent) => {
-      if (pointer.pointerId === pointerId) setRectangle({ start: local(start), end: local({ x: pointer.clientX, y: pointer.clientY }) });
+      if (pointer.pointerId !== pointerId) return;
+      if (Math.abs(pointer.clientX - start.x) >= 4 || Math.abs(pointer.clientY - start.y) >= 4) suppressClick.current = true;
+      setRectangle({ start: local(start), end: local({ x: pointer.clientX, y: pointer.clientY }) });
+      setPreviewIds(cardsInArea({ x: pointer.clientX, y: pointer.clientY }).map(card => card.id));
     };
     const cleanup = () => {
       window.removeEventListener('pointermove', move);
@@ -65,6 +85,7 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
       window.removeEventListener('pointercancel', cancel);
       window.removeEventListener('blur', cleanup);
       setRectangle(null);
+      setPreviewIds(null);
       stopTracking.current = null;
     };
     const up = (pointer: PointerEvent) => {
@@ -72,15 +93,8 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
       const left = Math.min(start.x, pointer.clientX), right = Math.max(start.x, pointer.clientX);
       const top = Math.min(start.y, pointer.clientY), bottom = Math.max(start.y, pointer.clientY);
       if (right - left >= 4 || bottom - top >= 4) {
-        if (!rightButton) suppressClick.current = true;
-        const selected = new Set<string>();
-        // Use rendered bounds: stacks, rotation, zoom and spacing can shift
-        // the visible card away from its persisted reference coordinates.
-        canvas.querySelectorAll<HTMLElement>('[data-card-id]').forEach(node => {
-          const box = node.getBoundingClientRect();
-          if (box.right >= left && box.left <= right && box.bottom >= top && box.top <= bottom) selected.add(node.dataset.cardId!);
-        });
-        current.current.onSelectArea?.(current.current.cards.filter(card => selected.has(card.id)));
+        suppressClick.current = true;
+        current.current.onSelectArea?.(cardsInArea({ x: pointer.clientX, y: pointer.clientY }));
       }
       cleanup();
     };
@@ -91,7 +105,7 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
     window.addEventListener('pointercancel', cancel);
     window.addEventListener('blur', cleanup);
   }}>
-    {children}
+    {children(previewIds)}
     {rectangle && <span className="selection-rectangle" aria-hidden="true" style={{ left: Math.min(rectangle.start.x, rectangle.end.x), top: Math.min(rectangle.start.y, rectangle.end.y), width: Math.abs(rectangle.end.x - rectangle.start.x), height: Math.abs(rectangle.end.y - rectangle.start.y) }} />}
   </div>;
 }

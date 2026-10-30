@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Match } from './roomsApi';
+import { TableIcon } from './TableIcon';
 import './finish.css';
 
 export function FinishMatch({ match, busy, unconfirmed, error, onConfirm, onRetry }: {
@@ -20,7 +21,7 @@ export function FinishMatch({ match, busy, unconfirmed, error, onConfirm, onRetr
   }, [open]);
   const confirm = async () => { if (await onConfirm()) setOpen(false); };
   return <>
-    <button type="button" className="finish-button" disabled={busy || unconfirmed} onClick={() => setOpen(true)} title="Solicitar ou confirmar o encerramento da partida">Finalizar{match.finishVotes.length > 0 && ` (${match.finishVotes.length}/${match.finishRequired})`}</button>
+    <button type="button" className="finish-button" disabled={busy || unconfirmed} onClick={() => setOpen(true)} title="Solicitar ou confirmar o encerramento da partida"><TableIcon name="gavel" />Finalizar{match.finishVotes.length > 0 && ` (${match.finishVotes.length}/${match.finishRequired})`}</button>
     {open && <dialog ref={dialog} className="finish-dialog" role="dialog" aria-labelledby="finish-title" aria-describedby="finish-description" onCancel={event => { event.preventDefault(); if (!busy) setOpen(false); }}>
       <h2 id="finish-title">Finalizar partida?</h2>
       <p id="finish-description">Ao atingir pelo menos metade dos {match.players.length} jogador(es), a partida será finalizada e a sala encerrada para todos. O estado final e o registro serão preservados.</p>
