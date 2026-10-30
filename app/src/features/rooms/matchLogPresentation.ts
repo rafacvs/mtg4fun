@@ -5,7 +5,7 @@ export type LogEntry = Match['log'][number];
 export type LogFilter = 'game' | 'adjustments' | 'all';
 
 export function isLogAdjustment(entry: LogEntry) {
-  return ['position', 'reorder', 'consult', 'close'].includes(entry.kind);
+  return ['position', 'reorder', 'reorder_zone', 'consult', 'close'].includes(entry.kind);
 }
 
 export type LogLine = { index: number; entry: LogEntry; actions: number };
@@ -68,6 +68,7 @@ export function describeLogEntry(entry: { actorName: string; kind: string; from?
   if (entry.kind === 'turn') return `${entry.actorName} ${entry.result}.`;
   if (entry.kind === 'consult') return `${entry.actorName} consultou o grimório em privado.`;
   if (entry.kind === 'reveal') return `${entry.actorName} revelou ${entry.result}.`;
+  if (entry.kind === 'reorder_zone') return `${entry.actorName} reordenou ${entry.to === 'exile' ? 'o exílio' : 'o cemitério'}.`;
   if (entry.kind === 'reorder') return `${entry.actorName} reorganizou uma consulta privada.`;
   if (entry.kind === 'close') return `${entry.actorName} fechou a consulta do grimório.`;
   if (entry.kind === 'shuffle') return `${entry.actorName} embaralhou o grimório.`;

@@ -519,6 +519,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		}
 	case "reorder":
 		payload, err = reorderConsulted(p, input.CardIDs)
+	case "reorder_zone":
+		payload, err = reorderZone(p, input.To, input.CardIDs)
 	case "close":
 		payload, err = closeConsultation(p, input.LibraryPlacement, false)
 	case "shuffle":

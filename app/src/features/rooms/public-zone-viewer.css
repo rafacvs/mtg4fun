@@ -10,3 +10,5 @@
 .public-zone-card > span:last-child { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; min-width: 0; }
 .public-zone-card strong { overflow: hidden; font-size: .75rem; text-overflow: ellipsis; white-space: nowrap; }
 .public-zone-card small { color: var(--gold); font-size: .65rem; text-transform: uppercase; }
+.public-zone-card.dragging { opacity: .55; }
+.public-zone-card.drag-target { outline: 2px dashed var(--gold); outline-offset: 2px; }

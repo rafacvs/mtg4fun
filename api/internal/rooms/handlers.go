@@ -215,7 +215,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		}
 	case "move":
 		placed := input.HasPosition && (input.To != "battlefield" || input.PositionX < 0 || input.PositionX > 20000 || input.Row < 0 || input.Row > 2000)
-		if len(input.CardIDs) == 0 || input.Count != 0 || input.To == "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.ConsultFrom != "" || placed || (input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom") || (input.To != "library" && input.LibraryPlacement != "") {
+		if len(input.CardIDs) == 0 || input.Count != 0 || input.To == "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.ConsultFrom != "" || placed || !validMovePlacement(input.To, input.LibraryPlacement) {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
@@ -260,6 +260,11 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		}
 	case "reorder":
 		if len(input.CardIDs) == 0 || input.Count != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 {
+			httpserver.WriteError(w, 400, "Ação inválida.")
+			return matchAction{}, false
+		}
+	case "reorder_zone":
+		if len(input.CardIDs) == 0 || (input.To != "graveyard" && input.To != "exile") || input.Count != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.ConsultFrom != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}

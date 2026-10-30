@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 )
 
@@ -138,5 +139,56 @@ func TestReorderingLegacyConsultationDoesNotRevealHiddenCards(t *testing.T) {
 	cards := consultationCards(&p)
 	if len(cards) != 2 || cards[0].Revealed {
 		t.Fatal("reorder revealed a hidden identity")
+	}
+}
+
+func TestMovePlacementInOrderedZones(t *testing.T) {
+	for _, test := range []struct {
+		to, placement string
+		want          []string
+	}{
+		{"graveyard", "top", []string{"old", "a", "b"}},
+		{"graveyard", "bottom", []string{"a", "b", "old"}},
+		{"graveyard", "", []string{"old", "a", "b"}},
+		{"exile", "top", []string{"old", "a", "b"}},
+		{"exile", "bottom", []string{"a", "b", "old"}},
+		{"library", "top", []string{"a", "b", "old"}},
+		{"library", "bottom", []string{"old", "a", "b"}},
+	} {
+		t.Run(test.to+"/"+test.placement, func(t *testing.T) {
+			p := playerState{UserID: 1, Hand: []Card{{ID: "a", ControllerID: 1, OwnerID: 1}, {ID: "b", ControllerID: 1, OwnerID: 1}}}
+			*zone(&p, test.to) = []Card{{ID: "old", ControllerID: 1, OwnerID: 1}}
+			if _, err := moveCards(&matchState{}, &p, matchAction{CardIDs: []string{"a", "b"}, To: test.to, LibraryPlacement: test.placement}); err != nil {
+				t.Fatal(err)
+			}
+			got := []string{}
+			for _, card := range *zone(&p, test.to) {
+				got = append(got, card.ID)
+			}
+			if !slices.Equal(got, test.want) {
+				t.Fatalf("ordem %v, esperada %v", got, test.want)
+			}
+		})
+	}
+	for _, test := range []struct{ to, placement string }{{"hand", "top"}, {"battlefield", "bottom"}, {"command", "top"}, {"graveyard", "middle"}, {"library", ""}} {
+		if validMovePlacement(test.to, test.placement) {
+			t.Fatalf("%s/%s deveria ser recusado", test.to, test.placement)
+		}
+	}
+}
+
+func TestReorderZoneRequiresTheWholeZone(t *testing.T) {
+	cards := []Card{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	p := playerState{Graveyard: cards}
+	for _, ids := range [][]string{{"a", "b"}, {"a", "a", "b"}, {"a", "b", "x"}} {
+		if _, err := reorderZone(&p, "graveyard", ids); err == nil {
+			t.Fatalf("%v deveria ser recusado", ids)
+		}
+	}
+	if _, err := reorderZone(&p, "graveyard", []string{"c", "a", "b"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := []string{p.Graveyard[0].ID, p.Graveyard[1].ID, p.Graveyard[2].ID}; !slices.Equal(got, []string{"c", "a", "b"}) {
+		t.Fatalf("ordem %v", got)
 	}
 }

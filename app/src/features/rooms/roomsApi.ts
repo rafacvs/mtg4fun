@@ -143,6 +143,7 @@ export const roomsApi = {
   coin: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'coin' }),
   turn: (id: number, direction: 'next' | 'previous', intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'turn', direction }),
   consult: (id: number, consultFrom: 'all' | 'top' | 'bottom', count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'consult', consultFrom, count }),
+  reorderZone: (id: number, zone: 'graveyard' | 'exile', cardIds: string[], intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reorder_zone', to: zone, cardIds }),
   reorder: (id: number, cardIds: string[], intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reorder', cardIds }),
   closeConsultation: (id: number, placement: 'top' | 'bottom', shuffle: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: shuffle ? 'shuffle' : 'close', libraryPlacement: placement }),
   reveal: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal', count }),

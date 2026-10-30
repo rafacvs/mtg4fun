@@ -34,7 +34,7 @@ type Drag = { card: Card; x: number; y: number; zone: string | null };
 type OpenZone = { playerId: number; zone: 'graveyard' | 'exile'; anchor: HTMLElement };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mulligan, keepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mulligan, keepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
   const match = synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [sides, setSides] = useState(20);
@@ -402,7 +402,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const player = match.players.find(item => item.userId === openZone.playerId);
       if (!player) return null;
       const title = openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio';
-      return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} viewerId={match.viewerId} disabled={busy || unconfirmed} gesture={gesture} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />;
+      return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} viewerId={match.viewerId} disabled={busy || unconfirmed} gesture={gesture} onInspect={card => setPreviewId(card.id)} onReorder={player.userId === match.viewerId ? ids => reorderZone(openZone.zone, ids) : undefined} onClose={() => setOpenZone(null)} />;
     })()}
     <GameActions match={match} onFinish={finish} anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} actorName={own.name} onCreateToken={async name => {
       const cell = firstFreeCell(own.battlefield ?? []);

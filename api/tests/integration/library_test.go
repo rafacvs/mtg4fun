@@ -274,3 +274,95 @@ func TestLibrarySelectionVisibilityReturnAndRecovery(t *testing.T) {
 	}
 
 }
+
+func TestOrderedZonesPlacementAndReorderOverHTTP(t *testing.T) {
+	e := newEnvironment(t)
+	for _, login := range []string{"dono", "oponente"} {
+		e.mustCreate(login, login, "senha-da-sala")
+	}
+	e.start(false)
+	owner := sessionCookie(t, e.login("dono", "senha-da-sala"))
+	opponent := sessionCookie(t, e.login("oponente", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", roomJSON(), owner, nil)
+	requireStatus(t, created, 201)
+	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, created).ID)
+	requireStatus(t, e.request("POST", path+"/participants", "{}", opponent, nil), 200)
+	for _, cookie := range []*http.Cookie{owner, opponent} {
+		upload := e.uploadDeck(cookie, deck)
+		requireStatus(t, upload, 201)
+		var payload struct {
+			Deck struct {
+				ID int64 `json:"id"`
+			} `json:"deck"`
+		}
+		if err := json.Unmarshal(upload.body, &payload); err != nil {
+			t.Fatal(err)
+		}
+		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), cookie, nil), 200)
+	}
+	requireStatus(t, e.request("POST", path+"/start", "{}", owner, nil), 201)
+	number := 0
+	action := func(cookie *http.Cookie, fields string) response {
+		number++
+		return e.request("POST", path+"/match/actions", fmt.Sprintf(`{"intentId":"%08x-0000-4000-8000-000000000000",%s}`, number, fields), cookie, nil)
+	}
+	var state struct {
+		Match struct {
+			ViewerID int64 `json:"viewerId"`
+			Players  []struct {
+				UserID int64 `json:"userId"`
+				Hand   []struct {
+					ID string `json:"id"`
+				} `json:"hand"`
+				Graveyard []struct {
+					ID string `json:"id"`
+				} `json:"graveyard"`
+			} `json:"players"`
+		} `json:"match"`
+	}
+	read := func() (hand, graveyard []string) {
+		result := e.request("GET", path+"/match", "", owner, nil)
+		requireStatus(t, result, 200)
+		state.Match.Players = nil
+		if err := json.Unmarshal(result.body, &state); err != nil {
+			t.Fatal(err)
+		}
+		for _, player := range state.Match.Players {
+			if player.UserID != state.Match.ViewerID {
+				continue
+			}
+			for _, card := range player.Hand {
+				hand = append(hand, card.ID)
+			}
+			for _, card := range player.Graveyard {
+				graveyard = append(graveyard, card.ID)
+			}
+		}
+		return hand, graveyard
+	}
+	hand, _ := read()
+	if len(hand) < 3 {
+		t.Fatalf("mão inicial: %v", hand)
+	}
+	first, second, third := hand[0], hand[1], hand[2]
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"hand","libraryPlacement":"top"`, first)), 400)
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"battlefield","libraryPlacement":"bottom"`, first)), 400)
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"graveyard","libraryPlacement":"meio"`, first)), 400)
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"graveyard"`, first)), 200)
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"graveyard","libraryPlacement":"bottom"`, second)), 200)
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"graveyard","libraryPlacement":"top"`, third)), 200)
+	if _, graveyard := read(); !slices.Equal(graveyard, []string{second, first, third}) {
+		t.Fatalf("posição no cemitério: %v", graveyard)
+	}
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"reorder_zone","to":"hand","cardIds":[%q]`, first)), 400)
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"reorder_zone","to":"graveyard","cardIds":[%q]`, first)), 409)
+	requireStatus(t, action(opponent, fmt.Sprintf(`"kind":"reorder_zone","to":"graveyard","cardIds":[%q,%q,%q]`, third, first, second)), 409)
+	requireStatus(t, action(owner, fmt.Sprintf(`"kind":"reorder_zone","to":"graveyard","cardIds":[%q,%q,%q]`, third, first, second)), 200)
+	if _, graveyard := read(); !slices.Equal(graveyard, []string{third, first, second}) {
+		t.Fatalf("reordenação do cemitério: %v", graveyard)
+	}
+}
