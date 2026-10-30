@@ -25,7 +25,8 @@ type creationCard struct {
 	InstanceKind     string `json:"instanceKind"`
 	OwnerID          int64  `json:"ownerId"`
 	ControllerID     int64  `json:"controllerId"`
-	Zone             string `json:"zone"`
+	Zone             string   `json:"zone"`
+	CreatedTokens    []string `json:"createdTokens"`
 }
 type creationPlayer struct {
 	UserID      int64          `json:"userId"`
@@ -48,6 +49,16 @@ func creationPlayers(t *testing.T, result response) []creationPlayer {
 	}
 	return payload.Match.Players
 }
+
+func TestVisibleCardIncludesCatalogTokensItCreates(t *testing.T) {
+	deck := `<cockatrice_deck><zone name="main"><card number="1" name="Mabel, Heir to Cragflame"/></zone></cockatrice_deck>`
+	e, cookies, path := prepareCreationMatch(t, deck)
+	players := creationPlayers(t, e.request("POST", path+"/actions", `{"intentId":"10000000-0000-4000-8000-000000000099","kind":"draw","count":1}`, cookies[0], nil))
+	if len(players[0].Hand) != 1 || players[0].Hand[0].Name != "Mabel, Heir to Cragflame" || len(players[0].Hand[0].CreatedTokens) != 1 || players[0].Hand[0].CreatedTokens[0] != "Cragflame" {
+		t.Fatalf("fichas criadas pela carta: %+v", players[0].Hand)
+	}
+}
+
 func prepareCreationMatch(t *testing.T, decks ...string) (*environment, []*http.Cookie, string) {
 	t.Helper()
 	e := newEnvironment(t)

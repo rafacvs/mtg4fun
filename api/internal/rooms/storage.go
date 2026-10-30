@@ -212,6 +212,7 @@ type VisibleCard struct {
 	Power            int64       `json:"power,omitempty"`
 	Toughness        int64       `json:"toughness,omitempty"`
 	Markers          colorCounts `json:"markers,omitempty"`
+	CreatedTokens    []string    `json:"createdTokens,omitempty"`
 }
 
 // ExposedCard shares a revealed identity without disclosing private zone order or positions.
@@ -235,6 +236,7 @@ type ExposedCard struct {
 	Power            int64       `json:"power,omitempty"`
 	Toughness        int64       `json:"toughness,omitempty"`
 	Markers          colorCounts `json:"markers,omitempty"`
+	CreatedTokens    []string    `json:"createdTokens,omitempty"`
 }
 type MatchLog struct {
 	Cards     []LogCard `json:"cards,omitempty"`

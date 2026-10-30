@@ -5,6 +5,14 @@ func (s *Service) libraryView(state matchState, viewerID int64, log []MatchLog) 
 	view := state.view(viewerID, log)
 	for i := range view.Players {
 		player := &view.Players[i]
+		for _, cards := range [][]VisibleCard{player.Hand, player.Battlefield, player.Graveyard, player.Exile, player.Command, player.Consulted, player.Revealed} {
+			for j := range cards {
+				s.addCreatedTokens(cards[j].Name, &cards[j].CreatedTokens)
+			}
+		}
+		for j := range player.ExposedCards {
+			s.addCreatedTokens(player.ExposedCards[j].Name, &player.ExposedCards[j].CreatedTokens)
+		}
 		if player.UserID != viewerID {
 			continue
 		}
@@ -24,4 +32,14 @@ func (s *Service) libraryView(state matchState, viewerID int64, log []MatchLog) 
 		}
 	}
 	return view
+}
+
+func (s *Service) addCreatedTokens(name string, target *[]string) {
+	if s.catalog == nil || name == "" {
+		return
+	}
+	entry, ok := s.catalog.Lookup(name)
+	if ok {
+		*target = append([]string(nil), entry.CreatedTokens...)
+	}
 }

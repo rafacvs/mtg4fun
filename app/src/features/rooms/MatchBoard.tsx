@@ -437,6 +437,10 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const cell = firstFreeCell(own.battlefield ?? []);
       const ok = await copyCard(id);
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
+    }} onCreateToken={async name => {
+      const cell = firstFreeCell(own.battlefield ?? []);
+      const ok = await createToken(name);
+      if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
     }} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });

@@ -4,7 +4,7 @@ import { test, expect, openMatchRail, openQuickActions, roomBody } from './fixtu
 test('cria fichas e cópias com mouse/toque e recupera atributos após recarga', async ({ page }, info) => {
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
-  const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'fichas.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="1" name="Island"/></zone></cockatrice_deck>') } } });
+  const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'fichas.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="1" name="Island"/><card number="1" name="Mabel, Heir to Cragflame"/></zone></cockatrice_deck>') } } });
   const { deck } = await uploaded.json();
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
@@ -12,6 +12,12 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);
   await page.goto(`/#/salas/${room.id}`);
   const click = async (locator: ReturnType<typeof page.getByRole>) => info.project.use.hasTouch ? locator.tap() : locator.click();
+  await click(page.locator('.playing-card[aria-label="Mabel, Heir to Cragflame"]'));
+  const mabelPreview = page.getByRole('dialog', { name: 'Imagem de Mabel, Heir to Cragflame' });
+  await expect(mabelPreview.getByRole('button', { name: 'Criar ficha feita pela carta: Cragflame' })).toBeVisible();
+  await click(mabelPreview.getByRole('button', { name: 'Criar ficha feita pela carta: Cragflame' }));
+  await expect(page.locator('.playing-card[aria-label="Cragflame"]')).toBeVisible();
+  await click(mabelPreview.getByRole('button', { name: 'Fechar', exact: true }));
   await openQuickActions(page);
   await click(page.getByRole('button', { name: 'Ações', exact: true }));
   await click(page.getByRole('button', { name: 'Criar ficha', exact: true }));

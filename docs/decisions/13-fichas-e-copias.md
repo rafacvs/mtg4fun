@@ -41,6 +41,12 @@ carta. O contrato de criação não muda.
 
 ## Implementação e validação
 
+Em 29 de outubro de 2026, o usuário solicitou explicitamente que a inspeção de
+cada carta mostre, abaixo de “Criar cópia independente”, um atalho para cada
+ficha criada por ela, citando Mabel e Cragflame. O atalho usa as relações
+`reverse-related` já presentes no catálogo e a ação `create-token` existente;
+não introduz automação de regras nem altera o contrato de criação.
+
 `GET /api/rooms/{id}/match/tokens?q=` exige participação na partida e retorna
 `tokens` com nome, texto, poder/resistência e `imageName`. A busca ignora caixa e
 retorna até 100 nomes ordenados; refinar a busca localiza resultados restantes.
