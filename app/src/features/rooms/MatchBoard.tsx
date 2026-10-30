@@ -77,7 +77,9 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
+  const [selectionActionsOpen, setSelectionActionsOpen] = useState(false);
   const [selecting, setSelecting] = useState(false);
+  useEffect(() => setSelectionActionsOpen(false), [selectionIds.join('|')]);
   const selectionControllers = useRef(new Map<string, number>());
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const moreControl = useRef<HTMLButtonElement>(null);
@@ -315,7 +317,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : null} focusEnabled={compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <TableFields match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : null} focusEnabled={compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={openLibrary} onDraw={drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} selectionActions={{ count: selectionIds.length, open: selectionActionsOpen, onToggle: () => setSelectionActionsOpen(open => !open) }} ownCommands={compact ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small><b>{own.handCount}</b> {own.handCount === 1 ? 'carta' : 'cartas'}</small></span></div>
             <div id="own-dock-content" className="dock-content">
@@ -381,7 +383,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       </div>}
     </div>
     {drag && <DragDestinations active={drag.zone} />}
-    {!drag && !preview && <CardActionBar key={selectionIds.join('|')} cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} onClear={() => setSelectionIds([])} />}
+    {!drag && !preview && selectionActionsOpen && <CardActionBar key={selectionIds.join('|')} cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} onClear={() => setSelectionIds([])} />}
     <LibraryConsultation
       open={libraryOpen}
       anchor={libraryAnchor}
@@ -408,7 +410,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const player = match.players.find(item => item.userId === openZone.playerId);
       if (!player) return null;
       const title = openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio';
-      return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />;
+      return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} viewerId={match.viewerId} disabled={busy || unconfirmed} gesture={gesture} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />;
     })()}
     <GameActions anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} actorName={own.name} onCreateToken={async name => {
       const cell = firstFreeCell(own.battlefield ?? []);

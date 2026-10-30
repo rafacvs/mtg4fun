@@ -26,6 +26,9 @@ type creationCard struct {
 	OwnerID          int64  `json:"ownerId"`
 	ControllerID     int64  `json:"controllerId"`
 	Zone             string `json:"zone"`
+	PositionX        int    `json:"positionX"`
+	Row              int    `json:"row"`
+	StackOrder       int    `json:"stackOrder"`
 }
 type creationPlayer struct {
 	UserID      int64          `json:"userId"`
@@ -128,6 +131,38 @@ func TestCatalogTokenCreationIsPublicAndDurable(t *testing.T) {
 	repeated := creationPlayers(t, e.request("POST", path+"/actions", body, cookies[0], nil))[0]
 	if len(repeated.Battlefield) != 1 || repeated.Battlefield[0] != card {
 		t.Fatalf("recuperação/reenvio: %+v", repeated)
+	}
+}
+
+func TestCreatedTokensStartInAnEmptyCellAndThenStack(t *testing.T) {
+	e, cookies, path := prepareCreationMatch(t)
+	action := func(intent, fields string) []creationCard {
+		body := fmt.Sprintf(`{"intentId":%q,%s}`, intent, fields)
+		return creationPlayers(t, e.request("POST", path+"/actions", body, cookies[0], nil))[0].Battlefield
+	}
+
+	hand := action("31000000-0000-4000-8000-000000000001", `"kind":"draw","count":2`)
+	if len(hand) != 0 {
+		t.Fatalf("a compra não deve colocar cartas no campo: %+v", hand)
+	}
+	players := creationPlayers(t, e.request("GET", path, "", cookies[0], nil))
+	if len(players[0].Hand) != 2 {
+		t.Fatalf("mão após compra: %+v", players[0])
+	}
+	firstID, secondID := players[0].Hand[0].ID, players[0].Hand[1].ID
+	action("31000000-0000-4000-8000-000000000002", fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"battlefield","x":0,"row":0`, firstID))
+	action("31000000-0000-4000-8000-000000000003", fmt.Sprintf(`"kind":"move","cardIds":[%q],"to":"battlefield","x":2,"row":0`, secondID))
+
+	for index := 0; index < 3; index++ {
+		cards := action(fmt.Sprintf("31000000-0000-4000-8000-%012d", index+4), `"kind":"create-token","tokenName":"Soldier Token"`)
+		created := cards[len(cards)-1]
+		if created.PositionX != 1 || created.Row != 0 {
+			t.Fatalf("ficha %d não entrou/empilhou na célula vazia: %+v", index+1, created)
+		}
+	}
+	cards := action("31000000-0000-4000-8000-000000000007", `"kind":"create-token","tokenName":"Soldier Token"`)
+	if created := cards[len(cards)-1]; created.PositionX != 3 || created.Row != 0 {
+		t.Fatalf("quarta ficha deveria iniciar nova pilha vazia: %+v", created)
 	}
 }
 

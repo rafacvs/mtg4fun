@@ -44,7 +44,7 @@ func addCreatedCard(m *matchState, p *playerState, card Card, kind string) (acti
 	card.OwnerID = p.UserID
 	card.ControllerID = p.UserID
 	card.IsToken = true
-	x, row := firstFreeCell(p.Battlefield)
+	x, row := firstCreatedTokenCell(p.Battlefield, card)
 	if x > 20000 || row > 2000 {
 		return actionLogPayload{}, errInvalidPosition
 	}
@@ -55,6 +55,56 @@ func addCreatedCard(m *matchState, p *playerState, card Card, kind string) (acti
 	card.StackOrder = m.NextStackOrder
 	p.Battlefield = append(p.Battlefield, card)
 	return actionLogPayload{Kind: kind, To: "battlefield", Count: 1, Result: card.Name, Cards: referencesForCards([]Card{card})}, nil
+}
+
+// firstCreatedTokenCell keeps repeated equivalent tokens together, but never
+// starts their stack on top of an unrelated card.
+func firstCreatedTokenCell(cards []Card, created Card) (int, int) {
+	type cell struct {
+		count       int
+		matching    bool
+		onlyMatches bool
+		matchingTop int
+	}
+	cells := make(map[int]cell)
+	maxCol := -1
+	for _, card := range cards {
+		if card.Row != 0 {
+			continue
+		}
+		current := cells[card.PositionX]
+		if current.count == 0 {
+			current.onlyMatches = true
+		}
+		current.count++
+		if card.Name == created.Name && card.InstanceKind == created.InstanceKind {
+			current.matching = true
+			if card.StackOrder > current.matchingTop {
+				current.matchingTop = card.StackOrder
+			}
+		} else {
+			current.onlyMatches = false
+		}
+		cells[card.PositionX] = current
+		if card.PositionX > maxCol {
+			maxCol = card.PositionX
+		}
+	}
+	matchingCol, matchingOrder := -1, -1
+	for column, current := range cells {
+		if current.count < 3 && current.matching && current.onlyMatches && current.matchingTop > matchingOrder {
+			matchingCol, matchingOrder = column, current.matchingTop
+		}
+	}
+	if matchingCol >= 0 {
+		return matchingCol, 0
+	}
+	for column := 0; column <= maxCol; column++ {
+		if cells[column].count == 0 {
+			return column, 0
+		}
+	}
+	return maxCol + 1, 0
 }
 
 func creationFieldsOnly(input matchAction) bool {
