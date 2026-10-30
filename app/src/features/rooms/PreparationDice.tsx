@@ -15,6 +15,7 @@ import { DiceTable, type DiceTableHandle } from "./dice/DiceTable";
 import "./preparation-dice.css";
 import { DiceRollBadge } from "./DiceRollBadge";
 import d20Icon from "../../assets/theme/d20.svg";
+import panelCorner from "../../assets/theme/corner-v2.svg";
 import { useDiceThrowGesture } from "./useDiceThrowGesture";
 
 const colors = [
@@ -25,6 +26,16 @@ const colors = [
   "#e07a3e",
   "#c9d16a",
 ];
+
+function PanelCorners() {
+  return (
+    <span className="preparation-panel-corners" aria-hidden="true">
+      {[0, 1, 2, 3].map((corner) => (
+        <img key={corner} src={panelCorner} alt="" />
+      ))}
+    </span>
+  );
+}
 
 export function PreparationDice({
   room,
@@ -81,6 +92,11 @@ export function PreparationDice({
         .at(-1),
     }))
     .sort((a, b) => (b.roll?.value || 0) - (a.roll?.value || 0));
+  const landedOrder = order.filter((p) => p.roll && landed.has(p.roll.id));
+  const leaders = landedOrder.filter(
+    (p) => p.roll?.value === landedOrder[0]?.roll?.value,
+  );
+  const ownPosition = order.findIndex((p) => p.id === userId) + 1;
   const allConfirmed =
     Object.keys(confirmed).length === room.participants.length;
   useEffect(() => {
@@ -209,6 +225,7 @@ export function PreparationDice({
   );
   const log = (
     <section className="dice-register" aria-label="Registro da mesa">
+      <PanelCorners />
       <header className="dice-register-heading">
         <div>
           <p className="eyebrow">REGISTRO DA MESA</p>
@@ -314,20 +331,33 @@ export function PreparationDice({
     >
       <div className="order-main">
         <section className="order-table">
-          <header>
-            <p className="eyebrow">
-              {finished ? "ORDEM DEFINIDA" : "QUEM COMEÇA?"}
-            </p>
-            <h2>{finished ? `${order[0]?.name} começa` : "À mesa"}</h2>
-            <span>
-              {room.format} · {room.life} de vida · {room.participants.length}{" "}
-              jogadores
-            </span>
+          <PanelCorners />
+          <header className="order-heading">
+            <div>
+              <p className="eyebrow">
+                {finished ? "ORDEM DEFINIDA" : "QUEM COMEÇA?"}
+              </p>
+              <h2>{finished ? `${order[0]?.name} começa` : "À mesa"}</h2>
+            </div>
+            <div className="preparation-room-facts">
+              <span>♟ {room.format}</span>
+              <span>♥ {room.life} de vida</span>
+              <span>
+                ⬟ {room.participants.length}/{room.seats} jogadores
+              </span>
+            </div>
           </header>
           <div className="order-arena">
             <div className="order-felt">
-              <span>✧</span>
-              {finished && <strong>{order[0]?.name} começa</strong>}
+              <span aria-hidden="true">{finished ? "♛" : "✧"}</span>
+              {finished && (
+                <>
+                  <strong>{order[0]?.name} começa</strong>
+                  <small>
+                    Tirou {order[0]?.roll?.value} · a ordem segue o resultado
+                  </small>
+                </>
+              )}
             </div>
             {diceSurface}
             {room.participants.map((p, index) => {
@@ -342,20 +372,36 @@ export function PreparationDice({
               const image = deck?.image || ownDeck?.commander;
               return (
                 <article
-                  className={`order-seat ${pos}`}
-                  style={{ borderColor: colors[index % 6] }}
+                  className={`order-seat ${pos} ${finished && order[0]?.id === p.id ? "is-first" : ""}`}
+                  style={
+                    { "--player-color": colors[index % 6] } as CSSProperties
+                  }
                   key={p.id}
                 >
-                  {image && <img alt="" src={deckApi.imageURL(image)} />}
-                  <div>
+                  <span
+                    className="dice-player-shield order-seat-shield"
+                    aria-hidden="true"
+                  >
+                    {p.name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <img
+                    alt=""
+                    src={image ? deckApi.imageURL(image) : "/library-back.png"}
+                    onError={(event) => {
+                      event.currentTarget.src = "/library-back.png";
+                    }}
+                  />
+                  <div className="order-seat-copy">
                     <b>
                       {p.name}
-                      {p.id === userId ? " · você" : ""}
+                      {p.id === userId && <em> · você</em>}
                     </b>
                     <small>
                       {deck?.name || ownDeck?.name || "Deck escolhido"}
                     </small>
-                    <span>
+                    <span
+                      className={`order-seat-status ${confirmed[p.id] ? "is-confirmed" : ""}`}
+                    >
                       {confirmed[p.id]
                         ? finished
                           ? `${order.findIndex((v) => v.id === p.id) + 1}º a jogar`
@@ -365,48 +411,134 @@ export function PreparationDice({
                           : "Ainda não rolou"}
                     </span>
                   </div>
-                  {roll && landed.has(roll.id) && <strong>{roll.value}</strong>}
+                  {roll && landed.has(roll.id) && (
+                    <DiceRollBadge value={roll.value} />
+                  )}
                 </article>
               );
             })}
           </div>
           <footer>
-            {Object.keys(confirmed).length}/{room.participants.length}{" "}
-            confirmaram ·{" "}
-            {finished
-              ? "Todos confirmaram. Abrindo a mesa…"
-              : "Cada jogador rola e confirma seu resultado."}
+            <div className="order-confirmation-shields" aria-hidden="true">
+              {room.participants.map((p, index) => (
+                <span
+                  key={p.id}
+                  className="dice-player-shield"
+                  style={
+                    { "--player-color": colors[index % 6] } as CSSProperties
+                  }
+                />
+              ))}
+            </div>
+            <p role="status">
+              <b>
+                {Object.keys(confirmed).length}/{room.participants.length}{" "}
+                confirmaram
+              </b>{" "}
+              ·{" "}
+              {finished
+                ? "Todos confirmaram. Abrindo a mesa…"
+                : "Cada jogador rola e confirma seu resultado."}
+            </p>
           </footer>
         </section>
         <section className="order-ranking">
-          <p className="eyebrow">ORDEM DOS TURNOS</p>
+          <header className="order-ranking-heading">
+            <p className="eyebrow">ORDEM DOS TURNOS</p>
+            <small>
+              {allConfirmed
+                ? "Definida · todos confirmaram"
+                : "Provisória · aguardando confirmações"}
+            </small>
+          </header>
           <ol>
             {order.map((p, i) => (
-              <li key={p.id} className={allConfirmed ? "" : "provisional"}>
+              <li
+                key={p.id}
+                className={`${allConfirmed ? "" : "provisional"} ${allConfirmed && i === 0 ? "is-first" : ""}`}
+                style={
+                  {
+                    "--player-color":
+                      colors[
+                        room.participants.findIndex(
+                          (player) => player.id === p.id,
+                        ) % 6
+                      ],
+                  } as CSSProperties
+                }
+              >
                 <strong>{i + 1}º</strong>
-                <span>
-                  {p.name}
-                  <small>{confirmed[p.id] ? "Confirmado" : "Provisório"}</small>
+                <span className="dice-player-shield" aria-hidden="true">
+                  {p.name.slice(0, 1).toUpperCase()}
                 </span>
-                <b>{p.roll && landed.has(p.roll.id) ? p.roll.value : "—"}</b>
+                <span className="order-ranking-copy">
+                  <b>
+                    {p.name}
+                    {p.id === userId ? " · você" : ""}
+                  </b>
+                  <small>
+                    {allConfirmed && i === 0
+                      ? "começa"
+                      : confirmed[p.id]
+                        ? "confirmado"
+                        : "provisório"}
+                  </small>
+                </span>
+                {p.roll && landed.has(p.roll.id) ? (
+                  <DiceRollBadge value={p.roll.value} />
+                ) : (
+                  <b>—</b>
+                )}
               </li>
             ))}
           </ol>
         </section>
       </div>
       <aside className="order-sidebar">
-        <section className="dice-register">
-          <p className="eyebrow">
-            {finished ? "ORDEM DEFINIDA" : "SUA ROLAGEM"}
-          </p>
-          <h3>
-            {finished
-              ? `Você joga em ${order.findIndex((p) => p.id === userId) + 1}º`
-              : "Quem começa?"}
-          </h3>
-          <div className="own-roll" role="status">
-            {rolling ? "Rolando na mesa…" : own ? own.value : "Role seu d20"}
+        <section className="dice-register order-result">
+          <PanelCorners />
+          <header className="dice-register-heading">
+            <div>
+              <p className="eyebrow">
+                {finished ? "ORDEM DEFINIDA" : "SUA ROLAGEM"}
+              </p>
+              <h3>
+                {finished ? `Você joga em ${ownPosition}º` : "Quem começa?"}
+              </h3>
+            </div>
+            {finished && (
+              <span className="dice-register-phase">Todos confirmaram</span>
+            )}
+          </header>
+          <div
+            className={`own-roll ${finished ? "is-final" : "is-leader"}`}
+            role="status"
+          >
+            <strong>
+              {finished
+                ? `${ownPosition}º`
+                : leaders.length
+                  ? leaders.map((p) => p.name).join(" / ")
+                  : "Aguardando rolagens"}
+            </strong>
+            {finished ? (
+              <small>A jogar · tirou {own?.value}</small>
+            ) : leaders.length > 0 ? (
+              <small>
+                {leaders.length > 1 ? "Empate" : "Maior rolagem"} · tirou{" "}
+                {leaders[0].roll?.value}
+              </small>
+            ) : null}
           </div>
+          {finished && (
+            <div className="order-result-summary">
+              <p>Ordem: {order.map((p) => p.name).join(" → ")}.</p>
+              <div className="order-result-progress" aria-hidden="true">
+                <span />
+              </div>
+              <small>Abrindo a mesa…</small>
+            </div>
+          )}
           {!finished && (
             <>
               <button
