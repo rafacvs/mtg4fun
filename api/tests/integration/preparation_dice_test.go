@@ -38,7 +38,7 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, created).ID)
 	requireStatus(t, e.request("POST", path+"/participants", "{}", bia, nil), 200)
 	action := func(cookie *http.Cookie, n int, kind, rollID string) response {
-		return e.request("POST", path+"/preparation/actions", fmt.Sprintf(`{"intentId":"00000000-0000-4000-8000-%012d","kind":%q,"rollId":%q}`, n, kind, rollID), cookie, nil)
+		return e.request("POST", path+"/preparation/actions", fmt.Sprintf(`{"intentId":"00000000-0000-4000-8000-%012d","kind":%q,"rollId":%q,"fallOff":%t}`, n, kind, rollID, n == 1), cookie, nil)
 	}
 	requireStatus(t, e.request("GET", path+"/preparation", "", outsider, nil), 404)
 	requireStatus(t, action(outsider, 1, "roll", ""), 404)
@@ -47,6 +47,9 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	state := e.request("GET", path+"/preparation", "", bia, nil)
 	if bytes.Count(state.body, []byte(`"value":7`)) != 1 {
 		t.Fatalf("rolagem duplicada: %s", state.body)
+	}
+	if !bytes.Contains(state.body, []byte(`"fallOff":true`)) {
+		t.Fatal("tipo de lançamento não foi sincronizado")
 	}
 	for i, cookie := range []*http.Cookie{ana, bia} {
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, ids[i]), cookie, nil), 200)

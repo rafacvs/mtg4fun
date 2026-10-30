@@ -37,11 +37,15 @@ export function usePreparationDice(id: number, stopped: boolean) {
       clearTimeout(timer);
     };
   }, [id, stopped]);
-  async function send(kind: "roll" | "confirm", rollId?: string) {
+  async function send(
+    kind: "roll" | "confirm",
+    rollId?: string,
+    fallOff = false,
+  ) {
     setPending(true);
     setError("");
     try {
-      await preparationDiceApi.send(id, kind, rollId);
+      await preparationDiceApi.send(id, kind, rollId, fallOff);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível concluir.");
     } finally {

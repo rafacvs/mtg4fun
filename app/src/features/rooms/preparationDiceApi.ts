@@ -1,6 +1,7 @@
 import { createActionIntent } from "./actionIntent";
 
 export type PreparationRoll = {
+  fallOff?: boolean;
   id: string;
   playerId: number;
   name: string;
@@ -27,11 +28,17 @@ export const preparationDiceApi = {
     if (!res.ok) throw new Error("Não foi possível carregar os decks.");
     return res.json();
   },
-  async send(id: number, kind: "roll" | "confirm", rollId?: string) {
+  async send(
+    id: number,
+    kind: "roll" | "confirm",
+    rollId?: string,
+    fallOff = false,
+  ) {
     const body = JSON.stringify({
       kind,
       intentId: createActionIntent(),
       ...(kind === "confirm" ? { rollId } : {}),
+      ...(kind === "roll" && fallOff ? { fallOff: true } : {}),
     });
     let response: Response | undefined;
     for (let attempt = 0; attempt < 2; attempt++) {

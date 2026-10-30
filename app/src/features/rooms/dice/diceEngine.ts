@@ -45,6 +45,7 @@ export interface EngineOptions {
 }
 
 export interface TossOptions {
+  fallOff?: boolean;
   /** cor do dado (#RRGGBB) — normalmente a cor do jogador */
   color: string;
   /** texto da etiqueta quando o dado para (ex.: nome do jogador) */
@@ -189,6 +190,7 @@ const VERTS: Vec3[] = RAW.map(nrm);
 
 // ---------------------------------------------------------------- dado
 interface Die {
+  fallOff?: boolean;
   id: string;
   p: Vec3;
   v: Vec3;
@@ -285,8 +287,9 @@ export function createDiceEngine(
     ];
     const tgt = [R(-0.55, 0.55) * T.radius, R(-0.3, 0.4) * T.radius];
     const dir = nrm([tgt[0] - p[0], tgt[1] - p[1], 0]);
-    const sp = R(520, 820) * (T.radius / 294);
+    const sp = R(520, 820) * (T.radius / 294) * (o.fallOff ? 3 : 1);
     const die: Die = {
+      fallOff: o.fallOff,
       id: "d" + ++seq,
       p,
       v: [dir[0] * sp, dir[1] * sp, R(200, 520)],
@@ -352,7 +355,15 @@ export function createDiceEngine(
 
       // chão: quica enquanto cai rápido; depois fica rolando
       let ground = false;
-      if (d.p[2] < r) {
+      if (d.fallOff && d.p[2] < -180) {
+        d.a = 0;
+        d.onLand?.(d.forced ?? 1);
+        continue;
+      }
+      if (
+        d.p[2] < r &&
+        (!d.fallOff || Math.hypot(d.p[0], d.p[1]) < T.radius - r)
+      ) {
         d.p[2] = r;
         if (d.v[2] < -110) {
           d.v[2] = -d.v[2] * 0.42;
@@ -366,7 +377,7 @@ export function createDiceEngine(
       }
       // parede circular (aro da mesa)
       const dist = Math.hypot(d.p[0], d.p[1]);
-      if (dist > lim) {
+      if (dist > lim && !d.fallOff) {
         const nx = d.p[0] / dist,
           ny = d.p[1] / dist;
         d.p[0] = nx * lim;

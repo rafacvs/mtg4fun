@@ -1,6 +1,51 @@
 import { test, expect, roomBody } from "./fixtures";
 import { randomUUID } from "node:crypto";
 
+test("preparação desktop acomoda mesa, faixa e painéis na altura disponível", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "Composição desktop");
+  await page.request.post("/api/session", {
+    data: { login: "amigo", password: "senha-do-navegador" },
+  });
+  const { room } = await (
+    await page.request.post("/api/rooms", { data: roomBody({ seats: 4 }) })
+  ).json();
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto(`/#/salas/${room.id}`);
+    await expect(page.getByRole("button", { name: /Rolar d20/ })).toBeVisible();
+    await expect(page.locator(".preparation-empty-seat")).toHaveCount(3);
+    const bounds = await page.evaluate(() => {
+      const rect = (selector: string) =>
+        document.querySelector(selector)!.getBoundingClientRect().toJSON();
+      return {
+        table: rect(".preparation-table"),
+        header: rect(".preparation-heading"),
+        start: rect(".preparation-start"),
+        controls: rect(".preparation-controls"),
+        register: rect(".dice-register"),
+        rules: rect(".preparation-rules"),
+        button: rect(".dice-roll-button"),
+        overflow: document.documentElement.scrollWidth > innerWidth,
+      };
+    });
+    expect(bounds.header.top).toBeGreaterThan(bounds.table.top);
+    expect(bounds.start.bottom).toBeLessThan(bounds.table.bottom);
+    expect(bounds.register.top).toBeGreaterThan(bounds.controls.bottom);
+    expect(bounds.rules.bottom).toBeLessThanOrEqual(viewport.height);
+    expect(bounds.button.bottom).toBeLessThanOrEqual(viewport.height);
+    expect(bounds.overflow).toBe(false);
+    await page.screenshot({
+      path: info.outputPath(`preparacao-${viewport.width}.png`),
+      fullPage: true,
+    });
+  }
+});
+
 test("d20 sincroniza, confirma a ordem e abre a partida", async ({
   page,
   browser,
@@ -50,12 +95,26 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     await expect(page.locator(".dice-register li")).toHaveCount(1, {
       timeout: 15000,
     });
+    const throwButton = page.getByRole("button", { name: /Rolar d20/ });
+    await throwButton.hover();
+    await page.mouse.down();
+    await expect(
+      page.getByRole("button", { name: "Solte para cair da mesa" }),
+    ).toBeVisible({ timeout: 5000 });
+    const thrown = page.waitForRequest(
+      (r) => r.url().endsWith("/preparation/actions") && r.method() === "POST",
+    );
+    await page.mouse.up();
+    expect((await thrown).postDataJSON().fallOff).toBe(true);
+    await expect(page.locator(".dice-register li")).toHaveCount(2, {
+      timeout: 15000,
+    });
     const before = await (
       await other.request.get(path + "/preparation")
     ).json();
-    expect(before.rolls).toHaveLength(1);
+    expect(before.rolls).toHaveLength(2);
     await page.reload();
-    await expect(page.locator(".dice-register li")).toHaveCount(1, {
+    await expect(page.locator(".dice-register li")).toHaveCount(2, {
       timeout: 15000,
     });
     for (let i = 0; i < 2; i++)

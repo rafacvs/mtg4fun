@@ -14,6 +14,7 @@ import (
 )
 
 type PreparationRoll struct {
+	FallOff  bool   `json:"fallOff,omitempty"`
 	ID       string `json:"id"`
 	PlayerID int64  `json:"playerId"`
 	Name     string `json:"name"`
@@ -70,6 +71,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 		return
 	}
 	var input struct {
+		FallOff  bool   `json:"fallOff"`
 		IntentID string `json:"intentId"`
 		Kind     string `json:"kind"`
 		RollID   string `json:"rollId"`
@@ -163,7 +165,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 				httpserver.InternalError(w, e)
 				return
 			}
-			room.Dice = append(room.Dice, PreparationRoll{input.IntentID, user.ID, user.Name, value, now, room.Status, now})
+			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now, FallOff: input.FallOff})
 		} else {
 			if room.Status != "determining_order" {
 				fail("A ordem ainda não está sendo definida.")

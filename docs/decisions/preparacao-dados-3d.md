@@ -42,6 +42,23 @@ O layout usa o tema existente, sem biblioteca adicional. O aro oval usa
 camadas contínuas de cor e sombra para evitar as emendas diagonais da borda
 ridge apontadas pelo usuário.
 
+Na revisão visual seguinte, o usuário pediu a composição da referência:
+cabeçalho dentro do quadro, faixa inferior com prontidão e início, painéis
+laterais separados e proporções que mantenham regras e rolagem acessíveis.
+Foram ajustados os lugares superior/laterais e a altura em telas baixas.
+
+O usuário também solicitou segurar o botão por três segundos ou mais para
+lançar o dado para fora. O gesto é resolvido ao soltar; cancelamento do toque
+ou saída do botão cancela o lançamento. O campo aditivo fallOff é persistido
+e compartilhado com o resultado. O motor passa pelo aro e cai fora do feltro,
+mantendo o resultado do servidor no registro. O teste de navegador verifica o
+gesto real e a requisição; o motor é exercitado até concluir a queda.
+
+Verificação da revisão: gesto completo passou em desktop e celular nas duas
+orientações. O teste de layout confere cabeçalho e início dentro do quadro,
+painéis separados, regras e botão de rolar dentro da tela em 1440×900 e
+1280×720; capturas dessas duas dimensões foram inspecionadas.
+
 ## Verificação
 
 Teste HTTP com executável e MySQL reais cobre participantes, autorização do

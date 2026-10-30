@@ -7,6 +7,7 @@ import { preparationDiceApi } from "./preparationDiceApi";
 import { createPortal } from "react-dom";
 import { DiceTable, type DiceTableHandle } from "./dice/DiceTable";
 import "./preparation-dice.css";
+import { useDiceThrowGesture } from "./useDiceThrowGesture";
 
 const colors = [
   "#6cb4f5",
@@ -78,7 +79,7 @@ export function PreparationDice({
         ".preparation-arena, .mobile-preparation-table",
       );
       const controls = document.querySelector(
-        ".preparation-controls, .mobile-preparation",
+        ".preparation-sidebar, .mobile-preparation",
       );
       if (arena && controls)
         setTargets((old) =>
@@ -102,19 +103,25 @@ export function PreparationDice({
   useEffect(() => {
     if (!surface.current) return;
     const element = surface.current;
+    const felt = element.parentElement?.querySelector(
+      ".preparation-oval, .order-felt, .mobile-preparation-oval",
+    );
     const resize = () => {
       const w = element.clientWidth,
         h = element.clientHeight;
+      const origin = element.getBoundingClientRect();
+      const bounds = felt?.getBoundingClientRect();
       setGeometry({
-        cx: w / 2,
-        cy: h * 0.52,
-        radius: w * 0.33,
-        tilt: Math.min(0.6, (h * 0.22) / (w * 0.33)),
+        cx: bounds ? bounds.left + bounds.width / 2 - origin.left : w / 2,
+        cy: bounds ? bounds.top + bounds.height / 2 - origin.top : h * 0.52,
+        radius: bounds ? bounds.width / 2 : w * 0.33,
+        tilt: bounds ? Math.min(0.8, bounds.height / bounds.width) : 0.4,
       });
     };
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(element);
+    if (felt) observer.observe(felt);
     return () => observer.disconnect();
   }, [deciding, finished, targets]);
   useEffect(() => {
@@ -131,6 +138,7 @@ export function PreparationDice({
       const position = others.findIndex((p) => p.id === roll.playerId);
       canvas.current.toss({
         value: roll.value,
+        fallOff: roll.fallOff,
         seed: roll.seed,
         color: colors[index % 6],
         label: roll.name,
@@ -154,6 +162,9 @@ export function PreparationDice({
     return () => clearTimeout(timer);
   }, [finished, allConfirmed, rolls.length]);
   const action = (kind: "roll" | "confirm") => send(kind, own?.id);
+  const throwGesture = useDiceThrowGesture(
+    (fallOff) => void send("roll", own?.id, fallOff),
+  );
   const diceSurface = (
     <div className="dice-surface" ref={surface}>
       <DiceTable ref={canvas} table={geometry} dieRadius={23} />
@@ -201,11 +212,12 @@ export function PreparationDice({
       {!deciding && !finished && (
         <>
           <button
-            className="secondary"
             disabled={pending}
-            onClick={() => void action("roll")}
+            {...throwGesture.handlers}
+            className="secondary dice-roll-button"
+            title="Segure por 3 segundos e solte para jogar para fora da mesa"
           >
-            ⬡ Rolar d20
+            {throwGesture.charged ? "Solte para cair da mesa" : "⬡ Rolar d20"}
           </button>
           <small>
             Pode rolar quantos quiser. Só pra brincar, não vale nada.
@@ -328,9 +340,14 @@ export function PreparationDice({
             <>
               <button
                 disabled={pending || rolling || !!confirmed[userId]}
-                onClick={() => void action("roll")}
+                {...throwGesture.handlers}
+                className="dice-roll-button"
               >
-                {own ? "Rolar de novo" : "Rolar d20"}
+                {throwGesture.charged
+                  ? "Solte para cair da mesa"
+                  : own
+                    ? "Rolar de novo"
+                    : "Rolar d20"}
               </button>
               <button
                 className="secondary"

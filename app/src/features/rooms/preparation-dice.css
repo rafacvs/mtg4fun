@@ -4,8 +4,158 @@
   pointer-events: none;
   z-index: 3;
 }
+.dice-roll-button {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
 .preparation-arena {
   position: relative;
+}
+.preparation-oval::after {
+  content: "✧";
+  color: #d4bd6538;
+  font:
+    clamp(70px, 9vw, 140px) Georgia,
+    serif;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+@media (min-width: 801px) {
+  .room-screen > .room-preparation {
+    width: calc(100% - 56px);
+    max-width: 1600px;
+    margin: 18px auto;
+  }
+  .preparation-content {
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 26%);
+    gap: 14px 20px;
+    align-items: start;
+  }
+  .preparation-table {
+    padding: 22px;
+    min-height: 0;
+  }
+  .room-preparation .preparation-heading {
+    margin: 0;
+    min-height: 42px;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+  .preparation-heading h2 {
+    font-size: 1.55rem;
+  }
+  .preparation-room-facts {
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .preparation-room-facts span {
+    padding: 7px 10px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    background: #080e0dd9;
+  }
+  .preparation-sidebar {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+  .preparation-sidebar .preparation-controls {
+    margin: 0;
+    display: block;
+    padding: 20px;
+  }
+  .preparation-sidebar .preparation-controls label {
+    margin-top: 18px;
+  }
+  .preparation-sidebar .preparation-selected-deck {
+    height: 174px;
+    padding: 12px;
+  }
+  .preparation-sidebar .preparation-selected-art {
+    width: 40%;
+    max-height: 154px;
+    object-fit: contain;
+  }
+  .preparation-sidebar .preparation-selected-info {
+    max-height: 150px;
+  }
+  .preparation-sidebar > .dice-register {
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+  }
+  .preparation-sidebar .dice-register ol {
+    flex: 1;
+    min-height: 80px;
+    height: clamp(100px, 18vh, 190px);
+  }
+  .room-preparation .preparation-start {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 20px 0 0;
+    padding: 10px 12px;
+    border: 1px solid #8a754344;
+    border-radius: 5px;
+    background: #090f0ee8;
+  }
+  .preparation-readiness {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .preparation-start p {
+    margin: 0;
+    font-size: 0.72rem;
+  }
+  .room-preparation .preparation-start button {
+    width: auto;
+    min-width: 160px;
+    min-height: 42px;
+    flex: none;
+    font-size: 0.78rem;
+  }
+  .preparation-shields {
+    display: flex;
+    gap: 4px;
+  }
+  .preparation-shields i {
+    font-style: normal;
+    color: var(--seat, #6cb4f5);
+  }
+  .preparation-shields .seat-color-1 {
+    --seat: #f27bb0;
+  }
+  .preparation-shields .seat-color-2 {
+    --seat: #b49af7;
+  }
+  .preparation-shields .seat-color-3 {
+    --seat: #4fd1b0;
+  }
+  .preparation-rule {
+    min-height: 86px;
+  }
+  .preparation-rule-detail {
+    flex-wrap: wrap;
+  }
+  .preparation-mulligan {
+    max-width: 100%;
+  }
+  .preparation-mulligan button {
+    min-width: 0;
+    font-size: 0.6rem;
+  }
 }
 .dice-register {
   padding: 20px;
@@ -76,19 +226,19 @@
 }
 .room-preparation .preparation-table {
   background:
-    linear-gradient(#18241cbb, #07100ae6),
+    linear-gradient(#14221cdd, #06100ce8),
     url("../../assets/theme/mat-forest.jpg") center/cover;
 }
 @media (min-width: 801px) {
   .preparation-arena {
-    height: 490px;
+    height: clamp(350px, 53vh, 510px);
     margin: 0;
   }
   .preparation-oval {
-    left: 17%;
-    width: 66%;
-    top: 30%;
-    height: 44%;
+    left: 15%;
+    width: 70%;
+    top: 25%;
+    height: 50%;
     border: 2px solid #b5914d;
     box-shadow:
       0 0 0 3px #281b0d,
@@ -104,7 +254,7 @@
     display: none;
   }
   .room-preparation .preparation-seat {
-    width: 190px;
+    width: clamp(160px, 18vw, 250px);
     min-height: 78px;
     z-index: 4;
     padding: 8px;
@@ -126,6 +276,31 @@
   .seat-position-1 {
     top: 36%;
     right: 0;
+  }
+  .room-preparation .preparation-seat.seat-position-5,
+  .room-preparation .preparation-seat.seat-position-1 {
+    width: clamp(110px, 11vw, 150px);
+    flex-direction: column;
+    text-align: center;
+    top: 34%;
+  }
+  .room-preparation .seat-position-5 .preparation-card-back,
+  .room-preparation .seat-position-1 .preparation-card-back {
+    width: 100%;
+    height: 70px;
+  }
+  .room-preparation .preparation-empty-seat {
+    width: clamp(100px, 11vw, 150px);
+    min-height: 70px;
+    background: #0b1211dd;
+  }
+  .room-preparation .preparation-seat-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .preparation-seat-copy {
+    width: 100%;
   }
   .preparation-selected-deck {
     height: 210px;
@@ -363,5 +538,43 @@
   }
   .order-sidebar {
     gap: 12px;
+  }
+}
+
+@media (min-width: 801px) and (max-height: 800px) {
+  .room-screen > .room-preparation {
+    margin-top: 12px;
+  }
+  .room-preparation .preparation-table {
+    padding: 16px;
+  }
+  .room-preparation .preparation-arena {
+    height: clamp(260px, 40vh, 325px);
+  }
+  .preparation-sidebar .preparation-controls {
+    padding: 16px;
+  }
+  .preparation-sidebar .preparation-controls label {
+    margin-top: 10px;
+  }
+  .preparation-sidebar .preparation-selected-deck {
+    height: 128px;
+    margin-top: 8px;
+  }
+  .preparation-sidebar .preparation-selected-art {
+    max-height: 112px;
+  }
+  .preparation-sidebar .preparation-ready-action {
+    margin-top: 12px;
+    min-height: 42px;
+  }
+  .preparation-sidebar > .dice-register {
+    min-height: 220px;
+    padding: 16px;
+  }
+  .preparation-sidebar .dice-register ol {
+    height: 70px;
+    min-height: 60px;
+    margin-bottom: 8px;
   }
 }
