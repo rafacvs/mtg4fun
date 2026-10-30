@@ -24,6 +24,47 @@ func zone(p *playerState, name string) *[]Card {
 	return nil
 }
 
+// The library requires a side. Graveyard and exile accept one; the others have no order to choose.
+func validMovePlacement(to, placement string) bool {
+	switch to {
+	case "library":
+		return placement == "top" || placement == "bottom"
+	case "graveyard", "exile":
+		return placement == "" || placement == "top" || placement == "bottom"
+	}
+	return placement == ""
+}
+
+// The library's top is its first card; the top of graveyard and exile is their last.
+func placesAtStart(to, placement string) bool {
+	if to == "library" {
+		return placement == "top"
+	}
+	return (to == "graveyard" || to == "exile") && placement == "bottom"
+}
+
+func reorderZone(p *playerState, to string, ids []string) (actionLogPayload, error) {
+	destination := zone(p, to)
+	if destination == nil || len(ids) != len(*destination) {
+		return actionLogPayload{}, errCardNotFound
+	}
+	byID := make(map[string]Card, len(ids))
+	for _, card := range *destination {
+		byID[card.ID] = card
+	}
+	ordered := make([]Card, 0, len(ids))
+	for _, id := range ids {
+		card, ok := byID[id]
+		if !ok {
+			return actionLogPayload{}, errCardNotFound
+		}
+		delete(byID, id)
+		ordered = append(ordered, card)
+	}
+	*destination = ordered
+	return actionLogPayload{Kind: "reorder_zone", To: to, Count: len(ids)}, nil
+}
+
 func moveCards(m *matchState, p *playerState, input matchAction) (actionLogPayload, error) {
 	if zone(p, input.To) == nil || input.To == "library" && input.LibraryPlacement != "top" && input.LibraryPlacement != "bottom" {
 		return actionLogPayload{}, errCardNotFound
@@ -147,7 +188,7 @@ func placeCards(p *playerState, cards []Card, from, to, placement string) {
 		card.Zone = to
 		kept = append(kept, card)
 	}
-	if to == "library" && placement == "top" {
+	if placesAtStart(to, placement) {
 		*destination = append(kept, *destination...)
 	} else {
 		*destination = append(*destination, kept...)

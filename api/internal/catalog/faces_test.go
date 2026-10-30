@@ -33,3 +33,24 @@ func TestDatasetFacesResolveExistingTransformTargetsAndBackImage(t *testing.T) {
 		t.Fatalf("imagem frente/verso: %q %q", front.ImageURL, back.ImageURL)
 	}
 }
+
+func TestDatasetLinksTokensToTheirCreatingCards(t *testing.T) {
+	directory := t.TempDir()
+	cards := filepath.Join(directory, "cards.xml")
+	tokens := filepath.Join(directory, "tokens.xml")
+	if err := os.WriteFile(cards, []byte(`<cockatrice_carddatabase><cards><card><name>Mabel</name></card></cards></cockatrice_carddatabase>`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	data := `<cockatrice_carddatabase><cards><card><name>Cragflame</name><reverse-related>Mabel</reverse-related><reverse-related>Mabel</reverse-related><token>1</token></card><card><name>Missing creator token</name><reverse-related>Missing</reverse-related><token>1</token></card></cards></cockatrice_carddatabase>`
+	if err := os.WriteFile(tokens, []byte(data), 0600); err != nil {
+		t.Fatal(err)
+	}
+	source, err := catalog.Load(cards, tokens)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mabel, _ := source.Lookup("Mabel")
+	if !reflect.DeepEqual(mabel.CreatedTokens, []string{"Cragflame"}) {
+		t.Fatalf("created tokens: %v", mabel.CreatedTokens)
+	}
+}

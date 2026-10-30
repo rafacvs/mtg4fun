@@ -20,7 +20,7 @@ const destinations: { value: string; title: string; icon: TableIconName }[] = [
 ];
 type CardCounter = (subject: 'power' | 'toughness' | 'marker', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
-export function CardPreview({ mobileSheet = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, busy = false, error = '', unconfirmed = false, onRetry, players, onFocusOwner, onTransfer, onMoveToOwner, onMove }: {
+export function CardPreview({ mobileSheet = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, onCreateToken, busy = false, error = '', unconfirmed = false, onRetry, players, onFocusOwner, onTransfer, onMoveToOwner, onMove }: {
   mobileSheet?: boolean;
   card: Card | null;
   editable?: boolean;
@@ -31,6 +31,7 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
   viewerId?: number;
   onStateChange?: CardStateChange;
   onCopy?: (id: string) => void;
+  onCreateToken?: (name: string) => void;
   busy?: boolean;
   error?: string;
   unconfirmed?: boolean;
@@ -116,6 +117,7 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
         </div></section>}
         {viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
         {onCopy && card.id && card.name && <button className="secondary card-copy-action" aria-label="Criar cópia independente" disabled={busy || disabled} onClick={() => onCopy(card.id)}><TableIcon name="copy" /><strong>Criar cópia independente</strong><span>· nova instância no seu campo</span></button>}
+        {onCreateToken && card.createdTokens?.map(token => <button key={token} className="secondary card-copy-action" aria-label={`Criar ficha feita pela carta: ${token}`} disabled={busy || disabled} onClick={() => onCreateToken(token)}><TableIcon name="copy" /><strong>Criar ficha feita pela carta</strong><span>· {token}</span></button>)}
       </>}
       {step === 'markers' && editable && onCounter && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
       </div>

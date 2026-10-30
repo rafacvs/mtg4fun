@@ -42,6 +42,109 @@ async function withinViewport(panel: Locator) {
   })).toBe(true);
 }
 
+test('mão, zonas e controles do campo aparecem corretamente em Chromium', async ({ page }, info) => {
+  test.setTimeout(90_000);
+  const { roomId } = await seed([page.request]);
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: fallbackArt }));
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`/#/salas/${roomId}`);
+  const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+  const hand = page.getByRole('region', { name: 'Mão', exact: true });
+  await expect(hand).toBeVisible();
+  await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toHaveCount(0);
+  await expect(own.locator('.seat-status-line small')).toHaveCount(0);
+  const turnBadge = own.locator('.field-turn-label');
+  await expect(turnBadge).toBeVisible();
+  const focusButton = own.getByRole('button', { name: 'Focar campo de Amigo da mesa' });
+  const fitButton = own.getByRole('button', { name: 'Centralizar campo de Amigo da mesa' });
+  await expect(focusButton).toBeVisible();
+  await expect(fitButton).toBeVisible();
+  const badgeBox = (await turnBadge.boundingBox())!;
+  const focusBox = (await focusButton.boundingBox())!;
+  const fitBox = (await fitButton.boundingBox())!;
+  expect(badgeBox.x).toBeGreaterThanOrEqual(fitBox.x + fitBox.width);
+  expect(fitBox.x).toBeGreaterThanOrEqual(focusBox.x + focusBox.width);
+  expect(Math.abs(badgeBox.y + badgeBox.height / 2 - fitBox.y - fitBox.height / 2)).toBeLessThan(2);
+  expect(await turnBadge.evaluate(element => getComputedStyle(element).clipPath)).toContain('polygon');
+  const cards = hand.locator('[data-card-id]');
+  await expect(cards).toHaveCount(4);
+  const ids = await cards.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')));
+  const source = (await cards.nth(0).boundingBox())!;
+  const target = (await cards.nth(1).boundingBox())!;
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + 3, target.y + 3, { steps: 8 });
+  await page.mouse.up();
+  await expect(cards.nth(0)).toHaveAttribute('data-card-id', ids[1]!);
+  await expect(cards.nth(1)).toHaveAttribute('data-card-id', ids[0]!);
+  const visibleHeight = await cards.nth(0).evaluate(element => element.getBoundingClientRect().height);
+  const cardWidth = await cards.nth(0).evaluate(element => element.getBoundingClientRect().width);
+  expect(visibleHeight).toBeGreaterThan(cardWidth * 88 / 63 * .42);
+  await page.mouse.move(640, 400);
+  await page.waitForTimeout(400);
+  const preview = page.locator('.card-hover-zoom');
+  await page.mouse.move((await cards.nth(0).boundingBox())!.x + 20, (await cards.nth(0).boundingBox())!.y + 20);
+  await page.waitForTimeout(250);
+  await expect(preview).toHaveCount(0);
+  await expect(preview).toBeVisible({ timeout: 1_000 });
+  await page.mouse.move(640, 400);
+  await page.waitForTimeout(400);
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('mesa-mao-e-zonas.png'), fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('o pin foca qualquer campo e retorna à visão geral', async ({ page, browser, baseURL }, testInfo) => {
+  test.setTimeout(90_000);
+  const opponent = await browser.newContext({ baseURL });
+  try {
+    const { roomId } = await seed([page.request, opponent.request]);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`/#/salas/${roomId}`);
+    const fields = page.locator('.desktop-fields');
+    const ownSurface = fields.locator('.own-table-surface');
+    const opponentSurface = fields.locator('.opponent-table-surface');
+    await expect(ownSurface).toBeVisible();
+    await expect(opponentSurface).toBeVisible();
+    const toolbarBox = (await page.locator('.table-toolbar').boundingBox())!;
+    const stageBox = (await page.locator('.table-stage').boundingBox())!;
+    const fieldsBox = (await fields.boundingBox())!;
+    const dockBox = (await page.locator('.own-dock').boundingBox())!;
+    const handLabel = page.locator('.own-dock .dock-toggle > span');
+    const opponentBox = (await opponentSurface.boundingBox())!;
+    const ownBox = (await ownSurface.boundingBox())!;
+    await expect(handLabel).toBeVisible();
+    const handLabelBox = (await handLabel.boundingBox())!;
+    expect(handLabelBox.x).toBeGreaterThanOrEqual(dockBox.x + 20);
+    expect(handLabelBox.x + handLabelBox.width).toBeLessThanOrEqual(dockBox.x + dockBox.width);
+    expect(Math.abs(stageBox.y - toolbarBox.y - toolbarBox.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(fieldsBox.y - stageBox.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(fieldsBox.x - stageBox.x - 3)).toBeLessThanOrEqual(1);
+    expect(Math.abs(dockBox.y - fieldsBox.y - fieldsBox.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(ownBox.y - opponentBox.y - opponentBox.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(stageBox.y + stageBox.height - dockBox.y - dockBox.height - 3)).toBeLessThanOrEqual(1);
+    await page.screenshot({ animations: 'disabled', path: testInfo.outputPath('campos-sem-gaps.png') });
+
+    await page.getByRole('button', { name: 'Focar campo de Segundo amigo' }).click();
+    await expect(opponentSurface).toHaveClass(/focused-table-surface/);
+    await expect(ownSurface).toBeHidden();
+    await page.getByRole('button', { name: 'Voltar à visão geral' }).click();
+    await expect(fields).not.toHaveClass(/has-field-focus/);
+    await expect(ownSurface).toBeVisible();
+    await expect(opponentSurface).toBeVisible();
+
+    await page.getByRole('button', { name: 'Focar campo de Amigo da mesa' }).click();
+    await expect(ownSurface).toHaveClass(/focused-table-surface/);
+    await expect(opponentSurface).toBeHidden();
+    await page.getByRole('button', { name: 'Voltar à visão geral' }).click();
+    await expect(fields).not.toHaveClass(/has-field-focus/);
+    await expect(opponentSurface).toBeVisible();
+  } finally {
+    await opponent.close();
+  }
+});
+
 test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real', async ({ page, browser, baseURL }, info) => {
   test.setTimeout(90_000);
   const contexts = await Promise.all(Array.from({ length: 5 }, () => browser.newContext({ baseURL })));
@@ -55,6 +158,46 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await expect(page.locator('.own-dock')).toBeAttached();
     await openHand(page);
     const own = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true });
+    const playerName = own.locator('.seat-name-line h2');
+    const handCount = own.locator('.seat-name-line .seat-hand-count');
+    await expect(handCount).toBeVisible();
+    await expect(handCount.locator('.table-icon')).toBeVisible();
+    const playerNameBox = (await playerName.boundingBox())!;
+    const handCountBox = (await handCount.boundingBox())!;
+    expect(handCountBox.x).toBeGreaterThanOrEqual(playerNameBox.x + playerNameBox.width);
+    expect(Math.abs(handCountBox.y + handCountBox.height / 2 - playerNameBox.y - playerNameBox.height / 2)).toBeLessThan(5);
+    const isDesktop = (page.viewportSize()?.width ?? 1280) > 1000;
+    const turnBadge = isDesktop ? page.locator('.field-turn-label') : page.locator('.seat-heading .seat-turn');
+    await expect(turnBadge).toBeVisible();
+    if (isDesktop) {
+      const tools = turnBadge.locator('..');
+      const fit = tools.locator('.field-center');
+      const turnBadgeBox = (await turnBadge.boundingBox())!;
+      const fitBox = (await fit.boundingBox())!;
+      expect(turnBadgeBox.x).toBeGreaterThan(fitBox.x + fitBox.width);
+    }
+    for (const selector of ['.zone-library .library-pile', '.card-slot.zone-graveyard', '.card-slot.zone-exile']) {
+      const pile = own.locator(selector);
+      const emblem = pile.locator('.zone-emblem .table-icon');
+      const count = pile.locator('> .zone-count');
+      await expect(emblem).toBeVisible();
+      await expect(count).toBeVisible();
+      await expect(count).toHaveText(/^\d+$/);
+      const pileBox = (await pile.boundingBox())!;
+      const emblemBox = (await emblem.boundingBox())!;
+      const countBox = (await count.boundingBox())!;
+      expect(Math.abs(emblemBox.x + emblemBox.width / 2 - pileBox.x - pileBox.width / 2)).toBeLessThan(2);
+      expect(Math.abs(emblemBox.y + emblemBox.height / 2 - pileBox.y - pileBox.height / 2)).toBeLessThan(2);
+      expect(countBox.x).toBeGreaterThan(pileBox.x + pileBox.width / 2);
+      expect(countBox.y).toBeLessThan(pileBox.y + pileBox.height / 2);
+      expect(Math.abs(countBox.width - countBox.height)).toBeLessThan(2);
+    }
+    const battlefield = own.getByRole('region', { name: 'Campo', exact: true });
+    const centerField = battlefield.getByRole('button', { name: /^Centralizar campo/ });
+    const playerTableBox = (await own.boundingBox())!;
+    const centerFieldBox = (await centerField.boundingBox())!;
+    expect(Math.abs(centerFieldBox.y - playerTableBox.y)).toBeLessThanOrEqual(2);
+    expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('.field-center') !== null, { x: centerFieldBox.x + centerFieldBox.width / 2, y: centerFieldBox.y + centerFieldBox.height / 2 })).toBe(true);
     await openQuickActions(page);
     const quick = page.getByRole('navigation', { name: 'Ações rápidas' });
     const hand = page.getByRole('region', { name: 'Mão', exact: true });
@@ -81,10 +224,9 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     const library = page.getByRole('dialog', { name: 'Grimório', exact: true });
     await withinViewport(library);
     const menuBox = (await library.boundingBox())!;
-    expect(menuBox.width).toBeLessThanOrEqual(info.project.name === 'celular' ? 400 : 320);
+    expect(menuBox.width).toBeLessThanOrEqual(info.project.name === 'celular' ? 400 : 430);
     if (info.project.name !== 'celular-horizontal') expect(menuBox.height).toBeGreaterThan(menuBox.width);
-    const rows = await library.locator('.table-menu-item').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().x));
-    expect(new Set(rows).size).toBe(1);
+    await expect(library.locator('.library-tile')).toHaveCount(5);
     if (info.project.name === 'desktop') {
       const origin = (await trigger.boundingBox())!;
       expect(Math.abs(menuBox.x - origin.x - origin.width)).toBeLessThan(24);
@@ -92,7 +234,7 @@ test('mesa responsiva, menus, jogador, carta e visão geral usam o servidor real
     await page.screenshot({ animations: 'disabled', path: info.outputPath('02-grimorio.png'), fullPage: true });
     await library.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
     await library.getByLabel('Quantidade de cartas').fill('2');
-    await library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }).click();
+    await library.getByRole('button', { name: 'Olhar 2 cartas do topo', exact: true }).click();
     await expect(library.locator('.library-card')).toHaveCount(2);
     await withinViewport(library);
     await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();

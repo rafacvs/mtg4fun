@@ -1,14 +1,22 @@
-.mana-orbs { position: relative; width: 100%; height: 360px; margin: 12px 0 0; pointer-events: none; }
+.mana-orbs { position: relative; width: 100%; height: 360px; margin: 12px 0 0; }
 .mana-orbs canvas { display: block; width: 100%; height: 100%; opacity: 0; }
 .mana-orbs.is-ready canvas { opacity: 1; }
 .mana-orbs.is-ready .mana-orbs-fallback { display: none; }
 .mana-orbs-fallback { position: absolute; inset: 0; margin: auto; width: min(100%, 350px); height: 100%; }
-.mana-orbs-fallback span { position: absolute; width: 24%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #ffffff80, transparent 65%), var(--orb-color); box-shadow: inset -10px -14px 20px #0005, 0 10px 28px #0006; }
+.mana-orbs-fallback span, .mana-orbs-fallback button { position: absolute; width: 24%; min-height: 0; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #ffffff80, transparent 65%), var(--orb-color); box-shadow: inset -10px -14px 20px #0005, 0 10px 28px #0006; }
+.mana-orbs-fallback button { cursor: pointer; }
+.mana-orbs-fallback button:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 5px; }
 .mana-orb-white { --orb-color: #f2e8c0; top: 4%; left: 38%; }
 .mana-orb-blue { --orb-color: #3f8fd6; top: 29%; left: 5%; }
 .mana-orb-black { --orb-color: #3a3740; top: 66%; left: 18%; }
 .mana-orb-red { --orb-color: #e0553a; top: 66%; right: 18%; }
 .mana-orb-green { --orb-color: #43a263; top: 29%; right: 5%; }
+.green-orb-dialog { width: min(92vw, 560px); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden auto; border: 1px solid var(--gold-d); border-radius: 14px; background: #0b0e10; color: var(--text); box-shadow: 0 24px 80px #000d; }
+.green-orb-dialog::backdrop { background: #000c; backdrop-filter: blur(5px); }
+.green-orb-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.green-orb-dialog-header h2 { margin: 0; font-size: 1.15rem; }
+.green-orb-dialog-header button { min-height: 40px; }
+.green-orb-dialog img { display: block; width: 100%; max-height: calc(100dvh - 108px); object-fit: contain; background: #070909; }
 @media (max-width: 760px) {
   .mana-orbs { height: 280px; max-width: 400px; margin: 0 auto; }
 }

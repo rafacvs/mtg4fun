@@ -147,7 +147,7 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
     if (info.project.name === 'desktop') {
       const panel = await library.boundingBox();
       const bar = await own.getByRole('navigation', { name: 'Ações rápidas' }).boundingBox();
-      expect(panel!.width).toBeLessThanOrEqual(320);
+      expect(panel!.width).toBeLessThanOrEqual(430);
       expect(panel!.x + panel!.width).toBeLessThanOrEqual(bar!.x + bar!.width);
     }
     await own.screenshot({ path: info.outputPath('grimorio-menu.png') });
@@ -162,27 +162,29 @@ test('embaralha diretamente e busca o comandante selecionando somente resultados
     await closeMatchRail(own);
     await open();
     await activate(library.getByRole('button', { name: /^Buscar no grimório/ }));
-    await expect(library.locator('.table-panel-header')).toContainText('3 cartas');
+    await expect(library.getByText('3 de 3 cartas')).toBeVisible();
     await expect(own.getByRole('status').filter({ hasText: 'Consultando o grimório' }).first()).toBeVisible();
     await library.getByLabel('Buscar no grimório').fill('Fire');
     await expect(library.locator('.library-card')).toHaveCount(1);
-    await activate(library.getByRole('button', { name: 'Selecionar resultados', exact: true }));
-    await expect(library.locator('.library-selection')).toContainText('1 selecionada');
-    await activate(library.getByRole('button', { name: 'Comando', exact: true }));
+    await activate(library.getByRole('button', { name: 'Selecionar 1 resultado', exact: true }));
+    const step = library.getByRole('region', { name: 'Ações da seleção' });
+    await expect(step).toContainText('1 selecionada');
+    await activate(step.getByRole('button', { name: 'Exílio', exact: true }));
+    await activate(step.locator('.search-send'));
     await expect(library.locator('.library-card')).toHaveCount(0);
-    expect((await readOwn()).command).toHaveLength(1);
+    expect((await readOwn()).exile).toHaveLength(1);
     await activate(library.getByRole('button', { name: 'Embaralhar e fechar', exact: true }));
     await expect(library).not.toBeVisible();
     await open();
     await expect(library.getByRole('button', { name: /^Buscar no grimório/ })).toBeVisible();
-    await openMatchRail(opponent);
+    if (info.project.name !== 'desktop') await openMatchRail(opponent);
     const focusOpponent = opponent.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ });
     if (await focusOpponent.isVisible()) await activate(focusOpponent);
     await expect(
       opponent
         .getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true })
-        .getByRole('region', { name: 'Comando', exact: true })
-        .getByRole('button', { name: 'Fire // Ice', exact: true }),
+        .locator('.zone-exile')
+        .getByText('1', { exact: true }),
     ).toBeVisible();
     await expect.poll(async () => (await readOwn()).libraryCount).toBe(2);
   } finally {
@@ -202,7 +204,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await open();
     await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('3');
-    await activate(library.getByRole('button', { name: 'Olhar 3 carta(s)', exact: true }));
+    await activate(library.getByRole('button', { name: 'Olhar 3 cartas do topo', exact: true }));
     await expect(library.locator('.library-card')).toHaveCount(3);
     await expect(library).toContainText('Só você vê estas cartas');
     await expectOrderedLayout(library);
@@ -288,9 +290,9 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await open();
     await expect(library.getByRole('button', { name: /^Olhar cartas/ })).toBeVisible();
     await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
-    await library.getByRole('group', { name: 'De onde' }).getByRole('button', { name: 'Fundo', exact: true }).click();
+    await library.getByRole('radio', { name: 'Do fundo', exact: true }).check();
     await library.getByLabel('Quantidade de cartas').fill('3');
-    await activate(library.getByRole('button', { name: 'Olhar 3 carta(s)', exact: true }));
+    await activate(library.getByRole('button', { name: 'Olhar 3 cartas do fundo', exact: true }));
     await expect
       .poll(async () => ((await readOwn()).consulted ?? []).map((card: { id: string }) => card.id))
       .toEqual(reordered);
@@ -320,7 +322,7 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
     await open();
     await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('12');
-    await activate(library.getByRole('button', { name: 'Olhar 12 carta(s)', exact: true }));
+    await activate(library.getByRole('button', { name: 'Olhar 12 cartas do topo', exact: true }));
     const rows = library.locator('.library-card');
     await expect(rows).toHaveCount(12);
     const original = (await readOwn()).consulted as { id: string }[];
@@ -370,7 +372,7 @@ test('a alça rola a consulta para reordenar até uma carta inicialmente fora da
   }
 });
 
-test('revela apenas a seleção e preserva exposição ao mover e devolver', async ({
+test('revela apenas a seleção da consulta e preserva exposição ao mover e devolver', async ({
   browser,
   baseURL,
 }, info) => {
@@ -380,11 +382,11 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
   const { own, opponent, library, activate, open, readOwn } = game;
   try {
     await open();
-    await activate(library.getByRole('button', { name: /^Buscar no grimório/ }));
-    await library.getByLabel('Buscar no grimório').fill('Fire');
-    await activate(
-      library.locator('.library-card strong').getByText('Fire // Ice', { exact: true }),
-    );
+    await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
+    await library.getByLabel('Quantidade de cartas').fill('3');
+    await activate(library.getByRole('button', { name: 'Olhar 3 cartas do topo', exact: true }));
+    const row = library.locator('.library-card').filter({ hasText: 'Fire // Ice' });
+    await activate(row.locator('strong'));
     const selectedRow = library.locator('.library-card.selected');
     await expect(selectedRow).toBeVisible();
     const rowBox = (await selectedRow.boundingBox())!;
@@ -392,9 +394,8 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     expect(markBox.y).toBeGreaterThanOrEqual(rowBox.y);
     expect(markBox.y + markBox.height).toBeLessThanOrEqual(rowBox.y + rowBox.height);
     expect(markBox.x + markBox.width).toBeLessThanOrEqual(rowBox.x + rowBox.width);
-    await own.screenshot({ path: info.outputPath('grimorio-selecao-centralizada.png') });
     await activate(library.getByRole('button', { name: 'Revelar', exact: true }));
-    await openMatchRail(opponent);
+    if (info.project.name !== 'desktop') await openMatchRail(opponent);
     const focusOpponent = opponent.getByRole('navigation', { name: 'Foco da mesa' }).getByRole('button', { name: /^Ver campo de Amigo da mesa$/ });
     if (await focusOpponent.isVisible()) await activate(focusOpponent);
     const publicArea = opponent.getByRole('region', {
@@ -406,13 +407,9 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     ).toBeVisible();
     await expect(publicArea.getByRole('button')).toHaveCount(1);
     await expect(library).toContainText('1 carta(s) visível(is) para todos');
-    await library.getByLabel('Buscar no grimório').fill('');
     await expect(library.locator('.library-card')).toHaveCount(3);
     await expectOrderedLayout(library);
-    await library.getByLabel('Buscar no grimório').fill('Fire');
-    await activate(
-      library.locator('.library-card strong').getByText('Fire // Ice', { exact: true }),
-    );
+    await activate(row.locator('strong'));
     await activate(library.getByRole('button', { name: 'Mão', exact: true }));
     await expect(publicArea.getByRole('button')).toHaveCount(1);
     await expect.poll(async () => (await readOwn()).hand?.[0]?.name).toBe('Fire // Ice');
@@ -421,11 +418,10 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     await open();
     await activate(library.getByRole('button', { name: /^Revelar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('2');
-    await activate(library.getByRole('button', { name: 'Revelar 2 carta(s)', exact: true }));
+    await activate(library.getByRole('button', { name: 'Revelar 2 cartas', exact: true }));
     await expect(publicArea.getByRole('button')).toHaveCount(3);
     await expect(library.getByRole('heading', { name: 'Cartas reveladas' })).toBeVisible();
     await expectOrderedLayout(library);
-    await own.screenshot({ path: info.outputPath('grimorio-revelacao-vertical.png') });
     await library.getByLabel('Destino das restantes').selectOption('bottom');
     await activate(library.getByRole('button', { name: 'Fechar sem embaralhar', exact: true }));
     await expect(library).not.toBeVisible();
@@ -434,7 +430,7 @@ test('revela apenas a seleção e preserva exposição ao mover e devolver', asy
     await open();
     await activate(library.getByRole('button', { name: /^Comprar cartas/ }));
     await library.getByLabel('Quantidade de cartas').fill('1');
-    await activate(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true }));
+    await activate(library.getByRole('button', { name: 'Comprar 1 carta', exact: true }));
     await expect.poll(async () => (await readOwn()).handCount).toBe(2);
   } finally {
     await Promise.all(game.contexts.map((context) => context.close()));
@@ -461,9 +457,9 @@ test('recupera a confirmação perdida no painel sem aplicar a consulta duas vez
     });
     await open();
     await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
-    await library.getByRole('group', { name: 'De onde' }).getByRole('button', { name: 'Fundo', exact: true }).click();
+    await library.getByRole('radio', { name: 'Do fundo', exact: true }).check();
     await library.getByLabel('Quantidade de cartas').fill('2');
-    await activate(library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }));
+    await activate(library.getByRole('button', { name: 'Olhar 2 cartas do fundo', exact: true }));
     const retry = library.getByRole('button', { name: 'Tentar novamente', exact: true });
     await expect(retry).toBeVisible();
     await activate(retry);

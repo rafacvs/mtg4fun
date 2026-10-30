@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Card } from './roomsApi';
 
 export type LibrarySource = 'top' | 'bottom' | 'all';
@@ -11,6 +11,10 @@ export type LibraryOperations = {
   onReorder: (ids: string[]) => Promise<boolean>;
   onClose: (placement: 'top' | 'bottom', shuffle: boolean) => Promise<boolean>;
 };
+
+function hasType(card: Card, type: string) {
+  return type === 'unknown' ? !card.type : Boolean(card.type?.split('—')[0].trim().split(/\s+/).includes(type));
+}
 
 export function useLibraryConsultation(
   cards: Card[],
@@ -33,10 +37,9 @@ export function useLibraryConsultation(
     setSearch('');
     setTypeFilter('');
   }, [consultationFrom]);
-  const filtered = cards.filter((card) =>
-    card.name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')) &&
-    (!typeFilter || (typeFilter === 'unknown' ? !card.type : card.type?.split('—')[0].trim().split(/\s+/).includes(typeFilter))),
-  );
+  const named = cards.filter((card) => card.name.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')));
+  const filtered = named.filter((card) => !typeFilter || hasType(card, typeFilter));
+  const countType = (type: string) => named.filter((card) => hasType(card, type)).length;
   const selectedIDs = cards.filter((card) => selected.includes(card.id)).map((card) => card.id);
   const choose = (next: typeof view) => {
     setView(next);
@@ -45,6 +48,7 @@ export function useLibraryConsultation(
     setTypeFilter('');
     setSelected([]);
   };
+  const resetScreen = useCallback(() => { setView('menu'); setNotice(''); }, []);
   const begin = async () => {
     const succeeded =
       view === 'draw'
@@ -80,8 +84,20 @@ export function useLibraryConsultation(
     );
   };
   const move = async (to: string, target?: 'top' | 'bottom') => {
-    if (selectedIDs.length && (await operations.onMove(selectedIDs, to, target))) setSelected([]);
+    if (!selectedIDs.length || !(await operations.onMove(selectedIDs, to, target))) return false;
+    setSelected([]);
+    return true;
   };
+  // Remaining search cards return above anything already moved to the library, so
+  // the search places its top and bottom through the order it will close with.
+  const sendToLibrary = async (target: 'top' | 'bottom', consultedIDs: string[]) => {
+    const chosen = consultedIDs.filter((id) => selectedIDs.includes(id));
+    const others = consultedIDs.filter((id) => !selectedIDs.includes(id));
+    const succeeded = await operations.onReorder(target === 'top' ? [...chosen, ...others] : [...others, ...chosen]);
+    if (succeeded) setSelected([]);
+    return succeeded;
+  };
+  const clearSelection = () => setSelected([]);
   const reveal = async () => {
     if (selectedIDs.length && (await operations.onRevealSelection(selectedIDs))) setSelected([]);
   };
@@ -105,6 +121,7 @@ export function useLibraryConsultation(
   return {
     view,
     choose,
+    resetScreen,
     source,
     setSource,
     count,
@@ -117,7 +134,11 @@ export function useLibraryConsultation(
     setPlacement,
     notice,
     filtered,
+    countType,
+    namedCount: named.length,
     selectedIDs,
+    clearSelection,
+    sendToLibrary,
     toggle,
     selectResults,
     begin,

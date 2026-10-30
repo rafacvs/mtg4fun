@@ -54,7 +54,7 @@ for (const remoteHTTP of [false, true]) {
       expect((await read()).log.filter(entry => entry.kind === 'shuffle')).toHaveLength(1);
       await library.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
       await library.getByLabel('Quantidade de cartas').fill('2');
-      await library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }).click();
+      await library.getByRole('button', { name: 'Olhar 2 cartas do topo', exact: true }).click();
       await expect(library.locator('.library-card')).toHaveCount(2);
       expect(own(await read()).consulted).toHaveLength(2);
       await library.getByRole('button', { name: /^(Fechar painel do grimório|Minimizar consulta)$/ }).click();

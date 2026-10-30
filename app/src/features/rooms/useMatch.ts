@@ -142,6 +142,10 @@ export function useMatch(roomId: number) {
       const intentId = createActionIntent();
       return act(() => roomsApi.consult(roomId, from, count, intentId));
     },
+    reorderZone: (zone: 'graveyard' | 'exile', ids: string[]) => {
+      const intentId = createActionIntent();
+      return act(() => roomsApi.reorderZone(roomId, zone, ids, intentId));
+    },
     reorder: (ids: string[]) => {
       const intentId = createActionIntent();
       return act(() => roomsApi.reorder(roomId, ids, intentId));

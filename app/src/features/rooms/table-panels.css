@@ -120,7 +120,6 @@
 .match-board .table-panel .segmented button:is([aria-pressed=true], [aria-selected=true]) { background: linear-gradient(#edc673, #c99439); color: #241906; font-weight: 600; }
 
 /* Library workspaces need room for cards; their command menu stays compact. */
-.match-board .table-panel.library-consultation:not(.library-active) { width: min(320px, calc(100vw - 24px)); height: auto; padding: 16px; }
 .match-board .library-consultation .library-command { flex-wrap: wrap; gap: 12px; }
 .match-board .library-command select { width: 100%; }
 .match-board .library-setup-actions { flex-wrap: wrap; }
@@ -169,7 +168,6 @@
 .match-board .card-preview .card-stats, .match-board .card-preview .marker-dots { position: static; margin: 0; }
 
 @media (max-width: 600px) {
-  .match-board .table-panel.library-consultation:not(.library-active) { width: auto; }
   .match-board .table-panel { left: 8px !important; right: 8px; top: auto !important; bottom: max(8px, env(safe-area-inset-bottom)); width: auto; max-height: calc(100dvh - 24px); border-radius: 16px 16px 12px 12px; padding: 16px; }
   .match-board .library-active { height: calc(100dvh - 32px); }
   .match-board .library-finish { flex-direction: column; gap: 8px; }
@@ -209,6 +207,7 @@
 }
 
 .table-panel-scrim { display: none; }
+.table-panel-scrim.blocking { display: block; position: fixed; inset: 0; z-index: 21; background: #000a; }
 @media (max-width: 1000px) {
   .table-panel-scrim { display: block; position: fixed; inset: 0; z-index: 21; background: #0004; }
 }
@@ -218,3 +217,9 @@
   .marker-column { padding: 2px; }
   .match-board .table-panel .marker-column button { height: 44px; min-height: 44px; }
 }
+.match-board .game-actions .game-lobby-link, .match-board .game-actions .finish-button { display:flex; align-items:center; justify-content:flex-start; gap:10px; width:100%; min-height:44px; padding:10px 14px; border-radius:6px; font:600 13px Geist,sans-serif; text-decoration:none; }
+.match-board .game-actions .game-lobby-link { border:1px solid #54768a; background:#15232b; color:#b7dbea; }
+.match-board .game-actions .finish-button { border:1px solid #a85357; background:#3c1d21; color:#f1b8b7; }
+.match-board .game-actions .turn-order-display { max-width:100%; }
+.match-board .game-actions .game-exit-actions { display:flex; gap:8px; }
+.match-board .game-actions .game-exit-actions > a, .match-board .game-actions .game-exit-actions > button { flex:1 1 0; min-width:0; justify-content:center; }

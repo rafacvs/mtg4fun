@@ -21,6 +21,8 @@ export function useLibraryDrag(
   const gesture = useRef<Gesture | null>(null);
   const [dragging, setDragging] = useState('');
   const [target, setTarget] = useState('');
+  const [point, setPoint] = useState({ x: 0, y: 0 });
+  const dragged = useRef(false);
 
   const cancel = () => {
     gesture.current = null;
@@ -79,9 +81,17 @@ export function useLibraryDrag(
     container,
     dragging,
     target,
+    point,
     cancel,
-    start(event: PointerEvent<HTMLButtonElement>, id: string) {
+    // A drag ends with a click on the same card; it must not count as selecting it.
+    consumeDrag() {
+      const value = dragged.current;
+      dragged.current = false;
+      return value;
+    },
+    start(event: PointerEvent<HTMLElement>, id: string) {
       event.stopPropagation();
+      dragged.current = false;
       if (busy || !event.isPrimary || event.button !== 0) return;
       event.currentTarget.setPointerCapture(event.pointerId);
       gesture.current = {
@@ -95,7 +105,7 @@ export function useLibraryDrag(
         target: '',
       };
     },
-    move(event: PointerEvent<HTMLButtonElement>) {
+    move(event: PointerEvent<HTMLElement>) {
       const current = gesture.current;
       if (!current || current.pointer !== event.pointerId) return;
       current.x = event.clientX;
@@ -104,13 +114,15 @@ export function useLibraryDrag(
         current.moved = true;
       if (current.moved) {
         setDragging(current.id);
+        setPoint({ x: current.x, y: current.y });
         locate(current);
       }
     },
-    finish(event: PointerEvent<HTMLButtonElement>) {
+    finish(event: PointerEvent<HTMLElement>) {
       const current = gesture.current;
       if (!current || current.pointer !== event.pointerId) return;
       locate(current);
+      dragged.current = current.moved;
       cancel();
       if (!busy && current.moved && current.target) void onReorder(current.id, current.target);
     },

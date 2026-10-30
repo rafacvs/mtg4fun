@@ -1,4 +1,4 @@
-import { test, expect, selectFieldArea, openHand, openQuickActions, closeQuickActions, roomBody } from './fixtures';
+import { test, expect, selectFieldArea, openHand, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
 import type { Page } from '@playwright/test';
 
 test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independentemente', async ({ page }, testInfo) => {
@@ -12,6 +12,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   const { room } = await created.json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await returnOpeningHandToLibrary(api, room.id);
 
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto(`/#/salas/${room.id}`);
@@ -40,16 +41,20 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await closeQuickActions(page);
   const cards = hand.getByRole('button', { name: 'Island', exact: true });
   await expect(cards).toHaveCount(2);
-  const beginOrganizing = async () => {
-    const toggle = hand.locator('.hand-organize');
-    if (await toggle.getAttribute('aria-pressed') !== 'true') await toggle.tap();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  };
+  if (!testInfo.project.use.hasTouch) {
+    const beforeOrder = await hand.locator('[data-card-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-card-id')));
+    const source = (await cards.nth(0).boundingBox())!;
+    const target = (await cards.nth(1).boundingBox())!;
+    await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(target.x + 3, target.y + 3, { steps: 8 });
+    await page.mouse.up();
+    await expect(hand.locator('[data-card-id]').nth(0)).toHaveAttribute('data-card-id', beforeOrder[1]!);
+    await expect(hand.locator('[data-card-id]').nth(1)).toHaveAttribute('data-card-id', beforeOrder[0]!);
+  }
   const fieldBox = (await field.boundingBox())!;
-  if (testInfo.project.use.hasTouch) {
-    await beginOrganizing();
-    await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: fieldBox.x + 60, y: fieldBox.y + 50 });
-  } else await cards.nth(0).dragTo(field, { targetPosition: { x: 60, y: 50 }, steps: 8 });
+  if (testInfo.project.use.hasTouch) await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: fieldBox.x + 60, y: fieldBox.y + 50 });
+  else await cards.nth(0).dragTo(field, { targetPosition: { x: 60, y: 50 }, steps: 8 });
   const fieldCards = field.getByRole('button', { name: 'Island', exact: true });
   await expect(fieldCards).toHaveCount(1);
   await expect.poll(async () => (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.log.at(-1)?.kind).toBe('move');
@@ -58,7 +63,6 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   await expect(field.locator(`[data-pos-x="${placed.positionX}"][data-row="${placed.row}"]`)).toHaveCount(1);
   let base = await fieldCards.nth(0).boundingBox();
   if (testInfo.project.use.hasTouch) {
-    await beginOrganizing();
     await dragWithTouch(page, (await cards.nth(0).boundingBox())!, { x: base!.x + base!.width / 2, y: base!.y + base!.height / 2 });
   }
   else await cards.nth(0).dragTo(fieldCards.nth(0), { targetPosition: { x: base!.width / 2, y: base!.height / 2 }, steps: 8 });
@@ -139,6 +143,8 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     expect(Math.abs((afterGroup[1]!.y - afterGroup[0]!.y) - (beforeGroup[1]!.y - beforeGroup[0]!.y))).toBeLessThanOrEqual(2);
   }).toPass();
   const beforeIndividual = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.players[0].battlefield;
+  // Cards glide into their new cell; measuring mid-transition would grab them off-centre.
+  await page.waitForTimeout(250);
   const firstAfterGroup = (await fieldCards.nth(0).boundingBox())!;
   const individualTarget = { x: firstAfterGroup.x + 100, y: firstAfterGroup.y + firstAfterGroup.height / 2 };
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, firstAfterGroup, individualTarget);
@@ -185,9 +191,17 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     await page.mouse.up();
     await page.keyboard.up('Shift');
     await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
+    const selectionBar = page.getByRole('toolbar', { name: 'Ações da seleção' });
+    await expect(selectionBar.getByRole('button', { name: '+1/+1' })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('retangulo-selecao.png'), fullPage: true });
     await page.keyboard.press('Escape');
     await expect(field.locator('.is-selected')).toHaveCount(0);
+    await expect(selectionBar).toHaveCount(0);
+    await page.keyboard.down('Shift');
+    for (const card of await field.locator('.playing-card').all()) await card.click();
+    await page.keyboard.up('Shift');
+    await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
+    await expect(selectionBar.getByRole('button', { name: '-1/-1' })).toBeVisible();
 
   }
   await page.screenshot({ path: testInfo.outputPath('selecao-atual.png'), fullPage: true });

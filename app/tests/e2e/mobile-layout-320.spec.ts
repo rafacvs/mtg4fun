@@ -26,7 +26,7 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
       await page.setViewportSize({ width, height });
       const first = (await cards.first().boundingBox())!, last = (await cards.last().boundingBox())!;
       expect(Math.abs((first.x + last.x + last.width) / 2 - width / 2)).toBeLessThan(4);
-      await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toBeHidden();
+      await expect(hand.getByRole('button', { name: 'Organizar', exact: true })).toHaveCount(0);
       expect(await page.evaluate(() => {
         const field = document.querySelector('.focused-table .battlefield-scroll')!.getBoundingClientRect();
         const dock = document.querySelector('.own-dock')!.getBoundingClientRect();

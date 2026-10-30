@@ -41,6 +41,12 @@ carta. O contrato de criação não muda.
 
 ## Implementação e validação
 
+Em 29 de outubro de 2026, o usuário solicitou explicitamente que a inspeção de
+cada carta mostre, abaixo de “Criar cópia independente”, um atalho para cada
+ficha criada por ela, citando Mabel e Cragflame. O atalho usa as relações
+`reverse-related` já presentes no catálogo e a ação `create-token` existente;
+não introduz automação de regras nem altera o contrato de criação.
+
 `GET /api/rooms/{id}/match/tokens?q=` exige participação na partida e retorna
 `tokens` com nome, texto, poder/resistência e `imageName`. A busca ignora caixa e
 retorna até 100 nomes ordenados; refinar a busca localiza resultados restantes.
@@ -87,5 +93,15 @@ branch não oferece ações dessas issues. Nenhuma regra de Magic é automatizad
 A consulta de fichas reutiliza o provedor/cache existentes sem alterar fonte,
 URL, cabeçalhos ou política de download; não foi introduzida uma nova integração
 externa. Não foram executados testes operacionais Docker nesta issue.
+
+## Posicionamento de fichas equivalentes
+
+Em 29/10/2026, o usuário pediu que a primeira ficha priorize uma célula sem
+cartas e que as seguintes sejam empilhadas no campo de batalha. A criação passa
+a iniciar uma pilha na primeira célula totalmente vazia da fileira superior,
+sem sobrepor uma carta preexistente. Novas fichas equivalentes (mesmo nome e
+tipo de instância) entram nessa pilha até o limite existente de três; a próxima
+inicia outra célula vazia. Movimentos, transferências e cópias preservam suas
+regras anteriores.
 
 A revisão independente pelos dois eixos da skill `code-review` está pendente.

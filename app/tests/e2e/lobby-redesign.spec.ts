@@ -102,11 +102,14 @@ test('decks usam dados reais e confirmam exclusão sem alterar partida', async (
   await page.getByRole('button', { name: 'Consultar Island', exact: true }).click();
   await expect(page.getByText('Add U.', { exact: true })).toBeVisible();
   const metadata = page.getByRole('region', { name: 'Dados do deck' });
+  await page.getByRole('button', { name: 'Ver curva de mana' }).click();
+  await expect(page.getByRole('dialog', { name: /Curva de mana/ })).toBeVisible();
   await expect(metadata).toContainText('Comandante');
   await expect(metadata).toContainText('Nenhum');
-  await expect(metadata).toContainText('Curva');
-  await expect(metadata).toContainText('Tipos');
-  await expect(metadata).toContainText('Terrenos 7');
+  await expect(metadata.getByRole('heading', { name: 'Curva de mana' })).toBeVisible();
+  await expect(metadata.getByRole('heading', { name: 'Análise de cores' })).toBeVisible();
+  await expect(metadata.getByRole('heading', { name: 'Tipos de carta' })).toBeVisible();
+  await expect(metadata.getByRole('img', { name: /Tipos de carta: Terrenos 7/ })).toBeVisible();
   await page.screenshot({ path: info.outputPath('biblioteca-real.png'), fullPage: true });
   const deckId = Number(await page.getByLabel('Escolher deck salvo').inputValue());
   const { room } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();

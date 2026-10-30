@@ -4,7 +4,7 @@ import { test, expect, openMatchRail, openQuickActions, roomBody } from './fixtu
 test('cria fichas e cópias com mouse/toque e recupera atributos após recarga', async ({ page }, info) => {
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
-  const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'fichas.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="1" name="Island"/></zone></cockatrice_deck>') } } });
+  const uploaded = await api.post('/api/decks', { multipart: { file: { name: 'fichas.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="1" name="Island"/><card number="1" name="Mabel, Heir to Cragflame"/></zone></cockatrice_deck>') } } });
   const { deck } = await uploaded.json();
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
@@ -12,6 +12,12 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);
   await page.goto(`/#/salas/${room.id}`);
   const click = async (locator: ReturnType<typeof page.getByRole>) => info.project.use.hasTouch ? locator.tap() : locator.click();
+  await click(page.locator('.playing-card[aria-label="Mabel, Heir to Cragflame"]'));
+  const mabelPreview = page.getByRole('dialog', { name: 'Imagem de Mabel, Heir to Cragflame' });
+  await expect(mabelPreview.getByRole('button', { name: 'Criar ficha feita pela carta: Cragflame' })).toBeVisible();
+  await click(mabelPreview.getByRole('button', { name: 'Criar ficha feita pela carta: Cragflame' }));
+  await expect(page.locator('.playing-card[aria-label="Cragflame"]')).toBeVisible();
+  await click(mabelPreview.getByRole('button', { name: 'Fechar', exact: true }));
   await openQuickActions(page);
   await click(page.getByRole('button', { name: 'Ações', exact: true }));
   await click(page.getByRole('button', { name: 'Criar ficha', exact: true }));
@@ -19,19 +25,19 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await expect(dialog.getByRole('heading', { name: 'Criar ficha', exact: true })).toBeVisible();
   const catalogTab = dialog.getByRole('tab', { name: 'Do catálogo', exact: true });
   await expect(catalogTab).toHaveAttribute('aria-selected', 'true');
-  await expect(dialog.getByRole('button', { name: 'Voltar', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Cancelar', exact: true })).toBeVisible();
   await dialog.getByLabel('Buscar ficha do catálogo').fill('Soldier');
-  const soldier = dialog.getByRole('listitem').filter({ has: page.getByRole('button', { name: 'Criar Soldier Token', exact: true }) });
+  const soldier = dialog.getByRole('listitem').filter({ has: page.getByRole('button', { name: 'Selecionar Soldier Token', exact: true }) });
   await expect(soldier.locator('.token-name')).toHaveText('Soldier Token');
   await expect(soldier.getByText('1/1', { exact: true })).toBeVisible();
-  await click(soldier.getByRole('button', { name: 'Criar Soldier Token', exact: true }));
+  await click(soldier.getByRole('button', { name: 'Selecionar Soldier Token', exact: true }));
+  await click(dialog.getByRole('button', { name: 'Criar ficha', exact: true }));
   await expect(page.locator('.playing-card[aria-label="Soldier Token"]')).toBeVisible();
   await expect(dialog.getByRole('status').filter({ hasText: 'criou a ficha Soldier Token (1/1).' })).toBeVisible();
   await click(dialog.getByRole('tab', { name: 'Personalizada', exact: true }));
   await dialog.getByLabel('Nome da ficha').fill('Dragão amigo');
   await dialog.getByLabel('Descrição da ficha').fill('Voa sobre a mesa.');
-  await dialog.getByLabel('Poder da ficha').fill('-1');
-  await dialog.getByLabel('Resistência da ficha').fill('4');
+  await dialog.getByLabel('Poder/resistência da ficha').fill('-1/4');
   await click(dialog.getByRole('button', { name: 'Criar ficha', exact: true }));
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(1);
   await click(dialog.getByRole('button', { name: 'Fechar ações' }));

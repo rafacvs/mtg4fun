@@ -112,8 +112,6 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
     const library = await openLibrary(page);
     const quantity = library.getByLabel('Quantidade de cartas');
     if (!(await quantity.isVisible())) {
-      const back = board.getByRole('button', { name: 'Voltar', exact: true });
-      if (await back.isVisible()) await activate(back);
       await activate(board.getByRole('button', { name: 'Comprar cartas', exact: true }));
     }
     await quantity.fill(amount);
@@ -126,7 +124,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   const library = await openLibrary(page);
   await library.getByRole('button', { name: 'Comprar cartas', exact: true }).click();
   await library.getByLabel('Quantidade de cartas').fill('1000');
-  await expect(library.getByRole('button', { name: 'Comprar 1000 carta(s)', exact: true })).toBeDisabled();
+  await expect(library.getByRole('button', { name: 'Comprar 1000 cartas', exact: true })).toBeDisabled();
   expect(await ownHand()).toHaveLength(0);
   await library.getByLabel('Quantidade de cartas').fill('1');
   let lostResponses = 0;
@@ -138,9 +136,9 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
       await route.abort('failed');
     } else await route.continue();
   });
-  await activate(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true }));
+  await activate(library.getByRole('button', { name: 'Comprar 1 carta', exact: true }));
   await expect(library.getByRole('alert')).toContainText('Não foi possível confirmar');
-  await expect(library.getByRole('button', { name: 'Comprar 1 carta(s)', exact: true })).toBeDisabled();
+  await expect(library.getByRole('button', { name: 'Comprar 1 carta', exact: true })).toBeDisabled();
   await activate(library.getByRole('button', { name: 'Tentar novamente', exact: true }));
   await page.unroute('**/match/actions');
   await expect(board.getByRole('alert')).toHaveCount(0);
@@ -218,7 +216,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await activate(board.getByRole('button', { name: 'Rolar dado', exact: true }));
   await board.getByLabel('Faces do dado').fill('6');
   await activate(board.getByRole('button', { name: /^Rolar d\d+$/ }));
-  await activate(board.getByRole('button', { name: 'Voltar', exact: true }));
+  await activate(actions.getByRole('button', { name: 'Cancelar', exact: true }));
   const showLog = async () => {
     if (await actions.isVisible()) await activate(actions.getByRole('button', { name: 'Fechar ações', exact: true }));
     await openMatchRail(page, 'Registro');
@@ -228,6 +226,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await closeMatchRail(page);
   await openActions();
   await activate(board.getByRole('button', { name: 'Jogar moeda', exact: true }));
+  await activate(actions.getByRole('button', { name: 'Jogar moeda', exact: true }));
   await showLog();
   await expect(log).toContainText(/Amigo da mesa jogou uma moeda: (Cara|Coroa)\./);
   await closeMatchRail(page);
@@ -236,7 +235,7 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await showLog();
   await expect(log).toContainText('Amigo da mesa avançou para o turno de Amigo da mesa e ocultou todas as revelações.');
   await closeMatchRail(page);
-  await openActions();
+  await openQuickActions(page);
   await activate(board.getByRole('button', { name: 'Corrigir turno', exact: true }));
   await showLog();
   await expect(log).toContainText('Amigo da mesa corrigiu para o turno de Amigo da mesa.');

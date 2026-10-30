@@ -1,6 +1,6 @@
-import { ACESFilmicToneMapping, AmbientLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Scene, SphereGeometry, WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, AmbientLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Raycaster, Scene, SphereGeometry, Vector2, WebGLRenderer } from 'three';
 
-export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, onUnavailable: () => void) {
+export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, onUnavailable: () => void, onGreenOrbClick: () => void) {
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -17,14 +17,18 @@ export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, 
   const ring = new Group();
   scene.add(ring);
   const geometry = new SphereGeometry(1.1, 48, 32);
+  let greenOrb: Mesh | null = null;
   const materials = [0xf2e8c0, 0x3f8fd6, 0x3a3740, 0xe0553a, 0x43a263].map((color, index) => {
     const material = new MeshStandardMaterial({ color, roughness: .35, metalness: .2, emissive: color, emissiveIntensity: index === 2 ? .06 : .22 });
     const orb = new Mesh(geometry, material);
     const angle = index / 5 * Math.PI * 2 + Math.PI / 2;
     orb.position.set(Math.cos(angle) * 3, Math.sin(angle) * 3, 0);
     ring.add(orb);
+    if (index === 4) greenOrb = orb;
     return material;
   });
+  const raycaster = new Raycaster();
+  const pointer = new Vector2();
   let disposed = false;
   let lost = false;
   let startedAt: number | undefined;
@@ -64,12 +68,25 @@ export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, 
     onUnavailable();
   };
   const onRestored = () => { lost = false; resize(); updateMotion(); };
+  const pointsAtGreenOrb = (event: PointerEvent | MouseEvent) => {
+    const bounds = canvas.getBoundingClientRect();
+    pointer.set(
+      (event.clientX - bounds.left) / bounds.width * 2 - 1,
+      -((event.clientY - bounds.top) / bounds.height * 2 - 1),
+    );
+    raycaster.setFromCamera(pointer, camera);
+    return greenOrb !== null && raycaster.intersectObject(greenOrb, false).length > 0;
+  };
+  const onPointerMove = (event: PointerEvent) => { canvas.style.cursor = pointsAtGreenOrb(event) ? 'pointer' : 'default'; };
+  const onClick = (event: MouseEvent) => { if (pointsAtGreenOrb(event)) onGreenOrbClick(); };
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   motion.addEventListener('change', updateMotion);
   document.addEventListener('visibilitychange', updateMotion);
   canvas.addEventListener('webglcontextlost', onLost);
   canvas.addEventListener('webglcontextrestored', onRestored);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('click', onClick);
   resize();
   updateMotion();
 
@@ -80,6 +97,8 @@ export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, 
     document.removeEventListener('visibilitychange', updateMotion);
     canvas.removeEventListener('webglcontextlost', onLost);
     canvas.removeEventListener('webglcontextrestored', onRestored);
+    canvas.removeEventListener('pointermove', onPointerMove);
+    canvas.removeEventListener('click', onClick);
     renderer.setAnimationLoop(null);
     geometry.dispose();
     materials.forEach(material => material.dispose());

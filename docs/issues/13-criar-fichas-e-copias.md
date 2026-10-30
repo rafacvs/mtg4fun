@@ -7,6 +7,7 @@
 **Status:** ready-for-agent
 
 - [ ] Escolher ficha do catálogo compartilhado com texto/imagem.
+- [ ] Exibir na inspeção de cada carta atalhos para as fichas do catálogo relacionadas a ela.
 - [ ] Ficha personalizada recebe nome, descrição, poder/resistência opcionais e imagem padrão.
 - [ ] Copiar carta cria instância independente; documentar atributos copiados sem automatizar regras de Magic.
 - [ ] Fichas/cópias recebem identidade, dono/controlador e zona e usam movimentos já disponíveis.

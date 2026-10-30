@@ -153,6 +153,22 @@ export function fitBattlefield(cards: LayoutCard[], visibleWidth: number, visibl
   return extraColumns || extraRows ? battlefieldLayout(cards, MIN_PADDING + extraColumns, MIN_PADDING + extraRows) : initial;
 }
 
+// How far the view may travel. Empty cells exist as drop targets, not as room to
+// scroll: cards that fit never move, so none can hide behind the rail or header.
+// Cards that overflow an axis reach one empty cell past the last of them, or
+// whatever part of it still leaves the last card on screen under a high zoom.
+export function viewExtent(layout: FieldLayout, visibleWidth: number, visibleHeight: number) {
+  let occupiedWidth = 0;
+  let occupiedHeight = 0;
+  for (const cell of layout.cells) {
+    if (cell.size === 0) continue;
+    occupiedWidth = Math.max(occupiedWidth, cell.x + cell.width);
+    occupiedHeight = Math.max(occupiedHeight, cell.y + cell.height);
+  }
+  const axis = (occupied: number, visible: number, cell: number) => occupied <= visible + .01 ? visible : occupied + CELL_GAP + Math.min(cell, Math.max(0, visible - cell - CELL_GAP));
+  return { width: axis(occupiedWidth, visibleWidth, 1), height: axis(occupiedHeight, visibleHeight, CARD_ASPECT) };
+}
+
 export function dropCell(layout: FieldLayout, x: number, y: number) {
   const cell = layout.cells.find(item => x >= item.x && x < item.x + item.width + CELL_GAP && y >= item.y && y < item.y + item.height + CELL_GAP);
   if (!cell) return null;
