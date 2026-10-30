@@ -60,3 +60,21 @@ focal do teste de atalhos. Esse teste passou a aguardar o controle habilitado
 e `data-pending=false` antes de encadear a próxima ação, em vez de confundir
 uma projeção imediata com a confirmação do servidor. Os conflitos resolvidos
 preservaram `MatchLog`, a descrição extraída e os metadados da folha do grimório.
+
+## Arraste a partir do cemitério aberto
+
+Em 29/10/2026, o usuário pediu que, ao verificar o cemitério, também seja
+possível arrastar uma carta dali para o campo. As cartas no visualizador da
+zona pública passam a usar o gesto de arraste já existente, somente quando o
+jogador as controla. O clique continua abrindo a imagem; o arraste expõe os
+destinos nomeados e mover para **Campo** reutiliza o contrato, as permissões e
+o posicionamento existentes.
+
+## Abertura explícita das ações da seleção
+
+Em 29/10/2026, o usuário pediu que selecionar uma criatura não abra a barra de
+ações automaticamente. A seleção continua visível na carta, mas a barra só é
+aberta pelo novo botão **Ações da seleção**, ao fim da coluna de zonas do
+próprio jogador e com a mesma apresentação dos demais botões. O botão mostra a
+quantidade selecionada, fica desabilitado sem seleção, alterna a barra quando
+acionado e a recolhe quando a seleção muda.

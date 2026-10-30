@@ -8,6 +8,7 @@ const dragThreshold = 8;
 type Props = {
   card: Card;
   draggable: boolean;
+  ariaLabel?: string;
   style?: CSSProperties;
   scrollable?: boolean;
   scrollAxis?: 'x' | 'y';
@@ -24,7 +25,7 @@ type Props = {
   onDragCancel: () => void;
 };
 
-export function PlayingCard({ card, draggable, style, scrollable = false, scrollAxis = 'x', onPreview, onInspect, onHover, onZoom, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected: explicitSelection, selectedIds, onOpenMenu }: Props) {
+export function PlayingCard({ card, draggable, ariaLabel, style, scrollable = false, scrollAxis = 'x', onPreview, onInspect, onHover, onZoom, onDragMove, onDragEnd, onDragCancel, onToggleTapped, selected: explicitSelection, selectedIds, onOpenMenu }: Props) {
   const selected = explicitSelection ?? selectedIds?.includes(card.id);
   const [failed, setFailed] = useState(false);
   const dragging = useRef(false);
@@ -133,7 +134,7 @@ export function PlayingCard({ card, draggable, style, scrollable = false, scroll
     style={{ ...style, touchAction: scrollable ? `pan-${scrollAxis}` : undefined, '--controller-color': `var(--seat-${card.controllerId}, var(--gold))` } as CSSProperties}
     onContextMenu={event => { event.preventDefault(); if (pointerType.current === 'mouse') onOpenMenu?.(card); }}
     aria-pressed={Boolean(selected)}
-    aria-label={card.name || 'Carta face para baixo'}
+    aria-label={ariaLabel ?? (card.name || 'Carta face para baixo')}
     data-card-id={card.id}
     data-pending={Boolean(card.pending)}
     aria-busy={Boolean(card.pending)}

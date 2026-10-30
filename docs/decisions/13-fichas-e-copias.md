@@ -88,4 +88,14 @@ A consulta de fichas reutiliza o provedor/cache existentes sem alterar fonte,
 URL, cabeçalhos ou política de download; não foi introduzida uma nova integração
 externa. Não foram executados testes operacionais Docker nesta issue.
 
+## Posicionamento de fichas equivalentes
+
+Em 29/10/2026, o usuário pediu que a primeira ficha priorize uma célula sem
+cartas e que as seguintes sejam empilhadas no campo de batalha. A criação passa
+a iniciar uma pilha na primeira célula totalmente vazia da fileira superior,
+sem sobrepor uma carta preexistente. Novas fichas equivalentes (mesmo nome e
+tipo de instância) entram nessa pilha até o limite existente de três; a próxima
+inicia outra célula vazia. Movimentos, transferências e cópias preservam suas
+regras anteriores.
+
 A revisão independente pelos dois eixos da skill `code-review` está pendente.
