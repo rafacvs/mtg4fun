@@ -41,7 +41,7 @@ func (s *Service) preparationDecks(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	if !member || room.Status != "preparing" {
+	if !member || (room.Status != "preparing" && room.Status != "determining_order") {
 		httpserver.WriteError(w, 404, "Sala não encontrada.")
 		return
 	}

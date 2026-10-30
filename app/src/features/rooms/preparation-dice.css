@@ -1,0 +1,1081 @@
+.dice-surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.dice-roll-button {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.preparation-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.preparation-dice-action {
+  min-width: 0;
+}
+.room-preparation .preparation-start .dice-roll-button {
+  border-color: #b3914e;
+  color: #f0d28e;
+  min-width: 100px;
+  min-height: 40px;
+  width: auto;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.dice-roll-button .dice-roll-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  vertical-align: middle;
+  background: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+.dice-roll-button.is-charged {
+  box-shadow: 0 0 12px #e7bd5e88;
+}
+@media (max-width: 1100px) and (min-width: 801px) {
+  .room-preparation .preparation-start {
+    flex-wrap: wrap;
+  }
+  .preparation-table-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 800px) {
+  .mobile-preparation-footer > .preparation-dice-action {
+    width: 100%;
+  }
+  .mobile-preparation-footer .dice-roll-button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+.preparation-arena {
+  position: relative;
+}
+.preparation-oval::after {
+  content: "✧";
+  color: #d4bd6538;
+  font:
+    clamp(70px, 9vw, 140px) Georgia,
+    serif;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+@media (min-width: 801px) {
+  .room-screen > .room-preparation {
+    width: calc(100% - 56px);
+    max-width: 1600px;
+    margin: 18px auto;
+  }
+  .preparation-content {
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 26%);
+    gap: 14px 20px;
+    align-items: start;
+  }
+  .preparation-table {
+    padding: 22px;
+    min-height: 0;
+  }
+  .room-preparation .preparation-heading {
+    margin: 0;
+    min-height: 42px;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+  .preparation-heading h2 {
+    font-size: 1.55rem;
+  }
+  .preparation-room-facts {
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .preparation-room-facts span {
+    padding: 7px 10px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    background: #080e0dd9;
+  }
+  .preparation-sidebar {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+  .preparation-sidebar .preparation-controls {
+    margin: 0;
+    display: block;
+    padding: 20px;
+  }
+  .preparation-sidebar .preparation-controls label {
+    margin-top: 18px;
+  }
+  .preparation-sidebar .preparation-selected-deck {
+    height: 174px;
+    padding: 12px;
+  }
+  .preparation-sidebar .preparation-selected-art {
+    width: 40%;
+    max-height: 154px;
+    object-fit: contain;
+  }
+  .preparation-sidebar .preparation-selected-info {
+    max-height: 150px;
+  }
+  .preparation-sidebar > .dice-register {
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+  }
+  .preparation-sidebar .dice-register ol {
+    flex: 1;
+    min-height: 80px;
+    height: clamp(100px, 18vh, 190px);
+  }
+  .room-preparation .preparation-start {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 12px 0 0;
+    padding: 8px 12px;
+    border: 1px solid #8a754344;
+    border-radius: 5px;
+    background: #090f0ee8;
+  }
+  .preparation-readiness {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .preparation-start p {
+    margin: 0;
+    font-size: 0.72rem;
+  }
+  .room-preparation .preparation-start button {
+    margin: 0;
+    width: auto;
+    min-width: 160px;
+    min-height: 42px;
+    flex: none;
+    font-size: 0.78rem;
+  }
+  .preparation-shields {
+    display: flex;
+    align-items: center;
+    flex: none;
+    gap: 4px;
+  }
+  .preparation-shields i {
+    font-style: normal;
+    color: var(--seat, #6cb4f5);
+  }
+  .preparation-shields .seat-color-1 {
+    --seat: #f27bb0;
+  }
+  .preparation-shields .seat-color-2 {
+    --seat: #b49af7;
+  }
+  .preparation-shields .seat-color-3 {
+    --seat: #4fd1b0;
+  }
+  .preparation-rule {
+    min-height: 86px;
+  }
+  .preparation-rule-detail {
+    flex-wrap: wrap;
+  }
+  .preparation-mulligan {
+    max-width: 100%;
+  }
+  .preparation-mulligan button {
+    min-width: 0;
+    font-size: 0.6rem;
+  }
+}
+.dice-register {
+  position: relative;
+  padding: 20px;
+  border: 1px solid #806a3b;
+  border-radius: 6px;
+  background: #0b1111ee;
+  color: #e8deca;
+  min-width: 0;
+  box-shadow:
+    inset 0 0 0 3px #090e0c,
+    inset 0 0 0 4px #8c713834;
+}
+.dice-register-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #9b84452b;
+}
+.dice-register-heading .eyebrow {
+  margin: 0 0 6px;
+}
+.dice-register .dice-register-heading h3 {
+  margin: 0;
+  font-variant: small-caps;
+  font-size: 1.4rem;
+}
+.dice-register-phase {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid #c2a058;
+  border-radius: 3px;
+  background: linear-gradient(#e7c879, #b48b3f);
+  color: #201d13;
+  font-size: 0.7rem;
+}
+.dice-register .dice-register-note {
+  flex: none;
+  border-top: 1px solid #9b844533;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: #aaa594;
+}
+.dice-register > ol {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.dice-register h3 {
+  font:
+    small-caps 1.4rem Georgia,
+    serif;
+  margin: 0 0 18px;
+}
+.dice-register h3 small {
+  float: right;
+  font: 0.65rem sans-serif;
+  padding: 6px;
+  color: #d7bc7d;
+  border: 1px solid #806a3b;
+}
+.dice-register ol {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  height: 195px;
+  overflow: auto;
+}
+.dice-register li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  margin: 0 0 6px;
+  border: 1px solid #92804c36;
+  border-radius: 4px;
+  background: linear-gradient(120deg, #292b2055, #11191488);
+  font-size: 0.8rem;
+}
+.dice-player-shield {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 30px;
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 85% 85%, 50% 100%, 15% 85%, 0 62%);
+  background: var(--player-color);
+  color: #10201d;
+  font:
+    bold 0.6rem Georgia,
+    serif;
+}
+.preparation-shields .dice-player-shield {
+  width: 14px;
+  height: 18px;
+  background: var(--seat, #6cb4f5);
+}
+.room-preparation .preparation-readiness > p[role="status"] {
+  margin: 0;
+  line-height: 18px;
+}
+.preparation-shields:empty {
+  display: none;
+}
+.dice-register-copy {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.dice-register-copy em {
+  color: #e4c986;
+  font-style: normal;
+  font-weight: bold;
+}
+.dice-result-icon {
+  flex: none;
+  width: 32px;
+  height: 36px;
+  color: var(--player-color);
+}
+.dice-register li.is-counting {
+  border: 1px solid #bfa05a66;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+.dice-register small {
+  display: block;
+  font-size: 0.68rem;
+  color: #a6a496;
+  margin-top: 4px;
+}
+.dice-register li strong {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 36px;
+  border: 1px solid currentColor;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background: #a99b4d1a;
+  font: bold 1.2rem Georgia;
+}
+.dice-register button {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 44px;
+}
+.preparation-controls > .dice-register {
+  margin: 18px -18px -18px;
+  border-radius: 0 0 6px 6px;
+}
+.room-preparation .preparation-table {
+  background:
+    linear-gradient(#14221cdd, #06100ce8),
+    url("../../assets/theme/mat-forest.jpg") center/cover;
+}
+@media (min-width: 801px) {
+  .preparation-arena {
+    height: clamp(350px, 53vh, 510px);
+    margin: 0;
+  }
+  .preparation-oval {
+    left: 15%;
+    width: 70%;
+    top: 25%;
+    height: 50%;
+    border: 2px solid #b5914d;
+    box-shadow:
+      0 0 0 3px #281b0d,
+      0 0 0 7px #684525,
+      0 0 0 9px #b08a45,
+      0 6px 0 10px #30230f,
+      0 12px 0 10px #70572f,
+      0 20px 22px #000c,
+      inset 0 0 22px #0009;
+  }
+  .preparation-pile,
+  .preparation-oval-center {
+    display: none;
+  }
+  .room-preparation .preparation-seat {
+    width: clamp(160px, 18vw, 250px);
+    min-height: 78px;
+    z-index: 4;
+    padding: 8px;
+  }
+  .room-preparation .preparation-card-back {
+    width: 44px;
+    height: 62px;
+  }
+  .preparation-seat-copy strong {
+    font-size: 0.85rem;
+  }
+  .preparation-seat-copy small {
+    font-size: 0.7rem;
+  }
+  .seat-position-5 {
+    top: 36%;
+    left: 0;
+  }
+  .seat-position-1 {
+    top: 36%;
+    right: 0;
+  }
+  .room-preparation .preparation-seat.seat-position-5,
+  .room-preparation .preparation-seat.seat-position-1 {
+    width: clamp(110px, 11vw, 150px);
+    flex-direction: column;
+    text-align: center;
+    top: 34%;
+  }
+  .room-preparation .seat-position-5 .preparation-card-back,
+  .room-preparation .seat-position-1 .preparation-card-back {
+    width: 100%;
+    height: 70px;
+  }
+  .room-preparation .preparation-empty-seat {
+    width: clamp(100px, 11vw, 150px);
+    min-height: 70px;
+    background: #0b1211dd;
+  }
+  .room-preparation .preparation-seat-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .preparation-seat-copy {
+    width: 100%;
+  }
+  .preparation-selected-deck {
+    height: 210px;
+  }
+}
+/* Mesa, classificação e lateral compartilham a altura disponível. */
+.room-screen > .order-preparation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 27%);
+  gap: 18px;
+}
+.order-main,
+.order-sidebar {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.order-table {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 18px;
+  border: 1px solid #947b43;
+  border-radius: 8px;
+  background:
+    linear-gradient(#14221cdd, #06100ce8),
+    url("../../assets/theme/mat-forest.jpg") center/cover;
+  box-shadow: inset 0 0 0 4px #101710;
+}
+.order-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.order-heading .eyebrow {
+  margin: 0 0 5px;
+}
+.order-table h2 {
+  font:
+    small-caps bold clamp(1.2rem, 1.8vw, 1.7rem) Georgia,
+    serif;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.order-heading .preparation-room-facts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.order-heading .preparation-room-facts span {
+  padding: 6px 10px;
+  border: 1px solid #8c744044;
+  background: #090f0ddd;
+  color: #c9bb95;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.order-arena {
+  position: relative;
+  flex: 1;
+  min-height: 330px;
+  margin: 10px 0 16px;
+}
+.order-felt {
+  position: absolute;
+  left: 16%;
+  top: 25%;
+  width: 68%;
+  height: 52%;
+  border: 2px solid #b5914d;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse, #d0b95e33, transparent),
+    url("../../assets/theme/mat-forest.jpg") center/cover;
+  box-shadow:
+    0 0 0 3px #281b0d,
+    0 0 0 7px #684525,
+    0 0 0 9px #b08a45,
+    0 6px 0 10px #30230f,
+    0 12px 0 10px #70572f,
+    0 20px 22px #000b,
+    inset 0 0 25px #000b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ede4c6;
+}
+.order-felt > span {
+  font:
+    2.2rem Georgia,
+    serif;
+  color: #dec46f;
+  opacity: 0.65;
+}
+.order-felt strong {
+  font:
+    small-caps bold clamp(1rem, 1.8vw, 1.6rem) Georgia,
+    serif;
+  text-align: center;
+}
+.order-felt small {
+  font-size: 0.7rem;
+  text-align: center;
+  color: #d2c6a5;
+}
+.order-seat {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: clamp(170px, 20vw, 260px);
+  min-height: 76px;
+  padding: 7px;
+  border: 1px solid var(--player-color);
+  border-radius: 5px;
+  background: linear-gradient(135deg, #24271ee8, #090d10f5);
+  box-shadow:
+    0 4px 12px #0008,
+    inset 0 0 0 2px #0007;
+  z-index: 4;
+  box-sizing: border-box;
+}
+.order-seat img {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border: 1px solid var(--player-color);
+  border-radius: 4px;
+}
+.order-seat-shield {
+  position: absolute;
+  left: 3px;
+  top: -6px;
+  width: 18px;
+  height: 23px;
+}
+.order-seat > .dice-result-icon {
+  position: absolute;
+  right: -10px;
+  top: -14px;
+}
+.order-seat-copy {
+  min-width: 0;
+}
+.order-seat-copy b {
+  font-size: 0.8rem;
+}
+.order-seat-copy em {
+  font-size: 0.65rem;
+  font-style: normal;
+  color: #dbbd72;
+}
+.order-seat-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.65rem;
+  margin: 4px 0;
+  color: #aaa99c;
+}
+.order-seat-status {
+  display: inline-block;
+  padding: 3px 6px;
+  font-size: 0.58rem;
+  color: #dbc27e;
+  letter-spacing: 0.04em;
+}
+.order-seat-status.is-confirmed {
+  background: #28513c;
+  color: #bde0b8;
+  border: 1px solid #82ae7255;
+  border-radius: 2px;
+}
+.order-seat.is-first .order-seat-status {
+  background: #d2ad59;
+  color: #261f12;
+}
+.order-seat.own {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.order-seat.other-0 {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.order-seat:is(.other-1, .other-2, .other-3, .other-4) {
+  width: clamp(100px, 11vw, 150px);
+  flex-direction: column;
+  text-align: center;
+  gap: 3px;
+}
+.order-seat:is(.other-1, .other-3) {
+  left: 0;
+}
+.order-seat:is(.other-2, .other-4) {
+  right: 0;
+}
+.order-seat:is(.other-1, .other-2) {
+  top: 34%;
+}
+.order-seat:is(.other-3, .other-4) {
+  top: 2%;
+}
+.order-arena:has(.other-3) .other-1,
+.order-arena:has(.other-4) .other-2 {
+  top: 53%;
+}
+.order-seat:is(.other-1, .other-2, .other-3, .other-4) img {
+  width: 100%;
+  height: clamp(48px, 8vh, 80px);
+}
+.order-seat:is(.other-1, .other-2, .other-3, .other-4) .order-seat-copy {
+  width: 100%;
+}
+.order-table footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 12px;
+  border: 1px solid #8c744044;
+  border-radius: 4px;
+  background: #090f0ddd;
+  font-size: 0.7rem;
+  color: #aaa99c;
+}
+.order-table footer p {
+  margin: 0;
+}
+.order-confirmation-shields {
+  display: flex;
+  gap: 5px;
+  flex: none;
+}
+.order-confirmation-shields .dice-player-shield {
+  width: 14px;
+  height: 18px;
+}
+.order-ranking {
+  flex: none;
+}
+.order-ranking-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.order-ranking-heading .eyebrow {
+  margin: 0;
+}
+.order-ranking-heading > small {
+  font-size: 0.65rem;
+  color: #aaa99c;
+}
+.order-ranking ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.order-ranking li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 10px;
+  border: 1px solid #9d844c77;
+  border-radius: 5px;
+  background: linear-gradient(125deg, #292b20bb, #0a1010ee);
+}
+.order-ranking .provisional {
+  border-style: dashed;
+}
+.order-ranking .is-first {
+  border-color: #c5a45d;
+  box-shadow:
+    0 0 12px #d9ba5422,
+    inset 0 0 8px #d9ba5411;
+}
+.order-ranking li > strong {
+  font:
+    bold 1.6rem Georgia,
+    serif;
+  color: #d7ba70;
+}
+.order-ranking .dice-player-shield {
+  width: 18px;
+  height: 24px;
+}
+.order-ranking-copy {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+.order-ranking small {
+  display: block;
+  color: #aaa99c;
+  font-size: 0.6rem;
+  margin-top: 4px;
+}
+.order-sidebar .dice-register {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 16px;
+}
+.order-sidebar > .dice-register:last-child {
+  flex: 1;
+}
+.order-sidebar .dice-register > ol {
+  flex: 1;
+  min-height: 70px;
+  height: 0;
+  margin: 0;
+}
+.order-sidebar .dice-register li {
+  padding: 6px;
+  gap: 8px;
+  font-size: 0.7rem;
+}
+.order-sidebar .dice-register-copy small {
+  font-size: 0.6rem;
+}
+.order-sidebar .dice-register-note {
+  font-size: 0.65rem;
+}
+.order-result {
+  flex: none;
+}
+.order-result .dice-register-heading {
+  border: 0;
+  margin: 0;
+}
+.order-result .dice-register-heading h3 {
+  font-size: 1.2rem;
+}
+.order-result .dice-register-phase {
+  font-size: 0.55rem;
+  padding: 5px 6px;
+}
+.order-preparation .own-roll {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  min-height: clamp(110px, 19vh, 190px);
+  border: 1px solid #8c744033;
+  border-radius: 4px;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    #c6b36566,
+    #343e2255 50%,
+    #080e0acc 90%
+  );
+  color: #efcb75;
+  text-align: center;
+}
+.own-roll > strong {
+  font:
+    bold 2.8rem Georgia,
+    serif;
+}
+.own-roll.is-leader > strong {
+  font:
+    small-caps bold 1.8rem Georgia,
+    serif;
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+.own-roll.is-final > strong {
+  font-size: 4rem;
+  text-shadow: 0 0 24px #ebd18455;
+}
+.own-roll > small {
+  font:
+    small-caps bold 0.75rem Georgia,
+    serif;
+  letter-spacing: 0.1em;
+  color: #cec397;
+}
+.order-result-summary {
+  font-size: 0.65rem;
+  color: #b8b09a;
+}
+.order-result-summary p {
+  line-height: 1.5;
+}
+.order-result-progress {
+  height: 3px;
+  background: #72603755;
+  margin: 12px 0;
+}
+.order-result-progress span {
+  display: block;
+  height: 100%;
+  background: #d9b55e;
+  animation: order-opening 4.5s linear forwards;
+  transform-origin: left;
+}
+@keyframes order-opening {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (min-width: 801px) {
+  .room-screen > .order-preparation {
+    height: calc(100dvh - 92px);
+    min-height: 580px;
+    margin-bottom: 18px;
+  }
+}
+@media (max-width: 1100px) and (min-width: 801px) {
+  .order-heading {
+    flex-wrap: wrap;
+  }
+  .order-heading .preparation-room-facts {
+    justify-content: flex-start;
+  }
+  .order-ranking ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .order-ranking li {
+    padding: 8px;
+  }
+}
+@media (max-width: 800px) {
+  .room-screen > .order-preparation {
+    grid-template-columns: 1fr;
+    width: calc(100% - 24px);
+  }
+  .order-table {
+    padding: 12px;
+  }
+  .order-heading {
+    flex-wrap: wrap;
+  }
+  .order-heading .preparation-room-facts {
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  .order-heading .preparation-room-facts span {
+    font-size: 0.6rem;
+    padding: 5px;
+  }
+  .order-arena {
+    flex: none;
+    height: 430px;
+  }
+  .order-seat {
+    width: 170px;
+  }
+  .order-seat:is(.other-1, .other-2, .other-3, .other-4) {
+    width: 88px;
+  }
+  .order-seat:is(.other-1, .other-2, .other-3, .other-4) img {
+    height: 42px;
+  }
+  .order-seat-copy b {
+    font-size: 0.7rem;
+  }
+  .order-seat-copy em {
+    display: block;
+  }
+  .order-felt {
+    left: 12%;
+    width: 76%;
+    height: 37%;
+    top: 31%;
+  }
+  .order-felt small {
+    max-width: 65%;
+    font-size: 0.6rem;
+  }
+  .order-ranking-heading {
+    flex-wrap: wrap;
+  }
+  .order-ranking ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .order-sidebar {
+    gap: 12px;
+  }
+  .order-sidebar .dice-register > ol {
+    flex: none;
+    height: 220px;
+  }
+}
+
+@media (min-width: 801px) and (max-height: 800px) {
+  .room-screen > .room-preparation {
+    margin-top: 12px;
+  }
+  .room-preparation .preparation-table {
+    padding: 16px;
+  }
+  .room-preparation .preparation-arena {
+    height: clamp(260px, 40vh, 325px);
+  }
+  .preparation-sidebar .preparation-controls {
+    padding: 16px;
+  }
+  .preparation-sidebar .preparation-controls label {
+    margin-top: 10px;
+  }
+  .preparation-sidebar .preparation-selected-deck {
+    height: 128px;
+    margin-top: 8px;
+  }
+  .preparation-sidebar .preparation-selected-art {
+    max-height: 112px;
+  }
+  .preparation-sidebar .preparation-ready-action {
+    margin-top: 12px;
+    min-height: 42px;
+  }
+  .preparation-sidebar > .dice-register {
+    min-height: 220px;
+    padding: 16px;
+  }
+  .preparation-sidebar .dice-register ol {
+    height: 70px;
+    min-height: 60px;
+    margin-bottom: 8px;
+  }
+}
+
+/* O registro ocupa somente o espaço reservado; regras não dependem do histórico. */
+@media (min-width: 801px) {
+  .room-screen > .room-preparation:not(.order-preparation) {
+    height: calc(100dvh - 92px);
+    min-height: 560px;
+  }
+  .room-preparation > .preparation-content {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .room-preparation .preparation-table {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+  .room-preparation .preparation-heading,
+  .room-preparation .preparation-start {
+    flex: none;
+  }
+  .room-preparation .preparation-arena {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+  .preparation-rules {
+    grid-row: 2;
+    align-self: end;
+  }
+  .preparation-sidebar {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .preparation-sidebar > .preparation-controls {
+    flex: none;
+  }
+  .preparation-sidebar > .dice-register {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .preparation-sidebar .dice-register > ol {
+    flex: 1;
+    height: 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .dice-register > h3,
+  .dice-register > .eyebrow,
+  .dice-register > button,
+  .dice-register > small {
+    flex: none;
+  }
+}
+
+/* O mesmo ornamento é orientado para dentro nos quatro cantos. */
+.preparation-panel-corners {
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+}
+.preparation-panel-corners > img {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+}
+.preparation-panel-corners > img:nth-child(1) {
+  top: 0;
+  left: 0;
+}
+.preparation-panel-corners > img:nth-child(2) {
+  top: 0;
+  right: 0;
+  transform: rotate(90deg);
+}
+.preparation-panel-corners > img:nth-child(3) {
+  bottom: 0;
+  right: 0;
+  transform: rotate(180deg);
+}
+.preparation-panel-corners > img:nth-child(4) {
+  bottom: 0;
+  left: 0;
+  transform: rotate(270deg);
+}

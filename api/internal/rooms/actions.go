@@ -435,6 +435,9 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	if err = json.Unmarshal(raw, &m); err != nil {
 		return Match{}, err
 	}
+	if m.PendingOrder {
+		return Match{}, sql.ErrNoRows
+	}
 	p := playerByID(&m, u.ID)
 	if p == nil {
 		return Match{}, errNotParticipant

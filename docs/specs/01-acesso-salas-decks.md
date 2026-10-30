@@ -54,6 +54,8 @@ e compra inicial de até sete cartas, além do tipo de mulligan descrito na
 - Qualquer usuário autenticado cria e entra em salas com vagas antes do início; não há aprovação individual ou senha adicional de sala.
 - Ao criar uma sala, o criador é levado diretamente para ela, já sentado.
 - Cada participante escolhe um deck e confirma prontidão. O criador inicia quando todos estiverem prontos.
+- No fluxo visual, iniciar abre a etapa de d20 e confirmação individual antes
+  de liberar o jogo, conforme a [decisão de dados 3D](../decisions/preparacao-dados-3d.md).
 - A quantidade mínima de jogadores para iniciar não foi explicitamente definida; não impor requisito de formato de Magic.
 - No início, carregar os decks, inicializar a vida pelo valor configurado na sala, embaralhar os grimórios e sortear a ordem de turnos.
 - A compra inicial de até sete cartas é opcional conforme a configuração da sala; sem ela, a compra é manual.
