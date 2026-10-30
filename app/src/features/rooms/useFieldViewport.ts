@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { battlefieldLayout, CARD_ASPECT, fitBattlefield } from './battlefieldLayout';
+import { battlefieldLayout, CARD_ASPECT, fitBattlefield, viewExtent } from './battlefieldLayout';
 import type { Card } from './roomsApi';
 
 export function useFieldViewport(cards: Card[], cancelDrag: () => void, fitAllRequest = 0) {
@@ -74,7 +74,10 @@ export function useFieldViewport(cards: Card[], cancelDrag: () => void, fitAllRe
     return () => { node.removeEventListener('wheel', wheel); node.removeEventListener('touchstart', start); node.removeEventListener('touchmove', move); node.removeEventListener('touchend', end); node.removeEventListener('touchcancel', end); };
   }, []);
 
-  const layout = fitBattlefield(cards, size.width / (size.cardWidth * zoom), size.height / (size.cardWidth * zoom));
+  const visibleWidth = size.width / (size.cardWidth * zoom);
+  const visibleHeight = size.height / (size.cardWidth * zoom);
+  const layout = fitBattlefield(cards, visibleWidth, visibleHeight);
+  const extent = viewExtent(layout, visibleWidth, visibleHeight);
   const center = () => {
     const node = ref.current;
     if (!node) return;
@@ -102,5 +105,5 @@ export function useFieldViewport(cards: Card[], cancelDrag: () => void, fitAllRe
     center();
   }, [fitAllRequest, size]);
 
-  return { ref, layout, zoom, center };
+  return { ref, layout, extent, zoom, center };
 }

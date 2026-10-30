@@ -67,7 +67,7 @@
 .zone-battlefield > header { z-index: 1; padding: 0 2px 6px; }
 .zone-battlefield > header > span:first-child { text-transform: uppercase; letter-spacing: .14em; font-size: .6rem; }
 .battlefield-fit { flex: 1; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; z-index: 1; }
-.battlefield-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); }
+.battlefield-zoom-space { width: calc(var(--mat-width) * var(--card-width) * var(--mat-zoom)); height: calc(var(--mat-height) * var(--card-width) * var(--mat-zoom)); overflow: clip; }
 .battlefield-canvas { position: relative; width: calc(var(--mat-width) * var(--card-width)); height: calc(var(--mat-height) * var(--card-width)); transform: scale(var(--mat-zoom)); transform-origin: 0 0; }
 .positioned-card { position: absolute; width: var(--card-width); height: calc(var(--card-width) * 88 / 63); }
 .positioned-card.tapped-slot { width: calc(var(--card-width) * 88 / 63); height: var(--card-width); }

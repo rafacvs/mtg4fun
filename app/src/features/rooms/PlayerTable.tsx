@@ -94,7 +94,7 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, on
 
 function Battlefield({ fitAllRequest, player, viewerId, droppable, hoverZone, gesture, focused, currentTurn, onFocus, focusEnabled }: ZoneProps & { fitAllRequest: number; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; focused: boolean; currentTurn: boolean; onFocus?: () => void; focusEnabled: boolean }) {
   const cards = player.battlefield ?? [];
-  const { ref, layout, zoom, center } = useFieldViewport(cards, gesture.onDragCancel, fitAllRequest);
+  const { ref, layout, extent, zoom, center } = useFieldViewport(cards, gesture.onDragCancel, fitAllRequest);
   return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
     <header>
       <span>Campo</span>
@@ -105,7 +105,7 @@ function Battlefield({ fitAllRequest, player, viewerId, droppable, hoverZone, ge
       <button type="button" className="field-center secondary" aria-label={`Centralizar campo de ${player.name}`} title="Mostrar todas as cartas" onClick={center}><TableIcon name="focus" /></button>
     </div>
     <div className="battlefield-fit battlefield-scroll" ref={ref}>
-      <div className="battlefield-zoom-space" style={{ '--mat-width': layout.width, '--mat-height': layout.height, '--mat-zoom': zoom } as CSSProperties}>
+      <div className="battlefield-zoom-space" style={{ '--mat-width': extent.width, '--mat-height': extent.height, '--mat-zoom': zoom } as CSSProperties}>
         <BattlefieldCanvas cards={cards} zoom={zoom} enabled={droppable} onSelectArea={gesture.onSelectArea}>
           {previewIds => cards.map(card => {
             const place = layout.cards.get(card.id);

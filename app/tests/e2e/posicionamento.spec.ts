@@ -143,6 +143,8 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
     expect(Math.abs((afterGroup[1]!.y - afterGroup[0]!.y) - (beforeGroup[1]!.y - beforeGroup[0]!.y))).toBeLessThanOrEqual(2);
   }).toPass();
   const beforeIndividual = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.players[0].battlefield;
+  // Cards glide into their new cell; measuring mid-transition would grab them off-centre.
+  await page.waitForTimeout(250);
   const firstAfterGroup = (await fieldCards.nth(0).boundingBox())!;
   const individualTarget = { x: firstAfterGroup.x + 100, y: firstAfterGroup.y + firstAfterGroup.height / 2 };
   if (testInfo.project.use.hasTouch) await dragWithTouch(page, firstAfterGroup, individualTarget);

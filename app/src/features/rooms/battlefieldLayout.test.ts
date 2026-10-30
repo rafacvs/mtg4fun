@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CARD_ASPECT, CELL_GAP, STACK_SHIFT_X, battlefieldLayout, dropCell, firstFreeCell, fitBattlefield, projectBattlefield } from './battlefieldLayout.ts';
+import { CARD_ASPECT, CELL_GAP, STACK_SHIFT_X, battlefieldLayout, dropCell, firstFreeCell, fitBattlefield, projectBattlefield, viewExtent } from './battlefieldLayout.ts';
 
 const card = (id: string, positionX: number, row: number, tapped = false) => ({ id, positionX, row, stackOrder: 0, tapped });
 
@@ -73,4 +73,29 @@ test('projection compacts only distant saved coordinates without mutating their 
   assert.deepEqual(cards.map(({ positionX, row }) => ({ positionX, row })), [
     { positionX: 120, row: 4 }, { positionX: 121, row: 4 }, { positionX: 720, row: 18 },
   ]);
+});
+
+test('a visão só rola quando as cartas não cabem, e nunca além de uma célula vazia', () => {
+  const row = (count: number) => Array.from({ length: count }, (_, index) => ({ id: `c${index}`, positionX: index, row: 0, stackOrder: index }));
+  const cards = row(3);
+  const fitted = fitBattlefield(cards, 8, 4);
+  assert.ok(fitted.width > 8, 'as células vazias excedem a visão');
+  assert.deepEqual(viewExtent(fitted, 8, 4), { width: 8, height: 4 });
+
+  const narrow = fitBattlefield(cards, 3, 4);
+  const occupied = 3 + 2 * CELL_GAP;
+  assert.ok(Math.abs(viewExtent(narrow, 3, 4).width - (occupied + CELL_GAP + 1)) < 1e-9);
+  assert.equal(viewExtent(narrow, 3, 4).height, 4);
+
+  const low = fitBattlefield(cards, 8, 2 * CARD_ASPECT - .5);
+  assert.ok(viewExtent(low, 8, 2 * CARD_ASPECT - .5).height === 2 * CARD_ASPECT - .5);
+  assert.deepEqual(viewExtent(fitBattlefield([], 8, 4), 8, 4), { width: 8, height: 4 });
+
+  // Under a high zoom the spare cell shrinks: at the far end the last card still fits.
+  const zoomed = fitBattlefield(cards, 1.4, 4);
+  const extent = viewExtent(zoomed, 1.4, 4).width;
+  assert.ok(extent - 1.4 <= occupied - 1 + 1e-9, 'a última carta segue inteira no fim da rolagem');
+  assert.ok(Math.abs(viewExtent(fitBattlefield(cards, 8, .8), 8, .8).height - CARD_ASPECT - CELL_GAP) < 1e-9);
+  // Fitted exactly by "Centralizar": a rounding error must not open the scroll.
+  assert.equal(viewExtent(fitBattlefield(cards, occupied - 1e-6, 4), occupied - 1e-6, 4).width, occupied - 1e-6);
 });
