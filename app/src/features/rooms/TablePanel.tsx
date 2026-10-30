@@ -49,14 +49,15 @@ export function TablePanel({ open, label, anchor, wide = false, align = 'end', c
       const offsetY = viewport?.offsetTop ?? 0;
       const toolbarBottom = document.querySelector('.table-toolbar')?.getBoundingClientRect().bottom ?? 0;
       const minimumTop = wide ? offsetY + 12 : Math.max(offsetY + 12, toolbarBottom + 8);
-      const maximumHeight = Math.max(80, offsetY + height - minimumTop - 12);
+      let maximumHeight = Math.max(80, offsetY + height - minimumTop - 12);
       let left = (width - box.width) / 2;
       let top = offsetY + (height - box.height) / 2;
       if (origin && !wide) {
         if (align === 'above') {
+          // Opens upward from the bar; a tall screen scrolls inside instead of covering the button.
           left = origin.right - box.width;
-          top = origin.top - box.height - 10;
-          if (top < minimumTop) top = origin.bottom + 8;
+          maximumHeight = Math.max(80, origin.top - 10 - minimumTop);
+          top = Math.max(minimumTop, origin.top - Math.min(box.height, maximumHeight) - 10);
         } else if (align === 'start') {
           left = origin.left;
           top = origin.bottom + 8;

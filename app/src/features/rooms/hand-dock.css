@@ -35,24 +35,26 @@
   /* The row is a size container so the overlap can shrink to fit any hand. */
   .desktop-table .own-dock .zone-hand .zone-cards {
     container-type: inline-size; flex: 1 1 auto; align-self: stretch; align-items: flex-end; gap: 0;
-    min-width: 0; height: calc(100% + 10px); margin-bottom: -10px; padding: 0 0 0 10px; overflow: visible;
+    min-width: 0; height: 100%; padding: 0 0 0 10px; overflow: visible;
   }
   .desktop-table .own-dock .zone-hand .playing-card {
     --fan-t: calc(var(--fan-offset, 0) / max(1, (var(--hand-count, 1) - 1) / 2));
-    /* At rest only ~40% of the card shows; hovering raises it whole. */
-    --hand-rest-drop: calc(var(--hand-card) * 88 / 63 * .6 - 10px);
-    flex: 0 0 auto; width: var(--hand-card); border: 1px solid #000; border-radius: 8px;
-    box-shadow: 0 -2px 0 #ffffff0d, 0 14px 28px #000c;
-    transform: translateY(calc(var(--hand-rest-drop) + var(--fan-t) * var(--fan-t) * 9px)) rotate(calc(var(--fan-t) * 6deg));
-    transform-origin: 50% 100%;
+    /* At rest the card box is its top 40%, so it stays on screen and
+       clickable; hovering grows it upward to the whole card. */
+    --hand-card-height: calc(var(--hand-card) * 88 / 63);
+    flex: 0 0 auto; width: var(--hand-card); height: calc(var(--hand-card-height) * .4); aspect-ratio: auto;
+    border: 1px solid #000; border-radius: 8px 8px 0 0; box-shadow: 0 -2px 0 #ffffff0d, 0 14px 28px #000c;
+    transform: translateY(calc(var(--fan-t) * var(--fan-t) * 9px)) rotate(calc(var(--fan-t) * 6deg));
+    transform-origin: 50% 100%; transition: height .15s ease-out, transform .15s ease-out;
   }
   .desktop-table .own-dock .zone-hand .playing-card:not(:first-child) {
     margin-left: min(-14px, calc((100cqw - var(--hand-count, 1) * var(--hand-card)) / max(1, var(--hand-count, 1) - 1)));
   }
-  .desktop-table .own-dock .zone-hand .playing-card img { border-radius: 7px; }
+  .desktop-table .own-dock .zone-hand .playing-card img { flex: 0 0 auto; width: 100%; height: var(--hand-card-height); object-fit: cover; object-position: top; border-radius: 7px 7px 0 0; }
+  .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled) img { border-radius: 7px; }
   .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled) {
-    z-index: 2; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 18px 34px #000d;
-    transform: translateY(-26px) rotate(calc(var(--fan-t) * 2deg));
+    z-index: 2; height: var(--hand-card-height); border-color: var(--gold); border-radius: 8px; box-shadow: 0 0 0 1px var(--gold), 0 18px 34px #000d;
+    transform: translateY(-14px) rotate(calc(var(--fan-t) * 2deg));
   }
   .desktop-table .own-dock .zone-hand .playing-card.is-selected { z-index: 1; outline: 2px solid var(--gold); outline-offset: 0; box-shadow: 0 0 18px var(--gold-glow), 0 14px 28px #000c; }
   .desktop-table .own-dock .zone-hand .zone-placeholder { align-self: center; color: var(--muted); font-size: 12px; }
@@ -77,6 +79,9 @@
   .match-board.desktop-table .quick-actions .turn-action:hover:not(:disabled) { background: linear-gradient(#f3d081, #d29d41); }
   .match-board.desktop-table .quick-actions button:disabled { opacity: .45; }
   .desktop-table .card-action-bar { bottom: calc(var(--dock-bar-height) + 12px); }
+}
+@media (min-width: 1001px) and (prefers-reduced-motion: reduce) {
+  .desktop-table .own-dock .zone-hand .playing-card { transition: none; }
 }
 
 /* Mobile command grids keep turn passing as their first command. */

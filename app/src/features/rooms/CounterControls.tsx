@@ -145,3 +145,18 @@ export function MarkerRows({ markers, mixedColors = [], counts, disabled, onAppl
     {markerColors.map(item => <MarkerRow key={item.color} name={item.name} color={item.color} count={counts?.[item.color]} value={mixedColors.includes(item.color) ? undefined : markerValue(markers, item.color)} disabled={disabled} onApply={onApply} />)}
   </div>;
 }
+
+// Player markers fit side by side, so each color is a column: + gem value −.
+export function MarkerColumns({ markers, disabled, onApply }: { markers?: Markers; disabled: boolean; onApply: (color: MarkerColor, operation: CounterOperation, value: number) => Promise<boolean> }) {
+  return <div className="marker-columns">
+    {markerColors.map(item => {
+      const value = markerValue(markers, item.color);
+      return <div key={item.color} className="marker-column" data-active={value !== 0}>
+        <button type="button" className="secondary" aria-label={`Aumentar marcador ${item.name}`} disabled={disabled} onClick={() => void onApply(item.color, 'increment', 1)}>+</button>
+        <span className={`marker-gem marker-${item.color}`} aria-hidden="true" />
+        <NumericField inputLabel={`marcador ${item.name}`} value={value} disabled={disabled} onApply={(operation, next) => onApply(item.color, operation, next)} />
+        <button type="button" className="secondary" aria-label={`Diminuir marcador ${item.name}`} disabled={disabled} onClick={() => void onApply(item.color, 'increment', -1)}>−</button>
+      </div>;
+    })}
+  </div>;
+}

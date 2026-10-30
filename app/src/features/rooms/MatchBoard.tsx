@@ -9,8 +9,7 @@ import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { FinishMatch } from './FinishMatch';
 import { MatchLog } from './MatchLog';
 import { describeActionResult, parseRoll } from './matchLogPresentation';
-import { GameActions } from './GameActions';
-import { CreateInstances } from './CreateInstances';
+import { GameActions, type GameActionsScreen } from './GameActions';
 import { PlayerMenu } from './PlayerMenu';
 import { MobileTableControls } from './MobileTableControls';
 import { TableQuickActions } from './TableQuickActions';
@@ -53,7 +52,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
   const [unreadLog, setUnreadLog] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [creationOpen, setCreationOpen] = useState(false);
+  const [actionsScreen, setActionsScreen] = useState<GameActionsScreen>('menu');
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [mulliganPanelOpen, setMulliganPanelOpen] = useState(false);
   const [openZone, setOpenZone] = useState<OpenZone | null>(null);
@@ -102,12 +101,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => media.removeEventListener('change', update);
   }, []);
   const closePreview = useCallback(() => setPreviewId(null), []);
-  const closeCreation = useCallback(() => setCreationOpen(false), []);
   const closeActions = useCallback(() => setActionsOpen(false), []);
   const closeLibrary = useCallback(() => setLibraryOpen(false), []);
   const closePlayer = useCallback(() => setMenuPlayerId(null), []);
   const openPlayer = (id: number, anchor: HTMLElement) => {
     setMenuAnchor(anchor); setMenuPlayerId(id); setLibraryOpen(false); setActionsOpen(false);
+  };
+  // Shortcuts open the same popover the bar's "Mais" button anchors.
+  const openActions = (screen: GameActionsScreen) => {
+    setActionsAnchor(moreControl.current ?? document.querySelector<HTMLElement>('.own-dock .actions-toggle'));
+    setActionsScreen(screen); setActionsOpen(true); setLibraryOpen(false); setMenuPlayerId(null);
   };
   const openLibrary = () => {
     setLibraryAnchor(document.querySelector<HTMLElement>('.focused-table .library-open') ?? document.querySelector<HTMLElement>('.library-open'));
@@ -161,8 +164,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         if (cards.length) void setTapped(cards.map(card => card.id), !cards[0].tapped);
       } else if (command === 'marker') void addMarkers(selectionIds);
       else if (command === 'hand' || command === 'graveyard' || command === 'exile') void moveSelection(selectionIds, command);
-      else if (command === 'random') { setActionsOpen(true); setActionsAnchor(null); }
-      else if (command === 'token') setCreationOpen(true);
+      else if (command === 'random' || command === 'token') openActions(command === 'token' ? 'token' : 'menu');
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -291,7 +293,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   };
   const quickActions = <TableQuickActions disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} {...mulliganActions} actionsOpen={actionsOpen}
     onTurn={() => void turn('next')} onDraw={drawOne} onUntap={() => void untapAll()}
-    onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
+    onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsScreen('menu'); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
 
   return <section className={`match-board ${drag ? 'dragging' : ''} ${compact ? 'mobile-hand-open' : ''} ${!compact ? 'desktop-table' : 'mobile-table'}`} aria-label="Mesa da partida">
@@ -408,9 +410,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const title = openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio';
       return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />;
     })()}
-    <GameActions anchor={actionsAnchor} onCreate={() => { setCreationOpen(true); setActionsOpen(false); }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} lastRoll={lastRoll} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
-    <PlayerMenu player={match.players.find(player => player.userId === menuPlayerId)} viewerId={match.viewerId} anchor={menuAnchor} disabled={busy || unconfirmed} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onCounter={counter} onClose={closePlayer} />
-    <CreateInstances open={creationOpen} roomId={roomId} busy={busy || unconfirmed} error={error} onCreateToken={async name => {
+    <GameActions anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} onCreateToken={async name => {
       const cell = firstFreeCell(own.battlefield ?? []);
       const ok = await createToken(name);
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
@@ -420,7 +420,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const ok = await createCustomToken(token);
       if (ok) scrollBattlefieldCell(own.userId, cell.column, cell.row);
       return ok;
-    }} onClose={closeCreation} />
+    }} open={actionsOpen} sides={sides} busy={busy} unconfirmed={unconfirmed} error={error} onRetry={retry} result={actionResult} lastRoll={lastRoll} onSides={setSides} onRoll={() => void roll(sides)} onCoin={() => void coin()} onTurn={direction => void turn(direction)} onClose={closeActions} />
+    <PlayerMenu player={match.players.find(player => player.userId === menuPlayerId)} viewerId={match.viewerId} anchor={menuAnchor} disabled={busy || unconfirmed} busy={busy} error={error} unconfirmed={unconfirmed} onRetry={retry} onCounter={counter} onClose={closePlayer} />
     <CardPreview mobileSheet={compact} players={match.players} onFocusOwner={ownerId => { setFocusId(ownerId); setOverview(false); closePreview(); }} onMove={(cardId, destination) => {
       const [to, placement] = destination.split('-');
       const cell = to === 'battlefield' ? firstFreeCell(own.battlefield ?? []) : null;

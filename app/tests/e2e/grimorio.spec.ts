@@ -288,7 +288,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await open();
     await expect(library.getByRole('button', { name: /^Olhar cartas/ })).toBeVisible();
     await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
-    await library.getByLabel('De onde').selectOption('bottom');
+    await library.getByRole('group', { name: 'De onde' }).getByRole('button', { name: 'Fundo', exact: true }).click();
     await library.getByLabel('Quantidade de cartas').fill('3');
     await activate(library.getByRole('button', { name: 'Olhar 3 carta(s)', exact: true }));
     await expect
@@ -461,7 +461,7 @@ test('recupera a confirmação perdida no painel sem aplicar a consulta duas vez
     });
     await open();
     await activate(library.getByRole('button', { name: /^Olhar cartas/ }));
-    await library.getByLabel('De onde').selectOption('bottom');
+    await library.getByRole('group', { name: 'De onde' }).getByRole('button', { name: 'Fundo', exact: true }).click();
     await library.getByLabel('Quantidade de cartas').fill('2');
     await activate(library.getByRole('button', { name: 'Olhar 2 carta(s)', exact: true }));
     const retry = library.getByRole('button', { name: 'Tentar novamente', exact: true });

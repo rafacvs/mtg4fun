@@ -15,8 +15,8 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await openQuickActions(page);
   await click(page.getByRole('button', { name: 'Ações', exact: true }));
   await click(page.getByRole('button', { name: 'Criar ficha', exact: true }));
-  const dialog = page.getByRole('dialog', { name: 'Fichas' });
-  await expect(dialog.getByRole('button', { name: 'Voltar', exact: true })).toHaveCount(0);
+  const dialog = page.getByRole('dialog', { name: 'Ações do jogo' });
+  await expect(dialog.getByRole('heading', { name: 'Criar ficha', exact: true })).toBeVisible();
   await click(dialog.getByRole('button', { name: /Ficha do catálogo/ }));
   await expect(dialog.getByRole('button', { name: 'Voltar', exact: true })).toBeVisible();
   await dialog.getByLabel('Buscar ficha do catálogo').fill('Soldier');
@@ -36,9 +36,9 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   await dialog.getByLabel('Descrição da ficha').fill('Voa sobre a mesa.');
   await dialog.getByLabel('Poder da ficha').fill('-1');
   await dialog.getByLabel('Resistência da ficha').fill('4');
-  await click(dialog.getByRole('button', { name: 'Criar ficha personalizada' }));
+  await click(dialog.getByRole('button', { name: 'Criar ficha', exact: true }));
   await expect(page.locator('.playing-card[aria-label="Dragão amigo"]')).toHaveCount(1);
-  await click(dialog.getByRole('button', { name: 'Fechar fichas' }));
+  await click(dialog.getByRole('button', { name: 'Fechar ações' }));
   await click(page.locator('.playing-card[aria-label="Dragão amigo"]'));
   const preview = page.getByRole('dialog', { name: 'Imagem de Dragão amigo' });
   await expect(preview.getByText('Voa sobre a mesa.')).toBeVisible();

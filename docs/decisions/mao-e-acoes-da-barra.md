@@ -32,3 +32,23 @@ mantendo a prévia ao passar o mouse.
   regra do system design: › só aparece em itens que abrem uma subtela.
 - No celular, os comandos mantêm a ordem anterior. “Passar turno” passa a ser
   o primário, conforme a regra de um primário por superfície.
+
+## Segunda rodada — menus do jogador, fichas e grimório
+
+Pedido explícito do usuário em 29/10/2026: revisar e corrigir os menus que
+ainda fugiam do padrão. Ele citou o menu de vida do jogador e o de fichas, que
+abria um painel no meio da tela em vez de seguir como subtela perto da mão.
+
+- **Seu jogador:** vida no stepper grande (− vermelho, valor digitável em
+  Cinzel, + verde) e os cinco marcadores em colunas no mesmo painel, como no
+  item 8 do system design. A subtela "Marcadores" deixou de existir. Para
+  outros jogadores, o painel mostra a vida e só os marcadores com valor.
+- **Fichas:** viraram subtelas do popover "Ações do jogo" (Criar ficha → Do
+  catálogo / Personalizada), ancoradas acima do "Mais". O atalho `f` abre o
+  mesmo popover nessa subtela. A busca segue o item 7 (ícone, × para limpar,
+  contagem ao lado) e a lista usa linhas de 32px com "Criar" secundário.
+- **Grimório:** "De onde" virou seletor de duas opções à vista (item 6). Os
+  botões de concluir usam o primário em Cinzel, e "Embaralhar" ficou sem ›.
+- **Mão:** em repouso, a caixa da carta tem 40% da altura e mostra o topo da
+  arte; no hover, cresce até a carta inteira. Assim a área clicável fica toda
+  na tela.

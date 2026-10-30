@@ -126,7 +126,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     await expect(table.getByLabel('Vida: -5', { exact: true })).toBeVisible();
     await expectLifeLog(['vida = 0', 'vida = -5', 'vida = -6', 'vida = -5']);
     await life.fill('16');
-    await press('Marcadores');
+    await life.blur();
     const addRed = panel.getByRole('button', { name: 'Aumentar marcador vermelho', exact: true });
     await activate(addRed);
     await activate(addRed);
@@ -140,7 +140,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     }
     await expectLifeLog(['vida = 0', 'vida = -5', 'vida = -6', 'vida = -5', 'vida = 16']);
     await expect(table.getByLabel('Vida: 16', { exact: true })).toBeVisible();
-    await press('Voltar');
+    // Life and markers share the panel, so the life field stays in reach.
     await expect(panel.getByRole('button', { name: 'Vida', exact: true })).toHaveCount(0);
     const restored = panel.getByRole('textbox', { name: 'Vida', exact: true });
     await expect(restored).toBeEnabled();

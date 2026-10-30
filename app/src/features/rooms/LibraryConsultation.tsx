@@ -83,7 +83,7 @@ export function LibraryConsultation(props: Props) {
       {!active && state.view === 'menu' && (
         <div className="table-menu library-menu">
           <MenuItem icon="draw" title="Comprar cartas" description="Do topo para sua mão" disabled={busy || !libraryCount} onClick={() => state.choose('draw')} />
-          <MenuItem icon="shuffle" title="Embaralhar" description="Embaralhar apenas o grimório" disabled={busy} onClick={() => void state.finish(true)} />
+          <MenuItem icon="shuffle" title="Embaralhar" description="Embaralhar apenas o grimório" disabled={busy} opens={false} onClick={() => void state.finish(true)} />
           <MenuItem icon="eye" title="Olhar cartas" description="Topo ou fundo · Em privado" disabled={busy || !libraryCount} onClick={() => state.choose('look')} />
           <MenuItem icon="search" title="Buscar no grimório" description="Consultar todas · Em privado" disabled={busy || !libraryCount} onClick={() => void state.searchLibrary()} />
           <MenuItem icon="reveal" title="Revelar cartas" description="Do topo · Todos veem" disabled={busy || !libraryCount} onClick={() => state.choose('reveal')} />
@@ -100,20 +100,15 @@ export function LibraryConsultation(props: Props) {
           </p>
           <div className="library-command">
             {state.view === 'look' && (
-              <label>
-                De onde
-                <select
-                  disabled={busy}
-                  value={state.source}
-                  onChange={(event) => state.setSource(event.target.value as 'top' | 'bottom')}
-                >
-                  <option value="top">Topo</option>
-                  <option value="bottom">Fundo</option>
-                </select>
-              </label>
+              <div className="panel-field">
+                <span className="panel-label" id="library-source-label">De onde</span>
+                <div className="segmented" role="group" aria-labelledby="library-source-label">
+                  {(['top', 'bottom'] as const).map(source => <button key={source} type="button" aria-pressed={state.source === source} disabled={busy} onClick={() => state.setSource(source)}>{source === 'top' ? 'Topo' : 'Fundo'}</button>)}
+                </div>
+              </div>
             )}
-            <label>
-              Quantidade
+            <div className="panel-field">
+              <span className="panel-label">Quantidade</span>
               <div className="library-stepper">
                 <button
                   className="secondary"
@@ -141,10 +136,10 @@ export function LibraryConsultation(props: Props) {
                   +
                 </button>
               </div>
-            </label>
+            </div>
           </div>
           <div className="library-setup-actions">
-            <button disabled={busy || !validCount} onClick={() => void state.begin()}>
+            <button className="panel-primary" disabled={busy || !validCount} onClick={() => void state.begin()}>
               {state.view === 'look' ? 'Olhar' : state.view === 'reveal' ? 'Revelar' : 'Comprar'}{' '}
               {state.count || ''} carta(s)
             </button>
