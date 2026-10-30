@@ -50,6 +50,20 @@ Build do frontend (incluindo typecheck) e `git diff --check` passaram.
 Capturas de criação e biblioteca foram conferidas no desktop e no celular.
 Não houve alteração de backend, infraestrutura ou integração externa.
 
+## Importação e gráficos no preview
+
+Em 30/10/2026, o usuário pediu que **Importar deck** permanecesse no topo da
+coluna esquerda junto de **Meus decks**, sem alterar a composição original de
+duas colunas. A ação compacta abre o formulário em diálogo; busca e lista
+continuam abaixo, e o detalhe do deck permanece à direita.
+
+O usuário também pediu gráficos inspirados nas referências fornecidas. O
+preview apresenta pizzas para curva de mana, distribuição de cores e tipos de
+carta. A curva agrega custos seis ou maiores em `6+` e omite custo zero. Tipos
+usam os grupos reais já expostos. Para não fabricar a distribuição de cores, a
+resposta dos decks passou a incluir, de forma aditiva, as cores resolvidas de
+cada carta do catálogo. Não foi adicionada biblioteca de gráficos.
+
 ## Importação integrada ao cabeçalho da biblioteca
 
 Em 30/10/2026, o usuário pediu que o importador `.cod` ficasse no topo,

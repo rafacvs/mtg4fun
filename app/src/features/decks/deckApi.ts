@@ -2,6 +2,7 @@ export type DeckCard = {
   name: string;
   quantity: number;
   text: string;
+  colors?: string;
   token: boolean;
   available: boolean;
 };

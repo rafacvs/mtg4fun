@@ -2,6 +2,8 @@
 .section-intro { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 22px; margin-bottom: 22px; }
 .section-intro p:last-child { margin: 0; }
 .deck-total { display: inline-block; color: var(--gold); border: 1px solid var(--line-strong); border-radius: 999px; padding: 6px 13px; font-size: .8rem; white-space: nowrap; }
+.deck-library-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.deck-library-actions button { min-height: 40px; padding: 8px 12px; }
 .import-card { background: var(--panel2); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
 .import-card summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); font-size: 1.15rem; font-weight: 750; cursor: pointer; list-style: none; }
 .import-card summary::-webkit-details-marker { display: none; }
@@ -11,6 +13,12 @@
 .import-card form { margin: 0; min-width: 0; }
 .import-card label { margin-top: 0; }
 .import-card input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip-path: inset(50%); }
+.import-dialog { width: min(92vw, 720px); max-height: calc(100dvh - 32px); overflow: hidden auto; padding: 24px; color: var(--text); box-shadow: 0 24px 80px #000d; }
+.import-dialog::backdrop { background: #000c; backdrop-filter: blur(5px); }
+.import-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.import-dialog-header .eyebrow { margin-bottom: 6px; }
+.import-dialog-header h3 { margin: 0; }
+.import-dialog-header button { min-height: 40px; }
 .upload-controls { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 14px; }
 .upload-controls button { margin: 0; }
 .upload-controls button[type=submit] { grid-column: 1 / -1; }
@@ -22,6 +30,8 @@
 .deck-detail-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: 12px 20px; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
 .deck-detail-header h3 { font-size: clamp(1.35rem, 3vw, 1.8rem); overflow-wrap: anywhere; }
 .deck-detail-header p:last-child { margin: 0; font-size: .83rem; }
+.deck-detail-actions { display: grid; gap: 8px; min-width: 176px; }
+.deck-detail-actions button { width: 100%; }
 .danger-button { color: var(--danger-text); border-color: var(--danger-line); }
 .danger-button:hover:not(:disabled) { background: var(--danger-bg); }
 .deck-columns { display: grid; gap: 16px; margin-top: 18px; min-width: 0; }
@@ -135,23 +145,55 @@
 .deck-groups section h4 { border-bottom: 1px solid #68583466; padding-bottom: 5px; }
 .deck-card-list li { border-color: #ffffff0b; }
 @media (min-width: 1000px) {
-  .deck-library { display: grid; grid-template-columns: minmax(240px, 25%) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .deck-library { display: grid; grid-template-columns: minmax(280px, 25%) minmax(0, 1fr); gap: 20px; align-items: start; }
   .deck-library-sidebar { grid-column: 1; overflow: hidden; background: #0e1313; border: 1px solid #6b572e; border-radius: 8px; }
   .section-intro { margin: 0; padding: 22px 20px 16px; border: 0; border-radius: 0; }
   .section-intro p:last-child { display: none; }
   .deck-total { border: 0; padding: 0; color: var(--muted); }
+  .deck-library-actions { justify-content: flex-start; }
   .library-workspace, .deck-library-main { grid-column: 2; min-width: 0; margin-top: 0; }
+  .library-workspace { display: block; }
   .saved-deck-grid { padding: 14px 10px 16px; margin: 0; background: #0e1313; border: 0; border-top: 1px solid #6b572e55; border-radius: 0; }
   .saved-deck-card { padding: 10px; }
   .deck-picker { display: none; }
-  .import-card { margin: 0; border: 0; border-top: 1px solid #6b572e55; border-radius: 0; background: #0e1313; }
-  .import-content { grid-template-columns: 1fr; }
-  .deck-detail { padding: 25px; min-height: 720px; }
+  .import-content { grid-template-columns: minmax(0, 1fr) minmax(420px, 1.35fr); }
+  .deck-detail { grid-column: auto; grid-row: auto; padding: 25px; min-height: 720px; }
   .deck-columns { grid-template-columns: minmax(0, 2fr) minmax(210px, .8fr); }
 }
 .deck-filters { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
 .deck-filters button { min-height: 34px; padding: 5px 10px; border: 1px solid #6e5934; border-radius: 4px; background: #111716; color: #c9c4b7; font-size: .75rem; }
 .deck-filters button[aria-pressed=true] { color: #1b1405; background: linear-gradient(#e6c476, #b28637); }
 .deck-preview .deck-examples dl { grid-template-columns: 1fr; }
+.deck-summary-heading { display: grid; gap: 10px; }
+.deck-summary-heading span { display: grid; gap: 3px; }
+.deck-summary-heading small, .deck-chart h5 { color: #b9a16e; font: 700 .72rem Cinzel, Georgia, serif; letter-spacing: .14em; text-transform: uppercase; }
+.deck-summary-heading strong { font-size: .83rem; }
+.deck-chart { padding-top: 16px; border-top: 1px solid #74603955; }
+.deck-chart h5 { margin: 0 0 12px; }
+.deck-pie-layout { display: grid; grid-template-columns: minmax(110px, 145px) minmax(0, 1fr); align-items: center; gap: 14px; }
+.deck-pie { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: 50%; background: conic-gradient(var(--pie-stops)); box-shadow: inset 0 0 0 1px #fff2, 0 8px 24px #0007; }
+.deck-pie::after { content: ''; grid-area: 1 / 1; width: 54%; aspect-ratio: 1; border-radius: 50%; background: #0c1111; box-shadow: 0 0 0 1px #ffffff12; }
+.deck-pie > span { z-index: 1; grid-area: 1 / 1; color: var(--text); font-weight: 750; font-variant-numeric: tabular-nums; }
+.deck-chart-legend { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.deck-chart-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 7px; font-size: .7rem; }
+.deck-chart-legend i { width: 10px; height: 10px; border-radius: 2px; }
+.deck-chart-legend span { min-width: 0; overflow-wrap: anywhere; color: var(--muted); }
+.deck-chart-legend strong { font-variant-numeric: tabular-nums; }
+.chart-empty { margin: 0; font-size: .75rem; }
+@media (max-width: 1180px) { .deck-pie-layout { grid-template-columns: 1fr; } .deck-pie { width: min(160px, 80%); margin: auto; } }
+.mana-curve-dialog { width: min(94vw, 1080px); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden auto; border: 1px solid var(--gold-d); border-radius: 12px; background: #0c1111; color: var(--text); box-shadow: 0 24px 80px #000d; }
+.mana-curve-dialog::backdrop { background: #000c; backdrop-filter: blur(5px); }
+.mana-curve-header { position: sticky; z-index: 2; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); background: #0c1111f5; backdrop-filter: blur(8px); }
+.mana-curve-header .eyebrow { margin-bottom: 6px; }
+.mana-curve-header h3 { margin: 0; }
+.mana-curve-header button { min-height: 40px; }
+.mana-curve-dialog .deck-examples { margin: 0; padding: 22px; border: 0; }
+.mana-curve-dialog .deck-summary-heading { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-bottom: 18px; }
+.mana-curve-dialog .deck-chart-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.mana-curve-dialog .deck-chart { min-width: 0; padding: 18px; border: 1px solid #74603966; border-radius: 8px; background: #090d0d; }
+.mana-curve-dialog .deck-pie-layout { grid-template-columns: 1fr; }
+.mana-curve-dialog .deck-pie { width: min(190px, 82%); margin: 0 auto 8px; }
+@media (max-width: 840px) { .mana-curve-dialog .deck-chart-grid { grid-template-columns: 1fr; } .mana-curve-dialog .deck-pie-layout { grid-template-columns: minmax(130px, 180px) minmax(0, 1fr); } }
+@media (max-width: 520px) { .mana-curve-dialog .deck-pie-layout, .mana-curve-dialog .deck-summary-heading { grid-template-columns: 1fr; } .deck-detail-actions { width: 100%; } }
 .deck-detail-header { margin: -25px -25px 0; padding: 25px; background: linear-gradient(90deg, #101815f2, #19241bb3), url('../../assets/theme/mat-forest.jpg') center / cover; border-radius: 6px 6px 0 0; }
 @media (max-width: 999px) { .deck-detail-header { margin: -17px -17px 0; padding: 17px; } }

@@ -14,6 +14,7 @@ type Card struct {
 	Name      string `json:"name"`
 	Quantity  int64  `json:"quantity"`
 	Text      string `json:"text"`
+	Colors    string `json:"colors,omitempty"`
 	Token     bool   `json:"token"`
 	Available bool   `json:"available"`
 }
@@ -55,7 +56,7 @@ var errUnknownCommander = errors.New("Carta não encontrada neste deck.")
 
 func (s *Service) resolve(card *Card) {
 	entry, ok := s.catalog.Lookup(card.Name)
-	card.Text, card.Token, card.Available = entry.Text, entry.Token, ok
+	card.Text, card.Colors, card.Token, card.Available = entry.Text, entry.Colors, entry.Token, ok
 }
 
 func (s *Service) save(ctx context.Context, userID int64, deck Deck) (Deck, error) {

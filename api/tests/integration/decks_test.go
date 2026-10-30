@@ -261,6 +261,9 @@ func TestDeckListingResolvesGroupsAndCurveFromCatalog(t *testing.T) {
 	if !hasCard(deck.Groups.Lands, "Island", 5) {
 		t.Fatalf("Island deveria ser terreno: %s", listed.body)
 	}
+	if !bytes.Contains(listed.body, []byte(`"name":"Island","quantity":5,"text":"Add U.","colors":"U"`)) {
+		t.Fatalf("resumo deveria expor as cores reais da carta: %s", listed.body)
+	}
 	if !hasCard(deck.Groups.Spells, "Fire // Ice", 1) {
 		t.Fatalf("Instant deveria ser mágica: %s", listed.body)
 	}

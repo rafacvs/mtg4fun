@@ -12,8 +12,11 @@ type Props = { library: ReturnType<typeof useDecks> };
 export function DeckLibrary({ library }: Props) {
   const inspection = useCardInspection();
   const fileInput = useRef<HTMLInputElement>(null);
+  const importDialog = useRef<HTMLDialogElement>(null);
+  const curveDialog = useRef<HTMLDialogElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [importOpen, setImportOpen] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
+  const [curveOpen, setCurveOpen] = useState(false);
   const [libraryQuery, setLibraryQuery] = useState('');
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<string>('all');
@@ -21,8 +24,17 @@ export function DeckLibrary({ library }: Props) {
   const chosen = library.decks.find(deck => deck.id === library.selected);
   const cardCount = chosen?.cards.reduce((sum, card) => sum + card.quantity, 0) ?? 0;
 
-  useEffect(() => { if (!chosen) setImportOpen(true); }, [chosen]);
   useEffect(() => { setQuery(''); setGroup('all'); }, [chosen?.id]);
+  useEffect(() => {
+    if (importOpen && !importDialog.current?.open) importDialog.current?.showModal();
+    if (!importOpen && importDialog.current?.open) importDialog.current.close();
+  }, [importOpen]);
+  useEffect(() => { if (!library.loading && library.decks.length === 0) setImportOpen(true); }, [library.loading, library.decks.length]);
+  useEffect(() => {
+    if (curveOpen && !curveDialog.current?.open) curveDialog.current?.showModal();
+    if (!curveOpen && curveDialog.current?.open) curveDialog.current.close();
+  }, [curveOpen]);
+  useEffect(() => { setCurveOpen(false); }, [chosen?.id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,21 +51,8 @@ export function DeckLibrary({ library }: Props) {
     <div className="deck-library-sidebar">
       <div className="section-intro">
         <div><p className="eyebrow">BIBLIOTECA</p><h2 id="decks-title">Seus decks</h2><p>Importe, consulte e organize seus decks Cockatrice.</p></div>
-        <span className="deck-total">{library.decks.length} {library.decks.length === 1 ? 'deck salvo' : 'decks salvos'}</span>
+        <div className="deck-library-actions"><span className="deck-total">{library.decks.length} {library.decks.length === 1 ? 'deck salvo' : 'decks salvos'}</span><button type="button" aria-label="Abrir importação de deck" onClick={() => setImportOpen(true)}>Importar deck</button></div>
       </div>
-      <details className="import-card" open={importOpen} onToggle={event => setImportOpen(event.currentTarget.open)}>
-        <summary><span>Importar deck</span><span className="import-summary-hint">{importOpen ? 'Ocultar' : 'Adicionar outro .cod'}</span></summary>
-        <div className="import-content"><p>Arquivo .cod de até 2 MiB. Somente a seção principal será usada; sideboard e outras seções são ignorados.</p>
-        <form onSubmit={event => void submit(event)}>
-          <label htmlFor="deck-file">Arquivo .cod</label>
-          <div className="upload-controls">
-            <button type="button" className="secondary" disabled={library.busy} onClick={() => fileInput.current?.click()}>Selecionar arquivo</button>
-            <span className="deck-filename">{file?.name ?? 'Nenhum arquivo selecionado'}</span>
-            <button type="submit" disabled={!file || library.loading || library.busy}>{library.busy ? 'Salvando…' : 'Importar deck'}</button>
-          </div>
-          <input ref={fileInput} id="deck-file" type="file" accept=".cod" disabled={library.busy} onChange={event => setFile(event.target.files?.[0] ?? null)} />
-        </form></div>
-      </details>
       {library.error && <p role="alert" className="error">{library.error}</p>}
       {!library.loading && library.decks.length > 0 && <div className="saved-deck-grid" aria-label="Decks salvos"><label className="library-search"><span className="sr-only">Buscar deck</span><input placeholder="Buscar deck" value={libraryQuery} onChange={event => setLibraryQuery(event.target.value)} /></label>{library.decks.filter(deck => deck.name.toLowerCase().includes(libraryQuery.toLowerCase())).map(deck => <button key={deck.id} type="button" className="saved-deck-card secondary" aria-pressed={library.selected === deck.id} onClick={() => { inspection.close(); library.setSelected(deck.id); }}>
           <span className="deck-emblem" aria-hidden="true">{deck.cards.find(card => card.available) ? <img src={deckApi.imageURL(deck.commander || deck.cards.find(card => card.available)!.name)} alt="" /> : "♧"}</span>
@@ -65,6 +64,19 @@ export function DeckLibrary({ library }: Props) {
           <span aria-hidden="true">→</span>
         </button>)}</div>}
     </div>
+    <dialog ref={importDialog} className="import-card import-dialog" aria-labelledby="import-dialog-title" onCancel={event => { event.preventDefault(); setImportOpen(false); }} onClose={() => setImportOpen(false)} onClick={event => { if (event.target === event.currentTarget) setImportOpen(false); }}>
+      <div className="import-dialog-header"><div><p className="eyebrow">BIBLIOTECA</p><h3 id="import-dialog-title">Importar deck</h3></div><button type="button" className="secondary" aria-label="Fechar importação" onClick={() => setImportOpen(false)}>Fechar</button></div>
+      <div className="import-content"><p>Arquivo .cod de até 2 MiB. Somente a seção principal será usada; sideboard e outras seções são ignorados.</p>
+      <form onSubmit={event => void submit(event)}>
+        <label htmlFor="deck-file">Arquivo .cod</label>
+        <div className="upload-controls">
+          <button type="button" className="secondary" disabled={library.busy} onClick={() => fileInput.current?.click()}>Selecionar arquivo</button>
+          <span className="deck-filename">{file?.name ?? 'Nenhum arquivo selecionado'}</span>
+          <button type="submit" disabled={!file || library.loading || library.busy}>{library.busy ? 'Salvando…' : 'Importar deck'}</button>
+        </div>
+        <input ref={fileInput} id="deck-file" type="file" accept=".cod" disabled={library.busy} onChange={event => setFile(event.target.files?.[0] ?? null)} />
+      </form></div>
+    </dialog>
     {deleting && <DeleteDeckConfirmation name={deleting.name} busy={library.busy} error={library.error} onConfirm={() => library.remove(deleting.id)} onClose={() => setDeleting(null)} />}
     {library.loading ? <p role="status" className="deck-library-main">Carregando decks…</p> : library.decks.length === 0 ? <div className="empty-decks deck-library-main"><h3>Sua biblioteca começa aqui.</h3><p>Nenhum deck salvo. Importe seu primeiro arquivo.</p></div> : <div className="library-workspace">
       <div className="deck-picker">
@@ -77,7 +89,7 @@ export function DeckLibrary({ library }: Props) {
       {chosen ? <article className="deck-detail">
         <div className="deck-detail-header">
           <div className="deck-hero-title">{chosen.commander && <img className="deck-commander-image" src={deckApi.imageURL(chosen.commander)} alt={`Comandante ${chosen.commander}`} />}<div><p className="eyebrow">DECK SELECIONADO</p><h3>{chosen.name}</h3><p>{cardCount} cartas · {chosen.cards.length} nomes</p></div></div>
-          <button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => { inspection.close(); setDeleting({ id: chosen.id, name: chosen.name }); }}>Excluir deck</button>
+          <div className="deck-detail-actions"><button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => { inspection.close(); setDeleting({ id: chosen.id, name: chosen.name }); }}>Excluir deck</button><button type="button" className="secondary" onClick={() => setCurveOpen(true)}>Ver curva de mana</button></div>
         </div>
         <div className="deck-columns">
           <section className="deck-preview" aria-label="Preview de carta">
@@ -88,7 +100,6 @@ export function DeckLibrary({ library }: Props) {
               {!inspection.imageFailed && <img src={inspection.imageURL} alt={`Imagem ampliada de ${inspection.card.name}`} onError={inspection.reportImageFailure} />}
               {inspection.imageFailed && <p role="status">A imagem não está disponível agora. O texto da carta continua acessível.</p>}
             </> : <><span className="eyebrow">PREVIEW</span><h4>Conheça cada carta.</h4><p>Selecione uma carta na lista para ver o texto e a imagem aqui.</p></>}
-            <DeckSummary deck={chosen} />
           </section>
           <section className="deck-card-list" aria-label={`Cartas de ${chosen.name}`}>
             <div className="card-list-heading"><h4>Lista de cartas</h4><span>{chosen.cards.length} nomes</span></div>
@@ -120,5 +131,9 @@ export function DeckLibrary({ library }: Props) {
         </div>
       </article> : <div className="empty-decks"><h3>Escolha um deck para consultar.</h3><p>Os detalhes e as cartas aparecem aqui.</p></div>}
     </div>}
+    {chosen && <dialog ref={curveDialog} className="mana-curve-dialog" aria-labelledby="mana-curve-title" onCancel={event => { event.preventDefault(); setCurveOpen(false); }} onClose={() => setCurveOpen(false)} onClick={event => { if (event.target === event.currentTarget) setCurveOpen(false); }}>
+      <div className="mana-curve-header"><div><p className="eyebrow">ANÁLISE DO DECK</p><h3 id="mana-curve-title">Curva de mana — {chosen.name}</h3></div><button type="button" className="secondary" aria-label="Fechar curva de mana" onClick={() => setCurveOpen(false)}>Fechar</button></div>
+      <DeckSummary deck={chosen} />
+    </dialog>}
   </section>;
 }
