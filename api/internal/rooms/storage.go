@@ -47,6 +47,8 @@ type participantState struct {
 	Ready  bool   `json:"ready"`
 }
 type roomState struct {
+	Dice               []PreparationRoll  `json:"dice,omitempty"`
+	Confirmed          map[int64]string   `json:"confirmed,omitempty"`
 	CommanderToCommand *bool              `json:"commanderToCommand,omitempty"`
 	DrawOpeningHand    *bool              `json:"drawOpeningHand,omitempty"`
 	ID                 int64              `json:"id"`
@@ -138,6 +140,7 @@ type playerState struct {
 	ConsultationFrom string      `json:"consultationFrom,omitempty"`
 }
 type matchState struct {
+	PendingOrder   bool          `json:"pendingOrder,omitempty"`
 	Finished       bool          `json:"finished,omitempty"`
 	FinishVotes    []int64       `json:"finishVotes,omitempty"`
 	RoomID         int64         `json:"roomId"`
@@ -713,11 +716,17 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 	if e != nil {
 		return Match{}, e
 	}
+	return s.initializeMatch(ctx, tx, r, u, order, life)
+}
+
+func (s *Service) initializeMatch(ctx context.Context, tx *sql.Tx, r roomState, u auth.User, order []Turn, life int) (Match, error) {
+	id := r.ID
 	mode := r.MulliganMode
 	if mode == "" {
 		mode = "standard"
 	}
 	m := matchState{RoomID: id, InitialLife: life, TurnOrder: order, MulliganMode: mode, MulliganOpen: true, Players: make([]playerState, 0, len(r.Participants))}
+	m.PendingOrder = order == nil
 	for _, p := range r.Participants {
 		cards, e := deckCards(ctx, tx, p.DeckID, p.ID)
 		if e != nil {
@@ -779,6 +788,9 @@ func (s *Service) start(ctx context.Context, id int64, u auth.User) (Match, erro
 		return Match{}, e
 	}
 	r.Status = "started"
+	if m.PendingOrder {
+		r.Status = "determining_order"
+	}
 	if e = save(ctx, tx, r, u.ID, "started"); e != nil {
 		return Match{}, e
 	}
@@ -800,6 +812,9 @@ func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, erro
 	var m matchState
 	if e = json.Unmarshal(b, &m); e != nil {
 		return Match{}, e
+	}
+	if m.PendingOrder {
+		return Match{}, sql.ErrNoRows
 	}
 	if playerByID(&m, u.ID) == nil {
 		return Match{}, errNotParticipant

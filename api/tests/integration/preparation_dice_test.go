@@ -1,0 +1,90 @@
+package integration_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"testing"
+)
+
+func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
+	e := newEnvironment(t)
+	for _, name := range []string{"ana", "bia", "fora"} {
+		e.mustCreate(name, name, "senha-da-sala")
+	}
+	e.rolls = "7,17,17,9"
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	bia := sessionCookie(t, e.login("bia", "senha-da-sala"))
+	outsider := sessionCookie(t, e.login("fora", "senha-da-sala"))
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := []int64{}
+	for _, cookie := range []*http.Cookie{ana, bia} {
+		result := e.uploadDeck(cookie, deck)
+		requireStatus(t, result, 201)
+		var payload struct{ Deck struct{ ID int64 } }
+		if err = json.Unmarshal(result.body, &payload); err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, payload.Deck.ID)
+	}
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, created).ID)
+	requireStatus(t, e.request("POST", path+"/participants", "{}", bia, nil), 200)
+	action := func(cookie *http.Cookie, n int, kind, rollID string) response {
+		return e.request("POST", path+"/preparation/actions", fmt.Sprintf(`{"intentId":"00000000-0000-4000-8000-%012d","kind":%q,"rollId":%q}`, n, kind, rollID), cookie, nil)
+	}
+	requireStatus(t, e.request("GET", path+"/preparation", "", outsider, nil), 404)
+	requireStatus(t, action(outsider, 1, "roll", ""), 404)
+	requireStatus(t, action(ana, 1, "roll", ""), 200)
+	requireStatus(t, action(ana, 1, "roll", ""), 200)
+	state := e.request("GET", path+"/preparation", "", bia, nil)
+	if bytes.Count(state.body, []byte(`"value":7`)) != 1 {
+		t.Fatalf("rolagem duplicada: %s", state.body)
+	}
+	for i, cookie := range []*http.Cookie{ana, bia} {
+		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, ids[i]), cookie, nil), 200)
+	}
+	requireStatus(t, e.request("POST", path+"/preparation/start", "{}", bia, nil), 403)
+	requireStatus(t, e.request("POST", path+"/preparation/start", "{}", ana, nil), 200)
+	requireStatus(t, e.request("GET", path+"/match", "", ana, nil), 404)
+	requireStatus(t, action(ana, 2, "roll", ""), 200)
+	requireStatus(t, action(ana, 3, "confirm", "00000000-0000-4000-8000-000000000002"), 200)
+	requireStatus(t, action(bia, 4, "roll", ""), 200)
+	requireStatus(t, action(bia, 5, "confirm", "00000000-0000-4000-8000-000000000004"), 409)
+	requireStatus(t, action(ana, 6, "roll", ""), 409)
+	e.stop()
+	e.rolls = "9"
+	e.start(false)
+	recovered := e.request("GET", path+"/preparation", "", bia, nil)
+	if !bytes.Contains(recovered.body, []byte(`"confirmed":{`)) || !bytes.Contains(recovered.body, []byte(`"value":17`)) {
+		t.Fatalf("perdeu rolagens: %s", recovered.body)
+	}
+	requireStatus(t, action(bia, 7, "roll", ""), 200)
+	requireStatus(t, action(bia, 8, "confirm", "00000000-0000-4000-8000-000000000007"), 200)
+	requireStatus(t, action(bia, 8, "confirm", "00000000-0000-4000-8000-000000000007"), 200)
+	game := e.request("GET", path+"/match", "", ana, nil)
+	requireStatus(t, game, 200)
+	var payload struct {
+		Match struct{ TurnOrder []struct{ Roll int } }
+	}
+	if err = json.Unmarshal(game.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Match.TurnOrder) != 2 || payload.Match.TurnOrder[0].Roll != 17 || payload.Match.TurnOrder[1].Roll != 9 {
+		t.Fatalf("ordem incorreta: %s", game.body)
+	}
+	e.stop()
+	e.start(false)
+	again := e.request("GET", path+"/match", "", ana, nil)
+	requireStatus(t, again, 200)
+	if !bytes.Equal(game.body, again.body) {
+		t.Fatal("retomada alterou a partida")
+	}
+}

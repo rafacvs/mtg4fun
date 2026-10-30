@@ -85,7 +85,7 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
           ? <button className="secondary preparation-ready-action" disabled={rooms.busy} onClick={() => void rooms.unready(room.id)}>Desfazer prontidão</button>
           : <button className="preparation-ready-action" disabled={rooms.busy || !deckId} onClick={() => void rooms.ready(room.id)}>Estou pronto <span aria-hidden="true">→</span></button>}
         <div className="preparation-start"><p id="room-waiting" role="status">{waiting.length ? `Ainda falta: ${waiting.map(value => value.name).join(', ')}.` : 'Todos prontos para começar.'}</p>
-          {room.creatorId === userId ? <button className="secondary" disabled={rooms.busy || settingsPending || waiting.length > 0} aria-describedby="room-waiting" onClick={() => void rooms.start(room.id)}>Iniciar partida <span aria-hidden="true">→</span></button> : <small>O criador da mesa inicia a partida.</small>}
+          {room.creatorId === userId ? <button className="secondary" disabled={rooms.busy || settingsPending || waiting.length > 0} aria-describedby="room-waiting" onClick={() => void rooms.start(room.id)}>Iniciar partida <span aria-hidden="true">→</span></button> : <small>Aguardando {room.participants.find(player => player.id === room.creatorId)?.name} iniciar.</small>}
         </div>
         {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
       </aside>

@@ -1,0 +1,367 @@
+.dice-surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.preparation-arena {
+  position: relative;
+}
+.dice-register {
+  padding: 20px;
+  border: 1px solid #806a3b;
+  border-radius: 6px;
+  background: #0b1111ee;
+  color: #e8deca;
+  min-width: 0;
+}
+.dice-register h3 {
+  font:
+    small-caps 1.4rem Georgia,
+    serif;
+  margin: 0 0 18px;
+}
+.dice-register h3 small {
+  float: right;
+  font: 0.65rem sans-serif;
+  padding: 6px;
+  color: #d7bc7d;
+  border: 1px solid #806a3b;
+}
+.dice-register ol {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  height: 195px;
+  overflow: auto;
+}
+.dice-register li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid #bba36b22;
+  font-size: 0.8rem;
+}
+.dice-register li.is-counting {
+  border: 1px solid #bfa05a66;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+.dice-register small {
+  display: block;
+  font-size: 0.68rem;
+  color: #a6a496;
+  margin-top: 4px;
+}
+.dice-register li strong {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 36px;
+  border: 1px solid currentColor;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background: #a99b4d1a;
+  font: bold 1.2rem Georgia;
+}
+.dice-register button {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 44px;
+}
+.preparation-controls > .dice-register {
+  margin: 18px -18px -18px;
+  border-radius: 0 0 6px 6px;
+}
+.room-preparation .preparation-table {
+  background:
+    linear-gradient(#18241cbb, #07100ae6),
+    url("../../assets/theme/mat-forest.jpg") center/cover;
+}
+@media (min-width: 801px) {
+  .preparation-arena {
+    height: 490px;
+    margin: 0;
+  }
+  .preparation-oval {
+    left: 17%;
+    width: 66%;
+    top: 30%;
+    height: 44%;
+    border: 2px solid #b5914d;
+    box-shadow:
+      0 0 0 3px #281b0d,
+      0 0 0 7px #684525,
+      0 0 0 9px #b08a45,
+      0 6px 0 10px #30230f,
+      0 12px 0 10px #70572f,
+      0 20px 22px #000c,
+      inset 0 0 22px #0009;
+  }
+  .preparation-pile,
+  .preparation-oval-center {
+    display: none;
+  }
+  .room-preparation .preparation-seat {
+    width: 190px;
+    min-height: 78px;
+    z-index: 4;
+    padding: 8px;
+  }
+  .room-preparation .preparation-card-back {
+    width: 44px;
+    height: 62px;
+  }
+  .preparation-seat-copy strong {
+    font-size: 0.85rem;
+  }
+  .preparation-seat-copy small {
+    font-size: 0.7rem;
+  }
+  .seat-position-5 {
+    top: 36%;
+    left: 0;
+  }
+  .seat-position-1 {
+    top: 36%;
+    right: 0;
+  }
+  .preparation-selected-deck {
+    height: 210px;
+  }
+}
+.room-screen > .order-preparation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+}
+.order-main,
+.order-sidebar {
+  min-width: 0;
+}
+.order-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.order-table {
+  padding: 22px;
+  border: 1px solid #947b43;
+  border-radius: 8px;
+  background:
+    linear-gradient(#273a2b88, #09100ecc),
+    url("../../assets/theme/mat-forest.jpg") center/cover;
+  box-shadow: inset 0 0 0 4px #101710;
+}
+.order-table header {
+  position: relative;
+}
+.order-table h2 {
+  font: small-caps 2rem Georgia;
+  margin: 0;
+}
+.order-table header > span {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #c9bb95;
+}
+.order-arena {
+  position: relative;
+  height: 510px;
+}
+.order-felt {
+  position: absolute;
+  left: 17%;
+  top: 27%;
+  width: 66%;
+  height: 48%;
+  border: 2px solid #b5914d;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse, #d0b95e33, transparent),
+    url("../../assets/theme/mat-forest.jpg") center/cover;
+  box-shadow:
+    0 0 0 3px #281b0d,
+    0 0 0 7px #684525,
+    0 0 0 9px #b08a45,
+    0 6px 0 10px #30230f,
+    0 12px 0 10px #70572f,
+    0 20px 22px #000b,
+    inset 0 0 25px #000b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #edd18a;
+}
+.order-felt > span {
+  font-size: 5rem;
+  opacity: 0.35;
+}
+.order-felt strong {
+  font: small-caps 1.7rem Georgia;
+  text-align: center;
+}
+.order-seat {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 210px;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid;
+  border-radius: 6px;
+  background: #0c1111ee;
+  z-index: 4;
+}
+.order-seat img {
+  width: 44px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.order-seat small,
+.order-seat span {
+  display: block;
+  font-size: 0.7rem;
+  margin-top: 5px;
+  color: #b7b3a4;
+}
+.order-seat span {
+  color: #dbc27e;
+}
+.order-seat strong {
+  margin-left: auto;
+  color: #f1cf7d;
+  font: 1.4rem Georgia;
+}
+.order-seat.own {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.order-seat.other-0 {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.order-seat.other-1 {
+  left: 0;
+  top: 40%;
+  width: 140px;
+  flex-wrap: wrap;
+}
+.order-seat.other-2 {
+  right: 0;
+  top: 40%;
+  width: 140px;
+  flex-wrap: wrap;
+}
+.order-seat.other-3 {
+  left: 0;
+  top: 12%;
+  width: 140px;
+}
+.order-seat.other-4 {
+  right: 0;
+  top: 12%;
+  width: 140px;
+}
+.order-table footer {
+  padding: 16px;
+  margin-top: 20px;
+  border: 1px solid #8c744044;
+  border-radius: 4px;
+  background: #090f0ddd;
+  font-size: 0.8rem;
+}
+.order-ranking ol {
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  flex-wrap: wrap;
+}
+.order-ranking li {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 130px;
+  padding: 14px;
+  border: 1px solid #9d844c;
+  border-radius: 5px;
+  background: #101713;
+}
+.order-ranking .provisional {
+  border-style: dashed;
+}
+.order-ranking strong {
+  font: 1.8rem Georgia;
+  color: #d7ba70;
+}
+.order-ranking small {
+  display: block;
+  color: #aaa;
+  font-size: 0.7rem;
+  margin-top: 5px;
+}
+.order-preparation .own-roll {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  background: radial-gradient(ellipse, #9a8b4244, transparent);
+  font: 2.2rem Georgia;
+  color: #efcb75;
+  text-align: center;
+}
+@media (max-width: 800px) {
+  .room-screen > .order-preparation {
+    grid-template-columns: 1fr;
+    width: calc(100% - 24px);
+  }
+  .order-table {
+    padding: 12px;
+  }
+  .order-arena {
+    height: 430px;
+  }
+  .order-seat {
+    width: 170px;
+    font-size: 0.8rem;
+  }
+  .order-seat.other-1,
+  .order-seat.other-2 {
+    width: 105px;
+    top: 35%;
+  }
+  .order-seat.other-3,
+  .order-seat.other-4 {
+    width: 105px;
+    top: 12%;
+  }
+  .order-seat img {
+    width: 30px;
+    height: 42px;
+  }
+  .order-seat.other-1 img,
+  .order-seat.other-2 img {
+    display: none;
+  }
+  .order-felt {
+    left: 12%;
+    width: 76%;
+    height: 37%;
+    top: 31%;
+  }
+  .dice-register {
+    padding: 14px;
+  }
+  .order-sidebar {
+    gap: 12px;
+  }
+}

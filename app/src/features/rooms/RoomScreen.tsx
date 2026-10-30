@@ -4,6 +4,7 @@ import { MatchBoard } from './MatchBoard';
 import { useRooms } from './useRooms';
 import { roomsApi } from './roomsApi';
 import { RoomPreparation } from './RoomPreparation';
+import { PreparationDice } from './PreparationDice';
 
 type Props = { roomId: number; userId: number; decks: ReturnType<typeof useDecks> };
 
@@ -23,8 +24,7 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
     {room.status === 'preparing' && <button disabled={rooms.busy || room.vacancies === 0} onClick={() => void rooms.join(roomId)}>Entrar na sala</button>}
     {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
   </section>;
-  if (room.status === 'started') return <MatchBoard roomId={roomId} />;
-  return <RoomPreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} />;
+  return <PreparationDice room={room} userId={userId} decks={decks} preparation={<RoomPreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} />} match={<MatchBoard roomId={roomId} />} />;
 }
 
 function MissingRoom({ roomId }: { roomId: number }) {
