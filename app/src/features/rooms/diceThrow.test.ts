@@ -222,3 +222,75 @@ test("o tiro continua ricocheteando depois que o clique já parou", () => {
   for (const seed of seeds)
     assert.ok(seconds(8, seed) > seconds(4, seed) * 1.8, `semente ${seed}`);
 });
+
+/** Pulos do dado até parar e a maior altura que ele alcança. */
+const flight = (power: number | undefined, seed: number, fromAngle = 0) => {
+  const engine = createDiceEngine(null, { table });
+  let landed = false;
+  engine.toss({
+    color: "#6cb4f5",
+    value: 12,
+    seed,
+    power,
+    fromAngle,
+    onLand: () => {
+      landed = true;
+    },
+  });
+  let hops = 0,
+    peak = 0,
+    falling = false,
+    highestOnScreen = Infinity;
+  for (let step = 0; step < 3000 && !landed; step++) {
+    engine.step(1 / 120);
+    const [die] = engine.snapshot();
+    if (falling && die.v[2] > 0) hops++;
+    falling = die.v[2] < 0;
+    peak = Math.max(peak, die.p[2]);
+    const cameraTilt = Math.sqrt(1 - table.tilt * table.tilt);
+    highestOnScreen = Math.min(
+      highestOnScreen,
+      table.cy + die.p[1] * table.tilt - die.p[2] * cameraTilt,
+    );
+  }
+  engine.destroy();
+  return { hops, peak, highestOnScreen };
+};
+
+test("o clique quica à vista e não só escorrega", () => {
+  for (const seed of seeds) {
+    const { hops, peak } = flight(undefined, seed);
+    assert.ok(hops >= 3, `semente ${seed}: ${hops} pulos`);
+    assert.ok(peak > 100, `semente ${seed}: altura ${peak}`);
+  }
+});
+
+test("quanto maior a força, mais o dado pula", () => {
+  const hops = [1, 2, 3, 4, 5, 6, 7, 8].map((power) =>
+    average(seeds.map((seed) => flight(power, seed).hops)),
+  );
+  for (let i = 1; i < hops.length; i++)
+    assert.ok(hops[i] > hops[i - 1], hops.join(", "));
+  assert.ok(hops[7] > hops[0] * 5, hops.join(", "));
+});
+
+test("forças fracas também pulam, sem chegar à altura do clique", () => {
+  for (const seed of seeds) {
+    const weak = flight(1, seed);
+    assert.ok(weak.hops >= 1, `semente ${seed}`);
+    assert.ok(weak.peak < flight(4, seed).peak, `semente ${seed}`);
+  }
+});
+
+test("o pulo mais alto continua dentro do canvas", () => {
+  for (let power = 1; power <= 8; power++)
+    for (const [fromAngle, seed] of [
+      [0, 1],
+      [Math.PI, 17],
+      [2.2, 909],
+    ])
+      assert.ok(
+        flight(power, seed, fromAngle).highestOnScreen > 0,
+        `força ${power}, ângulo ${fromAngle}`,
+      );
+});

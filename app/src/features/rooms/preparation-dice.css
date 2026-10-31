@@ -4,6 +4,11 @@
   pointer-events: none;
   z-index: 3;
 }
+/* folga acima da mesa para os pulos altos passarem por cima do cabeçalho */
+.preparation-arena > .dice-surface,
+.order-arena > .dice-surface {
+  top: -110px;
+}
 .dice-roll-button {
   touch-action: none;
   user-select: none;

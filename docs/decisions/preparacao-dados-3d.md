@@ -178,3 +178,18 @@ passaram. A suíte focada de navegador cobre a ida e volta da carga no botão re
 com as passadas ficando mais curtas, e a medição do lançamento no canvas. O
 resultado desta execução está na descrição do PR. A regressão completa não foi
 executada.
+
+## Quiques mais altos em 30/10/2026
+
+O usuário achou os dados realistas demais e pediu algo mais gamificado, com mais
+pulos e diferença de força mais visível ao segurar o botão. O pedido não muda o
+contrato nem a regra de forças 1 a 8 na mesa e 9 e 10 para fora.
+
+Escolhas de implementação, não pedidas literalmente: gravidade menor, retorno do
+quique que cresce com a força, velocidade na mesa e impacto no aro convertidos em
+salto. O lançamento forte continua saindo reto, como pedido antes, e passa a saltar
+depois do primeiro contato. A altura é limitada para o dado continuar no canvas, que
+no desktop sobe 110 px sobre o cabeçalho. No celular, a mesa recorta o canvas, então
+os pulos são mais baixos. Com a física nova, o tiro de força 8 passou de cerca de 5 s
+para cerca de 7,5 s.
+

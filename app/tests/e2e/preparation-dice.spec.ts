@@ -443,6 +443,7 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
   await expect(button).toBeVisible();
   const box = (await button.boundingBox())!;
 
+  const HOP_PIXELS = 16;
   /** Lança pelo botão real e mede o dado desenhado no canvas até ele parar. */
   const measure = async (power: number) => {
     await page.waitForFunction(() => {
@@ -461,7 +462,7 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
       const context = canvas.getContext("2d")!;
       const count = () => document.querySelectorAll(".dice-register li").length;
       const before = count();
-      const samples: { t: number; x: number; y: number }[] = [];
+      const samples: { t: number; x: number; y: number; top: number }[] = [];
       const run = window as unknown as {
         diceSamples: typeof samples;
         diceDone: boolean;
@@ -478,19 +479,22 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
         // Só o corpo do dado é opaco: sombra, rastro e impacto são translúcidos.
         let total = 0,
           sumX = 0,
-          sumY = 0;
+          sumY = 0,
+          top = height;
         for (let y = 0; y < height; y += 2)
           for (let x = 0; x < width; x += 2)
             if (data[(y * width + x) * 4 + 3] > 250) {
               total++;
               sumX += x;
               sumY += y;
+              top = Math.min(top, y);
             }
         if (total)
           samples.push({
             t: performance.now(),
             x: sumX / total,
             y: sumY / total,
+            top,
           });
         if (count() > before || (samples.length > 3 && !total)) {
           run.diceDone = true;
@@ -529,8 +533,11 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
     );
     const samples = await page.evaluate(
       () =>
-        (window as unknown as { diceSamples: { t: number; x: number; y: number }[] })
-          .diceSamples,
+        (
+          window as unknown as {
+            diceSamples: { t: number; x: number; y: number; top: number }[];
+          }
+        ).diceSamples,
     );
     let path = 0,
       burst = 0;
@@ -543,7 +550,29 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
       if (samples[i].t - samples[0].t <= 500) burst += step;
     }
     const seconds = (samples.at(-1)!.t - samples[0].t) / 1000;
-    return { path, burst, seconds };
+    // Um pulo aparece na tela como subida seguida de descida do dado.
+    let hops = 0,
+      valley = samples[0].y,
+      peak = samples[0].y,
+      rising = false;
+    for (const { y } of samples) {
+      if (rising) {
+        peak = Math.min(peak, y);
+        if (y > peak + HOP_PIXELS) {
+          hops++;
+          rising = false;
+          valley = y;
+        }
+      } else {
+        valley = Math.max(valley, y);
+        if (y < valley - HOP_PIXELS) {
+          rising = true;
+          peak = y;
+        }
+      }
+    }
+    const top = Math.min(...samples.map((sample) => sample.top));
+    return { path, burst, seconds, hops, top };
   };
 
   const click = await measure(0);
@@ -560,6 +589,11 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
   expect(shot.burst).toBeGreaterThan(click.burst * 2);
   expect(shot.seconds).toBeGreaterThan(click.seconds * 1.8);
   expect(lost.burst).toBeGreaterThan(click.burst * 1.5);
+  // O clique já pula à vista; o tiro pula muito mais, sem sair do alto do canvas.
+  expect(click.hops).toBeGreaterThanOrEqual(2);
+  expect(shot.hops).toBeGreaterThan(click.hops * 2);
+  expect(shot.top).toBeGreaterThan(0);
+  expect(click.top).toBeGreaterThan(0);
   await expect(page.locator(".dice-register li")).toHaveCount(3);
 });
 
