@@ -282,3 +282,17 @@ distância no primeiro meio segundo foi de 88 px no clique, 568 px na força 8 e
 na força 10. A sensação depende de avaliação do usuário. A regressão completa não foi
 executada.
 
+## Feltro que devolve o pulo em 30/10/2026
+
+O usuário gostou da potência e pediu o chão com física para empurrar os dados para
+cima, para quicarem mais. Escolhas de implementação, não pedidas literalmente: retorno
+do quique maior em todas as forças, de 0,42 na força 1 a 0,83 nas forças 8 a 10, e mais
+velocidade convertida em salto (0,22 para 0,32). As velocidades de 1 a 4 caíram um
+pouco para o verde e o clique continuarem caindo nos mesmos lugares.
+
+Verificação desta revisão: testes unitários, typecheck e `preparation-dice.spec.ts`
+passaram nas três telas com API e MySQL isolados. Em uma execução no desktop, o clique
+levou 2,6 s com 3 pulos visíveis, a força 8 6,1 s com 4 e a força 10 6,8 s com 6, sem
+sair do canvas. A sensação depende de avaliação do usuário. A regressão completa não
+foi executada.
+

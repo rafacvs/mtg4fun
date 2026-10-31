@@ -204,21 +204,21 @@ const MAX_AIM_DEVIATION = Math.PI / 6;
  * deflect é o desvio máximo do ricochete, em radianos.
  */
 const FORCES = [
-  { speed: 170, apex: 0.1, bounce: 0.35, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 182, apex: 0.18, bounce: 0.42, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 192, apex: 0.3, bounce: 0.52, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 200, apex: 0.45, bounce: 0.62, drag: 1.9, rim: 0.72, deflect: 0.1 },
-  { speed: 340, apex: 0.5, bounce: 0.66, drag: 1.7, rim: 0.75, deflect: 0.2 },
-  { speed: 700, apex: 0.55, bounce: 0.68, drag: 1.2, rim: 0.78, deflect: 0.4 },
-  { speed: 1150, apex: 0.6, bounce: 0.7, drag: 0.9, rim: 0.82, deflect: 0.5 },
-  { speed: 1650, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 2200, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 2800, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 155, apex: 0.1, bounce: 0.42, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 160, apex: 0.18, bounce: 0.52, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 165, apex: 0.3, bounce: 0.64, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 172, apex: 0.45, bounce: 0.74, drag: 1.9, rim: 0.72, deflect: 0.1 },
+  { speed: 340, apex: 0.5, bounce: 0.77, drag: 1.7, rim: 0.75, deflect: 0.2 },
+  { speed: 700, apex: 0.55, bounce: 0.79, drag: 1.2, rim: 0.78, deflect: 0.4 },
+  { speed: 1150, apex: 0.6, bounce: 0.81, drag: 0.9, rim: 0.82, deflect: 0.5 },
+  { speed: 1650, apex: 0.65, bounce: 0.83, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 2200, apex: 0.65, bounce: 0.83, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 2800, apex: 0.65, bounce: 0.83, drag: 0.7, rim: 0.85, deflect: 0.6 },
 ];
 /** altura de saída do dado, em raios do dado */
 const START_HEIGHT = 1.3;
 /** o quanto da velocidade na mesa e do impacto no aro vira salto */
-const FLOOR_SKIP = 0.22;
+const FLOOR_SKIP = 0.32;
 /** caindo mais devagar que isso, o dado para de quicar e rola */
 const FLOOR_REST_SPEED = 80;
 const RIM_KICK = 0.25;
