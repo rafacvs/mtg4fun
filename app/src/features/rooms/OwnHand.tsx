@@ -18,14 +18,6 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
     ids.splice(Math.max(0, index), 0, card.id);
     setOrder(ids);
   };
-  const swapWith = (card: Card, targetId: string) => {
-    const ids = ordered.map(item => item.id);
-    const sourceIndex = ids.indexOf(card.id);
-    const targetIndex = ids.indexOf(targetId);
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
-    [ids[sourceIndex], ids[targetIndex]] = [ids[targetIndex], ids[sourceIndex]];
-    setOrder(ids);
-  };
   return <section className={`table-zone zone-hand ${hoverZone === 'hand' ? 'drop-hover' : ''}`} aria-label="Mão" data-drop-zone="hand">
     <header><span>Mão · {count}</span></header>
     <div ref={row} className="zone-cards hand-selection-canvas" style={{ '--hand-count': ordered.length } as CSSProperties} tabIndex={0} aria-label="Cartas da mão" title="Arraste cartas para ordenar ou jogar; arraste no espaço vazio para selecionar várias" onPointerDown={event => {
@@ -49,9 +41,11 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
         gesture.onDragMove(card, x, y);
       }} onDragEnd={(card, x, y) => {
         const others = row.current ? [...row.current.querySelectorAll<HTMLElement>('[data-card-id]')].filter(node => node.dataset.cardId !== card.id) : [];
-        const target = others.find(node => { const rect = node.getBoundingClientRect(); return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom; });
-        if (target?.dataset.cardId) {
-          swapWith(card, target.dataset.cardId);
+        // Later cards are drawn on top, so the last match is the one under the pointer.
+        const target = others.filter(node => { const rect = node.getBoundingClientRect(); return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom; }).at(-1);
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          reorderAt(card, others.indexOf(target) + (x < rect.left + rect.width / 2 ? 0 : 1));
           gesture.onDragCancel();
           return;
         }
