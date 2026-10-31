@@ -580,7 +580,7 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
   expect(weakest.seconds).toBeLessThan(click.seconds);
   expect(shot.path).toBeGreaterThan(click.path * 3);
   expect(shot.burst).toBeGreaterThan(click.burst * 2);
-  expect(shot.seconds).toBeGreaterThan(click.seconds * 1.8);
+  expect(shot.seconds).toBeGreaterThan(click.seconds * 1.4);
   expect(strongest.burst).toBeGreaterThan(click.burst * 2);
   // O clique já pula à vista; o tiro sobe mais, sem sair do canvas. A contagem de
   // pulos por força fica no teste unitário: na tela, o avanço do dado esconde pulos.

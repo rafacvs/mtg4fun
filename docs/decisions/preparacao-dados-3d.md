@@ -296,3 +296,16 @@ levou 2,6 s com 3 pulos visíveis, a força 8 6,1 s com 4 e a força 10 6,8 s co
 sair do canvas. A sensação depende de avaliação do usuário. A regressão completa não
 foi executada.
 
+Depois de testar, o usuário pediu que os dados quicassem por mais tempo ainda. Escolhas
+de implementação, não pedidas literalmente: retorno do quique de 0,48 na força 1, 0,84
+no clique e 0,91 nas forças 8 a 10; o dado para de quicar abaixo de 55 px/s; a velocidade
+na mesa vira mais salto (0,45), limitado à altura do primeiro pulo, para o laranja seguir
+só um pouco mais alto que o clique. As velocidades de 1 a 4 caíram para 140 a 155 px/s,
+mantendo verde e clique nos mesmos lugares. A rolagem que vale, sempre um clique, leva
+de 3,2 a 3,7 s para entrar no registro. Como o clique ficou mais longo, a medição no
+canvas passou a exigir que o tiro dure 1,4 vez o clique, e não 1,8.
+
+Verificação: testes unitários, typecheck e `preparation-dice.spec.ts` passaram nas três
+telas com API e MySQL isolados, exceto pela margem acima, ajustada depois; a medição de
+desktop foi então repetida cinco vezes. A regressão completa não foi executada.
+
