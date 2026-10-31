@@ -197,30 +197,33 @@ const NORMAL_FORCE = 4;
 const MAX_AIM_DEVIATION = Math.PI / 6;
 /**
  * Um nível por linha (força 1–10). Fraco é um dado largado na frente do próprio
- * jogador, com pulinhos; forte sai reto e rente à mesa, fica saltando pelo feltro
- * e ricocheteando no aro, como um tiro. speed em px/s para uma mesa de raio 294;
+ * jogador, com pulinhos; forte sai rápido e para cima, fica saltando pelo feltro e
+ * o aro o joga para o alto de novo a cada batida. speed em px/s para uma mesa de raio 294;
  * lift é a velocidade para cima; height é a altura de saída; bounce é o quanto da
  * queda volta em cada quique; drag é o atrito no feltro; rim é o quanto da
  * velocidade sobra ao bater no aro; deflect é o desvio máximo do ricochete, em
  * radianos.
  */
 const FORCES = [
-  { speed: 60, lift: 260, height: 40, bounce: 0.5, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 100, lift: 340, height: 45, bounce: 0.54, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 150, lift: 420, height: 50, bounce: 0.58, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 210, lift: 520, height: 55, bounce: 0.62, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 420, lift: 560, height: 55, bounce: 0.66, drag: 1.7, rim: 0.55, deflect: 0.2 },
-  { speed: 1700, lift: 200, height: 55, bounce: 0.7, drag: 1.2, rim: 0.7, deflect: 0.4 },
-  { speed: 2800, lift: 150, height: 50, bounce: 0.72, drag: 0.9, rim: 0.78, deflect: 0.5 },
-  { speed: 4200, lift: 100, height: 45, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 5200, lift: 100, height: 40, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 6400, lift: 80, height: 40, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 60, lift: 300, height: 40, bounce: 0.5, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 100, lift: 380, height: 45, bounce: 0.54, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 150, lift: 460, height: 50, bounce: 0.58, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 210, lift: 540, height: 55, bounce: 0.62, drag: 1.9, rim: 0.72, deflect: 0.1 },
+  { speed: 420, lift: 600, height: 55, bounce: 0.66, drag: 1.7, rim: 0.75, deflect: 0.2 },
+  { speed: 1500, lift: 680, height: 55, bounce: 0.7, drag: 1.2, rim: 0.78, deflect: 0.4 },
+  { speed: 2500, lift: 760, height: 50, bounce: 0.72, drag: 0.9, rim: 0.82, deflect: 0.5 },
+  { speed: 3800, lift: 840, height: 45, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 5200, lift: 840, height: 40, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 6400, lift: 840, height: 40, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
 ];
 /** o quanto da velocidade na mesa e do impacto no aro vira salto */
 const FLOOR_SKIP = 0.22;
-const RIM_KICK = 0.3;
+const RIM_KICK = 0.6;
+/** o aro sempre joga para cima, mesmo em batida lenta; abaixo de RIM_KICK_MIN_HIT é só encostar */
+const RIM_KICK_MIN = 380;
+const RIM_KICK_MIN_HIT = 40;
 /** velocidade que sobra na mesa a cada quique */
-const BOUNCE_SLIDE = 0.86;
+const BOUNCE_SLIDE = 0.8;
 /** segundos que um ponto do rastro fica visível, e a velocidade em que ele aparece */
 const TRAIL_LIFE = 0.45;
 const TRAIL_MIN_SPEED = 500;
@@ -480,7 +483,11 @@ export function createDiceEngine(
               size: Math.min(1, vn / 2000),
               age: 0,
             });
-          d.v[2] = Math.max(d.v[2], Math.min(vn * RIM_KICK, maxLift(d.p[2])));
+          if (vn > RIM_KICK_MIN_HIT)
+            d.v[2] = Math.max(
+              d.v[2],
+              Math.min(Math.max(vn * RIM_KICK, RIM_KICK_MIN), maxLift(d.p[2])),
+            );
           d.w = d.w.map((x) => -x * 0.7 + (Math.random() - 0.5) * 16) as Vec3;
         }
       }

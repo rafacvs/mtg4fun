@@ -196,9 +196,36 @@ test("forças baixas caem na frente do jogador, mais perto quanto menor", () => 
     assert.ok(depths[i] < depths[i - 1], depths.join(", "));
 });
 
-test("forças altas saem retas, como um tiro", () => {
-  assert.ok(launch(10).lift < launch(4).lift / 2);
+test("forças altas saem muito mais rápidas e também para cima", () => {
+  assert.ok(launch(10).lift > 300);
   assert.ok(launch(10).speed > launch(4).speed * 5);
+});
+
+test("o aro joga o dado para cima sem acabar com o movimento", () => {
+  for (const power of [5, 6, 7, 8])
+    for (const seed of seeds) {
+      const engine = createDiceEngine(null, { table, restMs: 60000 });
+      engine.toss({ color: "#6cb4f5", value: 12, seed, power });
+      let hits = 0;
+      for (let step = 0; step < 3000 && hits < 3; step++) {
+        const [before] = engine.snapshot();
+        const speed = Math.hypot(before.v[0], before.v[1]);
+        const outward = before.p[0] * before.v[0] + before.p[1] * before.v[1];
+        engine.step(1 / 120);
+        const [after] = engine.snapshot();
+        const inward = after.p[0] * after.v[0] + after.p[1] * after.v[1];
+        if (outward <= 0 || inward >= 0 || speed < 100) continue;
+        hits++;
+        // perto do teto da tela a subida é menor, mas nunca volta a cair na batida
+        assert.ok(after.v[2] > 0, `força ${power}, semente ${seed}: ${after.v[2]}`);
+        assert.ok(
+          Math.hypot(after.v[0], after.v[1]) > speed * 0.35,
+          `força ${power}, semente ${seed}`,
+        );
+      }
+      assert.ok(hits > 0, `força ${power}, semente ${seed}: não bateu no aro`);
+      engine.destroy();
+    }
 });
 
 test("o tiro continua ricocheteando depois que o clique já parou", () => {

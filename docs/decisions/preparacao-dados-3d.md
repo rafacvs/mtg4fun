@@ -187,9 +187,21 @@ contrato nem a regra de forças 1 a 8 na mesa e 9 e 10 para fora.
 
 Escolhas de implementação, não pedidas literalmente: gravidade menor, retorno do
 quique que cresce com a força, velocidade na mesa e impacto no aro convertidos em
-salto. O lançamento forte continua saindo reto, como pedido antes, e passa a saltar
-depois do primeiro contato. A altura é limitada para o dado continuar no canvas, que
+salto. A altura é limitada para o dado continuar no canvas, que
 no desktop sobe 110 px sobre o cabeçalho. No celular, a mesa recorta o canvas, então
-os pulos são mais baixos. Com a física nova, o tiro de força 8 passou de cerca de 5 s
-para cerca de 7,5 s.
+os pulos são mais baixos.
+
+Ao testar, o usuário disse que os dados disparavam retos, sem subir, e que batiam na
+parede e paravam. Pediu que as paredes também os jogassem para cima, para os dados
+pularem na mesa e criarem expectativa. Isso substitui o “mais reto” das forças altas
+pedido na revisão anterior: todos os níveis saem para cima, e o aro devolve mais
+velocidade e sempre dá um salto a partir de uma batida mínima.
+
+Verificação desta revisão: testes unitários e typecheck do frontend passaram. A suíte
+de `preparation-dice.spec.ts` passou com API e MySQL isolados nas três telas; em uma
+execução no desktop, o clique levou 2,2 s com 2 pulos visíveis no canvas, e a força 8
+levou 9,9 s com 11, sem encostar no topo do canvas. Quatro cenários de
+`preparacao-mesa.spec.ts` e `preparacao-mobile.spec.ts` falham igualmente na `master`,
+sem esta mudança. A sensação do lançamento depende de avaliação do usuário. A regressão
+completa não foi executada.
 
