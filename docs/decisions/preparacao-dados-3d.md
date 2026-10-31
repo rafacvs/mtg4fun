@@ -159,3 +159,22 @@ toque real via CDP. Um cenário mede no canvas o dado lançado pelo botão real;
 uma execução, força 1 andou 24 px em 0,7 s, o clique 117 px em 1,6 s e a força 8
 1.611 px em 4,9 s. A sensação do lançamento depende de avaliação do usuário. A
 regressão completa não foi executada.
+
+## Mira e carga contínua em 30/10/2026
+
+Depois de aprovar a força na porta 8080, o usuário pediu dois ajustes: direção
+aleatória de até 30 graus para cada lado do reto, e carga mais rápida e infinita,
+indo do verde ao vermelho e voltando, cada vez mais rápido. O pedido substitui a
+subida única até a força 10 e os 400 ms por nível descritos acima.
+
+O desvio usa a semente da rolagem, então todos os clientes veem a mesma direção.
+Escolhas de implementação, não pedidas literalmente: o primeiro nível dura 220 ms
+(a força 10 chega em cerca de 4 s), cada passada encurta 20% e o limite é de 40 ms
+por nível, para que os níveis ainda possam ser vistos. A força lançada é a que
+estiver no botão ao soltar.
+
+Verificação desta revisão: testes unitários do frontend, typecheck e build
+passaram. A suíte focada de navegador cobre a ida e volta da carga no botão real,
+com as passadas ficando mais curtas, e a medição do lançamento no canvas. O
+resultado desta execução está na descrição do PR. A regressão completa não foi
+executada.

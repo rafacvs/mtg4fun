@@ -182,6 +182,17 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     };
     const background = () =>
       throwButton.evaluate((el) => getComputedStyle(el).backgroundColor);
+    // Cada nível dura pouco: a espera acompanha o botão quadro a quadro.
+    const waitForLevel = (level: number) =>
+      page.waitForFunction(
+        (wanted) =>
+          document
+            .querySelector(".dice-roll-button")
+            ?.getAttribute("aria-label")
+            ?.startsWith(`Força ${wanted} `),
+        level,
+        { polling: "raf", timeout: 8000 },
+      );
     const idleBackground = await background();
 
     // Até 2 segundos é o lançamento normal, igual a um clique.
@@ -200,9 +211,7 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
 
     // Força 1 a 8 cai na mesa, conta no registro e muda a cor do botão.
     await press();
-    await expect(
-      page.getByRole("button", { name: "Força 1 de 10", exact: true }),
-    ).toBeVisible({ timeout: 3000 });
+    await waitForLevel(1);
     await expect
       .poll(async () => {
         const [red, green, blue] = (await background())
@@ -211,13 +220,11 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
         return green > red && green > blue;
       })
       .toBe(true);
-    await expect(
-      page.getByRole("button", { name: /^Força [3-8] de 10$/ }),
-    ).toBeVisible({ timeout: 3000 });
+    await waitForLevel(5);
     const onTable = actionRequest();
     await release();
     const onTablePower = (await onTable).postDataJSON().power;
-    expect(onTablePower).toBeGreaterThanOrEqual(3);
+    expect(onTablePower).toBeGreaterThanOrEqual(5);
     expect(onTablePower).toBeLessThanOrEqual(8);
     await expect(page.locator(".dice-register li")).toHaveCount(3, {
       timeout: 15000,
@@ -240,14 +247,10 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
 
     // Forças 9 e 10 caem para fora: todos veem o dado, o registro não muda.
     await press();
-    await expect(
-      page.getByRole("button", { name: "Força 10 de 10: cai da mesa" }),
-    ).toBeVisible({ timeout: 7000 });
-    await expect.poll(background).toBe("rgb(194, 10, 10)");
-    await page.screenshot({ path: info.outputPath("forca-10.png") });
+    await waitForLevel(10);
     const lost = actionRequest();
     await release();
-    expect((await lost).postDataJSON().power).toBe(10);
+    expect((await lost).postDataJSON().power).toBeGreaterThanOrEqual(9);
     await expect
       .poll(async () => {
         const state = await (
@@ -359,6 +362,69 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
   } finally {
     await other.close();
   }
+});
+
+test("a carga vai e volta entre verde e vermelho, cada vez mais rápido", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "Gesto de mouse no desktop");
+  test.setTimeout(60000);
+  await page.request.post("/api/session", {
+    data: { login: "amigo", password: "senha-do-navegador" },
+  });
+  const { room } = await (
+    await page.request.post("/api/rooms", { data: roomBody({ seats: 2 }) })
+  ).json();
+  await page.goto(`/#/salas/${room.id}`);
+  const button = page.locator(".dice-roll-button");
+  await expect(button).toBeVisible();
+  const box = (await button.boundingBox())!;
+  await page.evaluate(() => {
+    const element = document.querySelector(".dice-roll-button")!;
+    const samples: { t: number; label: string; color: string }[] = [];
+    (window as unknown as { chargeSamples: typeof samples }).chargeSamples =
+      samples;
+    const frame = () => {
+      samples.push({
+        t: performance.now(),
+        label: element.getAttribute("aria-label") ?? "",
+        color: getComputedStyle(element).backgroundColor,
+      });
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(8000);
+  const samples = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          chargeSamples: { t: number; label: string; color: string }[];
+        }
+      ).chargeSamples,
+  );
+  const charging = samples.filter(({ label }) => label.startsWith("Força"));
+  const levelOf = (label: string) => Number(label.match(/Força (\d+)/)![1]);
+  const turns: number[] = [];
+  let seeking = 10;
+  for (const sample of charging)
+    if (levelOf(sample.label) === seeking) {
+      turns.push(sample.t);
+      seeking = seeking === 10 ? 1 : 10;
+    }
+  // Pelo menos três viradas: subiu, voltou e subiu de novo, sempre mais rápido.
+  expect(turns.length).toBeGreaterThanOrEqual(3);
+  const sweeps = turns.slice(1).map((t, index) => t - turns[index]);
+  expect(sweeps[1]).toBeLessThan(sweeps[0]);
+  const channels = samples.map(({ color }) =>
+    color.match(/[\d.]+/g)!.map(Number),
+  );
+  expect(channels.some(([r, g]) => g > 200 && g > r)).toBe(true);
+  expect(channels.some(([r, g]) => r > 170 && g < 40)).toBe(true);
+  // Soltar no meio da carga lança com a força que estava no botão.
+  await page.mouse.up();
 });
 
 test("segurar o botão muda o lançamento que aparece na mesa", async ({

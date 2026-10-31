@@ -1,13 +1,27 @@
 export const NORMAL_HOLD_MS = 2000;
-export const POWER_STEP_MS = 400;
 export const MAX_POWER = 10;
 export const FIRST_FALL_OFF_POWER = 9;
+const FIRST_STEP_MS = 220;
+const STEP_SPEEDUP = 0.8;
+const FASTEST_STEP_MS = 40;
+const STEPS_PER_SWEEP = MAX_POWER - 1;
 
-/** Até 2 s é o lançamento normal (0); depois, sobe um nível a cada 400 ms até 10. */
+/**
+ * Até 2 s é o lançamento normal (0). Depois, a força vai de 1 a 10 e volta de 10
+ * a 1 sem parar, com cada passada mais rápida que a anterior.
+ */
 export function powerFromHold(heldMs: number) {
   if (heldMs <= NORMAL_HOLD_MS) return 0;
-  const level = 1 + Math.floor((heldMs - NORMAL_HOLD_MS) / POWER_STEP_MS);
-  return Math.min(MAX_POWER, level);
+  let elapsed = heldMs - NORMAL_HOLD_MS;
+  let step = FIRST_STEP_MS;
+  let rising = true;
+  while (elapsed >= step * STEPS_PER_SWEEP) {
+    elapsed -= step * STEPS_PER_SWEEP;
+    step = Math.max(FASTEST_STEP_MS, step * STEP_SPEEDUP);
+    rising = !rising;
+  }
+  const moved = Math.floor(elapsed / step);
+  return rising ? 1 + moved : MAX_POWER - moved;
 }
 
 export function fallsOffTable(power: number) {

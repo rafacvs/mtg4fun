@@ -27,7 +27,7 @@ export function useDiceThrowGesture(throwDie: (power: number) => void) {
         clearInterval(timer.current);
         timer.current = setInterval(
           () => setPower(powerFromHold(performance.now() - start)),
-          50,
+          16,
         );
       },
       // O toque longo não gera click no celular: o lançamento sai ao soltar.

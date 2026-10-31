@@ -141,6 +141,36 @@ const landingDepth = (power: number | undefined, seed: number) => {
 const average = (values: number[]) =>
   values.reduce((sum, value) => sum + value, 0) / values.length;
 
+test("cada lançamento desvia para um lado, no máximo 30 graus do reto", () => {
+  const limit = Math.PI / 6 + 1e-9;
+  for (const [fromAngle, inward] of [
+    [0, [0, -1]],
+    [Math.PI, [0, 1]],
+    [Math.PI / 2, [-1, 0]],
+    [-Math.PI / 2, [1, 0]],
+  ] as [number, [number, number]][]) {
+    const deviations: number[] = [];
+    for (let i = 0; i < 300; i++) {
+      const engine = createDiceEngine(null, { table });
+      engine.toss({
+        color: "#6cb4f5",
+        // a semente real é o horário da rolagem em milissegundos
+        seed: 1730000000123 + i * 1537,
+        fromAngle,
+        power: (i % 10) + 1,
+      });
+      const [die] = engine.snapshot();
+      engine.destroy();
+      const forward = die.v[0] * inward[0] + die.v[1] * inward[1];
+      const sideways = die.v[0] * inward[1] - die.v[1] * inward[0];
+      deviations.push(Math.atan2(sideways, forward));
+    }
+    assert.ok(deviations.every((value) => Math.abs(value) <= limit));
+    assert.ok(Math.min(...deviations) < -Math.PI / 9);
+    assert.ok(Math.max(...deviations) > Math.PI / 9);
+  }
+});
+
 test("cada nível de força lança mais rápido", () => {
   for (let power = 2; power <= 10; power++)
     assert.ok(launch(power).speed > launch(power - 1).speed);

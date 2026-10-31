@@ -194,25 +194,26 @@ const VERTS: Vec3[] = RAW.map(nrm);
 
 // ---------------------------------------------------------------- força
 const NORMAL_FORCE = 4;
+const MAX_AIM_DEVIATION = Math.PI / 6;
 /**
  * Um nível por linha (força 1–10). Fraco é um dado largado na frente do próprio
  * jogador; forte sai reto e rente à mesa e fica ricocheteando no aro, como um
  * tiro. speed em px/s para uma mesa de raio 294; lift é a velocidade para cima;
- * height é a altura de saída; spread é o desvio da mira em relação ao centro,
- * em fração do raio; drag é o atrito no feltro; rim é o quanto da velocidade
- * sobra ao bater no aro; deflect é o desvio máximo do ricochete, em radianos.
+ * height é a altura de saída; drag é o atrito no feltro; rim é o quanto da
+ * velocidade sobra ao bater no aro; deflect é o desvio máximo do ricochete, em
+ * radianos.
  */
 const FORCES = [
-  { speed: 110, lift: 30, height: 40, spread: 0.3, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 180, lift: 60, height: 50, spread: 0.3, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 260, lift: 110, height: 65, spread: 0.3, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 360, lift: 200, height: 90, spread: 0.25, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 620, lift: 240, height: 85, spread: 0.25, drag: 1.7, rim: 0.55, deflect: 0.2 },
-  { speed: 1700, lift: 150, height: 70, spread: 0.2, drag: 1.2, rim: 0.7, deflect: 0.4 },
-  { speed: 2800, lift: 90, height: 55, spread: 0.15, drag: 0.9, rim: 0.78, deflect: 0.5 },
-  { speed: 4200, lift: 50, height: 45, spread: 0.1, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 5200, lift: 50, height: 40, spread: 0.1, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 6400, lift: 40, height: 40, spread: 0.05, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 110, lift: 30, height: 40, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 180, lift: 60, height: 50, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 260, lift: 110, height: 65, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 360, lift: 200, height: 90, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 620, lift: 240, height: 85, drag: 1.7, rim: 0.55, deflect: 0.2 },
+  { speed: 1700, lift: 150, height: 70, drag: 1.2, rim: 0.7, deflect: 0.4 },
+  { speed: 2800, lift: 90, height: 55, drag: 0.9, rim: 0.78, deflect: 0.5 },
+  { speed: 4200, lift: 50, height: 45, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 5200, lift: 50, height: 40, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 6400, lift: 40, height: 40, drag: 0.7, rim: 0.85, deflect: 0.6 },
 ];
 /** segundos que um ponto do rastro fica visível, e a velocidade em que ele aparece */
 const TRAIL_LIFE = 0.45;
@@ -318,16 +319,16 @@ export function createDiceEngine(
     const R = (a: number, b: number) => a + rand() * (b - a);
     const ang = o.fromAngle ?? 0;
     const force = o.power || (o.fallOff ? 9 : NORMAL_FORCE);
-    const { speed, lift, height, spread, drag, rim, deflect } =
-      FORCES[force - 1];
+    const { speed, lift, height, drag, rim, deflect } = FORCES[force - 1];
     const d0 = T.radius * 0.86;
     const p: Vec3 = [
       Math.sin(ang) * d0 + R(-40, 40),
       Math.cos(ang) * d0 + R(-40, 40),
       height * R(0.9, 1.1),
     ];
-    const tgt = [R(-spread, spread) * T.radius, R(-spread, spread) * T.radius];
-    const dir = nrm([tgt[0] - p[0], tgt[1] - p[1], 0]);
+    // reto é do lugar do jogador para o centro; cada lançamento desvia para um lado
+    const aim = ang + R(-MAX_AIM_DEVIATION, MAX_AIM_DEVIATION);
+    const dir: Vec3 = [-Math.sin(aim), -Math.cos(aim), 0];
     const sp = speed * R(0.92, 1.08) * (T.radius / 294);
     const die: Die = {
       fallOff: o.fallOff,
