@@ -309,3 +309,20 @@ Verificação: testes unitários, typecheck e `preparation-dice.spec.ts` passara
 telas com API e MySQL isolados, exceto pela margem acima, ajustada depois; a medição de
 desktop foi então repetida cinco vezes. A regressão completa não foi executada.
 
+## Quadro estável e desconfirmar em 31/10/2026
+
+O usuário pediu que a tela central mantivesse o tamanho ao iniciar, trocando só o
+conteúdo, e que fosse possível desconfirmar para rolar de novo. Isso substitui o bloqueio
+da rolagem depois de confirmar descrito acima; a última confirmação continua iniciando a
+partida, sem volta.
+
+Escolhas de implementação, não pedidas literalmente: no desktop, a etapa de ordem usa as
+mesmas colunas, espaçamentos e alturas da preparação, com a classificação em uma linha
+própria de 140 px. POST /preparation/actions aceita o tipo aditivo `unconfirm`, que
+responde 409 quando não há confirmação ou depois de iniciar.
+
+Verificação: a integração HTTP cobre desconfirmar, empate liberado, nova rolagem,
+reinício e bloqueio depois de iniciar. `preparation-dice.spec.ts` passou nas três telas,
+medindo o quadro antes e depois de iniciar com 2, 4 e 6 jogadores. Capturas destas
+telas não foram inspecionadas. A regressão completa não foi executada.
+

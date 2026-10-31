@@ -87,7 +87,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 	} else {
 		dec := json.NewDecoder(http.MaxBytesReader(w, req.Body, 4096))
 		dec.DisallowUnknownFields()
-		if dec.Decode(&input) != nil || dec.Decode(&struct{}{}) != io.EOF || !intentIDPattern.MatchString(input.IntentID) || (input.Kind != "roll" && input.Kind != "confirm") || input.Power < 0 || input.Power > maxThrowPower {
+		if dec.Decode(&input) != nil || dec.Decode(&struct{}{}) != io.EOF || !intentIDPattern.MatchString(input.IntentID) || (input.Kind != "roll" && input.Kind != "confirm" && input.Kind != "unconfirm") || input.Power < 0 || input.Power > maxThrowPower {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return
 		}
@@ -148,7 +148,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 			fail(errRoomStarted.Error())
 			return
 		}
-		if room.Status == "determining_order" && room.Confirmed[user.ID] != "" {
+		if room.Status == "determining_order" && room.Confirmed[user.ID] != "" && input.Kind != "unconfirm" {
 			fail("Sua rolagem já foi confirmada.")
 			return
 		}
@@ -175,6 +175,13 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 				power = input.Power
 			}
 			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now, Power: power})
+		} else if input.Kind == "unconfirm" {
+			// A última confirmação inicia a partida: depois dela não há o que desfazer.
+			if room.Status != "determining_order" || room.Confirmed[user.ID] == "" {
+				fail("Não há confirmação para desfazer.")
+				return
+			}
+			delete(room.Confirmed, user.ID)
 		} else {
 			if room.Status != "determining_order" {
 				fail("A ordem ainda não está sendo definida.")

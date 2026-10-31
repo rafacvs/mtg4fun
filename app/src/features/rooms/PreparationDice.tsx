@@ -196,7 +196,8 @@ export function PreparationDice({
     const timer = setTimeout(() => setOpened(true), 4500);
     return () => clearTimeout(timer);
   }, [finished, allConfirmed, rolls.length]);
-  const action = (kind: "roll" | "confirm") => send(kind, own?.id);
+  const action = (kind: "roll" | "confirm" | "unconfirm") =>
+    send(kind, own?.id);
   useEffect(() => {
     const list = logList.current;
     if (list && followLog.current) list.scrollTop = list.scrollHeight;
@@ -576,11 +577,13 @@ export function PreparationDice({
               </button>
               <button
                 className="secondary"
-                disabled={pending || rolling || !own || !!confirmed[userId]}
-                onClick={() => void action("confirm")}
+                disabled={pending || rolling || !own}
+                onClick={() =>
+                  void action(confirmed[userId] ? "unconfirm" : "confirm")
+                }
               >
                 {confirmed[userId]
-                  ? "Confirmou"
+                  ? "Desconfirmar"
                   : `Confirmar ${own?.value || ""}`}
               </button>
             </>

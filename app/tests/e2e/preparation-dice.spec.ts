@@ -307,8 +307,8 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     });
     await page.getByRole("button", { name: /^Confirmar / }).click();
     await expect(
-      page.getByRole("button", { name: "Confirmou", exact: true }),
-    ).toBeDisabled();
+      page.getByRole("button", { name: "Desconfirmar", exact: true }),
+    ).toBeEnabled();
     const state = await (await other.request.get(path + "/preparation")).json();
     const first = state.rolls.at(-1);
     let roll;
@@ -738,3 +738,202 @@ test("confirmação com quatro jogadores mantém mesa, ordem e registro na tela"
     await Promise.all(contexts.map((context) => context.close()));
   }
 });
+
+test("iniciar mantém o quadro da mesa e troca só o conteúdo", async ({
+  page,
+  browser,
+  baseURL,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "Composição desktop");
+  test.setTimeout(120000);
+  const logins = ["amigo", "segundo", "amigo3", "amigo4", "amigo5", "amigo6"];
+  for (const seats of [2, 4, 6]) {
+    const contexts = await Promise.all(
+      logins.slice(1, seats).map(() => browser.newContext({ baseURL })),
+    );
+    try {
+      const requests = [page.request, ...contexts.map((item) => item.request)];
+      const decks: number[] = [];
+      for (const [index, request] of requests.entries()) {
+        await request.post("/api/session", {
+          data: { login: logins[index], password: "senha-do-navegador" },
+        });
+        const response = await request.post("/api/decks", {
+          multipart: {
+            file: {
+              name: "quadro.cod",
+              mimeType: "application/xml",
+              buffer: Buffer.from(
+                '<cockatrice_deck><deckname>Deck do quadro</deckname><zone name="main"><card number="10" name="Island"/></zone></cockatrice_deck>',
+              ),
+            },
+          },
+        });
+        decks.push((await response.json()).deck.id);
+      }
+      const { room } = await (
+        await page.request.post("/api/rooms", {
+          data: roomBody({ seats, deckId: decks[0] }),
+        })
+      ).json();
+      const path = `/api/rooms/${room.id}`;
+      for (const [index, request] of requests.entries()) {
+        if (index) await request.post(path + "/participants", { data: {} });
+        await request.put(path + "/participants/me/ready", {
+          data: { deckId: decks[index] },
+        });
+      }
+      for (const viewport of [
+        { width: 1440, height: 900 },
+        { width: 1280, height: 720 },
+        { width: 1024, height: 768 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto(`/#/salas/${room.id}`);
+        await expect(page.locator(".preparation-table")).toBeVisible();
+        await page.waitForTimeout(150);
+        before[`${seats}-${viewport.width}`] = await frames(page, {
+          table: ".preparation-table",
+          oval: ".preparation-oval",
+          head: ".preparation-heading",
+          foot: ".preparation-start",
+          lower: ".preparation-rules",
+          side: ".preparation-sidebar",
+        });
+      }
+      await page
+        .getByRole("button", { name: "Iniciar partida", exact: false })
+        .click();
+      await expect(page.locator(".order-table")).toBeVisible();
+      for (const viewport of [
+        { width: 1440, height: 900 },
+        { width: 1280, height: 720 },
+        { width: 1024, height: 768 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.waitForTimeout(150);
+        const key = `${seats}-${viewport.width}`;
+        const after = await frames(page, {
+          table: ".order-table",
+          oval: ".order-felt",
+          head: ".order-heading",
+          foot: ".order-table footer",
+          lower: ".order-ranking",
+          side: ".order-sidebar",
+        });
+        console.log("QUADRO", key, JSON.stringify(before[key]), JSON.stringify(after));
+        for (const part of ["table", "oval", "lower", "side"])
+          for (const axis of ["x", "y", "width", "height"])
+            expect
+              .soft(Math.abs(after[part][axis] - before[key][part][axis]), `${key} ${part} ${axis}`)
+              .toBeLessThanOrEqual(2);
+        const scroll = await page.evaluate(() => ({
+          doc: document.documentElement.scrollHeight - innerHeight,
+        }));
+        expect.soft(scroll.doc, `${key} rolagem`).toBeLessThanOrEqual(1);
+      }
+    } finally {
+      await Promise.all(contexts.map((item) => item.close()));
+    }
+  }
+});
+
+type Frame = Record<string, number>;
+const before: Record<string, Record<string, Frame>> = {};
+const frames = (
+  page: import("@playwright/test").Page,
+  selectors: Record<string, string>,
+) =>
+  page.evaluate((map) => {
+    const out: Record<string, Record<string, number>> = {};
+    for (const [name, selector] of Object.entries(map)) {
+      const box = document.querySelector(selector)!.getBoundingClientRect();
+      out[name] = {
+        x: Math.round(box.x),
+        y: Math.round(box.y),
+        width: Math.round(box.width),
+        height: Math.round(box.height),
+      };
+    }
+    return out;
+  }, selectors);
+
+test("desconfirmar libera rolar de novo até todos confirmarem", async ({
+  page,
+  browser,
+  baseURL,
+}, info) => {
+  test.setTimeout(90000);
+  const context = await browser.newContext({ baseURL });
+  try {
+    const decks: number[] = [];
+    const requests = [page.request, context.request];
+    for (const [index, request] of requests.entries()) {
+      await request.post("/api/session", {
+        data: {
+          login: ["amigo", "segundo"][index],
+          password: "senha-do-navegador",
+        },
+      });
+      const response = await request.post("/api/decks", {
+        multipart: {
+          file: {
+            name: "ordem.cod",
+            mimeType: "application/xml",
+            buffer: Buffer.from(
+              '<cockatrice_deck><deckname>Deck</deckname><zone name="main"><card number="10" name="Island"/></zone></cockatrice_deck>',
+            ),
+          },
+        },
+      });
+      decks.push((await response.json()).deck.id);
+    }
+    const { room } = await (
+      await page.request.post("/api/rooms", {
+        data: roomBody({ seats: 2, deckId: decks[0] }),
+      })
+    ).json();
+    const path = `/api/rooms/${room.id}`;
+    await context.request.post(path + "/participants", { data: {} });
+    for (const [index, request] of requests.entries())
+      await request.put(path + "/participants/me/ready", {
+        data: { deckId: decks[index] },
+      });
+    await page.request.post(path + "/preparation/start", { data: {} });
+    await page.goto(`/#/salas/${room.id}`);
+    const rollButton = page.getByRole("button", {
+      name: "Rolar D20",
+      exact: true,
+    });
+    const confirm = page.getByRole("button", { name: /^Confirmar / });
+    const unconfirm = page.getByRole("button", {
+      name: "Desconfirmar",
+      exact: true,
+    });
+    await rollButton.click();
+    await expect(confirm).toBeEnabled({ timeout: 15000 });
+    await confirm.click();
+    await expect(unconfirm).toBeEnabled();
+    await expect(rollButton).toBeDisabled();
+    await expect(page.locator(".order-seat.own")).toContainText("Confirmou");
+    await page.screenshot({ path: info.outputPath("confirmado.png") });
+    await unconfirm.click();
+    await expect(confirm).toBeEnabled();
+    await expect(rollButton).toBeEnabled();
+    await expect(page.locator(".order-seat.own")).not.toContainText("Confirmou");
+    const state = async () =>
+      (await page.request.get(path + "/preparation")).json();
+    expect(Object.keys((await state()).confirmed ?? {})).toHaveLength(0);
+    await rollButton.click();
+    await expect.poll(async () => (await state()).rolls.length).toBe(2);
+    await expect(confirm).toBeEnabled({ timeout: 15000 });
+    await confirm.click();
+    await expect(unconfirm).toBeEnabled();
+    expect(Object.values((await state()).confirmed)).toEqual([
+      (await state()).rolls.at(-1).id,
+    ]);
+  } finally {
+    await context.close();
+  }
+});
+
