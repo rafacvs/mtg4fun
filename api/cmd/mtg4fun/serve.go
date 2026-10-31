@@ -36,12 +36,14 @@ func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, imageCache, 
 		return err
 	}
 	api := http.NewServeMux()
-	deckHandler := decks.New(db, cards).Handler(users)
+	deckService := decks.New(db, cards)
+	deckHandler := deckService.Handler(users)
 	api.Handle("/api/decks", deckHandler)
 	api.Handle("/api/decks/", deckHandler)
 	imageHandler := images.New(cards, imageCache).Handler(users)
 	api.Handle("/api/cards/image", imageHandler)
 	roomService := rooms.New(db, users, cards)
+	deckService.UseRooms(roomService)
 	roomHandler := roomService.Handler()
 	api.Handle("/api/rooms", roomHandler)
 	api.Handle("/api/rooms/", roomHandler)

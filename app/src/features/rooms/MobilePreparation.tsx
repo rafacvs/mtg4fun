@@ -6,11 +6,12 @@ import type { Room } from './roomsApi';
 import type { useRooms } from './useRooms';
 import { playerMark } from './playerIdentity';
 import { PreparationRules } from './PreparationRules';
+import { DeckEditButton } from './DeckEditButton';
 
-type Props = { room: Room; participant: Room['participants'][number]; userId: number; deckId: string; setDeckId: Dispatch<SetStateAction<string>>; decks: ReturnType<typeof useDecks>; rooms: ReturnType<typeof useRooms>; sharedDecks: { playerId: number; name: string; image?: string }[]; onChallenge: (player: { id: number; name: string }, anchor: HTMLElement | null) => void; interrupted: boolean; emoji: ReactNode; marks: Record<string, 'lost' | 'refused'> };
+type Props = { room: Room; participant: Room['participants'][number]; userId: number; deckId: string; setDeckId: Dispatch<SetStateAction<string>>; decks: ReturnType<typeof useDecks>; rooms: ReturnType<typeof useRooms>; sharedDecks: { playerId: number; name: string; image?: string }[]; onChallenge: (player: { id: number; name: string }, anchor: HTMLElement | null) => void; interrupted: boolean; emoji: ReactNode; marks: Record<string, 'lost' | 'refused'>; deckErrorHidden: boolean; onImportDeck: () => void; onEditDeck: () => void };
 
 type Panel = 'deck' | 'rules' | null;
-export function MobilePreparation({ room, participant, userId, deckId, setDeckId, decks, rooms, sharedDecks, onChallenge, interrupted, emoji, marks }: Props) {
+export function MobilePreparation({ room, participant, userId, deckId, setDeckId, decks, rooms, sharedDecks, onChallenge, interrupted, emoji, marks, deckErrorHidden, onImportDeck, onEditDeck }: Props) {
   const [panel, setPanel] = useState<Panel>(null);
   const [settingsPending, setSettingsPending] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -60,11 +61,11 @@ export function MobilePreparation({ room, participant, userId, deckId, setDeckId
     <dialog ref={dialog} className="mobile-preparation-dialog" data-editable={room.creatorId === userId} aria-label={panel === 'rules' ? 'Regras da mesa' : 'Seu deck'} onCancel={event => { event.preventDefault(); closePanel(); }} onClick={event => { if (event.target === event.currentTarget) closePanel(); }}>
       <div className="mobile-dialog-heading"><h3>{panel === 'rules' ? 'Regras da mesa' : 'Seu deck'}</h3><button type="button" className="secondary" aria-label="Fechar painel" disabled={settingsPending} onClick={closePanel}>×</button></div>
       {panel === 'deck' && <div className="mobile-deck-panel">
-        {decks.error && <p role="alert" className="error">{decks.error}</p>}
+        {decks.error && !deckErrorHidden && <p role="alert" className="error">{decks.error}</p>}
         {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
-        {!decks.loading && decks.decks.length === 0 && <p><a href="/#/decks">Importe um deck</a> e volte a esta sala para confirmar.</p>}
-        <label htmlFor="mobile-room-deck">Deck para a partida</label><select id="mobile-room-deck" value={deckId} disabled={decks.loading || rooms.busy || participant.ready} onChange={event => { const value = event.target.value; setDeckId(value); if (value) void rooms.selectDeck(room.id, Number(value)).then(ok => { if (!ok) setDeckId(participant.deckId ? String(participant.deckId) : ''); }); }}><option value="">Selecione um deck</option>{decks.decks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}</option>)}</select>
-        <div className="mobile-selected-deck" aria-label="Deck escolhido"><span className="mobile-selected-art">{selectedDeck ? <img src={artwork ? deckApi.imageURL(artwork) : '/library-back.png'} alt="" onError={event => { event.currentTarget.src = '/library-back.png'; }} /> : <span aria-hidden="true">✧</span>}</span><div>{selectedDeck ? <><span className="preparation-deck-label">DECK ESCOLHIDO</span><strong>{selectedDeck.name}</strong><small>{cardCount(selectedDeck.cards)} cartas</small></> : <strong>Sem deck</strong>}</div></div>
+        {!decks.loading && decks.decks.length === 0 && <p>Importe um deck para confirmar sua presença nesta sala.</p>}
+        <div className="preparation-deck-field"><label htmlFor="mobile-room-deck">Deck para a partida</label><button type="button" className="secondary preparation-import-deck" disabled={decks.loading || decks.busy || participant.ready} onClick={onImportDeck}>Importar deck</button></div><select id="mobile-room-deck" value={deckId} disabled={decks.loading || rooms.busy || participant.ready} onChange={event => { const value = event.target.value; setDeckId(value); if (value) void rooms.selectDeck(room.id, Number(value)).then(ok => { if (!ok) setDeckId(participant.deckId ? String(participant.deckId) : ''); }); }}><option value="">Selecione um deck</option>{decks.decks.map(deck => <option key={deck.id} value={deck.id}>{deck.name}</option>)}</select>
+        <div className="mobile-selected-deck" aria-label="Deck escolhido"><span className="mobile-selected-art">{selectedDeck ? <img src={artwork ? deckApi.imageURL(artwork) : '/library-back.png'} alt="" onError={event => { event.currentTarget.src = '/library-back.png'; }} /> : <span aria-hidden="true">✧</span>}</span><div>{selectedDeck ? <><span className="preparation-deck-label">DECK ESCOLHIDO</span><strong>{selectedDeck.name}</strong><small>{cardCount(selectedDeck.cards)} cartas</small></> : <strong>Sem deck</strong>}</div>{selectedDeck && !participant.ready && <DeckEditButton name={selectedDeck.name} onClick={onEditDeck} />}</div>
         <button type="button" disabled={!deckId || rooms.busy} onClick={closePanel}>Usar este deck</button>
       </div>}
       {panel === 'rules' && <>{rooms.error && <p role="alert" className="error">{rooms.error}</p>}<PreparationRules room={room} editable={room.creatorId === userId} busy={rooms.busy} onPendingChange={setSettingsPending} onChange={settings => rooms.settings(room.id, settings)} onMulliganMode={mode => rooms.setMulliganMode(room.id, mode)} /><button type="button" className="mobile-panel-done" disabled={settingsPending || rooms.busy} onClick={closePanel}>{room.creatorId === userId ? 'Concluído' : 'Fechar'}</button></>}

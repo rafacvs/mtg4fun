@@ -1,5 +1,7 @@
 import { useEffect, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
-import { deckApi } from '../decks/deckApi';
+import { deckApi, type Deck } from '../decks/deckApi';
+import { DeckEditorDialog } from '../decks/DeckEditorDialog';
+import { DeckImportDialog } from '../decks/DeckImportDialog';
 import { DuelResultBanner } from '../minigames/DuelResultBanner';
 import { playerMark, deckArt } from './playerIdentity';
 import { TableIcon } from './TableIcon';
@@ -9,12 +11,14 @@ import type { Room } from './roomsApi';
 import type { useRooms } from './useRooms';
 import { PanelCorners } from './PanelCorners';
 import { PreparationRules } from './PreparationRules';
+import { DeckEditButton } from './DeckEditButton';
 import { MobilePreparation } from './MobilePreparation';
 import { CoinDuelLayer } from '../minigames/CoinDuelLayer';
 import { EmojiBar } from '../minigames/EmojiBar';
 import { useCoinDuels } from '../minigames/useCoinDuels';
 import './room-preparation.css';
 import './mobile-preparation.css';
+import './preparation-deck-tools.css';
 
 type Props = {
   room: Room;
@@ -31,7 +35,7 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
   useEffect(() => { const media = window.matchMedia('(max-width: 800px), (max-width: 1000px) and (pointer: coarse)'); const update = () => setMobile(media.matches); media.addEventListener('change', update); return () => media.removeEventListener('change', update); }, []);
   const [settingsPending, setSettingsPending] = useState(false);
   const [sharedDecks, setSharedDecks] = useState<{ playerId: number; name: string; image?: string; colors?: string; cards?: number }[]>([]);
-  const deckSelection = room.participants.map(player => `${player.id}:${player.deckId ?? 0}`).join(',');
+  const deckSelection = room.participants.map(player => `${player.id}:${player.deckId ?? 0}:${player.deckRevision ?? 0}`).join(',');
   useEffect(() => {
     const controller = new AbortController();
     setSharedDecks([]);
@@ -48,8 +52,19 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
   const duels = useCoinDuels(userId);
   const colorOf = (playerId: number) => sharedDecks.find(deck => deck.playerId === playerId)?.colors;
   const seatOf = (playerId: number) => room.participants.findIndex(player => player.id === playerId) % 6;
+  const [deckDialog, setDeckDialog] = useState<'import' | 'edit' | null>(null);
+  // O pronto trava o deck, e um dialog modal ficaria por cima do X1 recebido.
+  useEffect(() => { if (participant.ready || duels.panelOpen) setDeckDialog(null); }, [participant.ready, duels.panelOpen]);
+  const selectImportedDeck = (deck: Deck) => {
+    setDeckId(String(deck.id));
+    void rooms.selectDeck(room.id, deck.id).then(ok => { if (!ok) setDeckId(participant.deckId ? String(participant.deckId) : ''); });
+  };
+  const deckDialogs = <>
+    <DeckImportDialog open={deckDialog === 'import'} library={decks} onClose={() => setDeckDialog(null)} onImported={selectImportedDeck} />
+    <DeckEditorDialog deck={selectedDeck} open={deckDialog === 'edit' && Boolean(selectedDeck)} library={decks} onClose={() => setDeckDialog(null)} />
+  </>;
   const minigames = <CoinDuelLayer duels={duels} userId={userId} artOf={playerId => deckArt(colorOf(playerId))} seatOf={seatOf} />;
-  if (mobile) return <><MobilePreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} sharedDecks={sharedDecks} onChallenge={duels.prepare} interrupted={!!duels.panelOpen} emoji={<EmojiBar />} marks={duels.marks} />{minigames}<DuelResultBanner outcome={duels.banner} seatOf={seatOf} /></>;
+  if (mobile) return <><MobilePreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} sharedDecks={sharedDecks} onChallenge={duels.prepare} interrupted={!!duels.panelOpen} emoji={<EmojiBar />} marks={duels.marks} deckErrorHidden={deckDialog !== null} onImportDeck={() => setDeckDialog('import')} onEditDeck={() => setDeckDialog('edit')} />{deckDialogs}{minigames}<DuelResultBanner outcome={duels.banner} seatOf={seatOf} /></>;
   return <><section className="room-preparation" aria-label="Preparação da sala">
     <div className="preparation-content">
       <section className="preparation-table" aria-label="Jogadores à mesa">
@@ -88,9 +103,9 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
       <aside className="preparation-controls" aria-label="Seu preparo">
         <PanelCorners />
         <p className="eyebrow">SEU LUGAR NA MESA</p><h3>Prepare seu deck</h3>
-        {decks.error && <p role="alert" className="error">{decks.error}</p>}
-        {!decks.loading && decks.decks.length === 0 && <p><a href="/#/decks">Importe um deck</a> e volte a esta sala para confirmar.</p>}
-        <label htmlFor="room-deck">Deck para a partida</label>
+        {decks.error && deckDialog === null && <p role="alert" className="error">{decks.error}</p>}
+        {!decks.loading && decks.decks.length === 0 && <p>Importe um deck para confirmar sua presença nesta sala.</p>}
+        <div className="preparation-deck-field"><label htmlFor="room-deck">Deck para a partida</label><button type="button" className="secondary preparation-import-deck" disabled={decks.loading || decks.busy || participant.ready} onClick={() => setDeckDialog('import')}>Importar deck</button></div>
         <select id="room-deck" value={deckId} disabled={decks.loading || rooms.busy || participant.ready} onChange={event => {
           const value = event.target.value;
           setDeckId(value);
@@ -102,6 +117,7 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
         <div className="preparation-selected-deck" aria-label="Deck escolhido" style={selectedDeck ? { '--deck-art': `url("${deckArt(colorOf(userId) ?? selectedDeck.colorIdentity)}")` } as CSSProperties : undefined}>
           <div className="preparation-selected-art" aria-hidden="true">{selectedDeck ? <img src={artwork ? deckApi.imageURL(artwork) : '/library-back.png'} alt="" onError={event => { event.currentTarget.src = '/library-back.png'; }} /> : <span className="preparation-empty-art">✧</span>}</div>
           <div className="preparation-selected-info">{selectedDeck ? <><span className="preparation-deck-label">DECK ESCOLHIDO</span><strong>{selectedDeck.name}</strong><small>{cardCount(selectedDeck.cards)} cartas</small>{selectedDeck.commander && <small>{selectedDeck.commander}</small>}</> : <strong>Sem deck</strong>}</div>
+          {selectedDeck && !participant.ready && <DeckEditButton name={selectedDeck.name} onClick={() => setDeckDialog('edit')} />}
         </div>
         {participant.ready
           ? <button className="secondary preparation-ready-action" disabled={rooms.busy} onClick={() => void rooms.unready(room.id)}>Desfazer prontidão</button>
@@ -110,5 +126,5 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
       </aside>
       </div>
     </div>
-  </section>{minigames}</>;
+  </section>{deckDialogs}{minigames}</>;
 }

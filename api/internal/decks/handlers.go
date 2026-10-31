@@ -132,6 +132,10 @@ func (s *Service) Handler(users *auth.Service) http.Handler {
 			httpserver.WriteError(w, 400, err.Error())
 			return
 		}
+		if errors.Is(err, errDeckLocked) {
+			httpserver.WriteError(w, 409, err.Error())
+			return
+		}
 		if err != nil {
 			httpserver.InternalError(w, err)
 			return
