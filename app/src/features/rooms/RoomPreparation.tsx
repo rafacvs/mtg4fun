@@ -70,7 +70,7 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
       <section className="preparation-table" aria-label="Jogadores à mesa">
         <PanelCorners />
         <header className="preparation-heading">
-          <div><p className="eyebrow">A MESA ESTÁ SE FORMANDO</p><h2>À mesa</h2></div>
+          <div><p className="eyebrow">A MESA ESTÁ SE FORMANDO</p><h2 title={room.title}>{room.title}</h2></div>
           <div className="preparation-room-facts"><span><TableIcon name="crown" />{room.format || 'Mesa'}</span><span><TableIcon name="heart" /><b>{room.life}</b> de vida</span><span><i className="facts-shield" aria-hidden="true" /><b>{room.participants.length}/{room.seats}</b> jogadores</span></div>
         </header>
         <div className="preparation-arena">

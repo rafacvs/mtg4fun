@@ -20,7 +20,9 @@ func modifierFromText(raw string) (int64, bool) {
 	return value, true
 }
 
-func (s *Service) createCatalogToken(m *matchState, p *playerState, name string) (actionLogPayload, error) {
+const maxTokensPerAction = 99
+
+func (s *Service) createCatalogTokens(m *matchState, p *playerState, name string, count int) (actionLogPayload, error) {
 	if s.catalog == nil {
 		return actionLogPayload{}, errCardNotFound
 	}
@@ -32,7 +34,15 @@ func (s *Service) createCatalogToken(m *matchState, p *playerState, name string)
 		Name: name, Text: definition.Text, PrintedPower: definition.Power,
 		PrintedToughness: definition.Toughness, ImageName: name, InstanceKind: "token",
 	}
-	return addCreatedCard(m, p, card, "create-token")
+	payload := actionLogPayload{Kind: "create-token", To: "battlefield", Count: count, Result: name}
+	for range count {
+		created, err := addCreatedCard(m, p, card, "create-token")
+		if err != nil {
+			return actionLogPayload{}, err
+		}
+		payload.Cards = append(payload.Cards, created.Cards...)
+	}
+	return payload, nil
 }
 
 func addCreatedCard(m *matchState, p *playerState, card Card, kind string) (actionLogPayload, error) {

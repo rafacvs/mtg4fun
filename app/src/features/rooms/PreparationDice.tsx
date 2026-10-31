@@ -389,7 +389,7 @@ export function PreparationDice({
               <p className="eyebrow">
                 {finished ? "ORDEM DEFINIDA" : "QUEM COMEÇA?"}
               </p>
-              <h2>{finished ? `${order[0]?.name} começa` : "À mesa"}</h2>
+              <h2 title={finished ? undefined : room.title}>{finished ? `${order[0]?.name} começa` : room.title}</h2>
             </div>
             <div className="preparation-room-facts">
               <span>♟ {room.format}</span>

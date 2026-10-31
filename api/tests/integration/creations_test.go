@@ -274,6 +274,7 @@ func TestTokenCatalogIsBoundedSortedAndUsesExistingImageCache(t *testing.T) {
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, room).ID)
 	requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, deck.Deck.ID), cookie, nil), 200)
 	requireStatus(t, e.request("POST", path+"/start", "{}", cookie, nil), 201)
+	confirmHands(t, e, path, cookie)
 	read := e.request("GET", path+"/match/tokens?q=ficha", "", cookie, nil)
 	requireStatus(t, read, 200)
 	var tokens struct {
@@ -349,5 +350,68 @@ func TestPrintedStatsOnCatalogDeckCardsAndSymbolicTokens(t *testing.T) {
 	copy := creationPlayers(t, e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":"42000000-0000-4000-8000-000000000007","kind":"copy-card","cardId":%q}`, card.ID), cookies[0], nil))[0].Battlefield[1]
 	if copy.PrintedPower != "2" || copy.PrintedToughness != "3" {
 		t.Fatalf("cópia: %+v", copy)
+	}
+}
+
+func TestTokenQuantityCreatesEveryTokenInOneAction(t *testing.T) {
+	e, cookies, path := prepareCreationMatch(t)
+	post := func(intent, fields string) response {
+		return e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":%q,%s}`, intent, fields), cookies[0], nil)
+	}
+	requireStatus(t, post("32000000-0000-4000-8000-000000000001", `"kind":"create-token","tokenName":"Soldier Token","count":100`), 400)
+	requireStatus(t, post("32000000-0000-4000-8000-000000000002", `"kind":"create-token","tokenName":"Soldier Token","count":-1`), 400)
+	result := post("32000000-0000-4000-8000-000000000003", `"kind":"create-token","tokenName":"Soldier Token","count":5`)
+	requireStatus(t, result, 200)
+	columns := map[int]int{}
+	for _, card := range creationPlayers(t, result)[0].Battlefield {
+		columns[card.PositionX]++
+	}
+	if len(columns) != 2 || columns[0] != 3 || columns[1] != 2 {
+		t.Fatalf("cinco fichas deveriam formar pilhas de 3 e 2: %v", columns)
+	}
+	var logged struct {
+		Match struct {
+			Log []struct {
+				Kind  string `json:"kind"`
+				Count int    `json:"count"`
+			} `json:"log"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(result.body, &logged); err != nil {
+		t.Fatal(err)
+	}
+	last := logged.Match.Log[len(logged.Match.Log)-1]
+	if last.Kind != "create-token" || last.Count != 5 {
+		t.Fatalf("registro: %+v", last)
+	}
+}
+
+func TestDroppingMoreCardsThanAStackHoldsOpensNewStacks(t *testing.T) {
+	deck := `<cockatrice_deck><zone name="main"><card number="20" name="Island"/></zone></cockatrice_deck>`
+	e, cookies, path := prepareCreationMatch(t, deck, deck)
+	post := func(intent, fields string) []creationPlayer {
+		result := e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":%q,%s}`, intent, fields), cookies[0], nil)
+		requireStatus(t, result, 200)
+		return creationPlayers(t, result)
+	}
+	hand := post("33000000-0000-4000-8000-000000000001", `"kind":"draw","count":7`)[0].Hand
+	ids := make([]string, 0, 7)
+	for _, card := range hand {
+		ids = append(ids, card.ID)
+	}
+	encoded, err := json.Marshal(ids)
+	if err != nil {
+		t.Fatal(err)
+	}
+	field := post("33000000-0000-4000-8000-000000000002", fmt.Sprintf(`"kind":"move","cardIds":%s,"to":"battlefield","x":4,"row":1`, encoded))[0].Battlefield
+	columns := map[int]int{}
+	for _, card := range field {
+		if card.Row != 1 {
+			t.Fatalf("mudou de fileira: %+v", card)
+		}
+		columns[card.PositionX]++
+	}
+	if len(field) != 7 || columns[4] != 3 || columns[5] != 3 || columns[6] != 1 {
+		t.Fatalf("pilhas: %v", columns)
 	}
 }

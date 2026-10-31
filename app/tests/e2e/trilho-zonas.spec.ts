@@ -1,4 +1,4 @@
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, roomBody, confirmHands } from './fixtures';
 import type { BrowserContext } from '@playwright/test';
 
 for (const count of [2, 3, 4]) {
@@ -18,6 +18,7 @@ for (const count of [2, 3, 4]) {
         expect((await api.put(`/api/rooms/${room}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBeTruthy();
       }
       expect((await contexts[0].request.post(`/api/rooms/${room}/start`, { data: {} })).ok()).toBeTruthy();
+      await confirmHands(room, ...contexts.map(context => context.request));
       expect((await contexts[0].request.post(`/api/rooms/${room}/match/actions`, { data: { kind: 'turn', direction: 'next', intentId: crypto.randomUUID() } })).ok()).toBeTruthy();
       const page = await contexts[0].newPage();
       for (const size of [{ width: 1782, height: 996 }, { width: 1312, height: 825 }, { width: 1100, height: 700 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {

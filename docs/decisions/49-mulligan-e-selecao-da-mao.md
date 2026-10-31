@@ -16,10 +16,8 @@ opção inicial.
   O sétimo mulligan deixa uma carta na mão; esse é o limite do modo padrão.
 - **Aconchegaz:** todos os mulligans devolvem a mão, embaralham e compram sete,
   sem redução ao manter.
-- O botão **Mulligan** fica imediatamente à esquerda de **Comprar** durante o
-  primeiro turno; no celular, Mulligan e Manter mão aparecem nos controles
-  flutuantes, à esquerda de Comandos. O primeiro avanço de turno fecha a janela definitivamente;
-  corrigir o indicador para trás não a reabre.
+- A posição dos botões e o fechamento da janela foram substituídos pela
+  confirmação de mãos descrita abaixo.
 - A configuração, a janela, o número de mulligans e a decisão de manter são
   persistidos no snapshot. As ações usam o endpoint idempotente existente e
   não revelam o conteúdo da mão no registro público.
@@ -33,3 +31,33 @@ opção inicial.
 
 Não há migration: salas e partidas já persistem esses dados em snapshots JSON,
 e snapshots anteriores adotam o modo padrão.
+
+## Confirmação da mão antes de começar
+
+Em 31/10/2026, o usuário relatou que um jogador comprava e passava o turno
+enquanto outro fazia mulligan, o que cancelava o mulligan dele. Pediu que o jogo
+só comece quando todos confirmarem a mão, e aprovou:
+
+- Enquanto houver mão sem confirmar, a barra mostra só **Mulligan**, à esquerda,
+  e **Confirmar mão**, que vira **Desconfirmar mão** ao ser clicado. Os demais
+  botões, os atalhos e as ações da inspeção somem, inclusive Finalizar.
+- O mulligan funciona como antes. Desconfirmar não faz nenhuma ação automática:
+  as cartas enviadas ao fundo continuam lá, e o jogador refaz a mão manualmente
+  pelo grimório se quiser.
+- Uma pessoa ausente não é tratada: o usuário explicou que a mesa não depende de
+  conexão e fica existindo, e que os amigos combinam quando jogar.
+
+Escolhas de implementação, não pedidas literalmente:
+
+- O servidor aplica a regra e responde 409. Quem não confirmou só pode trabalhar
+  a própria mão com o grimório (comprar, consultar, embaralhar, revelar da
+  consulta, mover entre mão e grimório e reordenar a mão); quem confirmou só pode
+  desconfirmar.
+- A confirmação é recusada durante uma consulta do grimório.
+- Confirmar de novo pede somente as cartas ainda não enviadas ao fundo desde o
+  último mulligan (`mulliganBottomed` no snapshot), limitadas às da mão.
+- A última confirmação inicia a partida para todos, e então não há como desfazer.
+- A fase é pulada quando a compra da mão inicial está desligada, e a tela lista
+  quem falta confirmar. Essas duas constaram da lista confirmada pelo usuário.
+- Partidas salvas com a janela aberta passam pela confirmação. Se todas as mãos
+  já estiverem confirmadas, a janela é fechada na próxima ação.

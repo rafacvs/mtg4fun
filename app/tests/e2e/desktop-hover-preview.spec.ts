@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { BrowserContext } from '@playwright/test';
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 
 test('hover no campo mostra prévia passiva sem abrir diálogo', async ({ browser, baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Prévia V3 é uma interação de computador.');
@@ -22,6 +22,7 @@ test('hover no campo mostra prévia passiva sem abrir diálogo', async ({ browse
 
     const roomPath = `/api/rooms/${roomId}`;
     expect((await contexts[0].request.post(`${roomPath}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(roomId, ...contexts.map(context => context.request));
     await Promise.all(contexts.map(context => returnOpeningHandToLibrary(context.request, roomId)));
     expect((await contexts[0].request.post(`${roomPath}/match/actions`, { data: { kind: 'create-token', intentId: randomUUID(), tokenName: 'Soldier Token' } })).ok()).toBe(true);
 

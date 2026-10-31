@@ -135,6 +135,7 @@ type playerState struct {
 	Markers          colorCounts `json:"markers,omitempty"`
 	Mulligans        int         `json:"mulligans,omitempty"`
 	MulliganKept     bool        `json:"mulliganKept,omitempty"`
+	MulliganBottomed int         `json:"mulliganBottomed,omitempty"`
 	Library          []Card      `json:"library"`
 	Hand             []Card      `json:"hand"`
 	Battlefield      []Card      `json:"battlefield"`
@@ -182,6 +183,7 @@ type MatchPlayer struct {
 	Markers          colorCounts   `json:"markers,omitempty"`
 	Mulligans        int           `json:"mulligans,omitempty"`
 	MulliganKept     bool          `json:"mulliganKept,omitempty"`
+	MulliganBottomed int           `json:"mulliganBottomed,omitempty"`
 	LibraryCount     int           `json:"libraryCount"`
 	HandCount        int           `json:"handCount"`
 	BattlefieldCount int           `json:"battlefieldCount"`
@@ -295,7 +297,7 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
+		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, MulliganBottomed: v.MulliganBottomed, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
 		for _, cards := range [][]Card{v.Hand, v.Library, v.Battlefield, v.Command, v.Graveyard, v.Exile} {
 			for _, card := range cards {
 				if card.Revealed || card.revealedToViewer(viewerID) {
@@ -743,7 +745,7 @@ func (s *Service) initializeMatch(ctx context.Context, tx *sql.Tx, r roomState, 
 	if mode == "" {
 		mode = "standard"
 	}
-	m := matchState{RoomID: id, InitialLife: life, TurnOrder: order, MulliganMode: mode, MulliganOpen: true, Players: make([]playerState, 0, len(r.Participants))}
+	m := matchState{RoomID: id, InitialLife: life, TurnOrder: order, MulliganMode: mode, MulliganOpen: enabledSetting(r.DrawOpeningHand), Players: make([]playerState, 0, len(r.Participants))}
 	m.PendingOrder = order == nil
 	for _, p := range r.Participants {
 		cards, e := deckCards(ctx, tx, p.DeckID, p.ID)

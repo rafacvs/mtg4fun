@@ -1,4 +1,4 @@
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('duplo clique vira e desvira quatro cartas selecionadas por área', async ({ page, browser, baseURL }, info) => {
@@ -20,6 +20,7 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
       expect((await request.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }
     expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(roomId, page.request, observer.request);
     await returnOpeningHandToLibrary(page.request, roomId);
     await returnOpeningHandToLibrary(observer.request, roomId);
     const path = `/api/rooms/${roomId}/match`;

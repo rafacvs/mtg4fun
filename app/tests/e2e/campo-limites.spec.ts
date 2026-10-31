@@ -1,4 +1,4 @@
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
 
 async function measure(field: Locator) {
@@ -48,6 +48,7 @@ test('arrastar a visão não esconde cartas atrás do trilho e do cabeçalho, em
       await request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
     }
     expect((await context.request.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+    await confirmHands(room.id, context.request, other.request);
     const path = `/api/rooms/${room.id}/match`;
     const seat = async (request: typeof context.request) => { const { match } = await (await request.get(path)).json(); return match.players.find((player: { userId: number }) => player.userId === match.viewerId); };
     for (const request of [context.request, other.request]) {

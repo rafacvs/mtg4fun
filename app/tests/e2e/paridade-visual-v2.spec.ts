@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { APIRequestContext, BrowserContext } from '@playwright/test';
-import { test, expect, closeMatchRail, openMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, closeMatchRail, openMatchRail, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import { captureV2ReferenceBoards, writeV2ComparisonReport } from './paridade-visual-v2';
 
 async function expectFieldsInsideTable(page: import('@playwright/test').Page, count: number) {
@@ -87,6 +87,7 @@ test('produz o comparativo inicial de cada prancha com uma partida real descartÃ
     }
     const matchPath = `/api/rooms/${roomId}/match`;
     expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(roomId, ...[page.context(), ...contexts].map(context => context.request));
     await Promise.all([page.context(), ...contexts].map(context => returnOpeningHandToLibrary(context.request, roomId)));
     for (const context of [page.context(), ...contexts]) {
       const created = await context.request.post(`${matchPath}/actions`, { data: { kind: 'create-token', intentId: randomUUID(), tokenName: 'Soldier Token' } });
@@ -211,6 +212,7 @@ test('registra mesa geral e foco de dois a seis participantes em cada orientaÃ§Ã
         expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
       }
       expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+      await confirmHands(roomId, ...[page.context(), ...contexts].map(context => context.request));
       await Promise.all([page.context(), ...contexts].map(context => returnOpeningHandToLibrary(context.request, roomId)));
       // Controlled token artwork is not visual evidence. These real API actions
       // populate each field so geometry is exercised with occupied positions.

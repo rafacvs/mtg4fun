@@ -47,6 +47,7 @@ export function describeLogLine(line: LogLine) {
 export function describeLogEntry(entry: { actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string }) {
   if (entry.kind === 'finish_vote') return `${entry.actorName} concordou em finalizar a partida (${entry.result}).`;
   if (entry.kind === 'finished') return `${entry.actorName} confirmou o encerramento da partida (${entry.result}). Sala encerrada.`;
+  if (entry.kind === 'create-token' && (entry.count ?? 1) > 1) return `${entry.actorName} criou ${entry.count} fichas ${entry.result}.`;
   if (entry.kind === 'create-token' || entry.kind === 'create-custom-token') return `${entry.actorName} criou a ficha ${entry.result}.`;
   if (entry.kind === 'copy-card') return `${entry.actorName} criou uma cópia de ${entry.result}.`;
   if (entry.kind === 'set_tapped') return `${entry.actorName} alterou virar/desvirar de ${entry.count} carta(s).`;
@@ -59,6 +60,7 @@ export function describeLogEntry(entry: { actorName: string; kind: string; from?
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
   if (entry.kind === 'mulligan') return `${entry.actorName} embaralhou a mão e comprou sete novas cartas (mulligan ${entry.count}).`;
   if (entry.kind === 'keep_hand') return `${entry.actorName} ${entry.result}.`;
+  if (entry.kind === 'unkeep_hand') return `${entry.actorName} desfez a confirmação da mão.`;
   if (entry.kind === 'move' && entry.result) return `${entry.actorName}: ${entry.result} ao mover para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'move') return `${entry.actorName} moveu ${entry.count} carta(s) de ${zoneNames[entry.from || ''] || entry.from} para ${zoneNames[entry.to || ''] || entry.to}.`;
   if (entry.kind === 'transfer_control') return `${entry.actorName} transferiu o controle de uma carta para ${entry.result}.`;

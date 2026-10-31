@@ -1,4 +1,4 @@
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, roomBody, confirmHands } from './fixtures';
 
 test('criador configura regras sincronizadas e a partida usa os valores salvos', async ({ page, browser, baseURL }, info) => {
   test.skip(info.project.name !== 'desktop', 'O fluxo móvel é coberto em preparacao-mobile.spec.ts.');
@@ -68,6 +68,7 @@ test('criador configura regras sincronizadas e a partida usa os valores salvos',
     const deck = (await (await page.request.get('/api/decks')).json()).decks.find((item: { name: string }) => item.name === 'Deck de regras');
     expect((await page.request.put(`/api/rooms/${defaults.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     expect((await page.request.post(`/api/rooms/${defaults.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(defaults.id, page.request);
     const initial = (await (await page.request.get(`/api/rooms/${defaults.id}/match`)).json()).match.players[0];
     expect({ hand: initial.handCount, library: initial.libraryCount, command: initial.commandCount }).toEqual({ hand: 7, library: 0, command: 1 });
     expect((await (await page.request.get(`/api/rooms/${defaults.id}/match`)).json()).match.mulliganMode).toBe('standard');
@@ -76,6 +77,7 @@ test('criador configura regras sincronizadas e a partida usa os valores salvos',
       expect((await page.request.patch(`/api/rooms/${mixed.id}/settings`, { data: settings })).ok()).toBe(true);
       expect((await page.request.put(`/api/rooms/${mixed.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
       expect((await page.request.post(`/api/rooms/${mixed.id}/start`, { data: {} })).status()).toBe(201);
+      await confirmHands(mixed.id, page.request);
       const player = (await (await page.request.get(`/api/rooms/${mixed.id}/match`)).json()).match.players[0];
       expect({ hand: player.handCount, library: player.libraryCount, command: player.commandCount }).toEqual(settings.commanderToCommand ? { hand: 0, library: 7, command: 1 } : { hand: 7, library: 1, command: 0 });
     }

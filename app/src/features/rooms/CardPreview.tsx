@@ -31,7 +31,7 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
   viewerId?: number;
   onStateChange?: CardStateChange;
   onCopy?: (id: string) => void;
-  onCreateToken?: (name: string) => void;
+  onCreateToken?: (name: string, count: number) => void;
   busy?: boolean;
   error?: string;
   unconfirmed?: boolean;
@@ -117,10 +117,20 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
         </div></section>}
         {viewerId && players && onTransfer && onMoveToOwner && <CardControlTransfer key={card.id} card={card} players={players} viewerId={viewerId} disabled={disabled} onTransfer={onTransfer} onMoveToOwner={onMoveToOwner} />}
         {onCopy && card.id && card.name && <button className="secondary card-copy-action" aria-label="Criar cópia independente" disabled={busy || disabled} onClick={() => onCopy(card.id)}><TableIcon name="copy" /><strong>Criar cópia independente</strong><span>· nova instância no seu campo</span></button>}
-        {onCreateToken && card.createdTokens?.map(token => <button key={token} className="secondary card-copy-action" aria-label={`Criar ficha feita pela carta: ${token}`} disabled={busy || disabled} onClick={() => onCreateToken(token)}><TableIcon name="copy" /><strong>Criar ficha feita pela carta</strong><span>· {token}</span></button>)}
+        {onCreateToken && card.createdTokens?.map(token => <TokenCreation key={`${card.id}-${token}`} token={token} disabled={busy || disabled} onCreate={count => onCreateToken(token, count)} />)}
       </>}
       {step === 'markers' && editable && onCounter && <MarkerRows markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} />}
       </div>
     </div>
+  </div>;
+}
+
+function TokenCreation({ token, disabled, onCreate }: { token: string; disabled: boolean; onCreate: (count: number) => void }) {
+  const [quantity, setQuantity] = useState('1');
+  const count = Number(quantity);
+  const valid = Number.isInteger(count) && count >= 1 && count <= 99;
+  return <div className="card-token-action">
+    <input type="number" inputMode="numeric" min={1} max={99} step={1} aria-label={`Quantidade de fichas: ${token}`} value={quantity} disabled={disabled} onChange={event => setQuantity(event.target.value)} />
+    <button className="secondary card-copy-action" aria-label={`Criar ficha feita pela carta: ${token}`} disabled={disabled || !valid} onClick={() => onCreate(count)}><TableIcon name="copy" /><strong>Criar ficha feita pela carta</strong><span>· {token}</span></button>
   </div>;
 }

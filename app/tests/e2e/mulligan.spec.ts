@@ -1,7 +1,6 @@
-import { randomUUID } from 'node:crypto';
 import { test, expect } from './fixtures';
 
-test('configura mulligan, seleciona a mão por área e fecha a janela no segundo turno', async ({ page }, testInfo) => {
+test('configura mulligan, seleciona a mão por área e começa a partida ao confirmar a mão', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Seleção por retângulo usa mouse');
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: process.env.E2E_LOGIN || 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
@@ -40,7 +39,7 @@ test('configura mulligan, seleciona a mão por área e fecha a janela no segundo
   const choices = panel.locator('.mulligan-card');
   await choices.first().click();
   await expect(panel.getByText('1 de 1 selecionada(s) para o fundo', { exact: true })).toBeVisible();
-  await panel.getByRole('button', { name: 'Manter mão', exact: true }).click();
+  await panel.getByRole('button', { name: 'Confirmar mão', exact: true }).click();
   await expect(panel).toHaveCount(0);
 
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
@@ -56,7 +55,6 @@ test('configura mulligan, seleciona a mão por área e fecha a janela no segundo
 
   const match = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match;
   expect(match.players[0].libraryCount).toBe(14);
-  expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: randomUUID(), kind: 'turn', direction: 'next' } })).ok()).toBe(true);
   expect((await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.mulliganOpen).toBe(false);
 });
 
@@ -69,7 +67,7 @@ test('no celular toca para ler e segura para selecionar a carta', async ({ page 
   expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
   await page.goto(`/#/salas/${roomId}`);
-  const controls = page.getByRole('navigation', { name: 'Controles da mesa' });
+  const controls = page.getByRole('navigation', { name: 'Confirmação da mão' });
   await controls.getByRole('button', { name: 'Mulligan', exact: true }).tap();
 
   const panel = page.getByRole('dialog', { name: 'Escolher mão do mulligan', exact: true });
@@ -91,6 +89,6 @@ test('no celular toca para ler e segura para selecionar a carta', async ({ page 
   await panel.getByRole('button', { name: 'Voltar à mesa', exact: true }).tap();
   await expect(panel).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('mulligan-controles.png') });
-  await controls.getByRole('button', { name: 'Manter mão', exact: true }).tap();
+  await controls.getByRole('button', { name: 'Confirmar mão', exact: true }).tap();
   await expect(panel).toBeVisible();
 });

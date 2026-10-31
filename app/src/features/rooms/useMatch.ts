@@ -92,9 +92,9 @@ export function useMatch(roomId: number) {
       return act(() => roomsApi.revealCardsTo(roomId, cardIds, revealedTo, intentId));
     },
     retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
-    createToken: (name: string) => {
+    createToken: (name: string, count = 1) => {
       const intentId = createActionIntent();
-      return act(() => roomsApi.createToken(roomId, name, intentId));
+      return act(() => roomsApi.createToken(roomId, name, intentId, count));
     },
     createCustomToken: (token: CustomToken) => {
       const intentId = createActionIntent();
@@ -118,6 +118,7 @@ export function useMatch(roomId: number) {
     },
     mulligan: () => { const intentId = createActionIntent(); return act(() => roomsApi.mulligan(roomId, intentId)); },
     keepHand: (ids: string[]) => { const intentId = createActionIntent(); return act(() => roomsApi.keepHand(roomId, ids, intentId)); },
+    undoKeepHand: () => { const intentId = createActionIntent(); return act(() => roomsApi.undoKeepHand(roomId, intentId)); },
     move: (ids: string[], to: string, placement?: 'top' | 'bottom', at?: { x: number; row: number }) => {
       const intentId = createActionIntent();
       return act(() => roomsApi.move(roomId, ids, to, intentId, placement, at), false, value => optimisticMove(value, ids, to, at));

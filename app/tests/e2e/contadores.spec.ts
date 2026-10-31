@@ -1,5 +1,5 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
-import { test, expect, inspectCard, openHand, openMatchRail, openQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, inspectCard, openHand, openMatchRail, openQuickActions, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 
 async function expectLifeBesideName(table: Locator, life: number) {
   await expect(table).toBeVisible();
@@ -47,6 +47,7 @@ test('vida, marcadores e modificador de carta pelo painel com mouse ou toque', a
     expect((await observer.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
     expect((await observer.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: otherDeckID } })).ok()).toBe(true);
     expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(room.id, api, observer.request);
     await returnOpeningHandToLibrary(api, room.id);
     await returnOpeningHandToLibrary(observer.request, room.id);
     expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);
@@ -226,11 +227,13 @@ async function prepareIsland(page: Page, partner?: APIRequestContext) {
     expect((await partner.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
     expect((await partner.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: otherDeckId } })).ok()).toBe(true);
     expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(room.id, api, partner);
     await returnOpeningHandToLibrary(api, room.id);
     await returnOpeningHandToLibrary(partner, room.id);
     expect((await partner.delete(`/api/decks/${otherDeckId}`)).status()).toBe(204);
   } else {
     expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(room.id, api);
     await returnOpeningHandToLibrary(api, room.id);
   }
   expect((await api.delete(`/api/decks/${deckId}`)).status()).toBe(204);
@@ -348,7 +351,13 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     await expect(restored.getByLabel('Resistência', { exact: true })).toHaveValue('-1');
     await expect(page.getByRole('region', { name: 'Mão', exact: true }).getByLabel('Poder e resistência')).toHaveText('+2/-1');
     await restored.getByRole('button', { name: 'Campo', exact: true }).click();
-    await expect.poll(async () => (await read()).power).toBe(2);
+    // Mudar de zona limpa os modificadores; o restante do cenário usa valores definidos já no campo.
+    await expect.poll(async () => (await read()).power).toBe(0);
+    expect(await read()).toMatchObject({ toughness: 0 });
+    const onField = await read();
+    for (const [subject, value] of [['power', 2], ['toughness', -1]] as const) {
+      expect((await api.post(`/api/rooms/${roomId}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'card', cardId: onField.id, subject, operation: 'set', value } })).ok()).toBe(true);
+    }
 
     const otherPage = await observer.newPage();
     await otherPage.goto(`/#/salas/${roomId}`);

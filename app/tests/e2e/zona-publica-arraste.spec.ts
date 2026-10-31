@@ -1,4 +1,4 @@
-import { test, expect, roomBody, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, roomBody, returnOpeningHandToLibrary, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('soltar fora de uma carta no visualizador não atravessa para o campo; arrastar para fora continua funcionando', async ({ page }, info) => {
@@ -9,6 +9,7 @@ test('soltar fora de uma carta no visualizador não atravessa para o campo; arra
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
   await returnOpeningHandToLibrary(api, room.id);
   const path = `/api/rooms/${room.id}/match`;
   const act = async (action: object): Promise<Match> => { const response = await api.post(`${path}/actions`, { data: { intentId: crypto.randomUUID(), ...action } }); expect(response.ok()).toBeTruthy(); return (await response.json()).match; };
@@ -60,6 +61,7 @@ test('o dono reordena cemitério e exílio arrastando a carta; o oponente só v�
     const { deck: second } = await (await upload(other.request)).json();
     await other.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: second.id } });
     expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+    await confirmHands(room.id, api, other.request);
     const path = `/api/rooms/${room.id}/match`;
     const read = async () => { const { match } = await (await api.get(path)).json() as { match: Match }; return match.players.find(player => player.userId === match.viewerId)!; };
     const ids = (await read()).hand!.slice(0, 6).map(card => card.id);

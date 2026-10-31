@@ -1,22 +1,26 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
-import type { Browser, Page, APIRequestContext } from '@playwright/test';
+import { test, expect, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
+import type { Browser, BrowserContext, Page, APIRequestContext } from '@playwright/test';
 
 async function prepare(page: Page, browser: Browser, baseURL?: string) {
   let roomId = 0;
+  const others: BrowserContext[] = [];
   for (const login of ['amigo', 'segundo', 'amigo3', 'amigo4']) {
     const context = login === 'amigo' ? null : await browser.newContext({ baseURL });
+    if (context) others.push(context);
     const api: APIRequestContext = context?.request ?? page.request;
-    try {
+    {
       expect((await api.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
       const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'mobile48.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Island"/></zone></cockatrice_deck>') } } })).json();
       if (!roomId) roomId = (await (await api.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await api.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBe(true);
       expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
-    } finally { await context?.close(); }
+    }
   }
   const path = `/api/rooms/${roomId}/match`;
   expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).ok()).toBe(true);
+  await confirmHands(roomId, page.request, ...others.map(context => context.request));
+  await Promise.all(others.map(context => context.close()));
   await returnOpeningHandToLibrary(page.request, roomId);
   const act = async (data: object) => {
     const response = await page.request.post(`${path}/actions`, { data: { intentId: randomUUID(), ...data } });

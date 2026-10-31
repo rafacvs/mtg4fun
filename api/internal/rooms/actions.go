@@ -22,6 +22,8 @@ var errInvalidPosition = errors.New("Posição inválida no campo.")
 var errStackFull = errors.New("Essa pilha já tem 3 cartas.")
 var errMulliganClosed = errors.New("O período de mulligan já terminou.")
 var errMulliganSelection = errors.New("Selecione a quantidade correta de cartas para o fundo do grimório.")
+var errMulliganPending = errors.New("A partida só começa quando todos confirmarem a mão.")
+var errMulliganConsulting = errors.New("Feche a consulta do grimório antes de confirmar a mão.")
 
 type matchAction struct {
 	IntentID         string
@@ -332,6 +334,7 @@ func mulligan(m *matchState, p *playerState) (actionLogPayload, error) {
 	}
 	p.Library = append([]Card(nil), cards[7:]...)
 	p.Mulligans++
+	p.MulliganBottomed = 0
 	return actionLogPayload{Kind: "mulligan", Count: p.Mulligans, Result: fmt.Sprintf("realizou o mulligan %d", p.Mulligans)}, nil
 }
 
@@ -339,10 +342,10 @@ func keepMulliganHand(m *matchState, p *playerState, ids []string) (actionLogPay
 	if !m.MulliganOpen || p.MulliganKept {
 		return actionLogPayload{}, errMulliganClosed
 	}
-	required := 0
-	if m.MulliganMode == "standard" && p.Mulligans > 1 {
-		required = p.Mulligans - 1
+	if p.ConsultationFrom != "" {
+		return actionLogPayload{}, errMulliganConsulting
 	}
+	required := mulliganBottomRequired(m, p)
 	if len(ids) != required {
 		return actionLogPayload{}, errMulliganSelection
 	}
@@ -376,7 +379,78 @@ func keepMulliganHand(m *matchState, p *playerState, ids []string) (actionLogPay
 	p.Hand = kept
 	p.Library = append(p.Library, bottom...)
 	p.MulliganKept = true
-	return actionLogPayload{Kind: "keep_hand", Count: required, Result: fmt.Sprintf("manteve a mão com %d carta(s)", len(p.Hand))}, nil
+	p.MulliganBottomed += required
+	if everyHandKept(m) {
+		m.MulliganOpen = false
+	}
+	return actionLogPayload{Kind: "keep_hand", Count: required, Result: fmt.Sprintf("confirmou a mão com %d carta(s)", len(p.Hand))}, nil
+}
+
+// Confirming again after undoing asks only for what was not sent to the bottom
+// yet, and never for more cards than the player manually left in hand.
+func mulliganBottomRequired(m *matchState, p *playerState) int {
+	if m.MulliganMode != "standard" || p.Mulligans <= 1 {
+		return 0
+	}
+	return max(0, min(p.Mulligans-1-p.MulliganBottomed, len(p.Hand)))
+}
+
+// Undoing moves no card: the player redoes the hand by hand if they want to.
+func undoKeepMulliganHand(m *matchState, p *playerState) (actionLogPayload, error) {
+	if !m.MulliganOpen || !p.MulliganKept {
+		return actionLogPayload{}, errMulliganClosed
+	}
+	p.MulliganKept = false
+	return actionLogPayload{Kind: "unkeep_hand"}, nil
+}
+
+func everyHandKept(m *matchState) bool {
+	for i := range m.Players {
+		if !m.Players[i].MulliganKept {
+			return false
+		}
+	}
+	return true
+}
+
+// While hands are unconfirmed the only other thing a player can do is rework
+// their own hand against the library, as a manual mulligan.
+func allowedBeforeMatchStarts(p *playerState, input matchAction) bool {
+	switch input.Kind {
+	case "mulligan", "keep_hand", "unkeep_hand":
+		return true
+	}
+	if p.MulliganKept {
+		return false
+	}
+	switch input.Kind {
+	case "draw", "consult", "reveal", "reorder", "close", "shuffle", "hide_all_revealed":
+		return true
+	case "reorder_zone":
+		return input.To == "hand"
+	case "move":
+		if input.To != "hand" && input.To != "library" {
+			return false
+		}
+		for _, id := range input.CardIDs {
+			if !cardInZones(p, id, "hand", "library", "consulted", "revealed") {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+func cardInZones(p *playerState, id string, names ...string) bool {
+	for _, name := range names {
+		for _, card := range *zone(p, name) {
+			if card.ID == id {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func randomResult(sides int) (int, error) {
@@ -412,7 +486,6 @@ func changeTurn(m *matchState, direction string) (actionLogPayload, error) {
 		return actionLogPayload{}, errCardNotFound
 	}
 	if direction == "next" {
-		m.MulliganOpen = false
 		m.TurnIndex = (m.TurnIndex + 1) % len(m.TurnOrder)
 		for i := range m.Players {
 			clearRevelations(&m.Players[i])
@@ -475,6 +548,13 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		}
 		return s.libraryView(m, u.ID, log), nil
 	}
+	// A match saved before confirmation existed may already have every hand kept.
+	if m.MulliganOpen && everyHandKept(&m) {
+		m.MulliganOpen = false
+	}
+	if m.MulliganOpen && !allowedBeforeMatchStarts(p, input) {
+		return Match{}, errMulliganPending
+	}
 	ids := append([]string{}, input.CardIDs...)
 	if input.CardID != "" {
 		ids = append(ids, input.CardID)
@@ -493,7 +573,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	case "copy-card":
 		payload, err = s.copyCard(&m, p, input.CardID)
 	case "create-token":
-		payload, err = s.createCatalogToken(&m, p, input.TokenName)
+		payload, err = s.createCatalogTokens(&m, p, input.TokenName, max(input.Count, 1))
 	case "counter":
 		payload, err = changeCounter(&m, p, input)
 	case "counter_batch":
@@ -514,6 +594,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = mulligan(&m, p)
 	case "keep_hand":
 		payload, err = keepMulliganHand(&m, p, input.CardIDs)
+	case "unkeep_hand":
+		payload, err = undoKeepMulliganHand(&m, p)
 	case "move":
 		payload, err = moveCards(&m, p, input)
 	case "transfer_control":

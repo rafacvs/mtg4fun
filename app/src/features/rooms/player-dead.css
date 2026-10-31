@@ -1,0 +1,5 @@
+/* Depende só da vida: voltar a ter vida remove a marca, e as cartas continuam acessíveis por baixo dela. */
+.player-dead-mark { position: absolute; inset: -40px 0 0; z-index: 2; display: grid; place-items: center; pointer-events: none; background: #05070ab0; backdrop-filter: grayscale(.9); }
+.player-dead-mark .table-icon { width: clamp(44px, 28%, 110px); height: auto; aspect-ratio: 1; color: #e9e2d0; opacity: .88; filter: drop-shadow(0 4px 14px #000c); animation: player-dead-float 3.2s ease-in-out infinite; }
+@keyframes player-dead-float { 50% { transform: translateY(-8px); opacity: .62; } }
+@media (prefers-reduced-motion: reduce) { .player-dead-mark .table-icon { animation: none; } }

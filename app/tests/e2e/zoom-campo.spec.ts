@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 
 test('grade manual e zoom são independentes para cada campo', async ({ page, browser, baseURL }, info) => {
   test.setTimeout(90_000);
@@ -14,6 +14,7 @@ test('grade manual e zoom são independentes para cada campo', async ({ page, br
       expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }
     expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(roomId, page.request, other.request);
     await Promise.all([page.request, other.request].map(api => returnOpeningHandToLibrary(api, roomId)));
     for (const api of [page.request, other.request]) {
       for (const [x, row] of [[0, 0], [2, 2]]) {

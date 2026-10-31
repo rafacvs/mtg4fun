@@ -1,4 +1,4 @@
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 
 test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem da página', async ({ page, browser, baseURL }, info) => {
   test.skip(info.project.name !== 'celular', 'Matriz móvel com toque.');
@@ -14,6 +14,7 @@ test('mesa móvel mantém campo, mão, trilho e ações acessíveis sem rolagem 
       expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     }
     expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(roomId, page.request, other.request);
     await returnOpeningHandToLibrary(page.request, roomId);
     expect((await page.request.post(`/api/rooms/${roomId}/match/actions`, { data: { kind: 'draw', intentId: crypto.randomUUID(), count: 2 } })).ok()).toBe(true);
     await page.goto(`/#/salas/${roomId}`);

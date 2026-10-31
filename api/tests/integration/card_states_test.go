@@ -106,8 +106,8 @@ func TestCardStatesPrivacyAndRecovery(t *testing.T) {
 	}
 	statePlayers(t, action(owner, `"kind":"move","to":"hand",`+ids))
 	exposed := statePlayers(t, e.request("GET", path+"/match", "", other, nil))[0].ExposedCards
-	if len(exposed) != 1 || !exposed[0].Revealed || !exposed[0].FaceDown || exposed[0].FaceIndex != 1 {
-		t.Fatalf("movimento apagou estados/revelação: %+v", exposed)
+	if len(exposed) != 1 || !exposed[0].Revealed || exposed[0].FaceDown || exposed[0].Tapped || exposed[0].FaceIndex != 1 {
+		t.Fatalf("sair do campo deveria limpar a face para baixo e manter revelação e lado: %+v", exposed)
 	}
 	statePlayers(t, action(owner, `"kind":"move","to":"library","libraryPlacement":"bottom",`+ids))
 	e.stop()
@@ -125,9 +125,10 @@ func TestCardStatesPrivacyAndRecovery(t *testing.T) {
 		t.Fatal("ocultar explícito não encerrou revelação")
 	}
 	restored := statePlayers(t, action(owner, `"kind":"draw","count":1`))[0].Hand[0]
-	if !restored.FaceDown || restored.FaceIndex != 1 || restored.Revealed {
+	if restored.FaceDown || restored.FaceIndex != 1 || restored.Revealed {
 		t.Fatalf("face/ocultação não persistida: %+v", restored)
 	}
+	statePlayers(t, action(owner, `"kind":"set_face_down","faceDown":true,`+ids))
 	statePlayers(t, action(owner, `"kind":"move","to":"graveyard",`+ids))
 	hidden = statePlayers(t, e.request("GET", path+"/match", "", other, nil))[0].Graveyard[0]
 	if hidden.Name != "" || len(hidden.Faces) != 0 {

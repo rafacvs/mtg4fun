@@ -148,3 +148,8 @@
   .preparation-selected-info { min-width: 0; }
   .preparation-selected-info strong { font-size: .86rem; }
 }
+
+/* O nome da mesa pode ser longo: não pode empurrar os dados da sala para fora do cabeçalho. */
+.room-preparation .preparation-heading > div:first-child, .order-table .order-heading > div:first-child { min-width: 0; }
+.room-preparation .preparation-heading h2, .order-table .order-heading h2 { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.room-preparation .preparation-room-facts, .order-table .preparation-room-facts { flex-shrink: 0; }

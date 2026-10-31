@@ -4,6 +4,17 @@ import { firstFreeCell } from './battlefieldLayout';
 const zones = ['hand', 'battlefield', 'graveyard', 'exile', 'command'] as const;
 const counts = { hand: 'handCount', battlefield: 'battlefieldCount', graveyard: 'graveyardCount', exile: 'exileCount', command: 'commandCount' } as const;
 
+// Mesma distribuição do servidor: o que não cabe na pilha vai para a próxima célula vazia da fileira.
+function entryCell(field: Card[], at: { x: number; row: number }) {
+  const size = (column: number) => field.filter(card => card.positionX === column && card.row === at.row).length;
+  let column = at.x;
+  if (size(column) >= 3) {
+    column += 1;
+    while (size(column) > 0) column += 1;
+  }
+  return { column, row: at.row };
+}
+
 export function optimisticMove(match: Match, ids: string[], destination: string, at?: { x: number; row: number }): Match {
   const selected = new Set(ids);
   const moving = new Map<string, Card>();
@@ -19,8 +30,8 @@ export function optimisticMove(match: Match, ids: string[], destination: string,
   const entering = cards.flatMap(card => {
     const ephemeral = card.isToken || ['token', 'custom-token', 'copy'].includes(card.instanceKind ?? '');
     if (destination === 'library' || ephemeral && destination !== 'battlefield') return [];
-    const cell = at ? { column: at.x, row: at.row } : firstFreeCell(field);
-    const projected = { ...card, pending: true, zone: destination, controllerId: destination === 'battlefield' ? match.viewerId : card.ownerId,
+    const cell = at ? entryCell(field, at) : firstFreeCell(field);
+    const projected = { ...card, ...(card.zone !== destination ? { tapped: false, power: 0, toughness: 0, markers: undefined } : {}), pending: true, zone: destination, controllerId: destination === 'battlefield' ? match.viewerId : card.ownerId,
       ...(destination === 'battlefield' ? { positionX: cell.column, row: cell.row, stackOrder: Math.max(0, ...field.map(item => item.stackOrder)) + 1 } : {}) };
     if (destination === 'battlefield') field.push(projected);
     return [projected];

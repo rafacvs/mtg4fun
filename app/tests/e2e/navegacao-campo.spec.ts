@@ -1,4 +1,4 @@
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, roomBody, confirmHands } from './fixtures';
 
 test('arrastar o campo navega sem mover cartas', async ({ page }) => {
   expect((await page.request.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
@@ -7,6 +7,7 @@ test('arrastar o campo navega sem mover cartas', async ({ page }) => {
   const { room } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
   expect((await page.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBe(true);
+  await confirmHands(room.id, page.request);
   const { match } = await (await page.request.get(`/api/rooms/${room.id}/match`)).json();
   const ids = match.players[0].hand.slice(0, 4).map((card: { id: string }) => card.id);
   for (const [index, id] of ids.entries()) expect((await page.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'move', cardIds: [id], to: 'battlefield', x: index, row: index % 2 } })).ok()).toBe(true);

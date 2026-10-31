@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, closeMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 
 async function expectOrderedLayout(library: Locator) {
@@ -106,6 +106,7 @@ async function prepare(browser: Browser, baseURL: string | undefined, info: Test
     expect(
       (await contexts[0].request.post(`/api/rooms/${roomId}/start`, { data: {} })).status(),
     ).toBe(201);
+    await confirmHands(roomId, ...contexts.map(context => context.request));
     await returnOpeningHandToLibrary(contexts[0].request, roomId);
     await returnOpeningHandToLibrary(contexts[1].request, roomId);
     const own = await contexts[0].newPage();

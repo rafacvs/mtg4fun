@@ -28,7 +28,7 @@ export type Match = {
   currentTurn: { userId: number; name: string; roll: number };
   mulliganMode: 'standard' | 'aconchegaz';
   mulliganOpen: boolean;
-  players: { userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
+  players: { userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; mulliganBottomed?: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
 export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; revealedTo?: number[]; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; createdTokens?: string[] };
@@ -134,7 +134,7 @@ export const roomsApi = {
     if (!response.ok) throw new Error(data.error || 'Não foi possível consultar as fichas.');
     return data.tokens;
   },
-  createToken: (id: number, tokenName: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'create-token', tokenName }),
+  createToken: (id: number, tokenName: string, intentId: string, count = 1) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'create-token', tokenName, ...(count > 1 ? { count } : {}) }),
   createCustomToken: (id: number, token: CustomToken, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'create-custom-token', ...token }),
   copyCard: (id: number, cardId: string, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'copy-card', cardId }),
   batchCounter: (id: number, input: BatchCounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter_batch', ...input }),
@@ -142,6 +142,7 @@ export const roomsApi = {
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
   mulligan: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'mulligan' }),
   keepHand: (id: number, cardIds: string[], intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'keep_hand', cardIds }),
+  undoKeepHand: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'unkeep_hand' }),
   move: (id: number, cardIds: string[], to: string, intentId: string, libraryPlacement?: 'top' | 'bottom', at?: { x: number; row: number }) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'move', cardIds, to, ...(libraryPlacement ? { libraryPlacement } : {}), ...(at ? { x: at.x, row: at.row } : {}) }),
   transferControl: (id: number, cardId: string, controllerId: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'transfer_control', cardId, controllerId }),
   position: (id: number, cardIds: string[], x: number, row: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'position', ...(cardIds.length === 1 ? { cardId: cardIds[0] } : { cardIds }), x, row }),
