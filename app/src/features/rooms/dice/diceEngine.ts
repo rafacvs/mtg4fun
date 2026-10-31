@@ -196,40 +196,43 @@ const VERTS: Vec3[] = RAW.map(nrm);
 const NORMAL_FORCE = 4;
 const MAX_AIM_DEVIATION = Math.PI / 6;
 /**
- * Um nível por linha (força 1–10). Fraco é um dado largado na frente do próprio
- * jogador, com pulinhos; forte sai rápido e para cima e fica saltando pelo feltro
- * e ricocheteando na parede. speed em px/s para uma mesa de raio 294;
- * lift é a velocidade para cima; height é a altura de saída; bounce é o quanto da
- * queda volta em cada quique; drag é o atrito no feltro; rim é o quanto da
- * velocidade sobra ao bater no aro; deflect é o desvio máximo do ricochete, em
- * radianos.
+ * Um nível por linha (força 1–10), do dado largado na frente do jogador até o que
+ * atravessa a mesa saltando, sempre devagar o bastante para ser acompanhado. speed
+ * em px/s para uma mesa de raio 294; apex é a altura do primeiro pulo, de 0 (feltro)
+ * a 1 (teto da tela); bounce é o quanto da queda volta em cada quique; drag é o
+ * atrito no feltro; rim é o quanto da velocidade sobra ao bater na parede; deflect
+ * é o desvio máximo do ricochete, em radianos.
  */
 const FORCES = [
-  { speed: 60, lift: 300, height: 40, bounce: 0.5, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 100, lift: 380, height: 45, bounce: 0.54, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 150, lift: 460, height: 50, bounce: 0.58, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 210, lift: 540, height: 55, bounce: 0.62, drag: 1.9, rim: 0.72, deflect: 0.1 },
-  { speed: 420, lift: 600, height: 55, bounce: 0.66, drag: 1.7, rim: 0.75, deflect: 0.2 },
-  { speed: 1500, lift: 680, height: 55, bounce: 0.7, drag: 1.2, rim: 0.78, deflect: 0.4 },
-  { speed: 2500, lift: 760, height: 50, bounce: 0.72, drag: 0.9, rim: 0.82, deflect: 0.5 },
-  { speed: 3800, lift: 840, height: 45, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 5200, lift: 840, height: 40, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 6400, lift: 840, height: 40, bounce: 0.74, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 30, apex: 0.2, bounce: 0.55, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 50, apex: 0.3, bounce: 0.58, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 80, apex: 0.4, bounce: 0.62, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 115, apex: 0.5, bounce: 0.66, drag: 1.9, rim: 0.72, deflect: 0.1 },
+  { speed: 190, apex: 0.62, bounce: 0.7, drag: 1.7, rim: 0.75, deflect: 0.2 },
+  { speed: 320, apex: 0.74, bounce: 0.73, drag: 1.2, rim: 0.78, deflect: 0.4 },
+  { speed: 500, apex: 0.86, bounce: 0.76, drag: 0.9, rim: 0.82, deflect: 0.5 },
+  { speed: 720, apex: 1, bounce: 0.78, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 950, apex: 1, bounce: 0.78, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 1200, apex: 1, bounce: 0.78, drag: 0.7, rim: 0.85, deflect: 0.6 },
 ];
+/** altura de saída do dado, em raios do dado */
+const START_HEIGHT = 1.3;
 /** o quanto da velocidade na mesa e do impacto no aro vira salto */
 const FLOOR_SKIP = 0.22;
+/** caindo mais devagar que isso, o dado para de quicar e rola */
+const FLOOR_REST_SPEED = 60;
 const RIM_KICK = 0.25;
 /** só o aro, no chão, dá um pulinho: acima dessa altura (em raios do dado) é parede lisa */
 const RIM_HEIGHT = 1.6;
-const RIM_KICK_MIN = 180;
-const RIM_KICK_MAX = 320;
+const RIM_KICK_MIN = 110;
+const RIM_KICK_MAX = 200;
 /** abaixo dessa velocidade é só encostar no aro */
 const RIM_KICK_MIN_HIT = 40;
 /** velocidade que sobra na mesa a cada quique */
-const BOUNCE_SLIDE = 0.8;
+const BOUNCE_SLIDE = 0.88;
 /** segundos que um ponto do rastro fica visível, e a velocidade em que ele aparece */
 const TRAIL_LIFE = 0.45;
-const TRAIL_MIN_SPEED = 500;
+const TRAIL_MIN_SPEED = 400;
 const IMPACT_LIFE = 0.4;
 
 // ---------------------------------------------------------------- dado
@@ -288,7 +291,7 @@ export function createDiceEngine(
   const LBL_FONT = opts.labelFont ?? "Geist, system-ui, sans-serif";
   const GOLD = opts.gold ?? "#F0CC80";
   const SHOW_BADGE = opts.showBadge ?? true;
-  const G = 1900; // gravidade px/s²
+  const G = 750; // gravidade px/s²
 
   // câmera: elevação e tal que sin(e) = tilt
   const cam = () => {
@@ -297,12 +300,14 @@ export function createDiceEngine(
     return { K, C, VIEW: [0, C, K] as Vec3 };
   };
   const LIGHT = nrm([-0.45, 0.35, 0.85]);
-  /** maior velocidade para cima que ainda mantém o dado dentro da tela, mesmo no fundo da mesa */
-  const maxLift = (z: number) => {
+  /** altura máxima que ainda mantém o dado dentro da tela, mesmo no fundo da mesa */
+  const ceiling = () => {
     const { K, C } = cam();
-    const ceiling = Math.max(r * 3, (T.cy - (T.radius - r) * K - r) / C);
-    return Math.sqrt(2 * G * Math.max(0, ceiling - z));
+    return Math.max(r * 3, (T.cy - (T.radius - r) * K - r) / C);
   };
+  const liftTo = (from: number, to: number) =>
+    Math.sqrt(2 * G * Math.max(0, to - from));
+  const maxLift = (z: number) => liftTo(z, ceiling());
 
   let dice: Die[] = [];
   let impacts: { x: number; y: number; size: number; age: number }[] = [];
@@ -337,17 +342,19 @@ export function createDiceEngine(
     const R = (a: number, b: number) => a + rand() * (b - a);
     const ang = o.fromAngle ?? 0;
     const force = o.power || (o.fallOff ? 9 : NORMAL_FORCE);
-    const { speed, lift, height, bounce, drag, rim, deflect } = FORCES[force - 1];
+    const { speed, apex, bounce, drag, rim, deflect } = FORCES[force - 1];
     const d0 = T.radius * 0.86;
     const p: Vec3 = [
       Math.sin(ang) * d0 + R(-40, 40),
       Math.cos(ang) * d0 + R(-40, 40),
-      height * R(0.9, 1.1),
+      r * START_HEIGHT,
     ];
     // reto é do lugar do jogador para o centro; cada lançamento desvia para um lado
     const aim = ang + R(-MAX_AIM_DEVIATION, MAX_AIM_DEVIATION);
     const dir: Vec3 = [-Math.sin(aim), -Math.cos(aim), 0];
     const sp = speed * R(0.92, 1.08) * (T.radius / 294);
+    const lift = liftTo(p[2], r + apex * (ceiling() - r));
+    const spin = 5 + force;
     const die: Die = {
       fallOff: o.fallOff,
       id: "d" + ++seq,
@@ -358,8 +365,8 @@ export function createDiceEngine(
       rand,
       trail: [],
       p,
-      v: [dir[0] * sp, dir[1] * sp, Math.min(lift * R(0.8, 1.2), maxLift(p[2]))],
-      w: [R(-24, 24), R(-24, 24), R(-14, 14)],
+      v: [dir[0] * sp, dir[1] * sp, Math.min(lift * R(0.9, 1.1), maxLift(p[2]))],
+      w: [R(-spin, spin), R(-spin, spin), R(-spin / 2, spin / 2)],
       q: qn([R(-1, 1), R(-1, 1), R(-1, 1), R(-1, 1)]),
       st: "fly",
       lock: -1,
@@ -446,7 +453,7 @@ export function createDiceEngine(
         (!d.fallOff || Math.hypot(d.p[0], d.p[1]) < T.radius - r)
       ) {
         d.p[2] = r;
-        if (d.v[2] < -110) {
+        if (d.v[2] < -FLOOR_REST_SPEED) {
           // dado rápido salta pelo feltro mesmo tendo caído pouco
           d.v[2] = Math.min(
             Math.max(
@@ -457,7 +464,7 @@ export function createDiceEngine(
           );
           d.v[0] *= BOUNCE_SLIDE;
           d.v[1] *= BOUNCE_SLIDE;
-          d.w = d.w.map((x) => x * 0.6 + (Math.random() - 0.5) * 18) as Vec3;
+          d.w = d.w.map((x) => x * 0.6 + (Math.random() - 0.5) * 8) as Vec3;
         } else {
           d.v[2] = 0;
           ground = true;
@@ -484,7 +491,7 @@ export function createDiceEngine(
             impacts.push({
               x: d.p[0],
               y: d.p[1],
-              size: Math.min(1, vn / 2000),
+              size: Math.min(1, vn / 800),
               age: 0,
             });
           if (onRim && vn > RIM_KICK_MIN_HIT)
@@ -496,7 +503,7 @@ export function createDiceEngine(
                 maxLift(d.p[2]),
               ),
             );
-          d.w = d.w.map((x) => -x * 0.7 + (Math.random() - 0.5) * 16) as Vec3;
+          d.w = d.w.map((x) => -x * 0.7 + (Math.random() - 0.5) * 8) as Vec3;
         }
       }
       // no chão: atrito e rotação de rolamento (ω = ẑ × v / r)
@@ -578,7 +585,7 @@ export function createDiceEngine(
             if (D.st !== "rest") {
               // tiro em outro dado não pode lançar o dado para fora da tela
               D.v[2] = Math.min(D.v[2], maxLift(D.p[2]));
-              D.w = D.w.map((x) => x + (Math.random() - 0.5) * 20) as Vec3;
+              D.w = D.w.map((x) => x + (Math.random() - 0.5) * 10) as Vec3;
               if (D.st === "settle") D.st = "fly";
             }
         }

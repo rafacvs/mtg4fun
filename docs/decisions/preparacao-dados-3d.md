@@ -226,3 +226,22 @@ pulo mais alto. A contagem de cinco vezes mais pulos fica no teste unitário. Em
 execução no desktop, a força 8 levou 5,3 s. A sensação depende de avaliação do usuário.
 A regressão completa não foi executada.
 
+## Animação acompanhável em 30/10/2026
+
+O usuário aprovou o aro, mas pediu a barra 2,5 vezes mais lenta no início, mantendo a
+aceleração infinita. Disse que a evolução entre clique e forças não estava clara e que
+tudo estava rápido demais. Pediu animação suave para acompanhar o dado saindo, caindo
+e quicando, com a imagem de bolinhas de gude descendo uma escada, “uma chuva de dado”
+em menor escala. Isso substitui o “como um tiro” das forças altas.
+
+Escolhas de implementação, não pedidas literalmente: gravidade de 1.900 para 750 px/s²,
+velocidades de lançamento muito menores (força 8 de 3.800 para 720 px/s), altura do
+primeiro pulo como fração do espaço acima da mesa, crescendo a cada nível, retorno do
+quique maior e giro menor. Cada rolagem continua sendo um dado, com o resultado do
+servidor: a chuva vem de várias rolagens seguidas, sem dados extras.
+
+Verificação desta revisão: testes unitários e typecheck do frontend passaram, assim
+como `preparation-dice.spec.ts` com API e MySQL isolados nas três telas. Em uma execução
+no desktop, a força 1 levou 1,4 s, o clique 2,8 s e a força 8 7,8 s até parar. A sensação
+depende de avaliação do usuário. A regressão completa não foi executada.
+

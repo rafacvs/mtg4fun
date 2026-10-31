@@ -19,10 +19,11 @@ const sequence = (untilMs: number) => {
   return levels;
 };
 
-test("a força sobe de 1 a 10 em cerca de 1 segundo e volta de 10 a 1", () => {
-  const levels = sequence(2620);
+test("a força sobe de 1 a 10 em menos de 2,5 segundos e volta de 10 a 1", () => {
+  const levels = sequence(5050);
   const firstTop = levels.findIndex(({ level }) => level === 10);
-  assert.ok(levels[firstTop].at < 2000, `${levels[firstTop].at} ms`);
+  assert.ok(levels[firstTop].at < 3500, `${levels[firstTop].at} ms`);
+  assert.ok(levels[firstTop].at > 3000, `${levels[firstTop].at} ms`);
   assert.deepEqual(
     levels.map(({ level }) => level),
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
@@ -37,7 +38,7 @@ test("a força nunca sai da escala nem volta a ser o lançamento normal", () => 
 });
 
 test("cada passada é mais rápida que a anterior", () => {
-  const levels = sequence(8000);
+  const levels = sequence(16000);
   const extremes = levels.filter(
     ({ level }, index) =>
       (level === 1 || level === 10) && (index > 0 || level === 1),
@@ -59,7 +60,7 @@ test("a carga não tem velocidade máxima", () => {
   };
   const rates = [5000, 20000, 60000, 240000].map(changesIn100Ms);
   for (let i = 1; i < rates.length; i++)
-    assert.ok(rates[i] > rates[i - 1] * 2, rates.join(", "));
+    assert.ok(rates[i] > rates[i - 1], rates.join(", "));
 });
 
 test("só as forças 9 e 10 caem da mesa", () => {

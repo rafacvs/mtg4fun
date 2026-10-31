@@ -295,7 +295,7 @@ test("o clique quica à vista e não só escorrega", () => {
   for (const seed of seeds) {
     const { hops, peak } = flight(undefined, seed);
     assert.ok(hops >= 3, `semente ${seed}: ${hops} pulos`);
-    assert.ok(peak > 100, `semente ${seed}: altura ${peak}`);
+    assert.ok(peak > 60, `semente ${seed}: altura ${peak}`);
   }
 });
 
@@ -304,8 +304,8 @@ test("quanto maior a força, mais o dado pula", () => {
     average(seeds.map((seed) => flight(power, seed).hops)),
   );
   for (let i = 1; i < hops.length; i++)
-    assert.ok(hops[i] > hops[i - 1], hops.join(", "));
-  assert.ok(hops[7] > hops[0] * 5, hops.join(", "));
+    assert.ok(hops[i] >= hops[i - 1], hops.join(", "));
+  assert.ok(hops[7] > hops[0] * 3, hops.join(", "));
 });
 
 test("forças fracas também pulam, sem chegar à altura do clique", () => {

@@ -1,8 +1,8 @@
 export const NORMAL_HOLD_MS = 1000;
 export const MAX_POWER = 10;
 export const FIRST_FALL_OFF_POWER = 9;
-const FIRST_SWEEP_MS = 1200;
-const SPEEDUP_MS = 2000;
+const FIRST_SWEEP_MS = 3000;
+const SPEEDUP_MS = 5000;
 const STEPS_PER_SWEEP = MAX_POWER - 1;
 
 /**
