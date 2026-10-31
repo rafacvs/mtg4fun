@@ -4,6 +4,11 @@
   pointer-events: none;
   z-index: 3;
 }
+/* folga acima da mesa para os pulos altos passarem por cima do cabeçalho */
+.preparation-arena > .dice-surface,
+.order-arena > .dice-surface {
+  top: -110px;
+}
 .dice-roll-button {
   touch-action: none;
   user-select: none;
@@ -1091,3 +1096,58 @@
   left: 0;
   transform: rotate(270deg);
 }
+
+/* Iniciar troca só o conteúdo: mesa, parte de baixo e lateral ficam nos mesmos lugares. */
+@media (min-width: 801px) {
+  .room-screen > .order-preparation {
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 26%);
+    gap: 14px 20px;
+    min-height: 560px;
+  }
+  .order-table {
+    flex: 1 1 0;
+    padding: 22px;
+  }
+  .order-arena {
+    min-height: 0;
+    margin: 0;
+  }
+  .order-felt {
+    left: 15%;
+    width: 70%;
+    top: 25%;
+    height: 50%;
+  }
+  .order-heading {
+    flex: none;
+    min-height: 51px;
+  }
+  .order-table footer {
+    box-sizing: border-box;
+    min-height: 60px;
+    margin-top: 12px;
+    padding: 8px 12px;
+  }
+  .order-ranking {
+    flex: 0 0 140px;
+    height: 140px;
+    overflow: hidden;
+  }
+  .order-ranking ol {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(130px, 1fr);
+    grid-template-columns: none;
+    overflow-x: auto;
+  }
+}
+@media (min-width: 801px) and (max-height: 800px) {
+  .order-table {
+    padding: 16px;
+  }
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+  .order-table footer {
+    min-height: 90px;
+  }
+}
+

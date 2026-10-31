@@ -38,7 +38,7 @@ export function usePreparationDice(id: number, stopped: boolean) {
     };
   }, [id, stopped]);
   async function send(
-    kind: "roll" | "confirm",
+    kind: "roll" | "confirm" | "unconfirm",
     rollId?: string,
     power = 0,
   ) {
@@ -46,6 +46,8 @@ export function usePreparationDice(id: number, stopped: boolean) {
     setError("");
     try {
       await preparationDiceApi.send(id, kind, rollId, power);
+      // O botão troca de ação junto com a resposta, sem esperar a próxima consulta.
+      setState(await preparationDiceApi.read(id, AbortSignal.timeout(15000)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível concluir.");
     } finally {

@@ -1,7 +1,7 @@
-/* Desktop hand bar: a thin strip for the controls, with the hand fanned
-   above it so the cards rise over the bottom of the battlefield. */
+/* Desktop hand bar: a thin strip for the controls, with the whole cards fanned
+   from its bottom edge, rising over the bottom of the battlefield. */
 @media (min-width: 1001px) {
-  .desktop-table { --dock-bar-height: 68px; --hand-card: clamp(124px, 9.8vw, 172px); }
+  .desktop-table { --dock-bar-height: 68px; --hand-card: calc(clamp(124px, 9.8vw, 172px) * .9); }
   /* The lowered hand overflows the board; clip so focus or scrollIntoView never shifts the table. */
   .desktop-table .match-content { overflow: clip; }
   .desktop-table .own-dock {
@@ -30,22 +30,21 @@
   }
   .desktop-table .own-dock .zone-hand .playing-card {
     --fan-t: calc(var(--fan-offset, 0) / max(1, (var(--hand-count, 1) - 1) / 2));
-    /* A little more of the hand shows above the dock while the cards remain
-       clickable; hovering grows the card upward to its full height. */
+    /* The arc lifts the middle; the outer cards rotate on their base and still fit on screen. */
     --hand-card-height: calc(var(--hand-card) * 88 / 63);
-    flex: 0 0 auto; width: var(--hand-card); height: calc(var(--hand-card-height) * .43); aspect-ratio: auto;
-    border: 1px solid #000; border-radius: 8px 8px 0 0; box-shadow: 0 -2px 0 #ffffff0d, 0 14px 28px #000c;
-    transform: translateY(calc(var(--fan-t) * var(--fan-t) * 9px - 23px)) rotate(calc(var(--fan-t) * 6deg));
-    transform-origin: 50% 100%; transition: height .15s ease-out, transform .15s ease-out;
+    flex: 0 0 auto; width: var(--hand-card); height: var(--hand-card-height); aspect-ratio: auto;
+    border: 1px solid #000; border-radius: 8px; box-shadow: 0 -2px 0 #ffffff0d, 0 14px 28px #000c;
+    transform: translateY(calc(var(--fan-t) * var(--fan-t) * 9px - 18px)) rotate(calc(var(--fan-t) * 6deg));
+    transform-origin: 50% 100%; transition: transform .15s ease-out;
   }
+  .desktop-table .own-dock .zone-hand .playing-card .marker-dots { left: 0; bottom: calc(var(--hand-card-height) / 2 - 12px); }
   .desktop-table .own-dock .zone-hand .playing-card:not(:first-child) {
     margin-left: min(-14px, calc((100cqw - var(--hand-count, 1) * var(--hand-card)) / max(1, var(--hand-count, 1) - 1)));
   }
-  .desktop-table .own-dock .zone-hand .playing-card img { flex: 0 0 auto; width: 100%; height: var(--hand-card-height); object-fit: cover; object-position: top; border-radius: 7px 7px 0 0; }
-  .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled) img { border-radius: 7px; }
+  .desktop-table .own-dock .zone-hand .playing-card img { flex: 0 0 auto; width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 7px; }
   .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled) {
-    z-index: 2; height: var(--hand-card-height); border-color: var(--gold); border-radius: 8px; box-shadow: 0 0 0 1px var(--gold), 0 18px 34px #000d;
-    transform: translateY(-34px) rotate(calc(var(--fan-t) * 2deg));
+    z-index: 2; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 18px 34px #000d;
+    transform: translateY(-28px) rotate(calc(var(--fan-t) * 2deg));
   }
   .desktop-table .own-dock .zone-hand .playing-card.is-selected { z-index: 1; outline: 2px solid var(--gold); outline-offset: 0; box-shadow: 0 0 18px var(--gold-glow), 0 14px 28px #000c; }
   .desktop-table .own-dock .zone-hand .zone-placeholder { align-self: center; color: var(--muted); font-size: 12px; }
@@ -80,11 +79,11 @@
   .mobile-commands .quick-actions .turn-action { order: -1; }
 }
 .match-board .turn-control { display:flex; align-items:stretch; overflow:hidden; border:1px solid #e4bd68; border-radius:5px; background:linear-gradient(#edc673,#c99439); color:#241906; }
-.match-board .turn-control > span { display:grid; place-items:center; min-width:112px; padding:0 16px; font:700 15px Cinzel,serif; letter-spacing:.14em; text-transform:uppercase; }
+.match-board .turn-action > span { flex:1; min-width:112px; padding:0 16px; font:700 15px Cinzel,serif; letter-spacing:.14em; text-transform:uppercase; }
 .match-board .quick-actions .turn-control button { width:44px; min-width:44px; min-height:44px; padding:9px; justify-content:center; border:0; border-radius:0; }
 .match-board .quick-actions .turn-control .turn-previous { background:#15191a; color:#d8b36b; }
-.match-board .quick-actions .turn-control .turn-action { margin:0; height:auto; background:transparent; color:#241906; box-shadow:none; border-left:1px solid #a9762b; }
-.match-board.desktop-table .quick-actions .turn-control .turn-action { width:44px; min-width:44px; min-height:44px; height:auto; margin:0; padding:9px; justify-content:center; border:0; border-left:1px solid #a9762b; border-radius:0; background:transparent; box-shadow:none; }
+.match-board .quick-actions .turn-control .turn-action { display:flex; align-items:center; width:auto; margin:0; height:auto; padding:0 9px 0 0; background:transparent; color:#241906; box-shadow:none; }
+.match-board.desktop-table .quick-actions .turn-control .turn-action { display:flex; align-items:center; width:auto; min-width:156px; min-height:44px; height:auto; margin:0; padding:0 9px 0 0; justify-content:center; border:0; border-radius:0; background:transparent; box-shadow:none; }
 @media (min-width: 1001px) {
   .match-board.desktop-table .turn-control { height:44px; }
   .match-board.desktop-table .quick-actions .turn-control button { height:100%; min-height:0; }

@@ -87,6 +87,10 @@ export function useMatch(roomId: number) {
       const intentId = createActionIntent();
       return act(() => roomsApi.revealCards(roomId, cardIds, revealed, intentId));
     },
+    revealCardsTo: (cardIds: string[], revealedTo: number[]) => {
+      const intentId = createActionIntent();
+      return act(() => roomsApi.revealCardsTo(roomId, cardIds, revealedTo, intentId));
+    },
     retry: () => pending.current ? act(pending.current, true) : Promise.resolve(false),
     createToken: (name: string) => {
       const intentId = createActionIntent();

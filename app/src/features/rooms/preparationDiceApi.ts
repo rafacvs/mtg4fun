@@ -1,7 +1,6 @@
 import { createActionIntent } from "./actionIntent";
 
 export type PreparationRoll = {
-  fallOff?: boolean;
   power?: number;
   id: string;
   playerId: number;
@@ -31,7 +30,7 @@ export const preparationDiceApi = {
   },
   async send(
     id: number,
-    kind: "roll" | "confirm",
+    kind: "roll" | "confirm" | "unconfirm",
     rollId?: string,
     power = 0,
   ) {

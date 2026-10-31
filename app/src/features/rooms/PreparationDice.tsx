@@ -18,7 +18,6 @@ import d20Icon from "../../assets/theme/d20.svg";
 import panelCorner from "../../assets/theme/corner-v2.svg";
 import { useDiceThrowGesture } from "./useDiceThrowGesture";
 import {
-  fallsOffTable,
   MAX_POWER,
   powerColor,
   powerTextColor,
@@ -174,7 +173,6 @@ export function PreparationDice({
       const position = others.findIndex((p) => p.id === roll.playerId);
       canvas.current.toss({
         value: roll.value,
-        fallOff: roll.fallOff,
         power: roll.power,
         seed: roll.seed,
         color: colors[index % 6],
@@ -198,7 +196,8 @@ export function PreparationDice({
     const timer = setTimeout(() => setOpened(true), 4500);
     return () => clearTimeout(timer);
   }, [finished, allConfirmed, rolls.length]);
-  const action = (kind: "roll" | "confirm") => send(kind, own?.id);
+  const action = (kind: "roll" | "confirm" | "unconfirm") =>
+    send(kind, own?.id);
   useEffect(() => {
     const list = logList.current;
     if (list && followLog.current) list.scrollTop = list.scrollHeight;
@@ -207,8 +206,6 @@ export function PreparationDice({
     (power) => void send("roll", own?.id, power),
   );
   const throwPower = throwGesture.power;
-  // Dado perdido anima para todos, mas não entra no registro.
-  const registeredRolls = rolls.filter((r) => !r.fallOff);
   const diceSurface = (
     <div className="dice-surface" ref={surface}>
       <DiceTable ref={canvas} table={geometry} dieRadius={23} />
@@ -229,10 +226,10 @@ export function PreparationDice({
       }
       aria-label={
         throwPower
-          ? `Força ${throwPower} de ${MAX_POWER}${fallsOffTable(throwPower) ? ": cai da mesa" : ""}`
+          ? `Força ${throwPower} de ${MAX_POWER}`
           : undefined
       }
-      title="Segure por mais de 2 segundos para aumentar a força. Nas forças 9 e 10 o dado cai da mesa e não conta."
+      title="Segure por mais de 1 segundo para aumentar a força."
     >
       <span
         className="dice-roll-icon"
@@ -268,7 +265,7 @@ export function PreparationDice({
             list.scrollHeight - list.clientHeight - list.scrollTop < 24;
         }}
       >
-        {registeredRolls
+        {rolls
           .filter((r) => landed.has(r.id))
           .map((r) => (
             <li
@@ -298,8 +295,8 @@ export function PreparationDice({
                   ) : (
                     <>
                       rolou
-                      {registeredRolls
-                        .slice(0, registeredRolls.indexOf(r))
+                      {rolls
+                        .slice(0, rolls.indexOf(r))
                         .some(
                           (previous) =>
                             previous.playerId === r.playerId &&
@@ -580,11 +577,13 @@ export function PreparationDice({
               </button>
               <button
                 className="secondary"
-                disabled={pending || rolling || !own || !!confirmed[userId]}
-                onClick={() => void action("confirm")}
+                disabled={pending || rolling || !own}
+                onClick={() =>
+                  void action(confirmed[userId] ? "unconfirm" : "confirm")
+                }
               >
                 {confirmed[userId]
-                  ? "Confirmou"
+                  ? "Desconfirmar"
                   : `Confirmar ${own?.value || ""}`}
               </button>
             </>

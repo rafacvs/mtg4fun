@@ -45,7 +45,6 @@ export interface EngineOptions {
 }
 
 export interface TossOptions {
-  fallOff?: boolean;
   /** força do lançamento, 1–10; sem força é o lançamento normal (equivale a 4) */
   power?: number;
   /** cor do dado (#RRGGBB) — normalmente a cor do jogador */
@@ -196,35 +195,52 @@ const VERTS: Vec3[] = RAW.map(nrm);
 const NORMAL_FORCE = 4;
 const MAX_AIM_DEVIATION = Math.PI / 6;
 /**
- * Um nível por linha (força 1–10). Fraco é um dado largado na frente do próprio
- * jogador; forte sai reto e rente à mesa e fica ricocheteando no aro, como um
- * tiro. speed em px/s para uma mesa de raio 294; lift é a velocidade para cima;
- * height é a altura de saída; drag é o atrito no feltro; rim é o quanto da
- * velocidade sobra ao bater no aro; deflect é o desvio máximo do ricochete, em
- * radianos.
+ * Um nível por linha (força 1–10). O verde quase não sobe: cai à frente do jogador,
+ * anda um pouco e para. O clique (4) é um arco até o meio da mesa. Do laranja em
+ * diante a força vai para a velocidade, com altura parecida: mais tiro que parábola.
+ * speed em px/s para uma mesa de raio 294; apex é a altura do primeiro pulo, de 0
+ * (feltro) a 1 (teto da tela); bounce é o quanto da queda volta em cada quique; drag
+ * é o atrito no feltro; rim é o quanto da velocidade sobra ao bater na parede;
+ * deflect é o desvio máximo do ricochete, em radianos.
  */
 const FORCES = [
-  { speed: 110, lift: 30, height: 40, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 180, lift: 60, height: 50, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 260, lift: 110, height: 65, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 360, lift: 200, height: 90, drag: 1.9, rim: 0.5, deflect: 0 },
-  { speed: 620, lift: 240, height: 85, drag: 1.7, rim: 0.55, deflect: 0.2 },
-  { speed: 1700, lift: 150, height: 70, drag: 1.2, rim: 0.7, deflect: 0.4 },
-  { speed: 2800, lift: 90, height: 55, drag: 0.9, rim: 0.78, deflect: 0.5 },
-  { speed: 4200, lift: 50, height: 45, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 5200, lift: 50, height: 40, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 6400, lift: 40, height: 40, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 140, apex: 0.1, bounce: 0.48, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 145, apex: 0.18, bounce: 0.6, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 150, apex: 0.3, bounce: 0.72, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 155, apex: 0.45, bounce: 0.84, drag: 1.9, rim: 0.72, deflect: 0.1 },
+  { speed: 340, apex: 0.5, bounce: 0.86, drag: 1.7, rim: 0.75, deflect: 0.2 },
+  { speed: 700, apex: 0.55, bounce: 0.88, drag: 1.2, rim: 0.78, deflect: 0.4 },
+  { speed: 1150, apex: 0.6, bounce: 0.89, drag: 0.9, rim: 0.82, deflect: 0.5 },
+  { speed: 1650, apex: 0.65, bounce: 0.91, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 2200, apex: 0.65, bounce: 0.91, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 2800, apex: 0.65, bounce: 0.91, drag: 0.7, rim: 0.85, deflect: 0.6 },
 ];
+/** altura de saída do dado, em raios do dado */
+const START_HEIGHT = 1.3;
+/** o quanto da velocidade na mesa e do impacto no aro vira salto */
+const FLOOR_SKIP = 0.45;
+/** caindo mais devagar que isso, o dado para de quicar e rola */
+const FLOOR_REST_SPEED = 55;
+const RIM_KICK = 0.25;
+/** só o aro, no chão, dá um pulinho: acima dessa altura (em raios do dado) é parede lisa */
+const RIM_HEIGHT = 1.6;
+const RIM_KICK_MIN = 150;
+const RIM_KICK_MAX = 270;
+/** abaixo dessa velocidade é só encostar no aro */
+const RIM_KICK_MIN_HIT = 40;
+/** velocidade que sobra na mesa a cada quique */
+const BOUNCE_SLIDE = 0.85;
 /** segundos que um ponto do rastro fica visível, e a velocidade em que ele aparece */
 const TRAIL_LIFE = 0.45;
-const TRAIL_MIN_SPEED = 500;
+const TRAIL_MIN_SPEED = 800;
 const IMPACT_LIFE = 0.4;
-const MAX_COLLISION_LIFT = 600;
 
 // ---------------------------------------------------------------- dado
 interface Die {
-  fallOff?: boolean;
   id: string;
+  bounce: number;
+  /** velocidade do maior salto no feltro: nenhum quique passa do primeiro pulo */
+  hop: number;
   drag: number;
   rim: number;
   deflect: number;
@@ -276,7 +292,7 @@ export function createDiceEngine(
   const LBL_FONT = opts.labelFont ?? "Geist, system-ui, sans-serif";
   const GOLD = opts.gold ?? "#F0CC80";
   const SHOW_BADGE = opts.showBadge ?? true;
-  const G = 2600; // gravidade px/s²
+  const G = 1400; // gravidade px/s²
 
   // câmera: elevação e tal que sin(e) = tilt
   const cam = () => {
@@ -285,6 +301,14 @@ export function createDiceEngine(
     return { K, C, VIEW: [0, C, K] as Vec3 };
   };
   const LIGHT = nrm([-0.45, 0.35, 0.85]);
+  /** altura máxima que ainda mantém o dado dentro da tela, mesmo no fundo da mesa */
+  const ceiling = () => {
+    const { K, C } = cam();
+    return Math.max(r * 3, (T.cy - (T.radius - r) * K - r) / C);
+  };
+  const liftTo = (from: number, to: number) =>
+    Math.sqrt(2 * G * Math.max(0, to - from));
+  const maxLift = (z: number) => liftTo(z, ceiling());
 
   let dice: Die[] = [];
   let impacts: { x: number; y: number; size: number; age: number }[] = [];
@@ -318,29 +342,33 @@ export function createDiceEngine(
     const rand = o.seed !== undefined ? rng(o.seed) : Math.random;
     const R = (a: number, b: number) => a + rand() * (b - a);
     const ang = o.fromAngle ?? 0;
-    const force = o.power || (o.fallOff ? 9 : NORMAL_FORCE);
-    const { speed, lift, height, drag, rim, deflect } = FORCES[force - 1];
+    const force = o.power || NORMAL_FORCE;
+    const { speed, apex, bounce, drag, rim, deflect } = FORCES[force - 1];
     const d0 = T.radius * 0.86;
     const p: Vec3 = [
       Math.sin(ang) * d0 + R(-40, 40),
       Math.cos(ang) * d0 + R(-40, 40),
-      height * R(0.9, 1.1),
+      r * START_HEIGHT,
     ];
     // reto é do lugar do jogador para o centro; cada lançamento desvia para um lado
     const aim = ang + R(-MAX_AIM_DEVIATION, MAX_AIM_DEVIATION);
     const dir: Vec3 = [-Math.sin(aim), -Math.cos(aim), 0];
     const sp = speed * R(0.92, 1.08) * (T.radius / 294);
+    const top = r + apex * (ceiling() - r);
+    const lift = liftTo(p[2], top);
+    const spin = 5 + force;
     const die: Die = {
-      fallOff: o.fallOff,
       id: "d" + ++seq,
+      bounce,
+      hop: liftTo(r, top),
       drag,
       rim,
       deflect,
       rand,
       trail: [],
       p,
-      v: [dir[0] * sp, dir[1] * sp, lift * R(0.8, 1.2)],
-      w: [R(-24, 24), R(-24, 24), R(-14, 14)],
+      v: [dir[0] * sp, dir[1] * sp, Math.min(lift * R(0.9, 1.1), maxLift(p[2]))],
+      w: [R(-spin, spin), R(-spin, spin), R(-spin / 2, spin / 2)],
       q: qn([R(-1, 1), R(-1, 1), R(-1, 1), R(-1, 1)]),
       st: "fly",
       lock: -1,
@@ -408,30 +436,20 @@ export function createDiceEngine(
 
       // chão: quica enquanto cai rápido; depois fica rolando
       let ground = false;
-      if (d.fallOff && d.p[2] < -180) {
-        d.a = 0;
-        d.onLand?.(d.forced ?? 1);
-        continue;
-      }
-      // dado perdido nunca para no feltro, mesmo depois de bater em outro dado
-      if (d.fallOff) {
-        const min = T.radius * 1.5;
-        if (Math.hypot(d.v[0], d.v[1]) < min) {
-          const out = nrm([d.p[0] || 1, d.p[1], 0]);
-          d.v[0] = out[0] * min;
-          d.v[1] = out[1] * min;
-        }
-      }
-      if (
-        d.p[2] < r &&
-        (!d.fallOff || Math.hypot(d.p[0], d.p[1]) < T.radius - r)
-      ) {
+      if (d.p[2] < r) {
         d.p[2] = r;
-        if (d.v[2] < -110) {
-          d.v[2] = -d.v[2] * 0.42;
-          d.v[0] *= 0.8;
-          d.v[1] *= 0.8;
-          d.w = d.w.map((x) => x * 0.6 + (Math.random() - 0.5) * 18) as Vec3;
+        if (d.v[2] < -FLOOR_REST_SPEED) {
+          // dado rápido salta pelo feltro mesmo tendo caído pouco
+          d.v[2] = Math.min(
+            Math.max(
+              -d.v[2] * d.bounce,
+              Math.hypot(d.v[0], d.v[1]) * FLOOR_SKIP,
+            ),
+            d.hop,
+          );
+          d.v[0] *= BOUNCE_SLIDE;
+          d.v[1] *= BOUNCE_SLIDE;
+          d.w = d.w.map((x) => x * 0.6 + (Math.random() - 0.5) * 8) as Vec3;
         } else {
           d.v[2] = 0;
           ground = true;
@@ -439,7 +457,7 @@ export function createDiceEngine(
       }
       // parede circular (aro da mesa)
       const dist = Math.hypot(d.p[0], d.p[1]);
-      if (dist > lim && !d.fallOff) {
+      if (dist > lim) {
         const nx = d.p[0] / dist,
           ny = d.p[1] / dist;
         d.p[0] = nx * lim;
@@ -453,18 +471,28 @@ export function createDiceEngine(
             [vx, vy] = d.v;
           d.v[0] = vx * Math.cos(turn) - vy * Math.sin(turn);
           d.v[1] = vx * Math.sin(turn) + vy * Math.cos(turn);
-          if (vn > TRAIL_MIN_SPEED)
+          const onRim = d.p[2] < r * RIM_HEIGHT;
+          if (onRim && vn > TRAIL_MIN_SPEED)
             impacts.push({
               x: d.p[0],
               y: d.p[1],
-              size: Math.min(1, vn / 2000),
+              size: Math.min(1, vn / 1600),
               age: 0,
             });
-          d.w = d.w.map((x) => -x * 0.7 + (Math.random() - 0.5) * 16) as Vec3;
+          if (onRim && vn > RIM_KICK_MIN_HIT)
+            d.v[2] = Math.max(
+              d.v[2],
+              Math.min(
+                Math.max(vn * RIM_KICK, RIM_KICK_MIN),
+                RIM_KICK_MAX,
+                maxLift(d.p[2]),
+              ),
+            );
+          d.w = d.w.map((x) => -x * 0.7 + (Math.random() - 0.5) * 8) as Vec3;
         }
       }
       // no chão: atrito e rotação de rolamento (ω = ẑ × v / r)
-      if (ground && !d.fallOff) {
+      if (ground) {
         const f = Math.exp(-(d.st === "settle" ? 7 : d.drag) * dt);
         d.v[0] *= f;
         d.v[1] *= f;
@@ -541,8 +569,8 @@ export function createDiceEngine(
           for (const D of [A, B])
             if (D.st !== "rest") {
               // tiro em outro dado não pode lançar o dado para fora da tela
-              D.v[2] = Math.min(D.v[2], MAX_COLLISION_LIFT);
-              D.w = D.w.map((x) => x + (Math.random() - 0.5) * 20) as Vec3;
+              D.v[2] = Math.min(D.v[2], maxLift(D.p[2]));
+              D.w = D.w.map((x) => x + (Math.random() - 0.5) * 10) as Vec3;
               if (D.st === "settle") D.st = "fly";
             }
         }

@@ -112,6 +112,7 @@ type Card struct {
 	Row              int         `json:"row"`
 	StackOrder       int         `json:"stackOrder"`
 	Revealed         bool        `json:"revealed,omitempty"`
+	RevealedTo       []int64     `json:"revealedTo,omitempty"`
 	Text             string      `json:"text,omitempty"`
 	ImageName        string      `json:"imageName,omitempty"`
 	InstanceKind     string      `json:"instanceKind,omitempty"`
@@ -210,6 +211,7 @@ type VisibleCard struct {
 	Row              int         `json:"row"`
 	StackOrder       int         `json:"stackOrder"`
 	Revealed         bool        `json:"revealed,omitempty"`
+	RevealedTo       []int64     `json:"revealedTo,omitempty"`
 	PrintedPower     string      `json:"printedPower,omitempty"`
 	PrintedToughness string      `json:"printedToughness,omitempty"`
 	Power            int64       `json:"power,omitempty"`
@@ -234,6 +236,7 @@ type ExposedCard struct {
 	Faces            []string    `json:"faces,omitempty"`
 	FaceIndex        int         `json:"faceIndex,omitempty"`
 	Revealed         bool        `json:"revealed"`
+	RevealedTo       []int64     `json:"revealedTo,omitempty"`
 	PrintedPower     string      `json:"printedPower,omitempty"`
 	PrintedToughness string      `json:"printedToughness,omitempty"`
 	Power            int64       `json:"power,omitempty"`
@@ -276,6 +279,9 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 		if !hideCardModifiers(c, viewerID) {
 			v.Power, v.Toughness, v.Markers = c.Power, c.Toughness, c.Markers
 		}
+		if viewerID == c.OwnerID {
+			v.RevealedTo = c.RevealedTo
+		}
 		out[i] = v
 	}
 	return out
@@ -286,7 +292,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
 		for _, cards := range [][]Card{v.Hand, v.Library, v.Battlefield, v.Command, v.Graveyard, v.Exile} {
 			for _, card := range cards {
-				if card.Revealed {
+				if card.Revealed || card.revealedToViewer(viewerID) {
 					inConsultation := false
 					for _, id := range v.ConsultationIDs {
 						if card.ID == id {
@@ -297,7 +303,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 					if inConsultation {
 						continue
 					}
-					view := ExposedCard{PrintedPower: card.PrintedPower, PrintedToughness: card.PrintedToughness, IsToken: isToken(card), Text: card.Text, ImageName: card.ImageName, InstanceKind: card.InstanceKind, ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: true, Power: card.Power, Toughness: card.Toughness, Markers: card.Markers}
+					view := ExposedCard{PrintedPower: card.PrintedPower, PrintedToughness: card.PrintedToughness, IsToken: isToken(card), Text: card.Text, ImageName: card.ImageName, InstanceKind: card.InstanceKind, ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: card.Revealed, RevealedTo: card.RevealedTo, Power: card.Power, Toughness: card.Toughness, Markers: card.Markers}
 					p[i].ExposedCards = append(p[i].ExposedCards, view)
 				}
 			}

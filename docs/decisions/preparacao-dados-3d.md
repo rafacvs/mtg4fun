@@ -178,3 +178,151 @@ passaram. A suíte focada de navegador cobre a ida e volta da carga no botão re
 com as passadas ficando mais curtas, e a medição do lançamento no canvas. O
 resultado desta execução está na descrição do PR. A regressão completa não foi
 executada.
+
+## Quiques mais altos em 30/10/2026
+
+O usuário achou os dados realistas demais e pediu algo mais gamificado, com mais
+pulos e diferença de força mais visível ao segurar o botão. O pedido não muda o
+contrato nem a regra de forças 1 a 8 na mesa e 9 e 10 para fora.
+
+Escolhas de implementação, não pedidas literalmente: gravidade menor, retorno do
+quique que cresce com a força, velocidade na mesa e impacto no aro convertidos em
+salto. A altura é limitada para o dado continuar no canvas, que
+no desktop sobe 110 px sobre o cabeçalho. No celular, a mesa recorta o canvas, então
+os pulos são mais baixos.
+
+Ao testar, o usuário disse que os dados disparavam retos, sem subir, e que batiam na
+parede e paravam. Pediu que as paredes também os jogassem para cima, para os dados
+pularem na mesa e criarem expectativa. Isso substitui o “mais reto” das forças altas
+pedido na revisão anterior: todos os níveis saem para cima, e o aro devolve mais
+velocidade e sempre dá um salto a partir de uma batida mínima.
+
+Verificação desta revisão: testes unitários e typecheck do frontend passaram. A suíte
+de `preparation-dice.spec.ts` passou com API e MySQL isolados nas três telas; em uma
+execução no desktop, o clique levou 2,2 s com 2 pulos visíveis no canvas, e a força 8
+levou 9,9 s com 11, sem encostar no topo do canvas. Quatro cenários de
+`preparacao-mesa.spec.ts` e `preparacao-mobile.spec.ts` falham igualmente na `master`,
+sem esta mudança. A sensação do lançamento depende de avaliação do usuário. A regressão
+completa não foi executada.
+
+## Aro, parede e carga em 30/10/2026
+
+Depois de testar, o usuário aprovou a subida e os quiques, mas disse que a parede
+jogando para cima parecia um ventilador. Pediu física normal de parede, com só o aro
+dourado no chão dando um pequeno pulo. Pediu também que a carga comece com 1 segundo
+e seja mais rápida, acelerando sem limite para que segurar demais tire o controle.
+Isso substitui a batida no aro da revisão anterior, os 2 segundos e o limite de 40 ms
+por nível.
+
+Escolhas de implementação, não pedidas literalmente: o aro vale até 1,6 raio do dado
+de altura e dá um impulso de 180 a 320 px/s; o anel de impacto só aparece nessa batida.
+A primeira subida leva cerca de 1 s e a velocidade da carga cresce continuamente.
+
+Verificação desta revisão: testes unitários e typecheck do frontend passaram, assim
+como `preparation-dice.spec.ts` com API e MySQL isolados. A medição no canvas ficou
+menos exigente: como a parede não dá mais pulos, a contagem pela posição na tela só
+separa o tiro do clique por uma pequena margem, e o teste passou a exigir mais pulos e
+pulo mais alto. A contagem de cinco vezes mais pulos fica no teste unitário. Em uma
+execução no desktop, a força 8 levou 5,3 s. A sensação depende de avaliação do usuário.
+A regressão completa não foi executada.
+
+## Animação acompanhável em 30/10/2026
+
+O usuário aprovou o aro, mas pediu a barra 2,5 vezes mais lenta no início, mantendo a
+aceleração infinita. Disse que a evolução entre clique e forças não estava clara e que
+tudo estava rápido demais. Pediu animação suave para acompanhar o dado saindo, caindo
+e quicando, com a imagem de bolinhas de gude descendo uma escada, “uma chuva de dado”
+em menor escala. Isso substitui o “como um tiro” das forças altas.
+
+Escolhas de implementação, não pedidas literalmente: gravidade de 1.900 para 750 px/s²,
+velocidades de lançamento muito menores (força 8 de 3.800 para 720 px/s), altura do
+primeiro pulo como fração do espaço acima da mesa, crescendo a cada nível, retorno do
+quique maior e giro menor. Cada rolagem continua sendo um dado, com o resultado do
+servidor: a chuva vem de várias rolagens seguidas, sem dados extras.
+
+Verificação desta revisão: testes unitários e typecheck do frontend passaram, assim
+como `preparation-dice.spec.ts` com API e MySQL isolados nas três telas. Em uma execução
+no desktop, a força 1 levou 1,4 s, o clique 2,8 s e a força 8 7,8 s até parar. A sensação
+depende de avaliação do usuário. A regressão completa não foi executada.
+
+## Forças por cor e fim da queda em 30/10/2026
+
+O usuário achou a revisão anterior lenta demais e descreveu cada faixa: o clique é uma
+jogada média, em arco; o verde mais fraco vai mais para a frente que antes, quase não
+sobe, cai, anda um pouco e para; o laranja é mais forte e um pouco mais alto, mais tiro
+que parábola. Depois pediu para tirar a regra de 9 e 10 saírem da arena: passam a ser
+só tiros mais fortes. Isso substitui a queda e o “não aparece no registro” descritos
+acima.
+
+Escolhas de implementação, não pedidas literalmente: gravidade de 750 para 1.100 px/s²,
+força 1 a 150 px/s e pulo de 10% do espaço, clique a 175 px/s e 45%, força 7 a 820 px/s
+e 60%, força 10 a 1.900 px/s e 65%. O campo fallOff saiu do servidor e do cliente; o
+contrato continua aceitando power de 0 a 10. Rolagens antigas com fallOff em salas ainda
+em preparação passam a aparecer no registro, porque a marca deixa de ser lida.
+
+Verificação desta revisão: testes unitários, typecheck do frontend, testes do pacote
+`internal/rooms` e a integração HTTP da preparação passaram. `preparation-dice.spec.ts`
+passou com API e MySQL isolados nas três telas. Em uma execução no desktop, a força 1
+levou 1,2 s e andou 59 px, o clique 2,4 s e 223 px, a força 8 5,8 s e 1.422 px, e a
+força 10 5,7 s e 1.920 px. A sensação depende de avaliação do usuário. A regressão
+completa não foi executada.
+
+## Mais potência em 30/10/2026
+
+O usuário achou o lançamento lento e pediu mais força e velocidade, principalmente
+conforme a barra, sem exagero. Escolhas de implementação, não pedidas literalmente:
+gravidade de 1.100 para 1.400 px/s², força 1 de 150 para 170 px/s, clique de 175 para
+200, força 7 de 820 para 1.150, força 8 de 1.150 para 1.650 e força 10 de 1.900 para
+2.800. O verde e o clique continuam caindo nos mesmos lugares.
+
+Verificação desta revisão: testes unitários, typecheck e `preparation-dice.spec.ts`
+passaram nas três telas com API e MySQL isolados, em um clone temporário, porque o
+checkout principal estava em uso por outra tarefa. Em uma execução no desktop, a
+distância no primeiro meio segundo foi de 88 px no clique, 568 px na força 8 e 892 px
+na força 10. A sensação depende de avaliação do usuário. A regressão completa não foi
+executada.
+
+## Feltro que devolve o pulo em 30/10/2026
+
+O usuário gostou da potência e pediu o chão com física para empurrar os dados para
+cima, para quicarem mais. Escolhas de implementação, não pedidas literalmente: retorno
+do quique maior em todas as forças, de 0,42 na força 1 a 0,83 nas forças 8 a 10, e mais
+velocidade convertida em salto (0,22 para 0,32). As velocidades de 1 a 4 caíram um
+pouco para o verde e o clique continuarem caindo nos mesmos lugares.
+
+Verificação desta revisão: testes unitários, typecheck e `preparation-dice.spec.ts`
+passaram nas três telas com API e MySQL isolados. Em uma execução no desktop, o clique
+levou 2,6 s com 3 pulos visíveis, a força 8 6,1 s com 4 e a força 10 6,8 s com 6, sem
+sair do canvas. A sensação depende de avaliação do usuário. A regressão completa não
+foi executada.
+
+Depois de testar, o usuário pediu que os dados quicassem por mais tempo ainda. Escolhas
+de implementação, não pedidas literalmente: retorno do quique de 0,48 na força 1, 0,84
+no clique e 0,91 nas forças 8 a 10; o dado para de quicar abaixo de 55 px/s; a velocidade
+na mesa vira mais salto (0,45), limitado à altura do primeiro pulo, para o laranja seguir
+só um pouco mais alto que o clique. As velocidades de 1 a 4 caíram para 140 a 155 px/s,
+mantendo verde e clique nos mesmos lugares. A rolagem que vale, sempre um clique, leva
+de 3,2 a 3,7 s para entrar no registro. Como o clique ficou mais longo, a medição no
+canvas passou a exigir que o tiro dure 1,4 vez o clique, e não 1,8.
+
+Verificação: testes unitários, typecheck e `preparation-dice.spec.ts` passaram nas três
+telas com API e MySQL isolados, exceto pela margem acima, ajustada depois; a medição de
+desktop foi então repetida cinco vezes. A regressão completa não foi executada.
+
+## Quadro estável e desconfirmar em 31/10/2026
+
+O usuário pediu que a tela central mantivesse o tamanho ao iniciar, trocando só o
+conteúdo, e que fosse possível desconfirmar para rolar de novo. Isso substitui o bloqueio
+da rolagem depois de confirmar descrito acima; a última confirmação continua iniciando a
+partida, sem volta.
+
+Escolhas de implementação, não pedidas literalmente: no desktop, a etapa de ordem usa as
+mesmas colunas, espaçamentos e alturas da preparação, com a classificação em uma linha
+própria de 140 px. POST /preparation/actions aceita o tipo aditivo `unconfirm`, que
+responde 409 quando não há confirmação ou depois de iniciar.
+
+Verificação: a integração HTTP cobre desconfirmar, empate liberado, nova rolagem,
+reinício e bloqueio depois de iniciar. `preparation-dice.spec.ts` passou nas três telas,
+medindo o quadro antes e depois de iniciar com 2, 4 e 6 jogadores. Capturas destas
+telas não foram inspecionadas. A regressão completa não foi executada.
+

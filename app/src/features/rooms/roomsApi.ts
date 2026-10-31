@@ -31,7 +31,7 @@ export type Match = {
   players: { userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
-export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; createdTokens?: string[] };
+export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; revealedTo?: number[]; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; createdTokens?: string[] };
 export type CatalogToken = { name: string; text?: string; power?: string; toughness?: string; imageName?: string };
 export type CustomToken = { name: string; description: string; power?: string; toughness?: string };
 
@@ -108,6 +108,7 @@ export const roomsApi = {
   setFace: (id: number, cardId: string, faceIndex: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face', cardId, faceIndex }),
   setFaceDown: (id: number, cardIds: string[], faceDown: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_face_down', cardIds, faceDown }),
   revealCards: (id: number, cardIds: string[], revealed: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal_cards', cardIds, revealed }),
+  revealCardsTo: (id: number, cardIds: string[], revealedTo: number[], intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'reveal_cards', cardIds, revealed: true, revealedTo }),
   settings: async (id: number, settings: Partial<Pick<Room, 'life' | 'commanderToCommand' | 'drawOpeningHand'>>): Promise<Room> => {
     const response = await fetch(`/api/rooms/${id}/settings`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
     const data = await response.json();

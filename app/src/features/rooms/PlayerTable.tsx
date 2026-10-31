@@ -74,9 +74,17 @@ export function PlayerTable({ fitAllRequest = 0, player, focused, expanded, own,
         <ZoneColumn player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} onLibrary={onLibrary} onDraw={player.consulting ? undefined : onDraw} onOpenZone={onOpenZone} selectionActions={selectionActions} disabled={disabled} />
         <Battlefield fitAllRequest={fitAllRequest} player={player} viewerId={viewerId} droppable={own} hoverZone={hoverZone} gesture={gesture} fieldZoom={fieldZoom} onFieldZoom={onFieldZoom} focused={focused} currentTurn={currentTurn} onFocus={onFocus} focusEnabled={fieldFocusEnabled} />
       </div>
-      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>Reveladas · Todos veem</span>{onHideRevealed && <button className="secondary" disabled={disabled} onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
+      {Boolean((player.revealed?.length ?? 0) + (player.exposedCards?.length ?? 0)) && <section className="table-revealed" aria-label={`Cartas reveladas de ${player.name}`}><header><span>{revealedHeading(player, viewerId)}</span>{onHideRevealed && <button className="secondary" disabled={disabled} onClick={onHideRevealed}>Ocultar todas reveladas</button>}</header><div>{[...(player.revealed ?? []), ...(player.exposedCards ?? [])].map(card => <PlayingCard key={card.id} card={card} draggable={false} {...gesture} />)}</div></section>}
     </div>
   </article>;
+}
+
+function revealedHeading(player: Match['players'][number], viewerId: number) {
+  const cards = [...player.revealed ?? [], ...player.exposedCards ?? []];
+  const chosen = cards.filter(card => card.revealedTo?.length).length;
+  if (!chosen) return 'Reveladas · Todos veem';
+  if (chosen < cards.length) return 'Reveladas';
+  return player.userId === viewerId ? 'Reveladas · Só os escolhidos veem' : 'Reveladas · Para você';
 }
 
 export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, onOpenZone, selectionActions, disabled }: ZoneProps) {

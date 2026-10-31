@@ -44,6 +44,7 @@ type matchAction struct {
 	Tapped           bool
 	FaceDown         bool
 	Revealed         bool
+	RevealedTo       []int64
 	FaceIndex        int
 	ConsultFrom      string
 	Target           string
@@ -320,6 +321,7 @@ func mulligan(m *matchState, p *playerState) (actionLogPayload, error) {
 	for i := range cards {
 		cards[i].Zone = "library"
 		cards[i].Revealed = false
+		cards[i].RevealedTo = nil
 	}
 	if err := shuffle(cards); err != nil {
 		return actionLogPayload{}, err
@@ -498,7 +500,13 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = changeCounters(&m, p, input)
 	case "hide_all_revealed":
 		payload, err = actionLogPayload{Kind: input.Kind, Count: clearRevelations(p)}, nil
-	case "set_tapped", "untap_all", "set_face", "set_face_down", "reveal_cards":
+	case "reveal_cards":
+		if input.RevealedTo != nil {
+			payload, err = revealHandCardsTo(&m, p, input)
+		} else {
+			payload, err = changeCardState(p, input)
+		}
+	case "set_tapped", "untap_all", "set_face", "set_face_down":
 		payload, err = changeCardState(p, input)
 	case "draw":
 		payload, err = drawCards(p, input.Count)
@@ -540,6 +548,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	if err != nil {
 		return Match{}, err
 	}
+	endHandRevelationsOutsideHand(&m)
 	snapshot, err := json.Marshal(m)
 	if err != nil {
 		return Match{}, err

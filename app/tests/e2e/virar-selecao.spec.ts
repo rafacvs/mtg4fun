@@ -99,8 +99,10 @@ test('duplo clique vira e desvira quatro cartas selecionadas por área', async (
     await first.dblclick();
     await expect(field.locator('.is-selected[data-tapped="false"]')).toHaveCount(4);
     await first.click({ button: 'right' });
-    await expect(page.getByRole('dialog', { name: 'Imagem de Island' })).toBeVisible();
-    await page.getByRole('dialog', { name: 'Imagem de Island' }).getByRole('button', { name: 'Fechar', exact: true }).click();
+    await expect(selected).toHaveCount(3);
+    await first.click({ button: 'right' });
+    await expect(selected).toHaveCount(4);
+    await expect(page.getByRole('dialog', { name: 'Imagem de Island' })).toHaveCount(0);
     // A double click outside the selection acts only on that card.
     const unselected = field.locator(`[data-card-id="${ids[4]}"]`);
     await unselected.dblclick();

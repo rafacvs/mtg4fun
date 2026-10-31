@@ -5,78 +5,13 @@ import { createDiceEngine } from "./dice/diceEngine.ts";
 const table = { cx: 400, cy: 250, radius: 280, tilt: 0.4 };
 const seeds = [1, 17, 50, 909, 1730000000123];
 
-test("lançamento para fora termina com o valor do servidor e remove o dado", () => {
-  for (const seed of seeds) {
-    let result = 0;
-    const engine = createDiceEngine(null, { table });
-    engine.toss({
-      color: "#6cb4f5",
-      value: 17,
-      seed,
-      fallOff: true,
-      onLand: (value) => {
-        result = value;
-      },
-    });
-    for (let step = 0; step < 1200 && engine.count(); step++)
-      engine.step(1 / 120);
-    assert.equal(result, 17);
-    assert.equal(engine.count(), 0);
-    engine.destroy();
-  }
-});
-
-test("forças 9 e 10 saem do feltro e nunca param nele", () => {
-  for (const power of [9, 10])
-    for (const seed of seeds) {
-      const engine = createDiceEngine(null, { table });
-      engine.toss({ color: "#6cb4f5", value: 12, seed, power, fallOff: true });
-      let farthest = 0;
-      for (let step = 0; step < 1200 && engine.count(); step++) {
-        engine.step(1 / 120);
-        for (const die of engine.snapshot()) {
-          assert.equal(die.st, "fly");
-          farthest = Math.max(farthest, Math.hypot(die.p[0], die.p[1]));
-        }
-      }
-      assert.equal(engine.count(), 0);
-      assert.ok(farthest > table.radius, `força ${power}, semente ${seed}`);
-      engine.destroy();
-    }
-});
-
-test("dado perdido não para ao bater em dados parados no caminho", () => {
-  for (const seed of seeds) {
-    const engine = createDiceEngine(null, { table, restMs: 60000 });
-    for (let i = 0; i < 12; i++)
-      engine.toss({ color: "#4fd1b0", value: 3, seed: seed + i + 1 });
-    for (let step = 0; step < 600; step++) engine.step(1 / 120);
-    const resting = engine.count();
-    let landed = 0;
-    engine.toss({
-      color: "#6cb4f5",
-      value: 12,
-      seed,
-      power: 10,
-      fallOff: true,
-      onLand: (value) => {
-        landed = value;
-      },
-    });
-    for (let step = 0; step < 300 && !landed; step++) engine.step(1 / 120);
-    assert.equal(landed, 12);
-    assert.equal(engine.count(), resting);
-    engine.destroy();
-  }
-});
-
 test("tiro em dados parados não lança o dado para fora da tela", () => {
   for (const seed of seeds) {
     const engine = createDiceEngine(null, { table, restMs: 60000 });
     for (let i = 0; i < 12; i++)
       engine.toss({ color: "#4fd1b0", value: 3, seed: seed + i + 1 });
     for (let step = 0; step < 600; step++) engine.step(1 / 120);
-    engine.toss({ color: "#6cb4f5", value: 12, seed, power: 8 });
+    engine.toss({ color: "#6cb4f5", value: 12, seed, power: 10 });
     for (let step = 0; step < 300; step++) {
       engine.step(1 / 120);
       for (const die of engine.snapshot())
@@ -86,8 +21,8 @@ test("tiro em dados parados não lança o dado para fora da tela", () => {
   }
 });
 
-test("forças de 1 a 8 ficam na mesa e param no valor do servidor", () => {
-  for (let power = 1; power <= 8; power++)
+test("todas as forças ficam na mesa e param no valor do servidor", () => {
+  for (let power = 1; power <= 10; power++)
     for (const seed of seeds) {
       let result = 0;
       const engine = createDiceEngine(null, { table });
@@ -184,21 +119,51 @@ test("o clique normal é igual à força 4 e cai no meio da mesa", () => {
   }
 });
 
-test("forças baixas caem na frente do jogador, mais perto quanto menor", () => {
+test("o verde vai para a frente, sem chegar ao meio, e o clique passa dele", () => {
   for (const seed of seeds) {
-    const depth = landingDepth(1, seed);
-    assert.ok(depth > 0.55, `semente ${seed}: ${depth}`);
+    const weakest = landingDepth(1, seed);
+    assert.ok(weakest > 0.25 && weakest < 0.7, `semente ${seed}: ${weakest}`);
+    assert.ok(landingDepth(undefined, seed) < weakest, `semente ${seed}`);
   }
-  const depths = [1, 2, 3, 4, 5].map((power) =>
+  const depths = [1, 2, 3, 4].map((power) =>
     average(seeds.map((seed) => landingDepth(power, seed))),
   );
   for (let i = 1; i < depths.length; i++)
     assert.ok(depths[i] < depths[i - 1], depths.join(", "));
 });
 
-test("forças altas saem retas, como um tiro", () => {
-  assert.ok(launch(10).lift < launch(4).lift / 2);
-  assert.ok(launch(10).speed > launch(4).speed * 5);
+test("só o aro no chão dá um pulinho; no alto a parede não mexe na subida", () => {
+  let onRim = 0,
+    inAir = 0;
+  for (const power of [5, 6, 7, 8])
+    for (const seed of seeds) {
+      const engine = createDiceEngine(null, { table, restMs: 60000 });
+      engine.toss({ color: "#6cb4f5", value: 12, seed, power });
+      for (let step = 0; step < 3000; step++) {
+        const [before] = engine.snapshot();
+        const speed = Math.hypot(before.v[0], before.v[1]);
+        const outward = before.p[0] * before.v[0] + before.p[1] * before.v[1];
+        const lift = before.v[2];
+        const height = before.p[2];
+        engine.step(1 / 120);
+        const [after] = engine.snapshot();
+        const inward = after.p[0] * after.v[0] + after.p[1] * after.v[1];
+        if (outward <= 0 || inward >= 0 || speed < 300) continue;
+        const label = `força ${power}, semente ${seed}, altura ${height}`;
+        if (height > 28 * 2.5) {
+          inAir++;
+          assert.ok(after.v[2] <= lift, label);
+        } else if (height < 28 * 1.2 && after.p[2] < 28 * 1.2) {
+          onRim++;
+          assert.ok(after.v[2] > 0, `${label}: ${after.v[2]}`);
+          assert.ok(after.v[2] <= 900, `${label}: ${after.v[2]}`);
+        }
+        assert.ok(Math.hypot(after.v[0], after.v[1]) > speed * 0.35, label);
+      }
+      engine.destroy();
+    }
+  assert.ok(onRim > 0, "nenhuma batida no aro");
+  assert.ok(inAir > 0, "nenhuma batida no alto");
 });
 
 test("o tiro continua ricocheteando depois que o clique já parou", () => {
@@ -221,4 +186,99 @@ test("o tiro continua ricocheteando depois que o clique já parou", () => {
   };
   for (const seed of seeds)
     assert.ok(seconds(8, seed) > seconds(4, seed) * 1.8, `semente ${seed}`);
+});
+
+/** Pulos do dado até parar e a maior altura que ele alcança. */
+const flight = (power: number | undefined, seed: number, fromAngle = 0) => {
+  const engine = createDiceEngine(null, { table });
+  let landed = false;
+  engine.toss({
+    color: "#6cb4f5",
+    value: 12,
+    seed,
+    power,
+    fromAngle,
+    onLand: () => {
+      landed = true;
+    },
+  });
+  let hops = 0,
+    peak = 0,
+    falling = false,
+    highestOnScreen = Infinity;
+  for (let step = 0; step < 3000 && !landed; step++) {
+    engine.step(1 / 120);
+    const [die] = engine.snapshot();
+    if (falling && die.v[2] > 0) hops++;
+    falling = die.v[2] < 0;
+    peak = Math.max(peak, die.p[2]);
+    const cameraTilt = Math.sqrt(1 - table.tilt * table.tilt);
+    highestOnScreen = Math.min(
+      highestOnScreen,
+      table.cy + die.p[1] * table.tilt - die.p[2] * cameraTilt,
+    );
+  }
+  engine.destroy();
+  return { hops, peak, highestOnScreen };
+};
+
+test("o clique quica à vista e não só escorrega", () => {
+  for (const seed of seeds) {
+    const { hops, peak } = flight(undefined, seed);
+    assert.ok(hops >= 3, `semente ${seed}: ${hops} pulos`);
+    assert.ok(peak > 60, `semente ${seed}: altura ${peak}`);
+  }
+});
+
+test("quanto maior a força, mais o dado pula", () => {
+  const hops = (power: number) =>
+    average(seeds.map((seed) => flight(power, seed).hops));
+  assert.ok(hops(1) < hops(4));
+  assert.ok(hops(4) < hops(7));
+  assert.ok(hops(7) < hops(8));
+});
+
+test("forças fracas também pulam, sem chegar à altura do clique", () => {
+  for (const seed of seeds) {
+    const weak = flight(1, seed);
+    assert.ok(weak.hops >= 1, `semente ${seed}`);
+    assert.ok(weak.peak < flight(4, seed).peak, `semente ${seed}`);
+  }
+});
+
+test("o pulo mais alto continua dentro do canvas", () => {
+  for (let power = 1; power <= 10; power++)
+    for (const [fromAngle, seed] of [
+      [0, 1],
+      [Math.PI, 17],
+      [2.2, 909],
+    ])
+      assert.ok(
+        flight(power, seed, fromAngle).highestOnScreen > 0,
+        `força ${power}, ângulo ${fromAngle}`,
+      );
+});
+
+test("do clique ao laranja, o lançamento fica mais reto e bem mais forte", () => {
+  const steepness = (power: number) =>
+    average(
+      seeds.map((seed) => {
+        const { lift, speed } = launch(power, seed);
+        return lift / speed;
+      }),
+    );
+  assert.ok(steepness(7) < steepness(4) / 2.5);
+  assert.ok(steepness(8) < steepness(7));
+  assert.ok(launch(7).speed > launch(4).speed * 3);
+  assert.ok(launch(10).speed > launch(4).speed * 5);
+});
+
+test("o laranja sobe só um pouco mais que o clique, e o verde quase não sobe", () => {
+  for (const seed of seeds) {
+    const click = flight(undefined, seed).peak;
+    const orange = flight(7, seed).peak;
+    assert.ok(orange > click * 0.95 && orange < click * 1.5, `semente ${seed}`);
+    assert.ok(flight(1, seed).peak < click * 0.65, `semente ${seed}`);
+    assert.ok(flight(1, seed).hops <= 2, `semente ${seed}`);
+  }
 });
