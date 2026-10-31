@@ -111,15 +111,13 @@
 .zone-battlefield .playing-card > img { border-radius: 4px; }
 .zone-battlefield .playing-card.is-tapped > img { filter: saturate(.6) brightness(.72); }
 .zone-battlefield .playing-card .card-stats { position: static; }
+.zone-battlefield .playing-card .marker-dots { top: 50%; bottom: auto; left: 2px; transform: translateY(-50%); }
 .zone-battlefield .playing-card .pt-modifier {
   position: absolute; right: -4px; bottom: -5px; min-width: 28px;
   border: 1px solid #8a6a2e; border-radius: 3px; background: #e9dfc4; color: #1b160d;
   font: 700 11px/17px Cinzel, Georgia, serif; text-align: center; box-shadow: 0 2px 6px #0008;
 }
 .zone-battlefield .playing-card .pt-modifier[data-modified=true] { background: #e2b45c; border-color: #f4d58e; color: #1b1204; }
-.zone-battlefield .playing-card .marker-dots { position: absolute; top: -6px; left: -5px; gap: 2px; }
-.zone-battlefield .playing-card .marker-dot { width: 20px; min-width: 20px; height: 20px; border-radius: 4px; border: 1px solid #a5d3a6; font: 700 11px/18px Geist, sans-serif; box-shadow: 0 2px 6px #0008; }
-.zone-battlefield .playing-card .marker-green { background: #24583a; border-color: #6fbf8c; color: #e6f6ea; }
 .zone-battlefield .playing-card .card-state-badges { left: auto; right: 3px; justify-content: flex-end; max-width: 75%; }
 .zone-battlefield .playing-card .card-state-badges small { border: 1px solid #d9a94e66; border-radius: 2px; color: #efe8d8; font: 700 8px/1.2 Cinzel, serif; text-transform: uppercase; }
 .zone-battlefield .playing-card.is-tapped .pt-modifier { transform: rotate(-90deg); }

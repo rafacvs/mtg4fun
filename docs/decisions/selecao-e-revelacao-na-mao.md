@@ -58,3 +58,21 @@ isso, o ajuste do botão direito em `card-actions.spec.ts` e a faixa de revelada
 `estados.spec.ts` não ficaram cobertos por esses cenários. A regressão completa não foi
 executada.
 
+## Mão inteira e marcadores na carta
+
+Em 31/10/2026, o usuário pediu a mão em leque com as cartas inteiras embaixo, 10% menores,
+e os marcadores de cor da carta na lateral esquerda, com ícone pequeno e número. Ele
+testou na porta 8080, disse que estava funcionando e dispensou mais testes.
+
+Escolhas de implementação, não pedidas literalmente: a redução e a carta inteira valem
+para a mão no desktop, que agora sobe mais sobre o campo próprio; o celular não mudou.
+Os marcadores mudaram em toda carta exibida como carta na mesa.
+
+Uma proposta de mostrar poder e resistência totais na inspeção foi implementada e
+desfeita a pedido do usuário; o campo continua mostrando o modificador.
+
+Verificação: `mao-e-marcadores-na-carta.spec.ts` passou no desktop. Oito cenários de
+`desktop-table.spec.ts` e `game-ui.spec.ts` e um de `contadores.spec.ts` falham igualmente
+na `master`, portanto não cobrem esta mudança. Depois de centralizar os marcadores da
+mão, a captura não foi inspecionada. A regressão completa não foi executada.
+

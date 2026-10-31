@@ -21,8 +21,15 @@ button.marker-dot { min-height: 46px; }
 .card-stats { position: absolute; left: 2px; right: 2px; bottom: 2px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; pointer-events: none; }
 .pt-modifier { padding: 0 3px; border-radius: 4px; background: var(--label-bg); color: #fff; font-size: .62rem; font-weight: 800; }
 .pt-modifier[data-modified=true] { background: var(--gold, #d4af65); color: #17110a; }
-.playing-card .marker-dots { gap: 2px; }
-.playing-card .marker-dot { width: 14px; height: 14px; border-width: 1px; font-size: .55rem; }
+/* Na carta, cada cor é um ícone pequeno com a quantidade, em coluna na lateral esquerda. */
+.playing-card .marker-dots { position: absolute; left: 0; bottom: calc(100% + 2px); flex-direction: column; flex-wrap: nowrap; align-items: flex-start; gap: 2px; }
+.playing-card .marker-dot { display: inline-flex; align-items: center; gap: 3px; width: auto; min-width: 0; height: 15px; padding: 0 4px 0 3px; border: 1px solid #ffffff38; border-radius: 3px; background: #0b0e10e0; color: #f4ead0; font: 700 10px/1 Geist, sans-serif; box-shadow: 0 1px 3px #0009; }
+.playing-card .marker-dot::before { content: ''; flex: none; width: 7px; height: 7px; transform: rotate(45deg); background: var(--card-marker); box-shadow: 0 0 0 1px #0007; }
+.playing-card .marker-red { --card-marker: #e0504f; }
+.playing-card .marker-yellow { --card-marker: #e8b92c; }
+.playing-card .marker-green { --card-marker: #4fb663; }
+.playing-card .marker-blue { --card-marker: #4f8fe6; }
+.playing-card .marker-purple { --card-marker: #a06bd6; }
 .card-preview .adjust-pair, .card-preview .marker-dots, .card-preview .card-stats { margin-top: 12px; }
 .card-preview .card-stats { position: static; }
 .card-preview button.marker-dot { padding: 0; }
