@@ -40,3 +40,15 @@ Escolhas de implementação: o nome substitui o título "À mesa" nas etapas de
 preparação e de dados, e nomes longos terminam em reticências. A marca é uma
 caveira que flutua, por cima só do campo, e não bloqueia cartas nem zonas.
 
+## Barra de espaço
+
+Também em 31/10/2026, o usuário definiu que, no jogo, Espaço avança o turno e
+Shift+Espaço corrige o turno, e que o espaço não faz mais nada: outros usos são
+cancelados.
+
+Foram retirados o espaço da seleção de cartas na consulta e na busca do grimório,
+onde Enter continua, e o acionamento do botão em foco. Escolhas de implementação:
+o espaço continua digitando em campos de texto; com um painel modal aberto ou
+durante a confirmação de mãos, não faz nada; a tecla N continua passando o turno;
+a tela de entrada, fora do jogo, não mudou.
+

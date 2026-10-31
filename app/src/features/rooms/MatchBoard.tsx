@@ -169,6 +169,16 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const drawOne = () => {
     if (!busy && !unconfirmed && !match?.players.find(player => player.userId === match.viewerId)?.consulting) void draw(1);
   };
+  // Na mesa, o espaço só avança ou corrige o turno: não aciona o botão em foco nem rola a página.
+  useEffect(() => {
+    const swallowSpace = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (event.key === ' ' && !target?.closest('input, textarea, select, [contenteditable], [role="textbox"]')) event.preventDefault();
+    };
+    window.addEventListener('keydown', swallowSpace, true);
+    window.addEventListener('keyup', swallowSpace, true);
+    return () => { window.removeEventListener('keydown', swallowSpace, true); window.removeEventListener('keyup', swallowSpace, true); };
+  }, []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
@@ -179,6 +189,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (command === 'draw') drawOne();
       else if (command === 'untap') void untapAll();
       else if (command === 'turn') void turn('next');
+      else if (command === 'turn-previous') void turn('previous');
       else if (command === 'tap') {
         const cards = selectionIds.map(id => findCard(match, id)).filter((card): card is Card => Boolean(card && card.zone === 'battlefield' && card.controllerId === match.viewerId));
         if (cards.length) void setTapped(cards.map(card => card.id), !cards[0].tapped);

@@ -145,3 +145,27 @@ test('soltar mais de três cartas no campo abre as pilhas necessárias', async (
   const sizes = [...new Set(field2.map(card => `${card.row}:${card.positionX}`))].map(cell => field2.filter(card => `${card.row}:${card.positionX}` === cell).length).sort();
   expect(sizes).toEqual([2, 3]);
 });
+
+test('espaço avança e shift+espaço corrige o turno, sem acionar o botão em foco', async ({ page, browser, baseURL }, info) => {
+  test.skip(info.project.name !== 'desktop', 'Atalho de teclado físico');
+  test.setTimeout(60_000);
+  const { roomId, other } = await duoMatch(page, browser, baseURL);
+  try {
+    const turn = async () => (await (await page.request.get(`/api/rooms/${roomId}/match`)).json()).match.currentTurn.userId as number;
+    await page.goto(`/#/salas/${roomId}`);
+    const first = await turn();
+    await expect(page.getByRole('button', { name: 'Confirmar mão', exact: true })).toBeVisible();
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(300);
+    expect(await turn()).toBe(first);
+
+    for (const api of [page.request, other.request]) expect((await api.post(`/api/rooms/${roomId}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'keep_hand', cardIds: [] } })).ok()).toBe(true);
+    const chronicle = page.getByRole('button', { name: 'Abrir crônica', exact: true });
+    await chronicle.focus();
+    await page.keyboard.press('Space');
+    await expect.poll(turn).not.toBe(first);
+    await expect(chronicle).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Shift+Space');
+    await expect.poll(turn).toBe(first);
+  } finally { await other.close(); }
+});

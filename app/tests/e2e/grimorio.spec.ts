@@ -245,7 +245,7 @@ test('reordena, recolhe e retoma a consulta, devolvendo ao topo e ao fundo', asy
     await activate(rows.nth(0).locator('strong'));
     await expect(library.locator('.library-selection')).toBeVisible();
     await rows.nth(0).focus();
-    await rows.nth(0).press('Space');
+    await rows.nth(0).press('Enter');
     await expect(library.locator('.library-selection')).toHaveCount(0);
     await rows.nth(0).press('Enter');
     await expect(library.locator('.library-selection')).toBeVisible();
