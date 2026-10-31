@@ -201,31 +201,38 @@ test("forças altas saem muito mais rápidas e também para cima", () => {
   assert.ok(launch(10).speed > launch(4).speed * 5);
 });
 
-test("o aro joga o dado para cima sem acabar com o movimento", () => {
+test("só o aro no chão dá um pulinho; no alto a parede não mexe na subida", () => {
+  let onRim = 0,
+    inAir = 0;
   for (const power of [5, 6, 7, 8])
     for (const seed of seeds) {
       const engine = createDiceEngine(null, { table, restMs: 60000 });
       engine.toss({ color: "#6cb4f5", value: 12, seed, power });
-      let hits = 0;
-      for (let step = 0; step < 3000 && hits < 3; step++) {
+      for (let step = 0; step < 3000; step++) {
         const [before] = engine.snapshot();
         const speed = Math.hypot(before.v[0], before.v[1]);
         const outward = before.p[0] * before.v[0] + before.p[1] * before.v[1];
+        const lift = before.v[2];
+        const height = before.p[2];
         engine.step(1 / 120);
         const [after] = engine.snapshot();
         const inward = after.p[0] * after.v[0] + after.p[1] * after.v[1];
-        if (outward <= 0 || inward >= 0 || speed < 100) continue;
-        hits++;
-        // perto do teto da tela a subida é menor, mas nunca volta a cair na batida
-        assert.ok(after.v[2] > 0, `força ${power}, semente ${seed}: ${after.v[2]}`);
-        assert.ok(
-          Math.hypot(after.v[0], after.v[1]) > speed * 0.35,
-          `força ${power}, semente ${seed}`,
-        );
+        if (outward <= 0 || inward >= 0 || speed < 300) continue;
+        const label = `força ${power}, semente ${seed}, altura ${height}`;
+        if (height > 28 * 2.5) {
+          inAir++;
+          assert.ok(after.v[2] <= lift, label);
+        } else if (height < 28 * 1.2 && after.p[2] < 28 * 1.2) {
+          onRim++;
+          assert.ok(after.v[2] > 0, `${label}: ${after.v[2]}`);
+          assert.ok(after.v[2] <= 900, `${label}: ${after.v[2]}`);
+        }
+        assert.ok(Math.hypot(after.v[0], after.v[1]) > speed * 0.35, label);
       }
-      assert.ok(hits > 0, `força ${power}, semente ${seed}: não bateu no aro`);
       engine.destroy();
     }
+  assert.ok(onRim > 0, "nenhuma batida no aro");
+  assert.ok(inAir > 0, "nenhuma batida no alto");
 });
 
 test("o tiro continua ricocheteando depois que o clique já parou", () => {

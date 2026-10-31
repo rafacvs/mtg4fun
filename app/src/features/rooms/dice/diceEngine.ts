@@ -197,8 +197,8 @@ const NORMAL_FORCE = 4;
 const MAX_AIM_DEVIATION = Math.PI / 6;
 /**
  * Um nível por linha (força 1–10). Fraco é um dado largado na frente do próprio
- * jogador, com pulinhos; forte sai rápido e para cima, fica saltando pelo feltro e
- * o aro o joga para o alto de novo a cada batida. speed em px/s para uma mesa de raio 294;
+ * jogador, com pulinhos; forte sai rápido e para cima e fica saltando pelo feltro
+ * e ricocheteando na parede. speed em px/s para uma mesa de raio 294;
  * lift é a velocidade para cima; height é a altura de saída; bounce é o quanto da
  * queda volta em cada quique; drag é o atrito no feltro; rim é o quanto da
  * velocidade sobra ao bater no aro; deflect é o desvio máximo do ricochete, em
@@ -218,9 +218,12 @@ const FORCES = [
 ];
 /** o quanto da velocidade na mesa e do impacto no aro vira salto */
 const FLOOR_SKIP = 0.22;
-const RIM_KICK = 0.6;
-/** o aro sempre joga para cima, mesmo em batida lenta; abaixo de RIM_KICK_MIN_HIT é só encostar */
-const RIM_KICK_MIN = 380;
+const RIM_KICK = 0.25;
+/** só o aro, no chão, dá um pulinho: acima dessa altura (em raios do dado) é parede lisa */
+const RIM_HEIGHT = 1.6;
+const RIM_KICK_MIN = 180;
+const RIM_KICK_MAX = 320;
+/** abaixo dessa velocidade é só encostar no aro */
 const RIM_KICK_MIN_HIT = 40;
 /** velocidade que sobra na mesa a cada quique */
 const BOUNCE_SLIDE = 0.8;
@@ -476,17 +479,22 @@ export function createDiceEngine(
             [vx, vy] = d.v;
           d.v[0] = vx * Math.cos(turn) - vy * Math.sin(turn);
           d.v[1] = vx * Math.sin(turn) + vy * Math.cos(turn);
-          if (vn > TRAIL_MIN_SPEED)
+          const onRim = d.p[2] < r * RIM_HEIGHT;
+          if (onRim && vn > TRAIL_MIN_SPEED)
             impacts.push({
               x: d.p[0],
               y: d.p[1],
               size: Math.min(1, vn / 2000),
               age: 0,
             });
-          if (vn > RIM_KICK_MIN_HIT)
+          if (onRim && vn > RIM_KICK_MIN_HIT)
             d.v[2] = Math.max(
               d.v[2],
-              Math.min(Math.max(vn * RIM_KICK, RIM_KICK_MIN), maxLift(d.p[2])),
+              Math.min(
+                Math.max(vn * RIM_KICK, RIM_KICK_MIN),
+                RIM_KICK_MAX,
+                maxLift(d.p[2]),
+              ),
             );
           d.w = d.w.map((x) => -x * 0.7 + (Math.random() - 0.5) * 16) as Vec3;
         }

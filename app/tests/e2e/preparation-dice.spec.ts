@@ -195,9 +195,9 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
       );
     const idleBackground = await background();
 
-    // Até 2 segundos é o lançamento normal, igual a um clique.
+    // Até 1 segundo é o lançamento normal, igual a um clique.
     await press();
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await expect(
       page.getByRole("button", { name: /^Rolar D20$/ }),
     ).toBeVisible();
@@ -589,9 +589,10 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
   expect(shot.burst).toBeGreaterThan(click.burst * 2);
   expect(shot.seconds).toBeGreaterThan(click.seconds * 1.8);
   expect(lost.burst).toBeGreaterThan(click.burst * 1.5);
-  // O clique já pula à vista; o tiro pula muito mais, sem sair do alto do canvas.
+  // O clique já pula à vista; o tiro pula mais e mais alto, sem sair do canvas.
   expect(click.hops).toBeGreaterThanOrEqual(2);
-  expect(shot.hops).toBeGreaterThan(click.hops * 2);
+  expect(shot.hops).toBeGreaterThan(click.hops);
+  expect(shot.top).toBeLessThan(click.top);
   expect(shot.top).toBeGreaterThan(0);
   expect(click.top).toBeGreaterThan(0);
   await expect(page.locator(".dice-register li")).toHaveCount(3);

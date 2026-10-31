@@ -232,7 +232,7 @@ export function PreparationDice({
           ? `Força ${throwPower} de ${MAX_POWER}${fallsOffTable(throwPower) ? ": cai da mesa" : ""}`
           : undefined
       }
-      title="Segure por mais de 2 segundos para aumentar a força. Nas forças 9 e 10 o dado cai da mesa e não conta."
+      title="Segure por mais de 1 segundo para aumentar a força. Nas forças 9 e 10 o dado cai da mesa e não conta."
     >
       <span
         className="dice-roll-icon"

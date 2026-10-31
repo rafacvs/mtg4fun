@@ -205,3 +205,24 @@ levou 9,9 s com 11, sem encostar no topo do canvas. Quatro cenários de
 sem esta mudança. A sensação do lançamento depende de avaliação do usuário. A regressão
 completa não foi executada.
 
+## Aro, parede e carga em 30/10/2026
+
+Depois de testar, o usuário aprovou a subida e os quiques, mas disse que a parede
+jogando para cima parecia um ventilador. Pediu física normal de parede, com só o aro
+dourado no chão dando um pequeno pulo. Pediu também que a carga comece com 1 segundo
+e seja mais rápida, acelerando sem limite para que segurar demais tire o controle.
+Isso substitui a batida no aro da revisão anterior, os 2 segundos e o limite de 40 ms
+por nível.
+
+Escolhas de implementação, não pedidas literalmente: o aro vale até 1,6 raio do dado
+de altura e dá um impulso de 180 a 320 px/s; o anel de impacto só aparece nessa batida.
+A primeira subida leva cerca de 1 s e a velocidade da carga cresce continuamente.
+
+Verificação desta revisão: testes unitários e typecheck do frontend passaram, assim
+como `preparation-dice.spec.ts` com API e MySQL isolados. A medição no canvas ficou
+menos exigente: como a parede não dá mais pulos, a contagem pela posição na tela só
+separa o tiro do clique por uma pequena margem, e o teste passou a exigir mais pulos e
+pulo mais alto. A contagem de cinco vezes mais pulos fica no teste unitário. Em uma
+execução no desktop, a força 8 levou 5,3 s. A sensação depende de avaliação do usuário.
+A regressão completa não foi executada.
+
