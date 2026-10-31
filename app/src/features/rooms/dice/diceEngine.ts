@@ -204,35 +204,35 @@ const MAX_AIM_DEVIATION = Math.PI / 6;
  * deflect é o desvio máximo do ricochete, em radianos.
  */
 const FORCES = [
-  { speed: 150, apex: 0.1, bounce: 0.35, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 160, apex: 0.18, bounce: 0.42, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 168, apex: 0.3, bounce: 0.52, drag: 1.9, rim: 0.7, deflect: 0 },
-  { speed: 175, apex: 0.45, bounce: 0.62, drag: 1.9, rim: 0.72, deflect: 0.1 },
-  { speed: 270, apex: 0.5, bounce: 0.66, drag: 1.7, rim: 0.75, deflect: 0.2 },
-  { speed: 520, apex: 0.55, bounce: 0.68, drag: 1.2, rim: 0.78, deflect: 0.4 },
-  { speed: 820, apex: 0.6, bounce: 0.7, drag: 0.9, rim: 0.82, deflect: 0.5 },
-  { speed: 1150, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 1500, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
-  { speed: 1900, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 170, apex: 0.1, bounce: 0.35, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 182, apex: 0.18, bounce: 0.42, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 192, apex: 0.3, bounce: 0.52, drag: 1.9, rim: 0.7, deflect: 0 },
+  { speed: 200, apex: 0.45, bounce: 0.62, drag: 1.9, rim: 0.72, deflect: 0.1 },
+  { speed: 340, apex: 0.5, bounce: 0.66, drag: 1.7, rim: 0.75, deflect: 0.2 },
+  { speed: 700, apex: 0.55, bounce: 0.68, drag: 1.2, rim: 0.78, deflect: 0.4 },
+  { speed: 1150, apex: 0.6, bounce: 0.7, drag: 0.9, rim: 0.82, deflect: 0.5 },
+  { speed: 1650, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 2200, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 2800, apex: 0.65, bounce: 0.72, drag: 0.7, rim: 0.85, deflect: 0.6 },
 ];
 /** altura de saída do dado, em raios do dado */
 const START_HEIGHT = 1.3;
 /** o quanto da velocidade na mesa e do impacto no aro vira salto */
 const FLOOR_SKIP = 0.22;
 /** caindo mais devagar que isso, o dado para de quicar e rola */
-const FLOOR_REST_SPEED = 70;
+const FLOOR_REST_SPEED = 80;
 const RIM_KICK = 0.25;
 /** só o aro, no chão, dá um pulinho: acima dessa altura (em raios do dado) é parede lisa */
 const RIM_HEIGHT = 1.6;
-const RIM_KICK_MIN = 130;
-const RIM_KICK_MAX = 240;
+const RIM_KICK_MIN = 150;
+const RIM_KICK_MAX = 270;
 /** abaixo dessa velocidade é só encostar no aro */
 const RIM_KICK_MIN_HIT = 40;
 /** velocidade que sobra na mesa a cada quique */
 const BOUNCE_SLIDE = 0.88;
 /** segundos que um ponto do rastro fica visível, e a velocidade em que ele aparece */
 const TRAIL_LIFE = 0.45;
-const TRAIL_MIN_SPEED = 600;
+const TRAIL_MIN_SPEED = 800;
 const IMPACT_LIFE = 0.4;
 
 // ---------------------------------------------------------------- dado
@@ -290,7 +290,7 @@ export function createDiceEngine(
   const LBL_FONT = opts.labelFont ?? "Geist, system-ui, sans-serif";
   const GOLD = opts.gold ?? "#F0CC80";
   const SHOW_BADGE = opts.showBadge ?? true;
-  const G = 1100; // gravidade px/s²
+  const G = 1400; // gravidade px/s²
 
   // câmera: elevação e tal que sin(e) = tilt
   const cam = () => {
@@ -472,7 +472,7 @@ export function createDiceEngine(
             impacts.push({
               x: d.p[0],
               y: d.p[1],
-              size: Math.min(1, vn / 1200),
+              size: Math.min(1, vn / 1600),
               age: 0,
             });
           if (onRim && vn > RIM_KICK_MIN_HIT)

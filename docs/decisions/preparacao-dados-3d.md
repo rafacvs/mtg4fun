@@ -267,3 +267,18 @@ levou 1,2 s e andou 59 px, o clique 2,4 s e 223 px, a força 8 5,8 s e 1.422 px,
 força 10 5,7 s e 1.920 px. A sensação depende de avaliação do usuário. A regressão
 completa não foi executada.
 
+## Mais potência em 30/10/2026
+
+O usuário achou o lançamento lento e pediu mais força e velocidade, principalmente
+conforme a barra, sem exagero. Escolhas de implementação, não pedidas literalmente:
+gravidade de 1.100 para 1.400 px/s², força 1 de 150 para 170 px/s, clique de 175 para
+200, força 7 de 820 para 1.150, força 8 de 1.150 para 1.650 e força 10 de 1.900 para
+2.800. O verde e o clique continuam caindo nos mesmos lugares.
+
+Verificação desta revisão: testes unitários, typecheck e `preparation-dice.spec.ts`
+passaram nas três telas com API e MySQL isolados, em um clone temporário, porque o
+checkout principal estava em uso por outra tarefa. Em uma execução no desktop, a
+distância no primeiro meio segundo foi de 88 px no clique, 568 px na força 8 e 892 px
+na força 10. A sensação depende de avaliação do usuário. A regressão completa não foi
+executada.
+
