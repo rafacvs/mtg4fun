@@ -1,5 +1,5 @@
-/* Desktop hand bar: a thin strip for the controls, with the whole cards fanned
-   from its bottom edge, rising over the bottom of the battlefield. */
+/* Desktop hand bar: a thin strip for the controls, with the cards fanned over it and
+   sunk below the screen edge, rising over the bottom of the battlefield. */
 @media (min-width: 1001px) {
   .desktop-table { --dock-bar-height: 68px; --hand-card: calc(clamp(124px, 9.8vw, 172px) * .9); }
   /* The lowered hand overflows the board; clip so focus or scrollIntoView never shifts the table. */
@@ -30,14 +30,14 @@
   }
   .desktop-table .own-dock .zone-hand .playing-card {
     --fan-t: calc(var(--fan-offset, 0) / max(1, (var(--hand-count, 1) - 1) / 2));
-    /* The arc lifts the middle; the outer cards rotate on their base and still fit on screen. */
+    /* At rest about 60% of each card shows; the rest is clipped below the board. Hovering shows it whole. */
     --hand-card-height: calc(var(--hand-card) * 88 / 63);
     flex: 0 0 auto; width: var(--hand-card); height: var(--hand-card-height); aspect-ratio: auto;
     border: 1px solid #000; border-radius: 8px; box-shadow: 0 -2px 0 #ffffff0d, 0 14px 28px #000c;
-    transform: translateY(calc(var(--fan-t) * var(--fan-t) * 9px - 18px)) rotate(calc(var(--fan-t) * 6deg));
+    transform: translateY(calc(var(--fan-t) * var(--fan-t) * 9px + var(--hand-card-height) * .4)) rotate(calc(var(--fan-t) * 6deg));
     transform-origin: 50% 100%; transition: transform .15s ease-out;
   }
-  .desktop-table .own-dock .zone-hand .playing-card .marker-dots { left: 0; bottom: calc(var(--hand-card-height) / 2 - 12px); }
+  .desktop-table .own-dock .zone-hand .playing-card .marker-dots { left: 0; bottom: calc(var(--hand-card-height) * .7 - 12px); }
   .desktop-table .own-dock .zone-hand .playing-card:not(:first-child) {
     margin-left: min(-14px, calc((100cqw - var(--hand-count, 1) * var(--hand-card)) / max(1, var(--hand-count, 1) - 1)));
   }

@@ -65,11 +65,12 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   const drag = await page.context().newCDPSession(page);
   await drag.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start.x + start.width / 2, y: start.y + 20 }] });
   await drag.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + start.width / 2, y: start.y - 20 }] });
-  const target = page.getByRole('region', { name: 'Destinos do arraste', exact: true }).getByRole('button', { name: 'Campo', exact: true });
-  await expect(target).toBeVisible();
+  await expect(page.locator('.drag-ghost')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Destinos do arraste', exact: true })).toHaveCount(0);
+  const target = page.locator('.own-table-surface').getByRole('region', { name: 'Campo', exact: true });
   const destination = (await target.boundingBox())!;
   await drag.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: destination.x + destination.width / 2, y: destination.y + destination.height / 2 }] });
-  await expect(target).toHaveAttribute('aria-current', 'true');
+  await expect(target).toHaveClass(/drop-hover/);
   await drag.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await drag.detach();
   const fieldCard = page.locator(`[data-battlefield-canvas] [data-card-id="${originalIds[0]}"]`);
@@ -100,7 +101,7 @@ test('mão móvel navega, organiza, inspeciona ao segurar e continua após girar
   await row.evaluate(node => { node.scrollLeft = 0; });
   await touch(page, [{ x: grid.x + grid.width - 10, y: grid.y + grid.height - 25 }, { x: grid.x + grid.width / 2, y: grid.y + grid.height - 25 }, { x: grid.x + 10, y: grid.y + grid.height - 25 }]);
   if (await row.evaluate(node => node.scrollWidth > node.clientWidth + 2)) await expect.poll(() => row.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
-  await expect(page.getByRole('region', { name: 'Destinos do arraste', exact: true })).toHaveCount(0);
+  await expect(page.locator('.drag-ghost')).toHaveCount(0);
   await openMatchRail(page, 'Registro');
   await expect(page.getByRole('group', { name: 'Filtrar registro', exact: true })).toBeVisible();
   await closeMatchRail(page);

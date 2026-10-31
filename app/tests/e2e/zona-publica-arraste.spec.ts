@@ -38,10 +38,9 @@ test('soltar fora de uma carta no visualizador não atravessa para o campo; arra
   const source = (await panel.locator('.playing-card').first().boundingBox())!;
   await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2); await page.mouse.down();
   await page.mouse.move(source.x + source.width / 2 + 12, source.y + source.height / 2, { steps: 3 });
-  const destination = page.getByRole('region', { name: 'Destinos do arraste' }).getByRole('button', { name: 'Campo', exact: true });
-  await expect(destination).toBeVisible();
-  const box = (await destination.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 8 }); await page.mouse.up();
+  await expect(page.locator('.drag-ghost')).toBeVisible();
+  const box = (await page.locator('.own-table-surface').getByRole('region', { name: 'Campo', exact: true }).boundingBox())!;
+  await page.mouse.move(box.x + box.width - 40, box.y + box.height / 2, { steps: 8 }); await page.mouse.up();
   await expect.poll(async () => (await (await api.get(path)).json()).match.players.find((p: { userId: number }, _i: number, _a: unknown) => p.userId === drawn.viewerId).battlefield.length).toBe(1);
 });
 

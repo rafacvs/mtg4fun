@@ -76,3 +76,14 @@ Verificação: `mao-e-marcadores-na-carta.spec.ts` passou no desktop. Oito cená
 na `master`, portanto não cobrem esta mudança. Depois de centralizar os marcadores da
 mão, a captura não foi inspecionada. A regressão completa não foi executada.
 
+
+## Mão rebaixada e reorganização por inserção
+
+Em 31/10/2026, o usuário pediu que a carta arrastada na mão ficasse ao lado da carta
+sob o ponteiro, sem trocar de posição com ela, e que voltasse o efeito das cartas
+rebaixadas, com cerca de 60% visíveis. Isso substitui a carta inteira em repouso
+descrita acima, sem trazer de volta a parte preta da carta recortada.
+
+Escolhas de implementação, não pedidas literalmente: a metade da carta sob o ponteiro
+decide o lado, com a esquerda antes e a direita depois. O hover mostra a carta inteira.
+O rebaixamento vale para a mão no desktop; o celular não mudou.
