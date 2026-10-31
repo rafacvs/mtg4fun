@@ -52,3 +52,10 @@
 .match-board .selection-marker-panel .marker-row:nth-child(4) { order: -1; }
 .match-board .selection-marker-panel .marker-row:nth-child(2) { order: 2; }
 .match-board .selection-marker-panel .marker-row:nth-child(3) { order: 1; }
+.desktop-table .card-action-bar.hand-action-bar { bottom: calc(var(--dock-height, 0px) + 52px); }
+.reveal-players { display: grid; gap: 5px; }
+.match-board .reveal-player { display: flex; margin: 0; align-items: center; gap: 9px; min-height: 38px; padding: 5px 10px; color: #e6ddc6; font-size: .78rem; border: 1px solid #50452e; border-radius: 4px; background: #161a1b; cursor: pointer; }
+.match-board .reveal-player:has(input:checked) { border-color: #a68748; background: #28261d; color: #e5c479; }
+.reveal-player:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 1px; }
+.reveal-player input { width: 15px; min-height: 0; height: 15px; margin: 0; accent-color: var(--gold); }
+.reveal-player-mark { width: 9px; height: 9px; transform: rotate(45deg); background: var(--seat); border: 1px solid #ffffff60; }

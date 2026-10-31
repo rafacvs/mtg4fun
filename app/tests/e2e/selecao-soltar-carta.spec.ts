@@ -42,5 +42,8 @@ test('arrastar seleção e soltar sobre carta não abre inspeção', async ({ pa
     await expect(second).toHaveClass(/is-selected/, { timeout: 1000 });
   }
   await second.click({ button: 'right' });
+  await expect(second).not.toHaveClass(/is-selected/);
+  await expect(page.getByRole('dialog', { name: /Imagem de/ })).toHaveCount(0);
+  await second.click();
   await expect(page.getByRole('dialog', { name: /Imagem de/ })).toBeVisible();
 });

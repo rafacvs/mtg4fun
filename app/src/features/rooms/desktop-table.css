@@ -456,3 +456,11 @@
 .match-board .seat-marker-glyph { width:10px; height:10px; flex:0 0 10px; transform:rotate(45deg); border:1px solid color-mix(in srgb,var(--marker-color) 80%,white); border-radius:2px; background:var(--marker-color); box-shadow:0 0 5px color-mix(in srgb,var(--marker-color) 45%,transparent); }
 .match-board .seat-marker-value { display:grid; place-items:center; min-width:17px; height:17px; padding:0 3px; border-radius:999px; background:color-mix(in srgb,var(--marker-color) 24%,#111); }
 @media (min-width:1001px) { .desktop-table .seat-name { right:67px; } }
+/* A carta revelada fica sobre o campo: abaixo dele, o quadro a cortaria. */
+.desktop-table .table-zones { position: relative; }
+.desktop-table .table-zones .table-revealed { position: absolute; z-index: 6; left: 72px; bottom: 8px; max-height: none; overflow: visible; margin: 0; padding: 6px 8px; border: 1px solid #a0803c66; border-radius: 6px; background: #0b0f10e6; box-shadow: 0 8px 20px #0009; }
+.desktop-table .table-zones .table-revealed > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.desktop-table .table-revealed > div { max-height: none; max-width: min(100%, 520px); margin-top: 5px; overflow-x: auto; overflow-y: hidden; }
+.desktop-table .table-revealed > div { min-height: 110px; }
+.desktop-table .table-revealed .playing-card { flex: none; width: 78px; height: 109px; min-height: 109px; }
+

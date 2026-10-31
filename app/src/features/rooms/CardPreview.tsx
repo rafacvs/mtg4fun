@@ -85,10 +85,10 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
           ? <p role="status">A imagem não está disponível agora.</p>
           : <img src={image} alt={`Imagem ampliada de ${card.name}`} onError={() => setFailed(true)} />}
         </div>
-        {step === 'view' && (card.tapped || card.faceDown || card.revealed || card.power || card.toughness || markerCount) ? <div className="card-status-chips">
+        {step === 'view' && (card.tapped || card.faceDown || card.revealed || card.revealedTo?.length || card.power || card.toughness || markerCount) ? <div className="card-status-chips">
           {card.tapped && <span>Virada</span>}{card.faceDown && card.name && <span>Face para baixo</span>}
           {(card.power || card.toughness) ? <span>P/R {(card.power ?? 0) > 0 ? '+' : ''}{card.power ?? 0}/{(card.toughness ?? 0) > 0 ? '+' : ''}{card.toughness ?? 0}</span> : null}
-          {markerCount !== 0 && <span>{markerCount} {markerCount === 1 ? 'marcador' : 'marcadores'} de cor</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}
+          {markerCount !== 0 && <span>{markerCount} {markerCount === 1 ? 'marcador' : 'marcadores'} de cor</span>}{card.revealed && <span className="is-public">Revelada para todos</span>}{Boolean(card.revealedTo?.length) && <span className="is-public">{card.ownerId === viewerId ? 'Revelada para jogadores escolhidos' : 'Revelada para você'}</span>}
         </div> : null}
       </div>
       <div className="card-preview-actions">

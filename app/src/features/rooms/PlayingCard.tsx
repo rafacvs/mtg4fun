@@ -167,7 +167,7 @@ export function PlayingCard({ card, draggable, ariaLabel, style, scrollable = fa
       {card.pending && <small>Pendente</small>}
       {(card.isToken || card.instanceKind === 'token' || card.instanceKind === 'custom-token') && <small>Ficha</small>}
       {card.instanceKind === 'copy' && <small>Cópia</small>}
-      {card.revealed && <small>Revelada</small>}
+      {(card.revealed || Boolean(card.revealedTo?.length)) && <small>Revelada</small>}
       {card.ownerId !== card.controllerId && <small title="Controlada por outro jogador">Controle</small>}
       {failed && <small>Sem imagem</small>}
     </span>

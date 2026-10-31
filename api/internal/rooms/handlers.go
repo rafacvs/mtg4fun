@@ -110,6 +110,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		Tapped           *bool    `json:"tapped"`
 		FaceDown         *bool    `json:"faceDown"`
 		Revealed         *bool    `json:"revealed"`
+		RevealedTo       []int64  `json:"revealedTo"`
 		FaceIndex        *int     `json:"faceIndex"`
 	}
 	if err := decoder.Decode(&raw); err != nil {
@@ -148,6 +149,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	if raw.Revealed != nil {
 		input.Revealed = *raw.Revealed
 	}
+	input.RevealedTo = raw.RevealedTo
 	if raw.FaceIndex != nil {
 		input.FaceIndex = *raw.FaceIndex
 	}
@@ -159,7 +161,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	}
 	input.HasPosition = raw.PositionX != nil || raw.Row != nil
 	counterFields := raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil
-	stateFields := input.Kind != "set_tapped" && raw.Tapped != nil || input.Kind != "set_face_down" && raw.FaceDown != nil || input.Kind != "reveal_cards" && raw.Revealed != nil || input.Kind != "set_face" && raw.FaceIndex != nil
+	stateFields := input.Kind != "set_tapped" && raw.Tapped != nil || input.Kind != "set_face_down" && raw.FaceDown != nil || input.Kind != "reveal_cards" && (raw.Revealed != nil || raw.RevealedTo != nil) || input.Kind != "set_face" && raw.FaceIndex != nil
 	if input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && input.Kind != "counter_batch" && counterFields || input.Kind != "counter_batch" && raw.SecondValue != nil || input.Kind != "transfer_control" && raw.ControllerID != 0 || stateFields {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
@@ -204,7 +206,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 		case "set_face_down":
 			valid = valid && len(input.CardIDs) > 0 && input.CardID == "" && raw.FaceDown != nil
 		case "reveal_cards":
-			valid = valid && len(input.CardIDs) > 0 && input.CardID == "" && raw.Revealed != nil
+			valid = valid && len(input.CardIDs) > 0 && input.CardID == "" && raw.Revealed != nil && (raw.RevealedTo == nil || input.Revealed && len(raw.RevealedTo) > 0)
 		}
 		if !valid {
 			httpserver.WriteError(w, 400, "Ação inválida.")

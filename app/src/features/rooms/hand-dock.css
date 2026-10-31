@@ -80,11 +80,11 @@
   .mobile-commands .quick-actions .turn-action { order: -1; }
 }
 .match-board .turn-control { display:flex; align-items:stretch; overflow:hidden; border:1px solid #e4bd68; border-radius:5px; background:linear-gradient(#edc673,#c99439); color:#241906; }
-.match-board .turn-control > span { display:grid; place-items:center; min-width:112px; padding:0 16px; font:700 15px Cinzel,serif; letter-spacing:.14em; text-transform:uppercase; }
+.match-board .turn-action > span { flex:1; min-width:112px; padding:0 16px; font:700 15px Cinzel,serif; letter-spacing:.14em; text-transform:uppercase; }
 .match-board .quick-actions .turn-control button { width:44px; min-width:44px; min-height:44px; padding:9px; justify-content:center; border:0; border-radius:0; }
 .match-board .quick-actions .turn-control .turn-previous { background:#15191a; color:#d8b36b; }
-.match-board .quick-actions .turn-control .turn-action { margin:0; height:auto; background:transparent; color:#241906; box-shadow:none; border-left:1px solid #a9762b; }
-.match-board.desktop-table .quick-actions .turn-control .turn-action { width:44px; min-width:44px; min-height:44px; height:auto; margin:0; padding:9px; justify-content:center; border:0; border-left:1px solid #a9762b; border-radius:0; background:transparent; box-shadow:none; }
+.match-board .quick-actions .turn-control .turn-action { display:flex; align-items:center; width:auto; margin:0; height:auto; padding:0 9px 0 0; background:transparent; color:#241906; box-shadow:none; }
+.match-board.desktop-table .quick-actions .turn-control .turn-action { display:flex; align-items:center; width:auto; min-width:156px; min-height:44px; height:auto; margin:0; padding:0 9px 0 0; justify-content:center; border:0; border-radius:0; background:transparent; box-shadow:none; }
 @media (min-width: 1001px) {
   .match-board.desktop-table .turn-control { height:44px; }
   .match-board.desktop-table .quick-actions .turn-control button { height:100%; min-height:0; }

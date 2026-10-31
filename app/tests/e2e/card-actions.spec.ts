@@ -74,7 +74,8 @@ test('Mais e clique direito mostram a inspeção e atalhos agem na seleção', a
   const titles = await menu.getByRole('button').allTextContents();
   for (const title of ['Mão', 'Cemitério', 'Exílio', 'Comando', 'Topo', 'Fundo']) await expect(menu.getByRole('button', { name: title, exact: true })).toBeVisible();
   await menu.getByRole('button', { name: 'Fechar', exact: true }).click();
-  await card.click({ button: 'right' });
+  await page.waitForTimeout(400);
+  await card.click();
   await expect(menu).toBeVisible();
   expect(await menu.getByRole('button').allTextContents()).toEqual(titles);
   await page.keyboard.press('Escape');

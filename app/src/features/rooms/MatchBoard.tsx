@@ -4,6 +4,7 @@ import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { CardActionBar } from './CardActionBar';
+import { HandActionBar } from './HandActionBar';
 import { DragDestinations } from './DragDestinations';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { MatchLog } from './MatchLog';
@@ -34,7 +35,7 @@ type Drag = { card: Card; x: number; y: number; zone: string | null };
 type OpenZone = { playerId: number; zone: 'graveyard' | 'exile'; anchor: HTMLElement };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mulligan, keepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mulligan, keepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, revealCardsTo, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
   const match = synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [sides, setSides] = useState(20);
@@ -79,9 +80,20 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
   const [selectionActionsOpen, setSelectionActionsOpen] = useState(false);
   const [selecting, setSelecting] = useState(false);
+  // A plain click selects only as a target for shortcuts while inspecting: the bar waits for a selection gesture.
+  const selectionGesture = useRef(false);
   useEffect(() => {
-    setSelectionActionsOpen(selectionIds.length > 1 && selectionIds.every(id => match && findCard(match, id)?.zone === 'battlefield'));
+    const groups = new Set(selectionIds.map(id => match && selectionGroup(findCard(match, id))));
+    setSelectionActionsOpen(selectionGesture.current && groups.size === 1 && !groups.has('other') && !groups.has(null));
   }, [selectionIds.join('|')]);
+  // One selection acts on one place: a card from elsewhere starts a new selection.
+  const toggleSelection = (card: Card) => {
+    selectionGesture.current = true;
+    setSelectionIds(current => {
+      const sameGroup = current.filter(id => match && selectionGroup(findCard(match, id)) === selectionGroup(card));
+      return sameGroup.includes(card.id) ? sameGroup.filter(id => id !== card.id) : [...sameGroup, card.id];
+    });
+  };
   const selectionControllers = useRef(new Map<string, number>());
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const moreControl = useRef<HTMLButtonElement>(null);
@@ -197,7 +209,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   }, []);
   const gesture: CardGesture = {
     selectedIds: selectionIds,
-    onSelectArea: cards => setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)),
+    onSelectArea: cards => { selectionGesture.current = true; setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)); },
     onHover: card => { if (!drag) setHoverCardId(card.id); },
     onPreview: card => { setHoverCardId(card.id); setPreviewId(card.id); },
     onZoom: card => setZoomCardId(card?.id ?? null),
@@ -210,12 +222,22 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       if (drag) return;
       setHoverCardId(card.id);
       if (card.controllerId === match?.viewerId) {
-        setSelectionIds(current => additive || selecting ? current.includes(card.id) ? current.filter(id => id !== card.id) : [...current, card.id] : [card.id]);
-        if (additive || selecting) return;
+        if (additive || selecting) { toggleSelection(card); return; }
+        selectionGesture.current = false;
+        setSelectionIds([card.id]);
       }
       setPreviewId(card.id);
     },
-    onOpenMenu: card => { if (card.controllerId === match?.viewerId) setSelectionIds(current => current.includes(card.id) ? current : [card.id]); setPreviewId(card.id); },
+    onOpenMenu: card => {
+      if (card.controllerId !== match?.viewerId) return;
+      // The card a plain click left as the target joins the selection instead of leaving it.
+      if (!selectionGesture.current && selectionIds.includes(card.id)) {
+        selectionGesture.current = true;
+        setSelectionActionsOpen(selectionGroup(card) !== 'other');
+        return;
+      }
+      toggleSelection(card);
+    },
     onDragMove: (card, x, y) => { if (!busy && !unconfirmed) setDrag({ card, x, y, zone: dropZoneAt(x, y) }); },
     onDragEnd: (card, x, y) => { setDrag(null); void dropCard(card, x, y); },
     onDragCancel: () => setDrag(null),
@@ -379,7 +401,15 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       </div>}
     </div>
     {drag && <DragDestinations active={drag.zone} />}
-    {!drag && !preview && selectionActionsOpen && <CardActionBar key={selectionIds.join('|')} cards={selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null)} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} onClear={() => setSelectionIds([])} />}
+    {!drag && !preview && selectionActionsOpen && (() => {
+      const cards = selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null);
+      if (cards[0]?.zone === 'hand') return <HandActionBar cards={cards} players={match.players} viewerId={match.viewerId} disabled={busy || unconfirmed} onPlay={async () => {
+        const cell = firstFreeCell(own.battlefield ?? []);
+        const ok = await moveSelection(cards.map(card => card.id), 'battlefield');
+        if (ok) { setSelectionIds([]); scrollBattlefieldCell(own.userId, cell.column, cell.row); }
+      }} onReveal={playerIds => playerIds.length ? revealCardsTo(cards.map(card => card.id), playerIds) : revealCards(cards.map(card => card.id), false)} onClear={() => setSelectionIds([])} />;
+      return <CardActionBar key={selectionIds.join('|')} cards={cards} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} onClear={() => setSelectionIds([])} />;
+    })()}
     <LibraryConsultation
       open={libraryOpen}
       match={match}
@@ -460,6 +490,11 @@ function findCard(match: Match, id: string) {
     }
   }
   return null;
+}
+
+function selectionGroup(card: Card | null) {
+  if (!card) return null;
+  return card.zone === 'hand' || card.zone === 'battlefield' ? card.zone : 'other';
 }
 
 function canEditCounter(card: Card, viewerId: number) {

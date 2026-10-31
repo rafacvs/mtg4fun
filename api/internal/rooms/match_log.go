@@ -4,13 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"slices"
 )
 
 // Only references are stored with events. Identity comes from the current
 // filtered snapshot, so a historical link cannot expose a now-hidden card.
 type logCardReference struct {
-	ID     string `json:"id"`
-	Public bool   `json:"public,omitempty"`
+	ID      string  `json:"id"`
+	Public  bool    `json:"public,omitempty"`
+	Viewers []int64 `json:"viewers,omitempty"`
 }
 
 type LogCard struct {
@@ -55,6 +57,7 @@ func mergeLogReferences(groups ...[]logCardReference) []logCardReference {
 		for _, ref := range group {
 			if i, exists := index[ref.ID]; exists {
 				refs[i].Public = refs[i].Public || ref.Public
+				refs[i].Viewers = append(refs[i].Viewers, ref.Viewers...)
 			} else {
 				index[ref.ID] = len(refs)
 				refs = append(refs, ref)
@@ -113,7 +116,7 @@ func matchLog(ctx context.Context, q queryer, roomID int64, m matchState, viewer
 		}
 		entry := MatchLog{ActorID: actor, ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result}
 		for _, ref := range p.Cards {
-			if ref.Public || actor == viewerID {
+			if ref.Public || actor == viewerID || slices.Contains(ref.Viewers, viewerID) {
 				if card, ok := visible[ref.ID]; ok {
 					entry.Cards = append(entry.Cards, card)
 				}
