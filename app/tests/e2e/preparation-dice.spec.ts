@@ -102,7 +102,7 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
   browser,
   baseURL,
 }, info) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   const other = await browser.newContext({ baseURL });
   try {
     await page.request.post("/api/session", {
@@ -148,26 +148,121 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     await expect(page.locator(".dice-register li")).toHaveCount(1, {
       timeout: 15000,
     });
-    const throwButton = page.getByRole("button", { name: /^Rolar D20$/ });
-    await throwButton.hover();
-    await page.mouse.down();
+    const actionRequest = () =>
+      page.waitForRequest(
+        (r) =>
+          r.url().endsWith("/preparation/actions") && r.method() === "POST",
+        { timeout: 15000 },
+      );
+    const throwButton = page.locator(".dice-roll-button");
+    await throwButton.scrollIntoViewIfNeeded();
+    const box = (await throwButton.boundingBox())!;
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    // Toque real no celular: um toque longo não gera click no Chromium.
+    const client = info.project.use.hasTouch
+      ? await page.context().newCDPSession(page)
+      : null;
+    const press = async () => {
+      if (!client) {
+        await page.mouse.move(point.x, point.y);
+        await page.mouse.down();
+      } else
+        await client.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [point],
+        });
+    };
+    const release = async () => {
+      if (!client) await page.mouse.up();
+      else
+        await client.send("Input.dispatchTouchEvent", {
+          type: "touchEnd",
+          touchPoints: [],
+        });
+    };
+    const background = () =>
+      throwButton.evaluate((el) => getComputedStyle(el).backgroundColor);
+    // Cada nível dura pouco: a espera acompanha o botão quadro a quadro.
+    const waitForLevel = (level: number) =>
+      page.waitForFunction(
+        (wanted) =>
+          document
+            .querySelector(".dice-roll-button")
+            ?.getAttribute("aria-label")
+            ?.startsWith(`Força ${wanted} `),
+        level,
+        { polling: "raf", timeout: 8000 },
+      );
+    const idleBackground = await background();
+
+    // Até 2 segundos é o lançamento normal, igual a um clique.
+    await press();
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     await expect(
-      page.getByRole("button", { name: "Solte para cair da mesa" }),
-    ).toBeVisible({ timeout: 5000 });
-    const thrown = page.waitForRequest(
-      (r) => r.url().endsWith("/preparation/actions") && r.method() === "POST",
-    );
-    await page.mouse.up();
-    expect((await thrown).postDataJSON().fallOff).toBe(true);
+      page.getByRole("button", { name: /^Rolar D20$/ }),
+    ).toBeVisible();
+    expect(await background()).toBe(idleBackground);
+    const normal = actionRequest();
+    await release();
+    expect((await normal).postDataJSON().power).toBeUndefined();
     await expect(page.locator(".dice-register li")).toHaveCount(2, {
       timeout: 15000,
     });
-    const before = await (
-      await other.request.get(path + "/preparation")
-    ).json();
-    expect(before.rolls).toHaveLength(2);
+
+    // Força 1 a 8 cai na mesa, conta no registro e muda a cor do botão.
+    await press();
+    await waitForLevel(1);
+    await expect
+      .poll(async () => {
+        const [red, green, blue] = (await background())
+          .match(/[\d.]+/g)!
+          .map(Number);
+        return green > red && green > blue;
+      })
+      .toBe(true);
+    await waitForLevel(5);
+    const onTable = actionRequest();
+    await release();
+    const onTablePower = (await onTable).postDataJSON().power;
+    expect(onTablePower).toBeGreaterThanOrEqual(5);
+    expect(onTablePower).toBeLessThanOrEqual(8);
+    await expect(page.locator(".dice-register li")).toHaveCount(3, {
+      timeout: 15000,
+    });
+
+    // Sair do botão cancela o lançamento (mouse).
+    if (!client) {
+      let sent = false;
+      const watch = (r: { url(): string }) => {
+        if (r.url().endsWith("/preparation/actions")) sent = true;
+      };
+      page.on("request", watch);
+      await press();
+      await page.mouse.move(point.x, point.y - box.height * 3);
+      await page.mouse.up();
+      await page.waitForTimeout(300);
+      page.off("request", watch);
+      expect(sent).toBe(false);
+    }
+
+    // Forças 9 e 10 caem para fora: todos veem o dado, o registro não muda.
+    await press();
+    await waitForLevel(10);
+    const lost = actionRequest();
+    await release();
+    expect((await lost).postDataJSON().power).toBeGreaterThanOrEqual(9);
+    await expect
+      .poll(async () => {
+        const state = await (
+          await other.request.get(path + "/preparation")
+        ).json();
+        return state.rolls.length;
+      })
+      .toBe(4);
+    await page.waitForTimeout(2500);
+    await expect(page.locator(".dice-register li")).toHaveCount(3);
     await page.reload();
-    await expect(page.locator(".dice-register li")).toHaveCount(2, {
+    await expect(page.locator(".dice-register li")).toHaveCount(3, {
       timeout: 15000,
     });
     for (let i = 0; i < 2; i++)
@@ -189,7 +284,26 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     await expect(
       page.getByRole("region", { name: "Quem começa?" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Rolar D20", exact: true }).click();
+    // Na etapa que vale só existe o clique: segurar não carrega nem muda a força.
+    const orderButton = page.getByRole("button", {
+      name: "Rolar D20",
+      exact: true,
+    });
+    const orderRoll = actionRequest();
+    if (client) await orderButton.tap();
+    else {
+      const orderBox = (await orderButton.boundingBox())!;
+      await page.mouse.move(
+        orderBox.x + orderBox.width / 2,
+        orderBox.y + orderBox.height / 2,
+      );
+      await page.mouse.down();
+      await new Promise((resolve) => setTimeout(resolve, 2600));
+      await expect(orderButton).toBeVisible();
+      await expect(page.locator(".dice-roll-button.is-charging")).toHaveCount(0);
+      await page.mouse.up();
+    }
+    expect((await orderRoll).postDataJSON().power).toBeUndefined();
     await expect(page.getByRole("button", { name: /^Confirmar / })).toBeEnabled(
       { timeout: 15000 },
     );
@@ -248,6 +362,205 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
   } finally {
     await other.close();
   }
+});
+
+test("a carga vai e volta entre verde e vermelho, cada vez mais rápido", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "Gesto de mouse no desktop");
+  test.setTimeout(60000);
+  await page.request.post("/api/session", {
+    data: { login: "amigo", password: "senha-do-navegador" },
+  });
+  const { room } = await (
+    await page.request.post("/api/rooms", { data: roomBody({ seats: 2 }) })
+  ).json();
+  await page.goto(`/#/salas/${room.id}`);
+  const button = page.locator(".dice-roll-button");
+  await expect(button).toBeVisible();
+  const box = (await button.boundingBox())!;
+  await page.evaluate(() => {
+    const element = document.querySelector(".dice-roll-button")!;
+    const samples: { t: number; label: string; color: string }[] = [];
+    (window as unknown as { chargeSamples: typeof samples }).chargeSamples =
+      samples;
+    const frame = () => {
+      samples.push({
+        t: performance.now(),
+        label: element.getAttribute("aria-label") ?? "",
+        color: getComputedStyle(element).backgroundColor,
+      });
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(8000);
+  const samples = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          chargeSamples: { t: number; label: string; color: string }[];
+        }
+      ).chargeSamples,
+  );
+  const charging = samples.filter(({ label }) => label.startsWith("Força"));
+  const levelOf = (label: string) => Number(label.match(/Força (\d+)/)![1]);
+  const turns: number[] = [];
+  let seeking = 10;
+  for (const sample of charging)
+    if (levelOf(sample.label) === seeking) {
+      turns.push(sample.t);
+      seeking = seeking === 10 ? 1 : 10;
+    }
+  // Pelo menos três viradas: subiu, voltou e subiu de novo, sempre mais rápido.
+  expect(turns.length).toBeGreaterThanOrEqual(3);
+  const sweeps = turns.slice(1).map((t, index) => t - turns[index]);
+  expect(sweeps[1]).toBeLessThan(sweeps[0]);
+  const channels = samples.map(({ color }) =>
+    color.match(/[\d.]+/g)!.map(Number),
+  );
+  expect(channels.some(([r, g]) => g > 200 && g > r)).toBe(true);
+  expect(channels.some(([r, g]) => r > 170 && g < 40)).toBe(true);
+  // Soltar no meio da carga lança com a força que estava no botão.
+  await page.mouse.up();
+});
+
+test("segurar o botão muda o lançamento que aparece na mesa", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "Medição no canvas do desktop");
+  test.setTimeout(150000);
+  await page.request.post("/api/session", {
+    data: { login: "amigo", password: "senha-do-navegador" },
+  });
+  const { room } = await (
+    await page.request.post("/api/rooms", { data: roomBody({ seats: 2 }) })
+  ).json();
+  await page.goto(`/#/salas/${room.id}`);
+  const button = page.locator(".dice-roll-button");
+  await expect(button).toBeVisible();
+  const box = (await button.boundingBox())!;
+
+  /** Lança pelo botão real e mede o dado desenhado no canvas até ele parar. */
+  const measure = async (power: number) => {
+    await page.waitForFunction(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        ".dice-surface canvas",
+      )!;
+      const { data } = canvas
+        .getContext("2d")!
+        .getImageData(0, 0, canvas.width, canvas.height);
+      return !data.some((value, index) => index % 4 === 3 && value > 0);
+    }, undefined, { timeout: 15000 });
+    await page.evaluate(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        ".dice-surface canvas",
+      )!;
+      const context = canvas.getContext("2d")!;
+      const count = () => document.querySelectorAll(".dice-register li").length;
+      const before = count();
+      const samples: { t: number; x: number; y: number }[] = [];
+      const run = window as unknown as {
+        diceSamples: typeof samples;
+        diceDone: boolean;
+      };
+      run.diceSamples = samples;
+      run.diceDone = false;
+      const frame = () => {
+        const { data, width, height } = context.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
+        // Só o corpo do dado é opaco: sombra, rastro e impacto são translúcidos.
+        let total = 0,
+          sumX = 0,
+          sumY = 0;
+        for (let y = 0; y < height; y += 2)
+          for (let x = 0; x < width; x += 2)
+            if (data[(y * width + x) * 4 + 3] > 250) {
+              total++;
+              sumX += x;
+              sumY += y;
+            }
+        if (total)
+          samples.push({
+            t: performance.now(),
+            x: sumX / total,
+            y: sumY / total,
+          });
+        if (count() > before || (samples.length > 3 && !total)) {
+          run.diceDone = true;
+          return;
+        }
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+    const request = page.waitForRequest(
+      (r) => r.url().endsWith("/preparation/actions") && r.method() === "POST",
+      { timeout: 15000 },
+    );
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    if (power)
+      await page.waitForFunction(
+        (level) =>
+          document
+            .querySelector(".dice-roll-button")
+            ?.getAttribute("aria-label")
+            ?.startsWith(`Força ${level} `),
+        power,
+        { polling: "raf", timeout: 8000 },
+      );
+    await page.mouse.up();
+    expect((await request).postDataJSON().power).toBe(power || undefined);
+    if (power === 8) {
+      await page.waitForTimeout(1150);
+      await page.screenshot({ path: info.outputPath("tiro-forca-8.png") });
+    }
+    await page.waitForFunction(
+      () => (window as unknown as { diceDone: boolean }).diceDone,
+      undefined,
+      { timeout: 15000 },
+    );
+    const samples = await page.evaluate(
+      () =>
+        (window as unknown as { diceSamples: { t: number; x: number; y: number }[] })
+          .diceSamples,
+    );
+    let path = 0,
+      burst = 0;
+    for (let i = 1; i < samples.length; i++) {
+      const step = Math.hypot(
+        samples[i].x - samples[i - 1].x,
+        samples[i].y - samples[i - 1].y,
+      );
+      path += step;
+      if (samples[i].t - samples[0].t <= 500) burst += step;
+    }
+    const seconds = (samples.at(-1)!.t - samples[0].t) / 1000;
+    return { path, burst, seconds };
+  };
+
+  const click = await measure(0);
+  const weakest = await measure(1);
+  const shot = await measure(8);
+  const lost = await measure(10);
+  console.log(JSON.stringify({ click, weakest, shot, lost }));
+
+  // Força 1 mal sai do lugar; o tiro corre muito mais, dispara no primeiro meio
+  // segundo e continua ricocheteando por mais tempo.
+  expect(weakest.path).toBeLessThan(click.path * 0.6);
+  expect(weakest.seconds).toBeLessThan(click.seconds);
+  expect(shot.path).toBeGreaterThan(click.path * 4);
+  expect(shot.burst).toBeGreaterThan(click.burst * 2);
+  expect(shot.seconds).toBeGreaterThan(click.seconds * 1.8);
+  expect(lost.burst).toBeGreaterThan(click.burst * 1.5);
+  await expect(page.locator(".dice-register li")).toHaveCount(3);
 });
 
 test("confirmação com quatro jogadores mantém mesa, ordem e registro na tela", async ({

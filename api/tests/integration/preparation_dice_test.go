@@ -38,18 +38,22 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, created).ID)
 	requireStatus(t, e.request("POST", path+"/participants", "{}", bia, nil), 200)
 	action := func(cookie *http.Cookie, n int, kind, rollID string) response {
-		return e.request("POST", path+"/preparation/actions", fmt.Sprintf(`{"intentId":"00000000-0000-4000-8000-%012d","kind":%q,"rollId":%q,"fallOff":%t}`, n, kind, rollID, n == 1), cookie, nil)
+		// A rolagem 1 cai da mesa; a 2 pede força máxima já na etapa que vale.
+		power := map[int]int{1: 9, 2: 10}[n]
+		return e.request("POST", path+"/preparation/actions", fmt.Sprintf(`{"intentId":"00000000-0000-4000-8000-%012d","kind":%q,"rollId":%q,"power":%d}`, n, kind, rollID, power), cookie, nil)
 	}
 	requireStatus(t, e.request("GET", path+"/preparation", "", outsider, nil), 404)
 	requireStatus(t, action(outsider, 1, "roll", ""), 404)
+	requireStatus(t, e.request("POST", path+"/preparation/actions", `{"intentId":"00000000-0000-4000-8000-000000000099","kind":"roll","power":11}`, ana, nil), 400)
+	requireStatus(t, e.request("POST", path+"/preparation/actions", `{"intentId":"00000000-0000-4000-8000-000000000099","kind":"roll","power":-1}`, ana, nil), 400)
 	requireStatus(t, action(ana, 1, "roll", ""), 200)
 	requireStatus(t, action(ana, 1, "roll", ""), 200)
 	state := e.request("GET", path+"/preparation", "", bia, nil)
 	if bytes.Count(state.body, []byte(`"value":7`)) != 1 {
 		t.Fatalf("rolagem duplicada: %s", state.body)
 	}
-	if !bytes.Contains(state.body, []byte(`"fallOff":true`)) {
-		t.Fatal("tipo de lançamento não foi sincronizado")
+	if !bytes.Contains(state.body, []byte(`"fallOff":true`)) || !bytes.Contains(state.body, []byte(`"power":9`)) {
+		t.Fatalf("força do lançamento não foi sincronizada: %s", state.body)
 	}
 	for i, cookie := range []*http.Cookie{ana, bia} {
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, ids[i]), cookie, nil), 200)
@@ -58,6 +62,10 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	requireStatus(t, e.request("POST", path+"/preparation/start", "{}", ana, nil), 200)
 	requireStatus(t, e.request("GET", path+"/match", "", ana, nil), 404)
 	requireStatus(t, action(ana, 2, "roll", ""), 200)
+	ordered := e.request("GET", path+"/preparation", "", bia, nil)
+	if bytes.Contains(ordered.body, []byte(`"power":10`)) || bytes.Count(ordered.body, []byte(`"fallOff":true`)) != 1 {
+		t.Fatalf("rolagem que vale aceitou força: %s", ordered.body)
+	}
 	requireStatus(t, action(ana, 3, "confirm", "00000000-0000-4000-8000-000000000002"), 200)
 	requireStatus(t, action(bia, 4, "roll", ""), 200)
 	requireStatus(t, action(bia, 5, "confirm", "00000000-0000-4000-8000-000000000004"), 409)

@@ -5,43 +5,46 @@ import {
   type PointerEvent,
   type MouseEvent,
 } from "react";
+import { powerFromHold } from "./diceThrowPower";
 
-export function useDiceThrowGesture(throwDie: (fallOff: boolean) => void) {
+export function useDiceThrowGesture(throwDie: (power: number) => void) {
   const began = useRef<number | null>(null);
-  const elapsed = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [charged, setCharged] = useState(false);
+  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const [power, setPower] = useState(0);
   const reset = () => {
     began.current = null;
-    elapsed.current = 0;
-    clearTimeout(timer.current);
-    setCharged(false);
+    clearInterval(timer.current);
+    setPower(0);
   };
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => clearInterval(timer.current), []);
   return {
-    charged,
+    power,
     handlers: {
       onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
         if (event.button !== 0) return;
-        began.current = performance.now();
-        elapsed.current = 0;
-        timer.current = setTimeout(() => setCharged(true), 3000);
+        const start = performance.now();
+        began.current = start;
+        clearInterval(timer.current);
+        timer.current = setInterval(
+          () => setPower(powerFromHold(performance.now() - start)),
+          16,
+        );
       },
+      // O toque longo não gera click no celular: o lançamento sai ao soltar.
       onPointerUp: () => {
-        elapsed.current =
-          began.current === null ? 0 : performance.now() - began.current;
-        clearTimeout(timer.current);
-        setCharged(false);
+        if (began.current === null) return;
+        const held = performance.now() - began.current;
+        reset();
+        throwDie(powerFromHold(held));
       },
       onPointerCancel: reset,
       onPointerLeave: () => {
         if (began.current !== null) reset();
       },
       onContextMenu: (event: MouseEvent) => event.preventDefault(),
-      onClick: () => {
-        const fallOff = elapsed.current >= 3000;
-        reset();
-        throwDie(fallOff);
+      // detail 0 é a ativação por teclado, que não passa pelos eventos de ponteiro.
+      onClick: (event: MouseEvent) => {
+        if (event.detail === 0) throwDie(0);
       },
     },
   };

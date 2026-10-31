@@ -2,6 +2,7 @@ import { createActionIntent } from "./actionIntent";
 
 export type PreparationRoll = {
   fallOff?: boolean;
+  power?: number;
   id: string;
   playerId: number;
   name: string;
@@ -32,13 +33,13 @@ export const preparationDiceApi = {
     id: number,
     kind: "roll" | "confirm",
     rollId?: string,
-    fallOff = false,
+    power = 0,
   ) {
     const body = JSON.stringify({
       kind,
       intentId: createActionIntent(),
       ...(kind === "confirm" ? { rollId } : {}),
-      ...(kind === "roll" && fallOff ? { fallOff: true } : {}),
+      ...(kind === "roll" && power ? { power } : {}),
     });
     let response: Response | undefined;
     for (let attempt = 0; attempt < 2; attempt++) {

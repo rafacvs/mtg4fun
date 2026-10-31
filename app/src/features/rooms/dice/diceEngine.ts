@@ -46,6 +46,8 @@ export interface EngineOptions {
 
 export interface TossOptions {
   fallOff?: boolean;
+  /** força do lançamento, 1–10; sem força é o lançamento normal (equivale a 4) */
+  power?: number;
   /** cor do dado (#RRGGBB) — normalmente a cor do jogador */
   color: string;
   /** texto da etiqueta quando o dado para (ex.: nome do jogador) */
@@ -80,6 +82,8 @@ export interface DiceEngine {
   count(): number;
   /** avança a simulação manualmente (testes); dt em segundos */
   step(dt: number): void;
+  /** posição e velocidade atuais dos dados (testes) */
+  snapshot(): { id: string; p: Vec3; v: Vec3; st: string }[];
 }
 
 // ---------------------------------------------------------------- matemática
@@ -188,10 +192,44 @@ const FACES: Face[] = (() => {
 })();
 const VERTS: Vec3[] = RAW.map(nrm);
 
+// ---------------------------------------------------------------- força
+const NORMAL_FORCE = 4;
+const MAX_AIM_DEVIATION = Math.PI / 6;
+/**
+ * Um nível por linha (força 1–10). Fraco é um dado largado na frente do próprio
+ * jogador; forte sai reto e rente à mesa e fica ricocheteando no aro, como um
+ * tiro. speed em px/s para uma mesa de raio 294; lift é a velocidade para cima;
+ * height é a altura de saída; drag é o atrito no feltro; rim é o quanto da
+ * velocidade sobra ao bater no aro; deflect é o desvio máximo do ricochete, em
+ * radianos.
+ */
+const FORCES = [
+  { speed: 110, lift: 30, height: 40, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 180, lift: 60, height: 50, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 260, lift: 110, height: 65, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 360, lift: 200, height: 90, drag: 1.9, rim: 0.5, deflect: 0 },
+  { speed: 620, lift: 240, height: 85, drag: 1.7, rim: 0.55, deflect: 0.2 },
+  { speed: 1700, lift: 150, height: 70, drag: 1.2, rim: 0.7, deflect: 0.4 },
+  { speed: 2800, lift: 90, height: 55, drag: 0.9, rim: 0.78, deflect: 0.5 },
+  { speed: 4200, lift: 50, height: 45, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 5200, lift: 50, height: 40, drag: 0.7, rim: 0.85, deflect: 0.6 },
+  { speed: 6400, lift: 40, height: 40, drag: 0.7, rim: 0.85, deflect: 0.6 },
+];
+/** segundos que um ponto do rastro fica visível, e a velocidade em que ele aparece */
+const TRAIL_LIFE = 0.45;
+const TRAIL_MIN_SPEED = 500;
+const IMPACT_LIFE = 0.4;
+const MAX_COLLISION_LIFT = 600;
+
 // ---------------------------------------------------------------- dado
 interface Die {
   fallOff?: boolean;
   id: string;
+  drag: number;
+  rim: number;
+  deflect: number;
+  rand: () => number;
+  trail: { x: number; y: number; z: number; age: number }[];
   p: Vec3;
   v: Vec3;
   w: Vec3;
@@ -249,6 +287,7 @@ export function createDiceEngine(
   const LIGHT = nrm([-0.45, 0.35, 0.85]);
 
   let dice: Die[] = [];
+  let impacts: { x: number; y: number; size: number; age: number }[] = [];
   let raf: number | null = null,
     last = 0,
     W = 0,
@@ -279,20 +318,28 @@ export function createDiceEngine(
     const rand = o.seed !== undefined ? rng(o.seed) : Math.random;
     const R = (a: number, b: number) => a + rand() * (b - a);
     const ang = o.fromAngle ?? 0;
+    const force = o.power || (o.fallOff ? 9 : NORMAL_FORCE);
+    const { speed, lift, height, drag, rim, deflect } = FORCES[force - 1];
     const d0 = T.radius * 0.86;
     const p: Vec3 = [
-      Math.sin(ang) * d0 + R(-60, 60),
-      Math.cos(ang) * d0 + R(-60, 60),
-      R(80, 130),
+      Math.sin(ang) * d0 + R(-40, 40),
+      Math.cos(ang) * d0 + R(-40, 40),
+      height * R(0.9, 1.1),
     ];
-    const tgt = [R(-0.55, 0.55) * T.radius, R(-0.3, 0.4) * T.radius];
-    const dir = nrm([tgt[0] - p[0], tgt[1] - p[1], 0]);
-    const sp = R(520, 820) * (T.radius / 294) * (o.fallOff ? 3 : 1);
+    // reto é do lugar do jogador para o centro; cada lançamento desvia para um lado
+    const aim = ang + R(-MAX_AIM_DEVIATION, MAX_AIM_DEVIATION);
+    const dir: Vec3 = [-Math.sin(aim), -Math.cos(aim), 0];
+    const sp = speed * R(0.92, 1.08) * (T.radius / 294);
     const die: Die = {
       fallOff: o.fallOff,
       id: "d" + ++seq,
+      drag,
+      rim,
+      deflect,
+      rand,
+      trail: [],
       p,
-      v: [dir[0] * sp, dir[1] * sp, R(200, 520)],
+      v: [dir[0] * sp, dir[1] * sp, lift * R(0.8, 1.2)],
       w: [R(-24, 24), R(-24, 24), R(-14, 14)],
       q: qn([R(-1, 1), R(-1, 1), R(-1, 1), R(-1, 1)]),
       st: "fly",
@@ -342,7 +389,13 @@ export function createDiceEngine(
   // ------------------------------------------------ física
   function step(dt: number) {
     const lim = T.radius - r;
+    for (const hit of impacts) hit.age += dt;
+    impacts = impacts.filter((hit) => hit.age < IMPACT_LIFE);
     for (const d of dice) {
+      for (const point of d.trail) point.age += dt;
+      d.trail = d.trail.filter((point) => point.age < TRAIL_LIFE);
+      if (Math.hypot(d.v[0], d.v[1]) > TRAIL_MIN_SPEED)
+        d.trail.push({ x: d.p[0], y: d.p[1], z: d.p[2], age: 0 });
       if (d.st === "rest") {
         d.t += dt;
         if (d.t > REST) d.a = Math.max(0, 1 - (d.t - REST) / FADE);
@@ -359,6 +412,15 @@ export function createDiceEngine(
         d.a = 0;
         d.onLand?.(d.forced ?? 1);
         continue;
+      }
+      // dado perdido nunca para no feltro, mesmo depois de bater em outro dado
+      if (d.fallOff) {
+        const min = T.radius * 1.5;
+        if (Math.hypot(d.v[0], d.v[1]) < min) {
+          const out = nrm([d.p[0] || 1, d.p[1], 0]);
+          d.v[0] = out[0] * min;
+          d.v[1] = out[1] * min;
+        }
       }
       if (
         d.p[2] < r &&
@@ -384,14 +446,26 @@ export function createDiceEngine(
         d.p[1] = ny * lim;
         const vn = d.v[0] * nx + d.v[1] * ny;
         if (vn > 0) {
-          d.v[0] -= 1.5 * vn * nx;
-          d.v[1] -= 1.5 * vn * ny;
+          d.v[0] -= (1 + d.rim) * vn * nx;
+          d.v[1] -= (1 + d.rim) * vn * ny;
+          // o desvio usa a semente: todos os clientes veem o mesmo ricochete
+          const turn = (d.rand() - 0.5) * 2 * d.deflect,
+            [vx, vy] = d.v;
+          d.v[0] = vx * Math.cos(turn) - vy * Math.sin(turn);
+          d.v[1] = vx * Math.sin(turn) + vy * Math.cos(turn);
+          if (vn > TRAIL_MIN_SPEED)
+            impacts.push({
+              x: d.p[0],
+              y: d.p[1],
+              size: Math.min(1, vn / 2000),
+              age: 0,
+            });
           d.w = d.w.map((x) => -x * 0.7 + (Math.random() - 0.5) * 16) as Vec3;
         }
       }
       // no chão: atrito e rotação de rolamento (ω = ẑ × v / r)
-      if (ground) {
-        const f = Math.exp(-(d.st === "settle" ? 7 : 1.9) * dt);
+      if (ground && !d.fallOff) {
+        const f = Math.exp(-(d.st === "settle" ? 7 : d.drag) * dt);
         d.v[0] *= f;
         d.v[1] *= f;
         const tw: Vec3 = [-d.v[1] / r, d.v[0] / r, 0],
@@ -466,6 +540,8 @@ export function createDiceEngine(
           B.v = B.v.map((x, t) => x + n[t] * jimp * mb) as Vec3;
           for (const D of [A, B])
             if (D.st !== "rest") {
+              // tiro em outro dado não pode lançar o dado para fora da tela
+              D.v[2] = Math.min(D.v[2], MAX_COLLISION_LIFT);
               D.w = D.w.map((x) => x + (Math.random() - 0.5) * 20) as Vec3;
               if (D.st === "settle") D.st = "fly";
             }
@@ -520,6 +596,34 @@ export function createDiceEngine(
         Math.PI * 2,
       );
       ctx.fill();
+    }
+    // rastro do tiro: marca o caminho do dado, inclusive os ricochetes
+    ctx.lineCap = "round";
+    for (const d of dice) {
+      ctx.strokeStyle = `rgb(${d.rgb.join(",")})`;
+      for (let i = 1; i < d.trail.length; i++) {
+        const a = d.trail[i - 1],
+          b = d.trail[i],
+          fresh = 1 - b.age / TRAIL_LIFE;
+        ctx.globalAlpha = d.a * 0.7 * fresh;
+        ctx.lineWidth = r * (0.25 + 0.75 * fresh);
+        ctx.beginPath();
+        ctx.moveTo(...proj(a.x, a.y, a.z));
+        ctx.lineTo(...proj(b.x, b.y, b.z));
+        ctx.stroke();
+      }
+    }
+    // impacto no aro
+    for (const hit of impacts) {
+      const grown = hit.age / IMPACT_LIFE,
+        ground = proj(hit.x, hit.y, 0),
+        radius = r * (0.8 + (1.5 + 3 * hit.size) * grown);
+      ctx.globalAlpha = 0.9 * (1 - grown);
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth = 2 + 4 * hit.size * (1 - grown);
+      ctx.beginPath();
+      ctx.ellipse(ground[0], ground[1], radius, radius * K, 0, 0, Math.PI * 2);
+      ctx.stroke();
     }
     // dados, de trás para frente
     for (const d of dice
@@ -666,6 +770,7 @@ export function createDiceEngine(
     toss,
     clear() {
       dice = [];
+      impacts = [];
       draw();
     },
     setTable(t) {
@@ -680,5 +785,7 @@ export function createDiceEngine(
     },
     count: () => dice.length,
     step,
+    snapshot: () =>
+      dice.map((d) => ({ id: d.id, p: d.p, v: d.v, st: d.st })),
   };
 }

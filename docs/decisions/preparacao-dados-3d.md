@@ -117,3 +117,64 @@ em 1440×900 e 1280×720. As capturas da ordem provisória e definida foram
 inspecionadas. O teste verifica o destaque do nome da maior rolagem concluída,
 a posição final e a abertura da mesa. Os cenários exclusivos de desktop são
 omitidos nas duas orientações móveis. A regressão completa não foi executada.
+
+## Escala de força da rolagem livre em 30/10/2026
+
+O usuário pediu explicitamente, em conversa, a mudança do gesto: sensação de
+pinball na brincadeira e apenas o clique na etapa que define a ordem. Esse pedido
+substitui o gesto de três segundos descrito acima. Depois de testar na porta 8080,
+pediu o botão inteiro mudando de cor e uma diferença de força bem perceptível, com
+o clique equivalente à força 4, no meio da mesa, e os níveis altos como um tiro.
+
+Pedido pelo usuário:
+
+- Segurar até 2 segundos é o lançamento normal, igual ao clique.
+- Depois disso, a escala de 1 a 10 vai do verde claro ao vermelho forte.
+- De 1 a 8 o dado cai na mesa; quanto menor, mais perto de quem joga, e quanto
+  maior, mais reto e rápido.
+- Em 9 e 10 o dado cai para fora e não aparece no registro.
+
+Na segunda revisão, o usuário disse que segurar ainda parecia igual a clicar. A
+medição confirmou: o arremesso segue a profundidade da mesa, que a perspectiva
+achata, e o aro tirava metade da velocidade, então os níveis paravam parecidos.
+
+Escolhas de implementação, não pedidas literalmente: cada nível dura 400 ms, de
+modo que a força 10 chega em 5,6 s. O botão sobe a partir do dourado e a escala
+passa pelo amarelo. Forças altas têm velocidade bem maior, menos atrito, ricochete
+com desvio pela semente, rastro e anel de impacto no aro. Sair do botão continua
+cancelando o lançamento. O gesto é resolvido ao soltar, porque o toque longo não
+gera click no celular.
+
+O contrato de POST /preparation/actions troca a entrada fallOff por power (0 a 10;
+fora disso, 400). O servidor persiste power e deriva fallOff (9 ou mais), então
+todos os clientes animam o mesmo lançamento. Na etapa determining_order o valor é
+descartado e a rolagem fica sempre normal. O GET de preparação continua listando
+os dados perdidos, para que os outros jogadores vejam a queda; é o registro da
+tela que os omite. Rolagens antigas com fallOff também deixam de aparecer nele.
+
+Verificação desta revisão: testes unitários do frontend, typecheck e build
+passaram, assim como a integração HTTP da preparação. A suíte focada de navegador
+passou com API e MySQL isolados, no desktop e no celular nas duas orientações, com
+toque real via CDP. Um cenário mede no canvas o dado lançado pelo botão real; em
+uma execução, força 1 andou 24 px em 0,7 s, o clique 117 px em 1,6 s e a força 8
+1.611 px em 4,9 s. A sensação do lançamento depende de avaliação do usuário. A
+regressão completa não foi executada.
+
+## Mira e carga contínua em 30/10/2026
+
+Depois de aprovar a força na porta 8080, o usuário pediu dois ajustes: direção
+aleatória de até 30 graus para cada lado do reto, e carga mais rápida e infinita,
+indo do verde ao vermelho e voltando, cada vez mais rápido. O pedido substitui a
+subida única até a força 10 e os 400 ms por nível descritos acima.
+
+O desvio usa a semente da rolagem, então todos os clientes veem a mesma direção.
+Escolhas de implementação, não pedidas literalmente: o primeiro nível dura 220 ms
+(a força 10 chega em cerca de 4 s), cada passada encurta 20% e o limite é de 40 ms
+por nível, para que os níveis ainda possam ser vistos. A força lançada é a que
+estiver no botão ao soltar.
+
+Verificação desta revisão: testes unitários do frontend, typecheck e build
+passaram. A suíte focada de navegador cobre a ida e volta da carga no botão real,
+com as passadas ficando mais curtas, e a medição do lançamento no canvas. O
+resultado desta execução está na descrição do PR. A regressão completa não foi
+executada.

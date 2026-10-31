@@ -17,6 +17,12 @@ import { DiceRollBadge } from "./DiceRollBadge";
 import d20Icon from "../../assets/theme/d20.svg";
 import panelCorner from "../../assets/theme/corner-v2.svg";
 import { useDiceThrowGesture } from "./useDiceThrowGesture";
+import {
+  fallsOffTable,
+  MAX_POWER,
+  powerColor,
+  powerTextColor,
+} from "./diceThrowPower";
 
 const colors = [
   "#6cb4f5",
@@ -169,6 +175,7 @@ export function PreparationDice({
       canvas.current.toss({
         value: roll.value,
         fallOff: roll.fallOff,
+        power: roll.power,
         seed: roll.seed,
         color: colors[index % 6],
         label: roll.name,
@@ -197,8 +204,11 @@ export function PreparationDice({
     if (list && followLog.current) list.scrollTop = list.scrollHeight;
   }, [landed, deciding]);
   const throwGesture = useDiceThrowGesture(
-    (fallOff) => void send("roll", own?.id, fallOff),
+    (power) => void send("roll", own?.id, power),
   );
+  const throwPower = throwGesture.power;
+  // Dado perdido anima para todos, mas não entra no registro.
+  const registeredRolls = rolls.filter((r) => !r.fallOff);
   const diceSurface = (
     <div className="dice-surface" ref={surface}>
       <DiceTable ref={canvas} table={geometry} dieRadius={23} />
@@ -208,9 +218,21 @@ export function PreparationDice({
     <button
       disabled={pending}
       {...throwGesture.handlers}
-      className={`secondary dice-roll-button ${throwGesture.charged ? "is-charged" : ""}`}
-      aria-label={throwGesture.charged ? "Solte para cair da mesa" : undefined}
-      title="Segure por 3 segundos e solte para jogar para fora da mesa"
+      className={`secondary dice-roll-button ${throwPower ? "is-charging" : ""}`}
+      style={
+        throwPower
+          ? ({
+              "--dice-charge-color": powerColor(throwPower),
+              "--dice-charge-text": powerTextColor(throwPower),
+            } as CSSProperties)
+          : undefined
+      }
+      aria-label={
+        throwPower
+          ? `Força ${throwPower} de ${MAX_POWER}${fallsOffTable(throwPower) ? ": cai da mesa" : ""}`
+          : undefined
+      }
+      title="Segure por mais de 2 segundos para aumentar a força. Nas forças 9 e 10 o dado cai da mesa e não conta."
     >
       <span
         className="dice-roll-icon"
@@ -246,7 +268,7 @@ export function PreparationDice({
             list.scrollHeight - list.clientHeight - list.scrollTop < 24;
         }}
       >
-        {rolls
+        {registeredRolls
           .filter((r) => landed.has(r.id))
           .map((r) => (
             <li
@@ -276,8 +298,8 @@ export function PreparationDice({
                   ) : (
                     <>
                       rolou
-                      {rolls
-                        .slice(0, rolls.indexOf(r))
+                      {registeredRolls
+                        .slice(0, registeredRolls.indexOf(r))
                         .some(
                           (previous) =>
                             previous.playerId === r.playerId &&
@@ -543,11 +565,8 @@ export function PreparationDice({
             <>
               <button
                 disabled={pending || rolling || !!confirmed[userId]}
-                {...throwGesture.handlers}
-                className={`dice-roll-button ${throwGesture.charged ? "is-charged" : ""}`}
-                aria-label={
-                  throwGesture.charged ? "Solte para cair da mesa" : undefined
-                }
+                onClick={() => void action("roll")}
+                className="dice-roll-button"
               >
                 <span
                   className="dice-roll-icon"
