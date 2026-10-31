@@ -66,9 +66,47 @@ Nginx e Vite encaminham o upgrade dessa rota. Não há tabela, migration nem ser
   recusar. Uma pessoa joga um X1 por vez, e outras duplas podem jogar ao mesmo tempo. Sem
   nenhuma ação por 60 s, expira. Quem fica 15 s sem conexão perde o X1, o que preserva um
   F5. O painel só fecha por decisão explícita. Iniciar a partida cancela os X1 em andamento.
-- Emojis: oito opções, cooldown de 2 s por pessoa, nome de quem enviou abaixo do emoji e
-  botão no canto inferior esquerdo, para não cobrir as ações do centro da tela.
+- Emojis: nome de quem enviou abaixo do emoji.
 - Aba oculta não acumula resultado de X1 nem emoji para mostrar na volta.
+
+## Telas do designer e regras novas em 31/10/2026
+
+Depois de testar o MVP, o usuário enviou as telas do designer e pediu paridade visual
+idêntica na tela da sala (“as imagens”), com capturas no Chromium antes de cada tela.
+Pediu explicitamente: emoji ao lado de Rolar d20, ignorar por enquanto o botão de confete,
+menu no assento, convite como notificação com aceitar e recusar, tela de jogo nova, ver em
+tempo real o que o outro escolheu, novo resultado e dado proporcional à mesa.
+
+Isso substitui, nas regras acima: o desafio que abria direto, a escolha privada até confirmar
+e o aviso por confirmação simultânea, o painel do menu de ações e o botão de emoji no canto.
+O bloqueio do lado confirmado e o desconfirmar continuam. O conflito agora vem das escolhas:
+com o mesmo lado, ninguém confirma; o servidor também recusa.
+
+Vieram do texto e das imagens do design, e não de um pedido à parte:
+
+- “Quem perder fica marcado na mesa até a partida começar. Quem recusar também.” A marca e o
+  registro do X1 ficam em memória, como o resto, e somem ao iniciar a partida ou reiniciar a API.
+- “Arregar (conta como derrota)”, depois de aceitar.
+- Selo “Brincadeira” e histórico com tempo relativo. O selo tinha sido retirado antes a pedido
+  do usuário; voltou porque está no design novo.
+- Lista de emojis 😂 💀 🔥 😭 🐷 👀 🐐 🍅 e o aviso “Calma… 3s”, lidos da imagem.
+
+Escolhas de implementação, sem referência no design: a mensagem de quem chamou enquanto espera
+a resposta, com Cancelar sem marca; o estado inicial da tela do X1 e o rótulo “Confirmar”; os
+textos de quem recusou ou arregou (“Nem precisou de moeda.”, “Recusou o X1”); quem perde a conexão
+ou deixa expirar não fica marcado. A paisagem do assento vem da cor do comandante, ou da primeira
+carta (preto, azul, vermelho e o restante verde), porque o design usa paisagens, e não a carta.
+O rótulo “Aconchegaz” foi mantido, embora a imagem pareça dizer “Aconchegante”, porque foi nomeado
+em decisão anterior. A descrição do Mulligan saiu do cartão e ficou como dica ao passar o mouse.
+
+Depois de ver na porta 8080, o usuário pediu dois ajustes que substituem o que está acima: “pode
+deixar spamar, só que a cada clique o cooldown vai aumentando um pouco”, e a bandeja “na lateral do
+ícone, da direita para a esquerda ali no espaço livre”, sem balão por cima. Escolhas de implementação:
+a espera começa em 200 ms, cresce 35% por clique até 3 s e zera depois de 5 s de pausa, no servidor,
+por pessoa. O aviso “Calma…” e o bloqueio visível só aparecem em esperas a partir de cerca de 0,7 s. No
+celular o botão fica à esquerda, então a bandeja abre para a direita, sobre Rolar d20.
+
+O raio do dado acompanha o raio do feltro, com mínimo de 9 px; a física já escalava com a mesa.
 
 ## Verificação em 31/10/2026
 
@@ -90,3 +128,18 @@ Falhas que existem igualmente na `master` limpa: 19 cenários das suítes de sal
 3 de `acesso.spec.ts` e `TestTransferredSelectionPreservesZoneRulesAndRollsBack`. A suíte
 completa de navegador não foi executada. O limite de 75 s do Nginx com a conexão ociosa não
 foi medido. A sensação visual depende de avaliação do usuário.
+
+## Verificação das telas do designer em 31/10/2026
+
+Cada estado foi capturado no Chromium sem interface, com jogadores reais na porta 8080, em
+1440×895, e comparado lado a lado com as imagens, que têm cerca de 770 px por tela. Capturas de
+1280×720, 860×600 e celular nas duas orientações também foram inspecionadas. A avaliação de
+paridade é visual, feita por comparação, sem diferença automática de imagem.
+
+`minijogos-ao-vivo.spec.ts` cobre convite, escolha em tempo real, conflito, lado travado,
+desconfirmar, resultado, marca, registro, recusa, arregar, bandeja lateral, espera crescente e
+tamanho do dado nas três telas com API real. A regressão focada de dez specs teve as mesmas 19
+falhas da `master` limpa e nenhuma nova; `lobby-redesign.spec.ts` tem os mesmos 6 cenários falhando
+na `master`. A integração `TestLive` e os testes internos passaram, e a suíte Go completa só falha em
+`TestTransferredSelectionPreservesZoneRulesAndRollsBack`, igual à `master`. O smoke Docker não foi
+repetido depois das telas; o Nginx não mudou. A suíte completa de navegador não foi executada.

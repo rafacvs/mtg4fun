@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"math/big"
+	"slices"
 	"sync"
 	"time"
 
@@ -17,21 +18,34 @@ const (
 	sideHeads = "Cara"
 	sideTails = "Coroa"
 
+	duelInvited = "invited"
+	duelPlaying = "playing"
+
+	markLost    = "lost"
+	markRefused = "refused"
+
+	outcomeFlip    = "flip"
+	outcomeForfeit = "forfeit"
+	outcomeRefused = "refused"
+
+	maxDuelHistory = 50
+
 	duelTimeout     = 60 * time.Second
 	duelOfflineWait = 15 * time.Second
 )
 
-// Duel is the public state of a coin duel. Only confirmed sides are shared: a
-// side chosen but not confirmed stays in the player's browser.
+// Duel is the state of a coin duel. Both players see each other's side as it is
+// chosen, so two people can only agree to flip with different sides.
 type Duel struct {
 	ID             int64            `json:"id"`
+	Status         string           `json:"status"`
 	ChallengerID   int64            `json:"challengerId"`
 	ChallengerName string           `json:"challengerName"`
 	OpponentID     int64            `json:"opponentId"`
 	OpponentName   string           `json:"opponentName"`
-	Confirmed      map[int64]string `json:"confirmed"`
-	// Conflict means both confirmed the same side at once, so nothing is flipped
-	// until one of them unconfirms and changes.
+	Picks          map[int64]string `json:"picks"`
+	Confirmed      map[int64]bool   `json:"confirmed"`
+	// Conflict means both chose the same side: nobody can confirm until one changes.
 	Conflict bool `json:"conflict"`
 	room     int64
 	timer    *time.Timer
@@ -53,6 +67,26 @@ func (d *Duel) name(member int64) string {
 	return d.OpponentName
 }
 
+// Outcome is how a duel ended, shown to the whole room and kept in its history.
+type Outcome struct {
+	DuelID     int64  `json:"duelId"`
+	Kind       string `json:"kind"`
+	Side       string `json:"side,omitempty"`
+	LoserID    int64  `json:"loserId"`
+	LoserName  string `json:"loserName"`
+	LoserSide  string `json:"loserSide,omitempty"`
+	WinnerID   int64  `json:"winnerId"`
+	WinnerName string `json:"winnerName"`
+	WinnerSide string `json:"winnerSide,omitempty"`
+	At         int64  `json:"at"`
+}
+
+// duelRecord is what a room remembers until the match starts.
+type duelRecord struct {
+	marks   map[int64]string
+	history []Outcome
+}
+
 type presence struct{ room, member int64 }
 
 // CoinDuels runs one-on-one coin flips. A person plays one duel at a time, and
@@ -68,6 +102,7 @@ type CoinDuels struct {
 	mu      sync.Mutex
 	nextID  int64
 	duels   map[int64]*Duel
+	records map[int64]*duelRecord
 	offline map[presence]*time.Timer
 }
 
@@ -81,16 +116,21 @@ func (c *CoinDuels) Snapshot(_ context.Context, roomID int64, _ live.Member) (an
 	return c.view(roomID), nil
 }
 
-// view copies the duels: a snapshot is encoded after the lock is released.
+// view copies the state: a snapshot is encoded after the lock is released.
 func (c *CoinDuels) view(roomID int64) map[string]any {
 	duels := []Duel{}
 	for _, duel := range c.duels {
 		if duel.room == roomID {
-			public := Duel{ID: duel.ID, ChallengerID: duel.ChallengerID, ChallengerName: duel.ChallengerName, OpponentID: duel.OpponentID, OpponentName: duel.OpponentName, Confirmed: maps.Clone(duel.Confirmed), Conflict: duel.Conflict}
-			duels = append(duels, public)
+			duels = append(duels, Duel{ID: duel.ID, Status: duel.Status, ChallengerID: duel.ChallengerID, ChallengerName: duel.ChallengerName, OpponentID: duel.OpponentID, OpponentName: duel.OpponentName, Picks: maps.Clone(duel.Picks), Confirmed: maps.Clone(duel.Confirmed), Conflict: duel.Conflict})
 		}
 	}
-	return map[string]any{"duels": duels}
+	marks := map[int64]string{}
+	history := []Outcome{}
+	if record := c.records[roomID]; record != nil {
+		marks = maps.Clone(record.marks)
+		history = slices.Clone(record.history)
+	}
+	return map[string]any{"duels": duels, "marks": marks, "history": history}
 }
 
 func (c *CoinDuels) publishState(roomID int64) {
@@ -107,16 +147,24 @@ func (c *CoinDuels) Handle(ctx context.Context, request live.Request) error {
 			return live.UserError{Message: "Desafio inválido."}
 		}
 		return c.challenge(ctx, request, input.OpponentID)
-	case "confirm":
+	case "pick":
 		var input struct {
 			Side string `json:"side"`
 		}
 		if json.Unmarshal(request.Data, &input) != nil || (input.Side != sideHeads && input.Side != sideTails) {
 			return live.UserError{Message: "Escolha cara ou coroa."}
 		}
-		return c.confirm(request, input.Side)
+		return c.pick(request, input.Side)
+	case "accept":
+		return c.accept(request)
+	case "refuse":
+		return c.refuse(request)
+	case "confirm":
+		return c.confirm(request)
 	case "unconfirm":
 		return c.unconfirm(request)
+	case "forfeit":
+		return c.forfeit(request)
 	case "cancel":
 		return c.cancel(request)
 	}
@@ -155,7 +203,7 @@ func (c *CoinDuels) challenge(ctx context.Context, request live.Request, opponen
 		c.duels = map[int64]*Duel{}
 	}
 	c.nextID++
-	duel := &Duel{ID: c.nextID, ChallengerID: request.From.ID, ChallengerName: request.From.Name, OpponentID: opponentID, OpponentName: opponentName, Confirmed: map[int64]string{}, room: request.RoomID}
+	duel := &Duel{ID: c.nextID, Status: duelInvited, ChallengerID: request.From.ID, ChallengerName: request.From.Name, OpponentID: opponentID, OpponentName: opponentName, Picks: map[int64]string{}, Confirmed: map[int64]bool{}, room: request.RoomID}
 	c.duels[duel.ID] = duel
 	c.restartTimer(duel)
 	c.publishState(request.RoomID)
@@ -171,19 +219,88 @@ func (c *CoinDuels) duelOf(roomID, member int64) *Duel {
 	return nil
 }
 
-func (c *CoinDuels) confirm(request live.Request, side string) error {
+// playing returns the sender's duel once it was accepted.
+func (c *CoinDuels) playing(request live.Request) (*Duel, error) {
+	duel := c.duelOf(request.RoomID, request.From.ID)
+	if duel == nil || duel.Status != duelPlaying {
+		return nil, live.UserError{Message: "Este X1 já terminou."}
+	}
+	return duel, nil
+}
+
+// invitation returns the duel the sender was invited to and has not answered.
+func (c *CoinDuels) invitation(request live.Request) (*Duel, error) {
+	duel := c.duelOf(request.RoomID, request.From.ID)
+	if duel == nil || duel.Status != duelInvited || duel.OpponentID != request.From.ID {
+		return nil, live.UserError{Message: "Este convite já não vale."}
+	}
+	return duel, nil
+}
+
+func (c *CoinDuels) accept(request live.Request) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	duel := c.duelOf(request.RoomID, request.From.ID)
-	if duel == nil {
-		return live.UserError{Message: "Este X1 já terminou."}
+	duel, err := c.invitation(request)
+	if err != nil {
+		return err
 	}
-	duel.Confirmed[request.From.ID] = side
+	duel.Status = duelPlaying
+	c.restartTimer(duel)
+	c.publishState(request.RoomID)
+	return nil
+}
+
+func (c *CoinDuels) refuse(request live.Request) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	duel, err := c.invitation(request)
+	if err != nil {
+		return err
+	}
+	c.finish(duel, Outcome{Kind: outcomeRefused, LoserID: duel.OpponentID, LoserName: duel.OpponentName, WinnerID: duel.ChallengerID, WinnerName: duel.ChallengerName}, markRefused)
+	return nil
+}
+
+func (c *CoinDuels) pick(request live.Request, side string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	duel, err := c.playing(request)
+	if err != nil {
+		return err
+	}
+	if duel.Confirmed[request.From.ID] {
+		return live.UserError{Message: "Desconfirme para trocar de lado."}
+	}
+	other, otherName := duel.other(request.From.ID)
+	if duel.Confirmed[other] && duel.Picks[other] == side {
+		return live.UserError{Message: fmt.Sprintf("%s já confirmou %s.", otherName, side)}
+	}
+	duel.Picks[request.From.ID] = side
+	duel.Conflict = duel.Picks[other] == side
+	c.restartTimer(duel)
+	c.publishState(request.RoomID)
+	return nil
+}
+
+func (c *CoinDuels) confirm(request live.Request) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	duel, err := c.playing(request)
+	if err != nil {
+		return err
+	}
+	side := duel.Picks[request.From.ID]
+	if side == "" {
+		return live.UserError{Message: "Escolha um lado primeiro."}
+	}
+	// The picks arrive in order, so two confirmations can never end on the same side.
+	if duel.Conflict {
+		return live.UserError{Message: "Escolham lados diferentes."}
+	}
+	duel.Confirmed[request.From.ID] = true
 	c.restartTimer(duel)
 	other, _ := duel.other(request.From.ID)
-	otherSide := duel.Confirmed[other]
-	duel.Conflict = otherSide == side
-	if otherSide == "" || duel.Conflict {
+	if !duel.Confirmed[other] {
 		c.publishState(request.RoomID)
 		return nil
 	}
@@ -202,26 +319,36 @@ func (c *CoinDuels) confirm(request live.Request, side string) error {
 		winner = other
 	}
 	loser, loserName := duel.other(winner)
-	c.remove(duel)
-	c.publishState(request.RoomID)
-	c.Hub.Publish(request.RoomID, c.Name(), "result", map[string]any{"duelId": duel.ID, "side": result, "winnerId": winner, "winnerName": duel.name(winner), "loserId": loser, "loserName": loserName})
+	c.finish(duel, Outcome{Kind: outcomeFlip, Side: result, LoserID: loser, LoserName: loserName, LoserSide: duel.Picks[loser], WinnerID: winner, WinnerName: duel.name(winner), WinnerSide: duel.Picks[winner]}, markLost)
 	return nil
 }
 
 func (c *CoinDuels) unconfirm(request live.Request) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	duel := c.duelOf(request.RoomID, request.From.ID)
-	if duel == nil {
-		return live.UserError{Message: "Este X1 já terminou."}
+	duel, err := c.playing(request)
+	if err != nil {
+		return err
 	}
 	delete(duel.Confirmed, request.From.ID)
-	duel.Conflict = false
 	c.restartTimer(duel)
 	c.publishState(request.RoomID)
 	return nil
 }
 
+func (c *CoinDuels) forfeit(request live.Request) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	duel, err := c.playing(request)
+	if err != nil {
+		return err
+	}
+	winner, winnerName := duel.other(request.From.ID)
+	c.finish(duel, Outcome{Kind: outcomeForfeit, LoserID: request.From.ID, LoserName: request.From.Name, WinnerID: winner, WinnerName: winnerName}, markLost)
+	return nil
+}
+
+// cancel lets who challenged take it back before an answer, without any mark.
 func (c *CoinDuels) cancel(request live.Request) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -229,15 +356,14 @@ func (c *CoinDuels) cancel(request live.Request) error {
 	if duel == nil {
 		return nil
 	}
-	verb := "desistiu do X1"
-	if request.From.ID == duel.OpponentID {
-		verb = "recusou o X1"
+	if duel.Status != duelInvited || duel.ChallengerID != request.From.ID {
+		return live.UserError{Message: "Este X1 já não pode ser cancelado."}
 	}
-	c.end(duel, fmt.Sprintf("%s %s.", request.From.Name, verb))
+	c.end(duel, fmt.Sprintf("%s cancelou o X1.", request.From.Name))
 	return nil
 }
 
-// CancelRoom ends the room's duels, for when the match is about to start.
+// CancelRoom ends the room's duels and forgets its marks: the match is about to start.
 func (c *CoinDuels) CancelRoom(roomID int64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -246,8 +372,33 @@ func (c *CoinDuels) CancelRoom(roomID int64) {
 			c.end(duel, "O X1 foi cancelado: a partida vai começar.")
 		}
 	}
+	delete(c.records, roomID)
+	c.publishState(roomID)
 }
 
+// finish records who lost, which stays visible on the table until the match starts.
+func (c *CoinDuels) finish(duel *Duel, outcome Outcome, mark string) {
+	outcome.DuelID = duel.ID
+	outcome.At = time.Now().UnixMilli()
+	if c.records == nil {
+		c.records = map[int64]*duelRecord{}
+	}
+	record := c.records[duel.room]
+	if record == nil {
+		record = &duelRecord{marks: map[int64]string{}}
+		c.records[duel.room] = record
+	}
+	record.marks[outcome.LoserID] = mark
+	record.history = append(record.history, outcome)
+	if len(record.history) > maxDuelHistory {
+		record.history = record.history[len(record.history)-maxDuelHistory:]
+	}
+	c.remove(duel)
+	c.publishState(duel.room)
+	c.Hub.Publish(duel.room, c.Name(), "result", outcome)
+}
+
+// end drops a duel without a loser.
 func (c *CoinDuels) end(duel *Duel, reason string) {
 	c.remove(duel)
 	c.publishState(duel.room)

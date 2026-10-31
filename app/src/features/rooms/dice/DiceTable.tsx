@@ -53,7 +53,7 @@ export const DiceTable = forwardRef<DiceTableHandle, DiceTableProps>(
     // mesa mudou de tamanho/posição (layout responsivo)
     useEffect(() => {
       engineRef.current?.setTable(table);
-    }, [table.cx, table.cy, table.radius, table.tilt]);
+    }, [table.cx, table.cy, table.radius, table.tilt, table.dieRadius]);
 
     useImperativeHandle(
       ref,

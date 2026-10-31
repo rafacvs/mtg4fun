@@ -14,14 +14,23 @@ import { createPortal } from "react-dom";
 import { DiceTable, type DiceTableHandle } from "./dice/DiceTable";
 import "./preparation-dice.css";
 import { DiceRollBadge } from "./DiceRollBadge";
+import { DuelHistoryEntry, relativeTime } from "../minigames/DuelHistoryEntry";
+import { useDuelHistory } from "../minigames/useCoinDuels";
+import { playerMark } from "./playerIdentity";
+import "./preparation-parity.css";
 import d20Icon from "../../assets/theme/d20.svg";
-import panelCorner from "../../assets/theme/corner-v2.svg";
+import { PanelCorners } from "./PanelCorners";
 import { useDiceThrowGesture } from "./useDiceThrowGesture";
 import {
   MAX_POWER,
   powerColor,
   powerTextColor,
 } from "./diceThrowPower";
+
+// O dado acompanha o feltro; o tamanho de referência é o da mesa em 1440 px.
+const DIE_RADIUS = 23;
+const DIE_REFERENCE_RADIUS = 330;
+const MIN_DIE_RADIUS = 9;
 
 const colors = [
   "#6cb4f5",
@@ -31,16 +40,6 @@ const colors = [
   "#e07a3e",
   "#c9d16a",
 ];
-
-function PanelCorners() {
-  return (
-    <span className="preparation-panel-corners" aria-hidden="true">
-      {[0, 1, 2, 3].map((corner) => (
-        <img key={corner} src={panelCorner} alt="" />
-      ))}
-    </span>
-  );
-}
 
 export function PreparationDice({
   room,
@@ -80,7 +79,14 @@ export function PreparationDice({
     cy: 260,
     radius: 280,
     tilt: 0.4,
+    dieRadius: DIE_RADIUS,
   });
+  const duelHistory = useDuelHistory();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
   const rolls = state.rolls || [];
   const confirmed = state.confirmed || {};
   const deciding = room.status === "determining_order";
@@ -146,11 +152,13 @@ export function PreparationDice({
         h = element.clientHeight;
       const origin = element.getBoundingClientRect();
       const bounds = felt?.getBoundingClientRect();
+      const radius = bounds ? bounds.width / 2 : w * 0.33;
       setGeometry({
         cx: bounds ? bounds.left + bounds.width / 2 - origin.left : w / 2,
         cy: bounds ? bounds.top + bounds.height / 2 - origin.top : h * 0.52,
-        radius: bounds ? bounds.width / 2 : w * 0.33,
+        radius,
         tilt: bounds ? Math.min(0.8, bounds.height / bounds.width) : 0.4,
+        dieRadius: Math.max(MIN_DIE_RADIUS, (DIE_RADIUS * radius) / DIE_REFERENCE_RADIUS),
       });
     };
     resize();
@@ -205,14 +213,16 @@ export function PreparationDice({
   useEffect(() => {
     const list = logList.current;
     if (list && followLog.current) list.scrollTop = list.scrollHeight;
-  }, [landed, deciding]);
+  }, [landed, deciding, duelHistory]);
+  const playerColor = (playerId: number) =>
+    colors[room.participants.findIndex((player) => player.id === playerId) % 6];
   const throwGesture = useDiceThrowGesture(
     (power) => void send("roll", own?.id, power),
   );
   const throwPower = throwGesture.power;
   const diceSurface = (
     <div className="dice-surface" ref={surface}>
-      <DiceTable ref={canvas} table={geometry} dieRadius={23} />
+      <DiceTable ref={canvas} table={geometry} dieRadius={geometry.dieRadius} />
     </div>
   );
   const throwButton = (
@@ -243,7 +253,7 @@ export function PreparationDice({
         }}
         aria-hidden="true"
       />{" "}
-      Rolar D20
+      Rolar d20
     </button>
   );
   const log = (
@@ -254,8 +264,10 @@ export function PreparationDice({
           <p className="eyebrow">REGISTRO DA MESA</p>
           <h3>Dados rolados</h3>
         </div>
-        {(deciding || finished) && (
+        {deciding || finished ? (
           <span className="dice-register-phase">Valendo</span>
+        ) : (
+          <span className="dice-register-phase is-play">Brincadeira</span>
         )}
       </header>
       <ol
@@ -269,64 +281,81 @@ export function PreparationDice({
             list.scrollHeight - list.clientHeight - list.scrollTop < 24;
         }}
       >
-        {rolls
-          .filter((r) => landed.has(r.id))
-          .map((r) => (
-            <li
-              key={r.id}
-              className={r.phase === "determining_order" ? "is-counting" : ""}
-              style={
-                {
-                  "--player-color":
-                    colors[
-                      room.participants.findIndex(
-                        (player) => player.id === r.playerId,
-                      ) % 6
-                    ],
-                } as CSSProperties
-              }
-            >
-              <span className="dice-player-shield" aria-hidden="true">
-                {r.name.slice(0, 1).toUpperCase()}
-              </span>
-              <span className="dice-register-copy">
-                <span>
-                  <b>{r.name}</b>{" "}
-                  {confirmed[r.playerId] === r.id ? (
-                    <>
-                      confirmou <em>vale</em>
-                    </>
-                  ) : (
-                    <>
-                      rolou
-                      {rolls
-                        .slice(0, rolls.indexOf(r))
-                        .some(
-                          (previous) =>
-                            previous.playerId === r.playerId &&
-                            previous.phase === r.phase,
-                        )
-                        ? " de novo"
-                        : ""}
-                    </>
-                  )}
+        {[
+          ...rolls.filter((r) => landed.has(r.id)).map((r) => ({ at: r.at, roll: r })),
+          ...(deciding || finished ? [] : duelHistory).map((outcome) => ({ at: outcome.at, outcome })),
+        ]
+          .sort((a, b) => a.at - b.at)
+          .map((entry) => {
+            if (!("roll" in entry))
+              return (
+                <DuelHistoryEntry
+                  key={`duel-${entry.outcome.duelId}`}
+                  outcome={entry.outcome}
+                  now={now}
+                  color={playerColor(entry.outcome.loserId)}
+                />
+              );
+            const r = entry.roll;
+            const counting = r.phase === "determining_order";
+            return (
+              <li
+                key={r.id}
+                className={counting ? "is-counting" : ""}
+                style={
+                  {
+                    "--player-color": playerColor(r.playerId),
+                  } as CSSProperties
+                }
+              >
+                <span className="dice-player-shield" aria-hidden="true">
+                  {playerMark(r.name)}
                 </span>
-                <small>
-                  {r.phase === "determining_order"
-                    ? confirmed[r.playerId] === r.id
-                      ? "Valendo · resultado final · "
-                      : "Valendo · "
-                    : ""}
-                  {new Date(r.at).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  {r.value === 20 ? " · 20 natural!" : ""}
-                </small>
-              </span>
-              <DiceRollBadge value={r.value} />
-            </li>
-          ))}
+                <span className="dice-register-copy">
+                  <span>
+                    <b>{r.name}</b>{" "}
+                    {confirmed[r.playerId] === r.id ? (
+                      <>
+                        confirmou <em>vale</em>
+                      </>
+                    ) : counting ? (
+                      <>
+                        rolou
+                        {rolls
+                          .slice(0, rolls.indexOf(r))
+                          .some(
+                            (previous) =>
+                              previous.playerId === r.playerId &&
+                              previous.phase === r.phase,
+                          )
+                          ? " de novo"
+                          : ""}
+                      </>
+                    ) : (
+                      "rolou um d20"
+                    )}
+                  </span>
+                  <small>
+                    {counting ? (
+                      <>
+                        {confirmed[r.playerId] === r.id
+                          ? "Valendo · resultado final · "
+                          : "Valendo · "}
+                        {new Date(r.at).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </>
+                    ) : (
+                      `Brincadeira · ${relativeTime(r.at, now)}`
+                    )}
+                    {r.value === 20 ? " · 20 natural!" : ""}
+                  </small>
+                </span>
+                <DiceRollBadge value={r.value} />
+              </li>
+            );
+          })}
       </ol>
       {(deciding || finished) && (
         <p className="dice-register-note">
@@ -577,7 +606,7 @@ export function PreparationDice({
                   }}
                   aria-hidden="true"
                 />{" "}
-                Rolar D20
+                Rolar d20
               </button>
               <button
                 className="secondary"

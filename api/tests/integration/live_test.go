@@ -303,30 +303,55 @@ func TestLiveEmojiFallsForEveryoneWithServerCooldown(t *testing.T) {
 	if fall.Emoji != "💀" || fall.FromID != room.anaID || fall.FromName != "ana" {
 		t.Fatalf("emoji incorreto: %+v", fall)
 	}
-	// O cooldown é da pessoa: abrir outra aba não libera outro emoji.
+	// A espera é da pessoa: abrir outra aba não libera outro emoji.
 	secondTab.send("emoji", "send", "e2", `{"emoji":"🔥"}`)
 	kind, _, retry := secondTab.reply("e2")
-	if kind != "error" || retry <= 0 || retry > 2000 {
-		t.Fatalf("cooldown não aplicado: %s, %d ms", kind, retry)
+	if kind != "error" || retry <= 0 || retry > 200 {
+		t.Fatalf("espera não aplicada: %s, %d ms", kind, retry)
 	}
 	bia.silent("emoji", 300*time.Millisecond)
 	bia.send("emoji", "send", "e3", `{"emoji":"não é emoji"}`)
 	if kind, text, _ := bia.reply("e3"); kind != "error" || text != "Emoji inválido." {
 		t.Fatalf("aceitou emoji fora da lista: %s %s", kind, text)
 	}
-	time.Sleep(2100 * time.Millisecond)
-	ana.send("emoji", "send", "e4", `{"emoji":"🔥"}`)
-	ana.requireAck("e4")
+
+	// Dá para spamar, mas cada clique espera mais que o anterior, até o limite.
+	var previous int64
+	for i := range 12 {
+		id := fmt.Sprintf("spam-%d", i)
+		ana.send("emoji", "send", id, `{"emoji":"🔥"}`)
+		if kind, text, _ := ana.reply(id); kind != "ack" {
+			t.Fatalf("clique %d: %s %s", i, kind, text)
+		}
+		check := fmt.Sprintf("espera-%d", i)
+		ana.send("emoji", "send", check, `{"emoji":"🔥"}`)
+		kind, _, wait := ana.reply(check)
+		if kind != "error" || wait < previous-50 || wait > 3000 {
+			t.Fatalf("clique %d: %s, esperou %d ms depois de %d ms", i, kind, wait, previous)
+		}
+		previous = wait
+		time.Sleep(time.Duration(wait+30) * time.Millisecond)
+	}
+	if previous < 2500 {
+		t.Fatalf("a espera deveria ter crescido até perto de 3 s: %d ms", previous)
+	}
 }
 
 type duelState struct {
 	Duels []struct {
 		ID           int64             `json:"id"`
+		Status       string            `json:"status"`
 		ChallengerID int64             `json:"challengerId"`
 		OpponentID   int64             `json:"opponentId"`
-		Confirmed    map[string]string `json:"confirmed"`
+		Picks        map[string]string `json:"picks"`
+		Confirmed    map[string]bool   `json:"confirmed"`
 		Conflict     bool              `json:"conflict"`
 	} `json:"duels"`
+	Marks   map[string]string `json:"marks"`
+	History []struct {
+		Kind      string `json:"kind"`
+		LoserName string `json:"loserName"`
+	} `json:"history"`
 }
 
 func decodeDuels(t *testing.T, message liveMessage) duelState {
@@ -360,25 +385,39 @@ func TestLiveCoinDuelResultReachesWholeRoomAndBlocksSameSide(t *testing.T) {
 		t.Fatalf("aceitou duelo paralelo da mesma pessoa: %s %s", kind, text)
 	}
 
-	// Os dois confirmam o mesmo lado: nada é sorteado até um deles trocar.
-	ana.send("coin-duel", "confirm", "a1", `{"side":"Cara"}`)
+	// O convite só vira jogo depois de aceito.
+	bia.send("coin-duel", "pick", "early", `{"side":"Cara"}`)
+	if kind, _, _ := bia.reply("early"); kind != "error" {
+		t.Fatal("escolheu lado antes de aceitar")
+	}
+	bia.send("coin-duel", "accept", "b0", `{}`)
+	bia.requireAck("b0")
+
+	// A escolha de um chega ao outro antes de qualquer confirmação.
+	ana.send("coin-duel", "pick", "a1", `{"side":"Cara"}`)
 	ana.requireAck("a1")
-	bia.next("coin-duel", "state")
-	bia.send("coin-duel", "confirm", "b1", `{"side":"Cara"}`)
+	seen := decodeDuels(t, bia.lastDuelState(1))
+	if seen.Duels[0].Picks[fmt.Sprint(room.anaID)] != "Cara" {
+		t.Fatalf("a escolha não chegou em tempo real: %+v", seen)
+	}
+	// Mesmo lado: ninguém confirma e nada é sorteado até um deles trocar.
+	bia.send("coin-duel", "pick", "b1", `{"side":"Cara"}`)
 	bia.requireAck("b1")
-	conflict := decodeDuels(t, cida.lastDuelState(2))
+	conflict := decodeDuels(t, cida.lastDuelState(3))
 	if len(conflict.Duels) != 1 || !conflict.Duels[0].Conflict {
 		t.Fatalf("mesmo lado deveria ficar em conflito: %+v", conflict)
 	}
+	ana.send("coin-duel", "confirm", "a2", `{}`)
+	if kind, text, _ := ana.reply("a2"); kind != "error" || text != "Escolham lados diferentes." {
+		t.Fatalf("confirmou com os dois no mesmo lado: %s %s", kind, text)
+	}
 	cida.silent("coin-duel", 300*time.Millisecond)
 
-	bia.send("coin-duel", "unconfirm", "b2", `{}`)
+	bia.send("coin-duel", "pick", "b2", `{"side":"Coroa"}`)
 	bia.requireAck("b2")
-	cleared := decodeDuels(t, ana.lastDuelState(2))
-	if cleared.Duels[0].Conflict || len(cleared.Duels[0].Confirmed) != 1 {
-		t.Fatalf("desconfirmar deveria limpar o conflito: %+v", cleared)
-	}
-	bia.send("coin-duel", "confirm", "b3", `{"side":"Coroa"}`)
+	ana.send("coin-duel", "confirm", "a3", `{}`)
+	ana.requireAck("a3")
+	bia.send("coin-duel", "confirm", "b3", `{}`)
 	bia.requireAck("b3")
 
 	var result struct {
@@ -398,6 +437,21 @@ func TestLiveCoinDuelResultReachesWholeRoomAndBlocksSameSide(t *testing.T) {
 		t.Fatalf("resultado incoerente com os lados: %+v", result)
 	}
 	ana.next("coin-duel", "result")
+
+	// Quem perde fica marcado e entra no histórico para quem chegar depois.
+	conn, _, err := dialLive(e, room.path, room.cida, e.url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { conn.CloseNow() })
+	late := decodeDuels(t, newLiveClient(t, conn).next("coin-duel", "snapshot"))
+	loserID := room.biaID
+	if result.Side == "Coroa" {
+		loserID = room.anaID
+	}
+	if late.Marks[fmt.Sprint(loserID)] != "lost" || len(late.History) != 1 || late.History[0].LoserName != wantLoser {
+		t.Fatalf("marca ou histórico ausente: %+v", late)
+	}
 }
 
 // lastDuelState reads the state that follows the given number of changes.
@@ -462,6 +516,9 @@ func TestLiveGamesStopWhenTheMatchStartsAndConnectionOutlivesIdleTimeouts(t *tes
 	requireStatus(t, e.request("PUT", room.path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, uploadTestDeck(t, e, room.cida)), room.cida, nil), 200)
 	requireStatus(t, e.request("POST", room.path+"/preparation/start", "{}", room.ana, nil), 200)
 	bia.next("coin-duel", "cancelled")
+	if state := decodeDuels(t, bia.next("coin-duel", "state")); len(state.Duels) != 0 || len(state.Marks) != 0 {
+		t.Fatalf("iniciar deveria limpar duelos e marcas: %+v", state)
+	}
 	var state struct {
 		Phase string `json:"phase"`
 	}

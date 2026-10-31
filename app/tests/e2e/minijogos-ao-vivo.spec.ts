@@ -14,7 +14,7 @@ async function table(browser: Browser, page: Page, baseURL: string, viewport: { 
   return { room, guest, watcher, close: () => Promise.all(guests.map(client => client.context().close())) };
 }
 
-const rollButton = (page: Page) => page.getByRole('button', { name: /^Rolar D20$/ });
+const rollButton = (page: Page) => page.getByRole('button', { name: /^Rolar d20$/ });
 
 async function enter(page: Page, roomId: number) {
   await page.goto(`/#/salas/${roomId}`);
@@ -27,7 +27,8 @@ async function throwDie(page: Page, path: string, intent: number) {
   expect(response.ok(), await response.text()).toBe(true);
 }
 
-test('emoji cai na tela de todos e respeita o cooldown', async ({ page, browser, baseURL }, info) => {
+test('emoji cai na tela de todos, abre ao lado do botão e fica mais lento com o spam', async ({ page, browser, baseURL }, info) => {
+  test.setTimeout(45_000);
   const { room, guest, watcher, close } = await table(browser, page, baseURL!, page.viewportSize(), { hasTouch: info.project.use.hasTouch, isMobile: info.project.use.isMobile });
   try {
     await Promise.all([enter(page, room.id), enter(guest, room.id), enter(watcher, room.id)]);
@@ -45,17 +46,57 @@ test('emoji cai na tela de todos e respeita o cooldown', async ({ page, browser,
     const start = (await drop.boundingBox())!.y;
     await guest.waitForTimeout(500);
     expect((await drop.boundingBox())!.y).toBeGreaterThan(start + 20);
+    // A bandeja abre ao lado do botão, à esquerda dele no desktop, e não por cima.
+    const toggle = (await page.getByRole('button', { name: 'Reagir com emoji' }).boundingBox())!;
+    const tray = (await page.getByRole('group', { name: 'Escolha um emoji' }).boundingBox())!;
+    if (info.project.name === 'desktop') expect(tray.x + tray.width).toBeLessThanOrEqual(toggle.x);
+    else expect(tray.x).toBeGreaterThanOrEqual(toggle.x + toggle.width);
+    expect(Math.abs(tray.y + tray.height / 2 - (toggle.y + toggle.height / 2))).toBeLessThan(3);
+    expect(tray.x).toBeGreaterThanOrEqual(0);
+    expect(tray.x + tray.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+
+    // Pode spamar: os primeiros cliques seguem fluidos e a espera vai crescendo.
+    const sent = await page.evaluate(async () => {
+      const button = [...document.querySelectorAll('button')].find(item => item.getAttribute('aria-label') === 'Enviar 🔥')!;
+      const start = performance.now();
+      const moments: number[] = [];
+      let last = 0;
+      // Clica o tempo todo; só conta o que o botão e a espera deixaram passar.
+      const seen = new Set<Element>();
+      const rain = document.querySelector('.emoji-rain')!;
+      while (performance.now() - start < 3500) {
+        button.click();
+        for (const drop of rain.querySelectorAll('.emoji-drop')) if (!seen.has(drop)) { seen.add(drop); moments.push(performance.now() - start - last); last = performance.now() - start; }
+        await new Promise(resolve => setTimeout(resolve, 30));
+      }
+      return moments;
+    });
+    expect(sent.length, `intervalos: ${sent.join(', ')}`).toBeGreaterThanOrEqual(5);
+    const middle = Math.floor(sent.length / 2);
+    const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
+    expect(average(sent.slice(middle)), `intervalos: ${sent.join(', ')}`).toBeGreaterThan(average(sent.slice(1, middle)));
+    await expect(page.getByRole('status').filter({ hasText: /Calma… \ds/ })).toBeVisible({ timeout: 6000 });
     await expect(fire).toBeDisabled();
-    await expect(page.locator('.emoji-drop')).toHaveCount(1);
     await expect(fire).toBeEnabled({ timeout: 4000 });
-    await fire.click();
-    await expect(guest.locator('.emoji-drop')).not.toHaveCount(0);
+    // Os outros veem cair também.
+    await expect(guest.locator('.emoji-drop').first()).toBeVisible();
     // Termina a queda e sai da tela.
-    await expect(guest.locator('.emoji-drop')).toHaveCount(0, { timeout: 8000 });
+    await expect(guest.locator('.emoji-drop')).toHaveCount(0, { timeout: 12_000 });
   } finally { await close(); }
 });
 
-test('X1 de cara ou coroa trava o lado confirmado e mostra o resultado a todos', async ({ page, browser, baseURL }, info) => {
+async function invite(page: Page, guest: Page) {
+  await page.getByRole('button', { name: 'Desafiar Segundo amigo para um X1' }).click();
+  const menu = page.getByRole('dialog', { name: 'Desafiar Segundo amigo' });
+  await expect(menu).toContainText('Quem perder fica marcado na mesa até a partida começar.');
+  await menu.getByRole('button', { name: /Cara ou coroa/ }).click();
+  const invitation = guest.getByRole('dialog', { name: 'Convite para um X1' });
+  await expect(invitation).toContainText('Amigo da mesa te chamou pro x1 de cara ou coroa');
+  await expect(page.getByRole('dialog', { name: 'Aguardando resposta do X1' })).toBeVisible();
+  return invitation;
+}
+
+test('X1: convite, escolha em tempo real, lado travado e resultado para toda a mesa', async ({ page, browser, baseURL }, info) => {
   test.setTimeout(60_000);
   const { room, guest, watcher, close } = await table(browser, page, baseURL!, page.viewportSize(), { hasTouch: info.project.use.hasTouch, isMobile: info.project.use.isMobile });
   try {
@@ -68,111 +109,128 @@ test('X1 de cara ou coroa trava o lado confirmado e mostra o resultado a todos',
         await page.setViewportSize({ width, height: original.height });
         const seat = (await seatButton.locator('..').boundingBox())!;
         const area = (await seatButton.boundingBox())!;
-        expect(Math.abs(area.width - seat.width), `largura em ${width}px`).toBeLessThan(3);
-        expect(Math.abs(area.height - seat.height), `altura em ${width}px`).toBeLessThan(3);
+        for (const axis of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(area[axis] - seat[axis]), `${axis} em ${width}px`).toBeLessThan(3);
       }
       await page.setViewportSize(original);
     }
-    await seatButton.click();
-    await page.screenshot({ path: info.outputPath('desafio.png') });
-    await page.getByRole('button', { name: 'Desafiar', exact: true }).click();
+    const invitation = await invite(page, guest);
+    await expect(watcher.getByRole('dialog')).toHaveCount(0);
+    await invitation.getByRole('button', { name: 'Aceitar' }).click();
 
     const own = page.getByRole('dialog', { name: 'X1 contra Segundo amigo' });
     const challenged = guest.getByRole('dialog', { name: 'X1 contra Amigo da mesa' });
     await expect(own).toBeVisible();
     await expect(challenged).toBeVisible();
-    await expect(challenged).toContainText('Amigo da mesa desafiou você');
     await expect(watcher.getByRole('dialog')).toHaveCount(0);
+    const side = (dialog: typeof own, group: string, name: string) => dialog.getByRole('group', { name: group }).getByRole('button', { name, exact: true });
 
-    // A escolha só é pública depois de confirmar.
-    await challenged.getByRole('button', { name: 'Cara', exact: true }).click();
-    await own.getByRole('button', { name: 'Cara', exact: true }).click();
+    // Cada um vê o que o outro escolheu antes de qualquer confirmação.
+    await side(own, 'Escolha um lado', 'Cara').click();
+    await expect(side(challenged, 'Lado de Amigo da mesa', 'Cara')).toHaveAttribute('aria-pressed', 'true');
+    await expect(challenged).toContainText('escolheu Cara');
+    // O mesmo lado bloqueia os dois até alguém trocar.
+    await side(challenged, 'Escolha um lado', 'Cara').click();
+    await expect(own.getByRole('alert')).toHaveText('Os dois querem Cara. Alguém vai ter que ceder.');
+    await expect(challenged.getByRole('alert')).toHaveText('Os dois querem Cara. Alguém vai ter que ceder.');
+    await expect(own.getByRole('button', { name: 'Escolham lados diferentes' })).toBeDisabled();
+    await expect(watcher.locator('.duel-banner')).toHaveCount(0);
+
+    await side(challenged, 'Escolha um lado', 'Coroa').click();
+    await expect(own.getByRole('alert')).toHaveCount(0);
     await own.getByRole('button', { name: 'Confirmar Cara' }).click();
-    await expect(own).toContainText('Você confirmou Cara');
-    await page.screenshot({ path: info.outputPath('x1-confirmado.png') });
-
-    // Quem confirmou antes fica com o lado, mesmo que o outro tenha clicado primeiro.
-    await expect(challenged.getByRole('button', { name: 'Cara', exact: true })).toBeDisabled();
-    await expect(challenged).toContainText('já confirmou Cara');
-    await expect(challenged.getByRole('button', { name: 'Confirmar', exact: true })).toBeDisabled();
-    await guest.screenshot({ path: info.outputPath('x1-lado-travado.png') });
-
-    // Desconfirmar devolve o lado ao adversário.
+    // Quem confirmou fica com o lado; desconfirmar devolve a escolha.
+    await expect(side(challenged, 'Escolha um lado', 'Cara')).toBeDisabled();
+    await expect(challenged).toContainText('confirmou Cara');
     await own.getByRole('button', { name: 'Desconfirmar' }).click();
-    await expect(challenged.getByRole('button', { name: 'Cara', exact: true })).toBeEnabled();
-    await own.getByRole('button', { name: 'Coroa', exact: true }).click();
-    await own.getByRole('button', { name: 'Confirmar Coroa' }).click();
-    await expect(challenged.getByRole('button', { name: 'Coroa', exact: true })).toBeDisabled();
+    await expect(side(challenged, 'Escolha um lado', 'Cara')).toBeEnabled();
+    await own.getByRole('button', { name: 'Confirmar Cara' }).click();
+    await challenged.getByRole('button', { name: 'Confirmar Coroa' }).click();
 
-    await challenged.getByRole('button', { name: 'Cara', exact: true }).click();
-    await challenged.getByRole('button', { name: 'Confirmar Cara' }).click();
-    for (const viewer of [page, guest, watcher]) {
-      const result = viewer.locator('.coin-duel-notice.is-result');
-      await expect(result).toBeVisible();
-      const text = await result.innerText();
-      expect(text).toMatch(/DEU (CARA|COROA)/i);
-      // A moeda é aleatória, mas o vencedor tem de ser quem escolheu aquele lado.
-      expect(text).toContain(/DEU CARA/i.test(text) ? 'Segundo amigo venceu' : 'Amigo da mesa venceu');
+    // Só quem jogou vê a moeda cair; quem assiste recebe o anúncio.
+    const banner = watcher.locator('.duel-banner');
+    await expect(banner).toBeVisible();
+    const text = await banner.innerText();
+    const guestLost = /Segundo amigo perdeu pra uma moeda/i.test(text);
+    expect(guestLost || /Amigo da mesa perdeu pra uma moeda/i.test(text)).toBe(true);
+    await expect(banner).toContainText(guestLost ? 'Segundo amigo escolheu Coroa' : 'Amigo da mesa escolheu Cara');
+    await expect(watcher.getByRole('dialog')).toHaveCount(0);
+    for (const [viewer, name] of [[page, guestLost ? 'Venceu' : 'Perdeu'], [guest, guestLost ? 'Perdeu' : 'Venceu']] as const) {
+      await expect(viewer.getByRole('region', { name: 'Sua escolha' }).locator('.duel-stamp')).toHaveText(name);
+      await expect(viewer.locator('.duel-result-title')).toHaveText(/Deu (Cara|Coroa)!/);
     }
-    await watcher.screenshot({ path: info.outputPath('x1-resultado.png') });
-    await expect(own).toHaveCount(0);
-    await expect(challenged).toHaveCount(0);
-    await expect(watcher.locator('.coin-duel-notice')).toHaveCount(0, { timeout: 8000 });
-
-    // Recusar avisa quem desafiou e libera os dois.
-    await page.getByRole('button', { name: 'Desafiar Segundo amigo para um X1' }).click();
-    await page.getByRole('button', { name: 'Desafiar', exact: true }).click();
-    await challenged.getByRole('button', { name: 'Recusar', exact: true }).click();
-    await expect(page.locator('.coin-duel-notice')).toHaveText('Segundo amigo recusou o X1.');
-    await expect(own).toHaveCount(0);
+    // Depois volta para a mesa, com o anúncio, a marca e o registro.
+    await expect(own).toHaveCount(0, { timeout: 8000 });
+    await expect(page.locator('.duel-banner')).toBeVisible();
+    const loser = guestLost ? 'Segundo amigo' : 'Amigo da mesa';
+    const winner = guestLost ? 'Amigo da mesa' : 'Segundo amigo';
+    await expect(watcher.locator('.preparation-duel-mark')).toHaveText('Perdeu no X1');
+    await expect(watcher.locator('.dice-register-duel')).toContainText(`${loser} perdeu o x1 pra ${winner}`);
+    // A marca continua para quem chega depois.
+    await watcher.reload();
+    await expect(watcher.locator('.preparation-duel-mark')).toHaveText('Perdeu no X1');
+    await expect(watcher.locator('.dice-register-duel')).toHaveCount(1);
   } finally { await close(); }
 });
 
-test('confirmar o mesmo lado ao mesmo tempo não sorteia e pede para um trocar', async ({ page, browser, baseURL }, info) => {
+test('X1: recusar e arregar marcam quem saiu; cancelar antes da resposta não marca', async ({ page, browser, baseURL }, info) => {
   test.setTimeout(60_000);
   const { room, guest, watcher, close } = await table(browser, page, baseURL!, page.viewportSize(), { hasTouch: info.project.use.hasTouch, isMobile: info.project.use.isMobile });
   try {
-    // Atraso real: a conexão com o servidor é verdadeira, só a entrega ao convidado espera,
-    // como quando os dois clicam antes de saberem da confirmação do outro.
-    let held: (string | Buffer)[] | null = null;
-    let deliver: (message: string | Buffer) => void = () => {};
-    await guest.routeWebSocket(/\/live$/, socket => {
-      const server = socket.connectToServer();
-      deliver = message => socket.send(message);
-      server.onMessage(message => { if (held) held.push(message); else socket.send(message); });
-      socket.onMessage(message => server.send(message));
-    });
     await Promise.all([enter(page, room.id), enter(guest, room.id), enter(watcher, room.id)]);
-    await page.getByRole('button', { name: 'Desafiar Segundo amigo para um X1' }).click();
-    await page.getByRole('button', { name: 'Desafiar', exact: true }).click();
-    const own = page.getByRole('dialog', { name: 'X1 contra Segundo amigo' });
-    const challenged = guest.getByRole('dialog', { name: 'X1 contra Amigo da mesa' });
-    await expect(challenged).toBeVisible();
-    await own.getByRole('button', { name: 'Cara', exact: true }).click();
-    await challenged.getByRole('button', { name: 'Cara', exact: true }).click();
+    await invite(page, guest);
+    await page.getByRole('dialog', { name: 'Aguardando resposta do X1' }).getByRole('button', { name: 'Cancelar' }).click();
+    await expect(guest.getByRole('dialog')).toHaveCount(0);
+    await expect(watcher.locator('.preparation-duel-mark')).toHaveCount(0);
+    await expect(guest.locator('.coin-duel-notice')).toHaveText('Amigo da mesa cancelou o X1.');
 
-    held = [];
-    await own.getByRole('button', { name: 'Confirmar Cara' }).click();
-    await expect(own).toContainText('Você confirmou Cara');
-    // O convidado ainda não soube: segue com Cara selecionada, e o botão fica livre.
-    await expect(challenged.getByRole('button', { name: /^Cara/ })).toBeEnabled();
-    await challenged.getByRole('button', { name: 'Confirmar Cara' }).click();
-    await expect(own.getByRole('alert')).toContainText('Os dois confirmaram Cara');
-    const pending: (string | Buffer)[] = held ?? [];
-    held = null;
-    expect(pending.length).toBeGreaterThan(0);
-    pending.forEach(message => deliver(message));
-    await expect(challenged.getByRole('alert')).toContainText('Os dois confirmaram Cara');
-    await guest.screenshot({ path: info.outputPath('x1-conflito.png') });
-    await expect(watcher.locator('.coin-duel-notice')).toHaveCount(0);
+    await (await invite(page, guest)).getByRole('button', { name: 'Recusar' }).click();
+    await expect(watcher.locator('.preparation-duel-mark')).toHaveText('Recusou o X1');
+    await expect(watcher.locator('.duel-banner')).toContainText('Segundo amigo recusou o X1.');
+    await expect(watcher.locator('.dice-register-duel')).toContainText('Segundo amigo recusou o x1 de Amigo da mesa');
 
-    await challenged.getByRole('button', { name: 'Desconfirmar' }).click();
-    await expect(own.getByRole('alert')).toHaveCount(0);
-    await expect(challenged.getByRole('button', { name: 'Cara', exact: true })).toBeDisabled();
-    await challenged.getByRole('button', { name: 'Coroa', exact: true }).click();
-    await challenged.getByRole('button', { name: 'Confirmar Coroa' }).click();
-    await expect(watcher.locator('.coin-duel-notice.is-result')).toBeVisible();
+    await (await invite(page, guest)).getByRole('button', { name: 'Aceitar' }).click();
+    await page.getByRole('dialog', { name: 'X1 contra Segundo amigo' }).getByRole('button', { name: 'Arregar (conta como derrota)' }).click();
+    await expect(guest.getByRole('dialog')).toHaveCount(0);
+    await expect(watcher.locator('.duel-banner')).toContainText('Amigo da mesa arregou.');
+    await expect(watcher.locator('.preparation-duel-mark')).toHaveCount(2);
+    await expect(watcher.locator('.dice-register-duel').last()).toContainText('Amigo da mesa arregou o x1 contra Segundo amigo');
   } finally { await close(); }
+});
+
+test('o dado acompanha o tamanho da mesa', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'A medida depende do layout de desktop.');
+  test.setTimeout(45_000);
+  expect((await page.request.post('/api/session', { data: { login: 'amigo', password } })).ok()).toBe(true);
+  const { room } = await (await page.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
+  const path = `/api/rooms/${room.id}`;
+  // O número do dado é desenhado em proporção ao raio; é o que o motor pede ao canvas.
+  await page.addInitScript(() => {
+    const original = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'font')!;
+    const sizes: number[] = [];
+    (window as unknown as { dieFonts: number[] }).dieFonts = sizes;
+    Object.defineProperty(CanvasRenderingContext2D.prototype, 'font', {
+      get() { return original.get!.call(this); },
+      set(value: string) { const size = /^700 ([\d.]+)px Cinzel/.exec(value); if (size) sizes.push(Number(size[1])); original.set!.call(this, value); },
+    });
+  });
+  async function dieFont(width: number, intent: number) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/#/salas/${room.id}`);
+    await page.reload();
+    await expect(rollButton(page)).toBeVisible();
+    await page.waitForTimeout(400);
+    const count = await page.locator('.dice-register li').count();
+    await throwDie(page, path, intent);
+    await expect(page.locator('.dice-register li')).toHaveCount(count + 1, { timeout: 12_000 });
+    return page.evaluate(() => {
+      const sizes = [...(window as unknown as { dieFonts: number[] }).dieFonts].sort((a, b) => a - b);
+      return sizes[Math.floor(sizes.length / 2)];
+    });
+  }
+  const wide = await dieFont(1600, 21);
+  const narrow = await dieFont(860, 22);
+  expect(wide).toBeGreaterThan(0);
+  expect(narrow / wide, `fonte de ${narrow} px contra ${wide} px`).toBeLessThan(0.7);
 });
 
 test('dados chegam pelo WebSocket, sem polling e sem enxurrada ao voltar', async ({ page, browser, baseURL }, info) => {

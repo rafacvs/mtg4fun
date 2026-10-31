@@ -1,0 +1,150 @@
+/* Paridade da tela da sala com o design: só o desktop. Mesa, faixa e lateral seguem o quadro. */
+.room-header a { display: inline-flex; align-items: center; gap: 6px; }
+.room-header a .table-icon { width: 12px; height: 12px; flex-basis: 12px; }
+.room-header-user { display: inline-flex; align-items: center; gap: 8px; }
+.room-header-user .dice-player-shield { --player-color: #6cb4f5; width: 18px; height: 22px; font-size: 9px; }
+.dice-register-phase.is-play { padding: 4px 9px; border: 1px solid #2f6a4a; border-radius: 3px; background: #123021; color: #bdeccd; font: 600 .66rem Geist, sans-serif; }
+
+@media (min-width: 801px) {
+  .room-screen:has(.room-preparation) > .room-header h1 { font: 700 .95rem Cinzel, Georgia, serif; font-variant: small-caps; letter-spacing: .08em; }
+  .room-screen:has(.room-preparation) > .room-header a { color: #d9cfb5; font-size: .72rem; }
+  .room-screen:has(.room-preparation) > .room-header { min-height: 60px; }
+  .room-screen:has(.room-preparation) > .room-header .room-header-user { font-size: .78rem; color: #efe8d8; }
+
+  .room-preparation > .preparation-content { grid-template-rows: minmax(0, 1fr) 119px; row-gap: 20px; }
+  .room-screen > .room-preparation:not(.order-preparation) { height: calc(100dvh - 91px); min-height: 620px; margin-top: 24px; margin-bottom: 7px; }
+
+  /* A etapa de ordem ocupa o mesmo quadro: iniciar troca só o conteúdo. */
+  .room-screen > .order-preparation { height: calc(100dvh - 91px); min-height: 620px; margin-top: 24px; margin-bottom: 7px; }
+  .order-main { gap: 20px; }
+  .order-table { padding: 14px 16px 12px; }
+  .room-preparation .preparation-heading, .order-table .order-heading { box-sizing: border-box; height: 53px; min-height: 0; padding: 9px 14px 0 18px; }
+  .order-ranking { flex-basis: 119px; height: 119px; }
+  .order-arena { margin-top: 4px; }
+  .order-felt { left: 16%; width: 68%; top: 21%; height: 58%; }
+  .order-table footer { margin-top: 26px; }
+
+  .room-preparation .preparation-table { position: relative; padding: 14px 16px 12px; border: 1px solid #3f3a26; background: radial-gradient(ellipse 70% 45% at 50% 42%, #60592e4d, transparent 75%), radial-gradient(ellipse at 15% 20%, #5a4a2230, transparent 50%), radial-gradient(ellipse at 88% 20%, #5a4a2230, transparent 50%), linear-gradient(#17201bf5, #0c1412f7); }
+  .room-preparation .preparation-heading { flex: none; display: flex; justify-content: space-between; align-items: flex-start; margin: 0; }
+  .preparation-heading .eyebrow { margin: 0 0 3px; color: #c8ab68; font: 600 .68rem Cinzel, Georgia, serif; letter-spacing: .16em; }
+  .preparation-heading h2 { margin: 0; color: #f4eddb; font: 700 1.45rem/1.1 Cinzel, Georgia, serif; font-variant: small-caps; letter-spacing: .04em; }
+  .preparation-room-facts { gap: 10px; }
+  .preparation-room-facts span { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid #ffffff0d; border-radius: 3px; background: #0c1112e6; color: #d7d0bd; font-size: .74rem; }
+  .preparation-room-facts .table-icon { width: 13px; height: 13px; flex-basis: 13px; color: #c8ab68; }
+  .preparation-room-facts .table-icon path { fill: currentColor; }
+  .preparation-room-facts b { color: #f1ead8; }
+  .facts-shield { width: 12px; height: 15px; background: #c8ab68; clip-path: polygon(0 0, 100% 0, 100% 62%, 85% 85%, 50% 100%, 15% 85%, 0 62%); }
+
+  .room-preparation .preparation-arena { margin: 4px 0 0; }
+  .preparation-oval, .room-preparation .preparation-oval { left: 16%; width: 68%; top: 21%; height: 58%; border: 0; background: radial-gradient(ellipse 58% 60% at 50% 44%, #ffffff00 40%, #05090ab3 100%), radial-gradient(ellipse 26% 26% at 50% 24%, #f6e9b533, transparent 75%), url('../../assets/theme/mat-forest.jpg') center 42% / cover; box-shadow: 0 0 0 2px #120c06, 0 0 0 4px #452a14, 0 0 0 5px #a27d45, 0 0 0 7px #3a2410, 0 0 0 8px #8a6a3a, 0 0 0 12px #2a1a0c, 0 18px 30px #000b, inset 0 0 36px 10px #000c; }
+  .preparation-oval::after { content: none; }
+
+  .room-preparation .preparation-seat { width: 28%; min-width: 180px; max-width: 290px; min-height: 84px; align-items: center; gap: 11px; padding: 7px 9px; border: 1px solid color-mix(in srgb, var(--seat) 38%, #2e3b2e); border-radius: 5px; background: #0c1214f5; box-shadow: 0 6px 18px #0009; transform: translateX(-50%); }
+  .room-preparation .preparation-seat.seat-position-0 { top: 0; left: 50%; }
+  .room-preparation .preparation-seat.seat-position-3 { bottom: 0; left: 50%; }
+  .room-preparation .preparation-seat.is-own { border-color: #c8a65c; box-shadow: 0 0 0 1px #c8a65c33, 0 6px 18px #0009; }
+  .room-preparation .preparation-seat.is-challenged { border-color: #e4c677; box-shadow: 0 0 0 2px #e4c67799, 0 0 18px #d8ae4a55; z-index: 6; }
+  .room-preparation .preparation-card-back { flex: none; width: 54px; height: 70px; border: 1px solid var(--seat); border-radius: 5px; background: #0c1214; box-shadow: 0 0 0 1px #0007; }
+  .room-preparation .preparation-card-back > img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+  .room-preparation .preparation-avatar { top: -7px; left: -7px; width: 18px; height: 22px; color: #10201d; background: var(--seat); clip-path: polygon(0 0, 100% 0, 100% 62%, 85% 85%, 50% 100%, 15% 85%, 0 62%); border-radius: 0; font: 700 8px Georgia, serif; display: grid; place-items: center; }
+  .preparation-seat-copy strong { display: flex; align-items: center; gap: 6px; color: #f3ecdb; font: 700 .86rem Geist, sans-serif; }
+  .room-preparation .preparation-seat-copy > small { margin-top: 3px; color: #a9a99a; font-size: .68rem; }
+  .preparation-you { color: #d9b868; font-size: .68rem !important; font-weight: 600; }
+  .seat-creator { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 3px; background: #c8a65c; color: #2a1e08; }
+  .seat-creator .table-icon { width: 10px; height: 10px; flex-basis: 10px; }
+  .seat-creator .table-icon path { fill: currentColor; }
+  .room-preparation .preparation-ready { margin-top: 5px; padding: 2px 7px; border: 1px solid #5f5433; border-radius: 3px; background: #0d1213; color: #d9c07e; font: 700 .52rem Cinzel, Georgia, serif; letter-spacing: .1em; text-transform: uppercase; }
+  .room-preparation .preparation-ready.is-ready { border-color: #3f8a5f; background: #1f4d35; color: #c9f0d7; }
+  .preparation-duel-mark { display: flex; align-items: center; gap: 5px; width: fit-content; margin-top: 4px; padding: 2px 7px; border: 1px solid #a03a2a; border-radius: 3px; background: #4a1a12; color: #f4cdbd; font: 700 .52rem Cinzel, Georgia, serif; letter-spacing: .1em; text-transform: uppercase; }
+  .preparation-duel-mark i { width: 8px; height: 8px; border-radius: 50%; background: #e29a3b; }
+
+  .room-preparation .preparation-seat .coin-duel-seat { margin: 0; }
+  .room-preparation .preparation-seat.seat-position-5, .room-preparation .preparation-seat.seat-position-1 { top: 50%; width: 15.8%; min-width: 118px; max-width: 165px; padding: 5px 5px 10px; gap: 7px; transform: translateY(-50%); }
+  .room-preparation .preparation-seat.seat-position-5 { left: 0; }
+  .room-preparation .preparation-seat.seat-position-1 { right: 0; }
+  .room-preparation .seat-position-5 .preparation-card-back, .room-preparation .seat-position-1 .preparation-card-back { width: 100%; height: clamp(62px, 9.5vh, 86px); }
+  .room-preparation .seat-position-5 .preparation-seat-copy strong, .room-preparation .seat-position-1 .preparation-seat-copy strong { justify-content: center; }
+  .room-preparation .seat-position-5 .preparation-duel-mark, .room-preparation .seat-position-1 .preparation-duel-mark { margin-inline: auto; }
+
+  .room-preparation .preparation-start { flex: none; margin: 26px 0 0; padding: 7px 10px; border: 1px solid #ffffff12; background: #0a0f10e6; }
+  .room-preparation .preparation-start p { color: #a9a99a; font-size: .74rem; }
+  .room-preparation .preparation-start p b { color: #efe8d8; font-weight: 600; }
+  .preparation-shields .dice-player-shield { opacity: .4; }
+  .preparation-shields .dice-player-shield.is-ready { opacity: 1; }
+  .preparation-table-actions { gap: 10px; position: relative; z-index: 8; }
+  .room-preparation .preparation-start .preparation-table-actions > button { min-width: 0; min-height: 44px; padding: 0 22px; border: 1px solid #55492e; border-radius: 4px; background: #111718; color: #f0d48d; font: 600 .7rem Cinzel, Georgia, serif; letter-spacing: .14em; text-transform: uppercase; }
+  .room-preparation .preparation-start .preparation-table-actions > button:disabled { color: #6d6a5b; background: #101516; border-color: #ffffff14; }
+  .room-preparation .preparation-start .dice-roll-button:not(.is-charging) { min-width: 0; min-height: 44px; padding: 0 16px; border: 1px solid #6e5c36; border-radius: 4px; background: #0d1213; color: #f0e7d0; box-shadow: none; font: 600 .78rem Geist, sans-serif; letter-spacing: 0; text-transform: none; }
+  .room-preparation .preparation-start .dice-roll-button:not(.is-charging):hover:not(:disabled) { border-color: #c8a65c; background: #151a1a; }
+  .room-preparation .preparation-start .dice-roll-button:not(.is-charging) .dice-roll-icon { background: #e7dcc0; }
+
+  .preparation-rules-heading { position: relative; display: flex; align-items: center; gap: 14px; padding: 0; border: 0; color: #a9925c; font: 600 .62rem Cinzel, Georgia, serif; letter-spacing: .16em; }
+  .preparation-rules-heading::after { content: ''; order: 1; flex: 1; height: 1px; background: #8a754340; }
+  .preparation-rules-heading small { order: 2; display: inline-flex; align-items: center; gap: 6px; color: #9b988a; }
+  .preparation-rules-heading small .table-icon { width: 11px; height: 11px; flex-basis: 11px; }
+  .preparation-rule-grid { gap: 12px; margin-top: 9px; }
+  .preparation-rule { display: flex; flex-direction: column; justify-content: space-between; min-height: 0; height: 96px; padding: 9px 12px; border: 1px solid #ffffff12; border-radius: 4px; background: #0b1011f2; box-sizing: border-box; }
+  .preparation-rule strong { font-weight: 600; font-size: .76rem; color: #efe8d8; }
+  .preparation-rule strong > span { width: 24px; height: 24px; border-color: #54472a; background: #1a170e; }
+  .preparation-rule strong > span .table-icon { width: 12px; height: 12px; flex-basis: 12px; }
+  .preparation-rule strong > span .table-icon path { fill: currentColor; }
+  .preparation-rule:last-child strong > span .table-icon path { fill: none; }
+  .preparation-life { margin: 0; }
+  .preparation-rule .preparation-life b { font: 700 1.5rem Cinzel, Georgia, serif; color: #ecd08a; }
+  .preparation-rule .preparation-life button { width: 26px; height: 26px; min-height: 0; padding: 0; border-color: #4f4630; background: #101516; color: #e8dfc8; }
+  .preparation-rule button[role=switch] { width: 46px; height: 24px; border-color: #b08a45; }
+  .preparation-rule-detail { margin: 0; align-items: flex-end; }
+  .preparation-rule-detail > small { font-size: .64rem; line-height: 1.3; }
+  .preparation-mulligan { flex: 1; border: 1px solid #55492e; border-radius: 3px; overflow: hidden; }
+  .preparation-rule .preparation-mulligan button { flex: 1; min-height: 26px; border: 0; background: transparent; color: #bdb49c; font-size: .68rem; }
+  .preparation-rule .preparation-mulligan button[aria-checked=true] { background: linear-gradient(#ecc877, #c8953f); color: #2a1e08; font-weight: 600; }
+
+  .room-preparation .preparation-table > .preparation-panel-corners, .preparation-controls > .preparation-panel-corners { opacity: .7; }
+  .preparation-controls { position: relative; padding: 16px 18px; border: 1px solid #3f3a26; background: #0b1011f5; }
+  .preparation-controls .eyebrow { color: #a9925c; font: 600 .62rem Cinzel, Georgia, serif; letter-spacing: .16em; margin: 0 0 4px; }
+  .preparation-controls h3 { margin: 0; color: #f3ecdb; font: 700 1.05rem Cinzel, Georgia, serif; font-variant: small-caps; letter-spacing: .05em; }
+  .preparation-controls label { margin: 12px 0 6px; color: #cfc8b4; }
+  .room-preparation .preparation-controls select { height: 44px; padding-right: 34px; border-color: #55492e; background: #0a0f10 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c8ab68' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 13px; color: #efe8d8; font-weight: 600; appearance: none; }
+  .preparation-selected-deck, .room-preparation .preparation-selected-deck { position: relative; display: flex; align-items: center; gap: 16px; height: 176px; margin: 12px 0 14px; padding: 12px 16px; overflow: hidden; border: 0; border-radius: 4px; background: linear-gradient(90deg, #0b1011d9, #0b101166), var(--deck-art, none) center / cover, #0d1412; }
+  .preparation-selected-art, .room-preparation .preparation-selected-art { flex: none; width: auto; height: 100%; aspect-ratio: 63 / 88; border: 1px solid #8c7440; border-radius: 6px; box-shadow: 0 6px 16px #000b; }
+  .preparation-deck-label { color: #a9925c; font: 600 .6rem Cinzel, Georgia, serif; letter-spacing: .16em; }
+  .preparation-selected-info strong { margin-top: 3px; color: #f3ecdb; font: 700 1.02rem Cinzel, Georgia, serif; font-variant: small-caps; }
+  .preparation-selected-info small { color: #b5b3a4; font-size: .7rem; }
+  .room-preparation .preparation-ready-action { min-height: 46px; margin: 0; border-radius: 4px; color: #2a1e08; font: 700 .76rem Cinzel, Georgia, serif; letter-spacing: .14em; text-transform: uppercase; font-variant: normal; }
+  .room-preparation .preparation-ready-action.secondary { color: #e9d7a4; }
+
+  .preparation-sidebar { gap: 18px; }
+  .preparation-sidebar > .dice-register { padding: 16px 18px; border-color: #3f3a26; background: #0b1011f5; box-shadow: none; }
+  .dice-register-heading { align-items: flex-start; border: 0; margin: 0; padding: 0 0 14px; }
+  .dice-register-heading .eyebrow { margin: 0 0 4px; color: #a9925c; font: 600 .62rem Cinzel, Georgia, serif; letter-spacing: .16em; }
+  .dice-register .dice-register-heading h3 { color: #f3ecdb; font: 700 1.05rem Cinzel, Georgia, serif; font-variant: small-caps; letter-spacing: .05em; }
+  .dice-register li { gap: 11px; min-height: 54px; margin: 0; padding: 6px 8px; border: 0; border-radius: 4px; background: transparent; box-sizing: border-box; }
+  .dice-register li.dice-register-duel { background: #ffffff0a; }
+  .dice-register li .dice-player-shield { width: 18px; height: 22px; font: 700 8px Georgia, serif; }
+  .dice-register-copy > span { color: #a9a99a; font-size: .76rem; }
+  .dice-register-copy b { color: #f3ecdb; font-weight: 600; }
+  .dice-register-copy b.is-winner { color: #e9c978; }
+  .dice-register-copy small { display: block; color: #7c7c70; font-size: .64rem; }
+  .dice-register li:not(.is-counting) .dice-result-icon { width: 30px; height: 33px; color: var(--player-color); }
+}
+
+/* A largura estreita mantém os lugares legíveis sem invadir o feltro. */
+@media (min-width: 801px) and (max-width: 1100px) {
+  .room-preparation .preparation-seat { width: 32%; min-width: 150px; min-height: 66px; gap: 8px; padding: 5px 7px; }
+  .room-preparation .preparation-card-back { width: 40px; height: 54px; }
+  .preparation-seat-copy { min-width: 0; }
+  .preparation-seat-copy strong { font-size: .76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .preparation-you { overflow: hidden; }
+  .room-preparation .preparation-seat.seat-position-5, .room-preparation .preparation-seat.seat-position-1 { width: 17%; min-width: 92px; padding: 4px 4px 7px; }
+  .room-preparation .seat-position-5 .preparation-card-back, .room-preparation .seat-position-1 .preparation-card-back { height: 48px; }
+  .room-preparation .preparation-oval { left: 10%; width: 80%; }
+  .room-preparation .preparation-heading, .order-table .order-heading { padding: 6px 4px 0 8px; gap: 8px; }
+  .order-felt { left: 10%; width: 80%; }
+  .preparation-heading .eyebrow { white-space: nowrap; font-size: .56rem; letter-spacing: .1em; }
+  .preparation-heading h2 { font-size: 1.15rem; white-space: nowrap; }
+  .preparation-room-facts { flex-wrap: nowrap; gap: 4px; }
+  .preparation-room-facts span { padding: 5px 6px; gap: 4px; font-size: .64rem; white-space: nowrap; }
+  .room-preparation .preparation-selected-deck { height: 150px; gap: 10px; padding: 10px; }
+  .preparation-selected-info { min-width: 0; }
+  .preparation-selected-info strong { font-size: .86rem; }
+}

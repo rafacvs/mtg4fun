@@ -10,10 +10,11 @@ import (
 	"mtg4fun/internal/live"
 )
 
-// EmojiCooldown is enforced per member, whatever the number of open tabs.
-const EmojiCooldown = 2 * time.Second
+// emojiLimit lets a member spam, each click waiting a bit longer than the last.
+// It counts per member, whatever the number of open tabs; useEmojiReactions mirrors it.
+var emojiLimit = live.Limit{Every: 200 * time.Millisecond, Grow: 1.35, Max: 3 * time.Second, Rest: 5 * time.Second}
 
-var emojiOptions = []string{"👍", "❤️", "😂", "😮", "🎉", "😢", "🔥", "💀"}
+var emojiOptions = []string{"😂", "💀", "🔥", "😭", "🐷", "👀", "🐐", "🍅"}
 
 // Publisher is the part of the hub that the games use to reach a room.
 type Publisher interface {
@@ -33,7 +34,7 @@ type Emoji struct {
 
 func (*Emoji) Name() string { return "emoji" }
 
-func (*Emoji) Limit() live.Limit { return live.Limit{Every: EmojiCooldown, Burst: 1} }
+func (*Emoji) Limit() live.Limit { return emojiLimit }
 
 func (*Emoji) Snapshot(context.Context, int64, live.Member) (any, error) { return nil, nil }
 

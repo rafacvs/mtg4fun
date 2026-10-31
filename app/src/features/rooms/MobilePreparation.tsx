@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { deckApi } from '../decks/deckApi';
 import { cardCount } from '../decks/deckDisplay';
 import type { useDecks } from '../decks/useDecks';
 import type { Room } from './roomsApi';
 import type { useRooms } from './useRooms';
+import { playerMark } from './playerIdentity';
 import { PreparationRules } from './PreparationRules';
 
-type Props = { room: Room; participant: Room['participants'][number]; userId: number; deckId: string; setDeckId: Dispatch<SetStateAction<string>>; decks: ReturnType<typeof useDecks>; rooms: ReturnType<typeof useRooms>; sharedDecks: { playerId: number; name: string; image?: string }[]; onChallenge: (player: { id: number; name: string }) => void; interrupted: boolean };
+type Props = { room: Room; participant: Room['participants'][number]; userId: number; deckId: string; setDeckId: Dispatch<SetStateAction<string>>; decks: ReturnType<typeof useDecks>; rooms: ReturnType<typeof useRooms>; sharedDecks: { playerId: number; name: string; image?: string }[]; onChallenge: (player: { id: number; name: string }, anchor: HTMLElement | null) => void; interrupted: boolean; emoji: ReactNode; marks: Record<string, 'lost' | 'refused'> };
 
 type Panel = 'deck' | 'rules' | null;
-export function MobilePreparation({ room, participant, userId, deckId, setDeckId, decks, rooms, sharedDecks, onChallenge, interrupted }: Props) {
+export function MobilePreparation({ room, participant, userId, deckId, setDeckId, decks, rooms, sharedDecks, onChallenge, interrupted, emoji, marks }: Props) {
   const [panel, setPanel] = useState<Panel>(null);
   const [settingsPending, setSettingsPending] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -37,7 +38,7 @@ export function MobilePreparation({ room, participant, userId, deckId, setDeckId
       {room.participants.map(player => {
         const index = room.participants.findIndex(item => item.id === player.id);
         const position = player.id === userId ? 3 : [5, 1, 0, 2, 4][room.participants.filter(item => item.id !== userId).findIndex(item => item.id === player.id)];
-        return <div key={player.id} className={`mobile-table-seat mobile-table-seat-${position} seat-color-${index % 6}`}><span className="mobile-seat-emblem">{player.name.slice(0, 1).toUpperCase()}{player.ready && <b>✓</b>}</span><small>{player.id === userId ? 'você' : player.name}</small>{player.id !== userId && <button type="button" className="coin-duel-seat" aria-label={`Desafiar ${player.name} para um X1`} onClick={() => onChallenge(player)} />}</div>;
+        return <div key={player.id} className={`mobile-table-seat mobile-table-seat-${position} seat-color-${index % 6}`}><span className="mobile-seat-emblem">{playerMark(player.name)}{player.ready && <b>✓</b>}</span><small>{player.id === userId ? 'você' : player.name}</small>{player.id !== userId && <button type="button" className="coin-duel-seat" aria-label={`Desafiar ${player.name} para um X1`} onClick={event => onChallenge(player, event.currentTarget.parentElement)} />}</div>;
       })}
       {[5, 1, 0, 2, 4].slice(room.participants.length - 1, room.seats - 1).map(position => <div key={position} className={`mobile-table-seat mobile-table-seat-${position} mobile-free-seat`} aria-hidden="true"><span>＋</span><small>livre</small></div>)}
     </section>
@@ -48,11 +49,11 @@ export function MobilePreparation({ room, participant, userId, deckId, setDeckId
         return <li key={player.id} className={`mobile-player seat-color-${index % 6} ${own ? 'is-own' : ''}`}>
           <span className="mobile-player-art">{image ? <img src={deckApi.imageURL(image)} alt="" onError={event => { event.currentTarget.src = '/library-back.png'; }} /> : <img src="/library-back.png" alt="" />}</span>
           <span className="mobile-player-copy"><strong>{player.name}{own && <small> · você</small>}{own && !player.ready && <span className="mobile-inline-ready"> Preparando</span>}</strong><small>{own ? selectedDeck?.name || 'Sem deck' : shared?.name || (player.deckId ? 'Deck selecionado' : 'Aguardando deck')}{own && selectedDeck ? ` · ${cardCount(selectedDeck.cards)} cartas` : ''}</small></span>
-          {own && !participant.ready ? <button type="button" className="secondary mobile-change-deck" onClick={event => showPanel('deck', event.currentTarget)}>Trocar ›</button> : <span className={`preparation-ready ${player.ready ? 'is-ready' : ''}`}>{player.ready ? '✓ Pronto' : '✦ Preparando'}</span>}
+          {marks[player.id] && <span className="preparation-duel-mark"><i aria-hidden="true" />{marks[player.id] === 'refused' ? 'Recusou o X1' : 'Perdeu no X1'}</span>}{own && !participant.ready ? <button type="button" className="secondary mobile-change-deck" onClick={event => showPanel('deck', event.currentTarget)}>Trocar ›</button> : <span className={`preparation-ready ${player.ready ? 'is-ready' : ''}`}>{player.ready ? '✓ Pronto' : '✦ Preparando'}</span>}
         </li>;
       })}</ul>
     </section>
-    <footer className="mobile-preparation-footer"><div className="preparation-dice-action" /><div className="mobile-waiting"><span role="status">{waiting.length ? `Ainda falta: ${waiting.map(player => player.name).join(', ')}.` : 'Todos prontos.'}</span>{participant.ready && <button type="button" className="text-button" disabled={rooms.busy} onClick={() => void rooms.unready(room.id)}>desfazer pronto</button>}</div>
+    <footer className="mobile-preparation-footer"><div className="mobile-footer-tools">{emoji}<div className="preparation-dice-action" /></div><div className="mobile-waiting"><span role="status">{waiting.length ? `Ainda falta: ${waiting.map(player => player.name).join(', ')}.` : 'Todos prontos.'}</span>{participant.ready && <button type="button" className="text-button" disabled={rooms.busy} onClick={() => void rooms.unready(room.id)}>desfazer pronto</button>}</div>
       {canStart ? <button type="button" disabled={rooms.busy || settingsPending} onClick={() => void rooms.start(room.id)}>Iniciar partida <span aria-hidden="true">→</span></button> : !participant.ready ? <button type="button" disabled={rooms.busy || !deckId} onClick={() => void rooms.ready(room.id)}>Estou pronto <span aria-hidden="true">→</span></button> : <p>{waiting.length ? 'Aguardando os demais jogadores.' : `Aguardando ${room.participants.find(player => player.id === room.creatorId)?.name} iniciar.`}</p>}
       {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
     </footer>
