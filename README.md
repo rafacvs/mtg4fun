@@ -443,3 +443,4 @@ A API oferece `GET /api/rooms`, `POST /api/rooms` e
 `GET /api/rooms/events` por SSE, com sessão existente e snapshot inicial após
 reconexão. O Nginx de produção está configurado para streaming sem buffering.
 Contrato, aprovação e impactos futuros: [decisão de salas/SSE](docs/decisions/03-salas-sse.md).
+Jogos efêmeros da sala usam `GET /api/rooms/{id}/live` por WebSocket: [decisão 52](docs/decisions/52-websocket-minijogos.md).
