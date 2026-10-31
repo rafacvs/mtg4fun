@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  fallsOffTable,
   powerColor,
   powerFromHold,
 } from "./diceThrowPower.ts";
@@ -61,11 +60,6 @@ test("a carga não tem velocidade máxima", () => {
   const rates = [5000, 20000, 60000, 240000].map(changesIn100Ms);
   for (let i = 1; i < rates.length; i++)
     assert.ok(rates[i] > rates[i - 1], rates.join(", "));
-});
-
-test("só as forças 9 e 10 caem da mesa", () => {
-  const falling = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(fallsOffTable);
-  assert.deepEqual(falling, [9, 10]);
 });
 
 test("a cor vai do verde claro ao vermelho forte", () => {

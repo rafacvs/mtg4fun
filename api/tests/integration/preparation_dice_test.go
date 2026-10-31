@@ -38,7 +38,7 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, created).ID)
 	requireStatus(t, e.request("POST", path+"/participants", "{}", bia, nil), 200)
 	action := func(cookie *http.Cookie, n int, kind, rollID string) response {
-		// A rolagem 1 cai da mesa; a 2 pede força máxima já na etapa que vale.
+		// A rolagem 1 usa força alta; a 2 pede força máxima já na etapa que vale.
 		power := map[int]int{1: 9, 2: 10}[n]
 		return e.request("POST", path+"/preparation/actions", fmt.Sprintf(`{"intentId":"00000000-0000-4000-8000-%012d","kind":%q,"rollId":%q,"power":%d}`, n, kind, rollID, power), cookie, nil)
 	}
@@ -52,7 +52,7 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	if bytes.Count(state.body, []byte(`"value":7`)) != 1 {
 		t.Fatalf("rolagem duplicada: %s", state.body)
 	}
-	if !bytes.Contains(state.body, []byte(`"fallOff":true`)) || !bytes.Contains(state.body, []byte(`"power":9`)) {
+	if !bytes.Contains(state.body, []byte(`"power":9`)) {
 		t.Fatalf("força do lançamento não foi sincronizada: %s", state.body)
 	}
 	for i, cookie := range []*http.Cookie{ana, bia} {
@@ -63,7 +63,7 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	requireStatus(t, e.request("GET", path+"/match", "", ana, nil), 404)
 	requireStatus(t, action(ana, 2, "roll", ""), 200)
 	ordered := e.request("GET", path+"/preparation", "", bia, nil)
-	if bytes.Contains(ordered.body, []byte(`"power":10`)) || bytes.Count(ordered.body, []byte(`"fallOff":true`)) != 1 {
+	if bytes.Contains(ordered.body, []byte(`"power":10`)) {
 		t.Fatalf("rolagem que vale aceitou força: %s", ordered.body)
 	}
 	requireStatus(t, action(ana, 3, "confirm", "00000000-0000-4000-8000-000000000002"), 200)

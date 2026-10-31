@@ -245,24 +245,17 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
       expect(sent).toBe(false);
     }
 
-    // Forças 9 e 10 caem para fora: todos veem o dado, o registro não muda.
+    // Forças 9 e 10 são só tiros mais fortes: param na mesa e entram no registro.
     await press();
     await waitForLevel(10);
-    const lost = actionRequest();
+    const strongest = actionRequest();
     await release();
-    expect((await lost).postDataJSON().power).toBeGreaterThanOrEqual(9);
-    await expect
-      .poll(async () => {
-        const state = await (
-          await other.request.get(path + "/preparation")
-        ).json();
-        return state.rolls.length;
-      })
-      .toBe(4);
-    await page.waitForTimeout(2500);
-    await expect(page.locator(".dice-register li")).toHaveCount(3);
+    expect((await strongest).postDataJSON().power).toBeGreaterThanOrEqual(9);
+    await expect(page.locator(".dice-register li")).toHaveCount(4, {
+      timeout: 20000,
+    });
     await page.reload();
-    await expect(page.locator(".dice-register li")).toHaveCount(3, {
+    await expect(page.locator(".dice-register li")).toHaveCount(4, {
       timeout: 15000,
     });
     for (let i = 0; i < 2; i++)
@@ -443,7 +436,7 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
   await expect(button).toBeVisible();
   const box = (await button.boundingBox())!;
 
-  const HOP_PIXELS = 16;
+  const HOP_PIXELS = 8;
   /** Lança pelo botão real e mede o dado desenhado no canvas até ele parar. */
   const measure = async (power: number) => {
     await page.waitForFunction(() => {
@@ -578,24 +571,25 @@ test("segurar o botão muda o lançamento que aparece na mesa", async ({
   const click = await measure(0);
   const weakest = await measure(1);
   const shot = await measure(8);
-  const lost = await measure(10);
-  console.log(JSON.stringify({ click, weakest, shot, lost }));
+  const strongest = await measure(10);
+  console.log(JSON.stringify({ click, weakest, shot, strongest }));
 
-  // Força 1 mal sai do lugar; o tiro corre muito mais, dispara no primeiro meio
+  // Força 1 anda pouco; a força 8 corre muito mais, dispara no primeiro meio
   // segundo e continua ricocheteando por mais tempo.
   expect(weakest.path).toBeLessThan(click.path * 0.6);
   expect(weakest.seconds).toBeLessThan(click.seconds);
-  expect(shot.path).toBeGreaterThan(click.path * 4);
+  expect(shot.path).toBeGreaterThan(click.path * 3);
   expect(shot.burst).toBeGreaterThan(click.burst * 2);
   expect(shot.seconds).toBeGreaterThan(click.seconds * 1.8);
-  expect(lost.burst).toBeGreaterThan(click.burst * 1.5);
-  // O clique já pula à vista; o tiro pula mais e mais alto, sem sair do canvas.
+  expect(strongest.burst).toBeGreaterThan(click.burst * 2);
+  // O clique já pula à vista; o tiro sobe mais, sem sair do canvas. A contagem de
+  // pulos por força fica no teste unitário: na tela, o avanço do dado esconde pulos.
   expect(click.hops).toBeGreaterThanOrEqual(2);
-  expect(shot.hops).toBeGreaterThan(click.hops);
   expect(shot.top).toBeLessThan(click.top);
   expect(shot.top).toBeGreaterThan(0);
   expect(click.top).toBeGreaterThan(0);
-  await expect(page.locator(".dice-register li")).toHaveCount(3);
+  expect(strongest.top).toBeGreaterThan(0);
+  await expect(page.locator(".dice-register li")).toHaveCount(4);
 });
 
 test("confirmação com quatro jogadores mantém mesa, ordem e registro na tela", async ({

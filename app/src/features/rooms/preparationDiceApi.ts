@@ -1,7 +1,6 @@
 import { createActionIntent } from "./actionIntent";
 
 export type PreparationRoll = {
-  fallOff?: boolean;
   power?: number;
   id: string;
   playerId: number;

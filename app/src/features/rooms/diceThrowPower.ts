@@ -1,6 +1,6 @@
 export const NORMAL_HOLD_MS = 1000;
 export const MAX_POWER = 10;
-export const FIRST_FALL_OFF_POWER = 9;
+const FIRST_LIGHT_TEXT_POWER = 9;
 const FIRST_SWEEP_MS = 3000;
 const SPEEDUP_MS = 5000;
 const STEPS_PER_SWEEP = MAX_POWER - 1;
@@ -19,10 +19,6 @@ export function powerFromHold(heldMs: number) {
   return sweep % 2 === 0 ? 1 + moved : MAX_POWER - moved;
 }
 
-export function fallsOffTable(power: number) {
-  return power >= FIRST_FALL_OFF_POWER;
-}
-
 /** Do verde clarinho (1) ao vermelho forte (10), passando pelo amarelo. */
 export function powerColor(power: number) {
   const progress = (power - 1) / (MAX_POWER - 1);
@@ -33,5 +29,5 @@ export function powerColor(power: number) {
 }
 
 export function powerTextColor(power: number) {
-  return power >= FIRST_FALL_OFF_POWER ? "#fff6df" : "#14170f";
+  return power >= FIRST_LIGHT_TEXT_POWER ? "#fff6df" : "#14170f";
 }

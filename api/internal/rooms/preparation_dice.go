@@ -14,12 +14,10 @@ import (
 )
 
 const (
-	maxThrowPower     = 10
-	firstFallOffPower = 9
+	maxThrowPower = 10
 )
 
 type PreparationRoll struct {
-	FallOff  bool   `json:"fallOff,omitempty"`
 	Power    int    `json:"power,omitempty"`
 	ID       string `json:"id"`
 	PlayerID int64  `json:"playerId"`
@@ -176,7 +174,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 			if room.Status == "preparing" {
 				power = input.Power
 			}
-			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now, Power: power, FallOff: power >= firstFallOffPower})
+			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now, Power: power})
 		} else {
 			if room.Status != "determining_order" {
 				fail("A ordem ainda não está sendo definida.")

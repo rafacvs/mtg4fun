@@ -245,3 +245,25 @@ como `preparation-dice.spec.ts` com API e MySQL isolados nas três telas. Em uma
 no desktop, a força 1 levou 1,4 s, o clique 2,8 s e a força 8 7,8 s até parar. A sensação
 depende de avaliação do usuário. A regressão completa não foi executada.
 
+## Forças por cor e fim da queda em 30/10/2026
+
+O usuário achou a revisão anterior lenta demais e descreveu cada faixa: o clique é uma
+jogada média, em arco; o verde mais fraco vai mais para a frente que antes, quase não
+sobe, cai, anda um pouco e para; o laranja é mais forte e um pouco mais alto, mais tiro
+que parábola. Depois pediu para tirar a regra de 9 e 10 saírem da arena: passam a ser
+só tiros mais fortes. Isso substitui a queda e o “não aparece no registro” descritos
+acima.
+
+Escolhas de implementação, não pedidas literalmente: gravidade de 750 para 1.100 px/s²,
+força 1 a 150 px/s e pulo de 10% do espaço, clique a 175 px/s e 45%, força 7 a 820 px/s
+e 60%, força 10 a 1.900 px/s e 65%. O campo fallOff saiu do servidor e do cliente; o
+contrato continua aceitando power de 0 a 10. Rolagens antigas com fallOff em salas ainda
+em preparação passam a aparecer no registro, porque a marca deixa de ser lida.
+
+Verificação desta revisão: testes unitários, typecheck do frontend, testes do pacote
+`internal/rooms` e a integração HTTP da preparação passaram. `preparation-dice.spec.ts`
+passou com API e MySQL isolados nas três telas. Em uma execução no desktop, a força 1
+levou 1,2 s e andou 59 px, o clique 2,4 s e 223 px, a força 8 5,8 s e 1.422 px, e a
+força 10 5,7 s e 1.920 px. A sensação depende de avaliação do usuário. A regressão
+completa não foi executada.
+
