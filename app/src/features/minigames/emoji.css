@@ -1,0 +1,28 @@
+.emoji-bar { position: relative; flex: none; }
+.room-preparation .preparation-start .emoji-toggle.emoji-toggle, .emoji-toggle.emoji-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; width: 62px; min-width: 0; height: 44px; min-height: 44px; margin: 0; padding: 0; border: 1px solid #6e5c36; border-radius: 4px; background: #0d1213; font-size: 21px; line-height: 1; box-shadow: none; }
+.emoji-bar .emoji-toggle.emoji-toggle:hover:not(:disabled) { border-color: #c8a65c; background: #151a1a !important; }
+.emoji-toggle .table-icon { width: 11px; height: 11px; flex-basis: 11px; color: #a39a83; transform: rotate(90deg); }
+.emoji-toggle[aria-expanded='true'] { border-color: #e0bd6e !important; box-shadow: 0 0 0 1px #e0bd6e55, 0 0 12px #d8ae4a40 !important; }
+.emoji-toggle.is-cooling > span { opacity: .75; }
+/* Abre ao lado do botão, da direita para a esquerda, no espaço livre da faixa. */
+.emoji-tray { position: absolute; right: calc(100% + 8px); top: 50%; z-index: 30; display: flex; gap: 2px; height: 44px; padding: 0 5px; align-items: center; border: 1px solid #6e5c36; border-radius: 4px; background: #0d1213; box-sizing: border-box; transform: translateY(-50%); transform-origin: right center; animation: emoji-tray-in .16s ease-out; }
+@keyframes emoji-tray-in { from { opacity: 0; transform: translateY(-50%) scaleX(.4); } }
+.emoji-option.emoji-option, .room-preparation .preparation-start .emoji-option.emoji-option { display: grid; place-items: center; width: 34px; min-width: 0; height: 34px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; font-size: 21px; line-height: 1; box-shadow: none; transition: transform .12s, background .12s; }
+.emoji-option.emoji-option:hover:not(:disabled) { background: #e5c57726; transform: scale(1.12); }
+.emoji-option.emoji-option:disabled { opacity: .5; filter: saturate(.55); cursor: wait; }
+.emoji-wait { position: absolute; right: 0; bottom: calc(100% + 5px); padding: 3px 9px; border-radius: 4px; background: #8f2c1e; color: #f9e3da; font: 600 11px Geist, sans-serif; white-space: nowrap; }
+.emoji-error { position: absolute; right: 0; bottom: calc(100% + 5px); width: max-content; max-width: 280px; margin: 0; padding: 5px 9px; border-radius: 4px; background: #3a1710; color: #f6c9bc; font-size: 11px; }
+
+.emoji-rain { position: fixed; inset: 0; z-index: 60; overflow: hidden; pointer-events: none; }
+.emoji-drop { position: absolute; top: -70px; display: flex; flex-direction: column; align-items: center; gap: 2px; transform: translateX(-50%); animation: emoji-fall linear forwards; }
+.emoji-drop b { font-size: 38px; font-weight: 400; line-height: 1; }
+.emoji-drop small { padding: 1px 6px; border-radius: 8px; background: #0e1113cc; color: #ede6d7; font-size: 11px; white-space: nowrap; }
+@keyframes emoji-fall { to { transform: translate(-50%, calc(100dvh + 90px)); } }
+@media (prefers-reduced-motion: reduce) {
+  .emoji-tray { animation: none; }
+  .emoji-drop { top: 40%; animation: emoji-fade linear forwards; }
+  @keyframes emoji-fade { to { opacity: 0; } }
+}
+/* No layout móvel o botão fica à esquerda: a bandeja cobre a faixa à direita dele. */
+.mobile-preparation .emoji-tray { right: auto; left: calc(100% + 6px); max-width: calc(100vw - 104px); overflow-x: auto; transform-origin: left center; }
+.mobile-preparation .emoji-wait { right: auto; left: 0; }

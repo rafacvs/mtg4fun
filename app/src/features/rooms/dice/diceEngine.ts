@@ -16,6 +16,8 @@ export type Vec3 = [number, number, number];
 type Quat = [number, number, number, number];
 
 export interface TableConfig {
+  /** raio do dado, quando acompanha o tamanho da mesa */
+  dieRadius?: number;
   /** centro do feltro, em px, relativo ao canvas */
   cx: number;
   cy: number;
@@ -284,7 +286,7 @@ export function createDiceEngine(
 ): DiceEngine {
   const ctx = canvas ? canvas.getContext("2d") : null;
   let T = { ...opts.table };
-  const r = opts.dieRadius ?? 28;
+  let r = opts.dieRadius ?? 28;
   const REST = (opts.restMs ?? 3600) / 1000,
     FADE = (opts.fadeMs ?? 800) / 1000,
     MAX = opts.maxDice ?? 40;
@@ -803,6 +805,7 @@ export function createDiceEngine(
     },
     setTable(t) {
       T = { ...t };
+      if (t.dieRadius) r = t.dieRadius;
       draw();
     },
     destroy() {

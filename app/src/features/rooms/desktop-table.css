@@ -1,6 +1,6 @@
 /* A single table composition: opponents, own field, then the hand. */
 @media (min-width: 1001px) {
-  html:has(.match-board) { scrollbar-gutter: auto; }
+  html:has(.match-board:not(.coin-duel-layer)) { scrollbar-gutter: auto; }
   .desktop-table { --field-card-width: 76px; --hand-card-width: 60px; --opponent-card-width: 72px; --zone-card-width: var(--opponent-card-width); }
   .desktop-table .table-toolbar { grid-template-columns: minmax(0, 1fr) auto auto; }
   .desktop-table .observing-label { display: none; }

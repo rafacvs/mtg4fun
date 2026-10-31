@@ -51,12 +51,16 @@ func (s *Service) preparationState(w http.ResponseWriter, req *http.Request) {
 		httpserver.WriteError(w, 404, "Sala não encontrada.")
 		return
 	}
+	var view preparationView
+	if err == nil {
+		view, err = s.preparationView(req.Context(), id)
+	}
 	if err != nil {
 		httpserver.InternalError(w, err)
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	httpserver.WriteJSON(w, 200, map[string]any{"phase": room.Status, "rolls": room.Dice, "confirmed": room.Confirmed})
+	httpserver.WriteJSON(w, 200, view)
 }
 
 func (s *Service) beginOrder(w http.ResponseWriter, req *http.Request) {
@@ -130,9 +134,21 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 			httpserver.InternalError(w, err)
 			return
 		}
+		s.coinDuels.CancelRoom(id)
+		s.publishPreparation(id)
 		httpserver.WriteJSON(w, 200, map[string]bool{"ok": true})
 		return
 	} else {
+		// A rolagem de brincadeira não vale nada e fica só na memória.
+		if input.Kind == "roll" && room.Status == "preparing" {
+			if !s.addPlayRoll(w, id, user.ID, user.Name, input.IntentID, input.Power) {
+				return
+			}
+			_ = tx.Rollback()
+			s.publishPreparation(id)
+			httpserver.WriteJSON(w, 200, map[string]bool{"ok": true})
+			return
+		}
 		// Idempotency is durable in room_events, including confirmations.
 		var count int
 		err = tx.QueryRowContext(req.Context(), "SELECT COUNT(*) FROM room_events WHERE room_id=? AND actor_id=? AND action=?", id, user.ID, strings.ReplaceAll(input.IntentID, "-", "")).Scan(&count)
@@ -170,11 +186,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 				return
 			}
 			// A força só existe na brincadeira: a rolagem que vale é sempre normal.
-			power := 0
-			if room.Status == "preparing" {
-				power = input.Power
-			}
-			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now, Power: power})
+			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now})
 		} else if input.Kind == "unconfirm" {
 			// A última confirmação inicia a partida: depois dela não há o que desfazer.
 			if room.Status != "determining_order" || room.Confirmed[user.ID] == "" {
@@ -258,5 +270,28 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 		httpserver.InternalError(w, err)
 		return
 	}
+	if room.Status == "started" {
+		s.playRolls.drop(id)
+	}
+	s.publishPreparation(id)
 	httpserver.WriteJSON(w, 200, map[string]bool{"ok": true})
+}
+
+// addPlayRoll runs with the room locked, so it keeps the limit of rolls per second.
+func (s *Service) addPlayRoll(w http.ResponseWriter, id, playerID int64, name, intentID string, power int) bool {
+	if s.playRolls.has(id, intentID) {
+		return true
+	}
+	now := time.Now().UnixMilli()
+	if s.playRolls.recent(id, playerID, now-1000) >= 5 {
+		httpserver.WriteError(w, 429, "Aguarde um instante para rolar novamente.")
+		return false
+	}
+	value, err := s.roll()
+	if err != nil {
+		httpserver.InternalError(w, err)
+		return false
+	}
+	s.playRolls.add(id, PreparationRoll{ID: intentID, PlayerID: playerID, Name: name, Value: value, Seed: now, Phase: "preparing", At: now, Power: power})
+	return true
 }

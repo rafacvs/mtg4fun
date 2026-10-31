@@ -68,3 +68,33 @@ copiado para a partida ao iniciar, como já fazia o fluxo de mulligan.
 Limitação observada: o mulligan exige sete cartas na mão. Com a compra inicial
 desligada, a janela de mulligan existe, mas só pode ser usada se o jogador
 comprar sete cartas manualmente antes do primeiro avanço de turno.
+
+## Importar e editar o deck na preparação
+
+Em 31/10/2026, o usuário pediu para importar um `.cod` e editar o deck sem sair
+da preparação: um botão de importar junto do seletor e o card do deck escolhido
+abrindo, com um lápis no canto, a mesma tela de detalhe de **Meus decks**, sem a
+lista de decks ao lado. A ideia de colar o conteúdo do `.cod` foi descartada
+pelo usuário ao saber que o arquivo é XML.
+
+Perguntado sobre a edição depois de marcar pronto, respondeu que é preciso
+desfazer o pronto. Perguntado se os demais jogadores devem ver a troca de
+comandante em tempo real, respondeu que sim.
+
+- `PUT /api/decks/{id}/commander` responde 409 enquanto o deck estiver em uma
+  sala em que o dono está pronto ou que já define a ordem dos turnos. A regra
+  fica no servidor porque o comandante é lido ao iniciar a partida e o mesmo
+  endpoint é usado em **Meus decks**. A interface esconde o lápis e desabilita
+  a importação nesse estado.
+- Cada participante ganha `deckRevision`, um contador no snapshot da sala,
+  incrementado quando o comandante muda. O SSE existente o entrega e os membros
+  recarregam `preparation-decks`. A lista pública recebe apenas o número, sem
+  nomes ou imagens, mantendo a regra acima.
+- `decks` conhece as salas pela interface `RoomUsage`, ligada em `serve.go`, sem
+  depender do pacote `rooms`.
+- Decisões de implementação, não pedidas pelo usuário: o deck importado na
+  preparação já fica selecionado, e o botão **Excluir deck** fica de fora do
+  pop-up.
+
+Limitação: a checagem do pronto e a gravação do comandante não ocorrem na mesma
+transação. Excluir um deck em uso por um jogador pronto continua como antes.

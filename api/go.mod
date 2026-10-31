@@ -3,6 +3,7 @@ module mtg4fun
 go 1.26.0
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/pressly/goose/v3 v3.28.0
 	golang.org/x/crypto v0.58.0

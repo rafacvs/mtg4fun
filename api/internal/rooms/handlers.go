@@ -28,6 +28,7 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/rooms/{id}/mulligan-mode", s.updateMulliganMode)
 	mux.HandleFunc("POST /api/rooms/{id}/start", s.startMatch)
 	mux.HandleFunc("POST /api/rooms/{id}/preparation/start", s.beginOrder)
+	mux.HandleFunc("GET /api/rooms/{id}/live", s.liveRoom)
 	mux.HandleFunc("GET /api/rooms/{id}/preparation", s.preparationState)
 	mux.HandleFunc("POST /api/rooms/{id}/preparation/actions", s.preparationAction)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
@@ -475,6 +476,7 @@ func (s *Service) startMatch(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		httpserver.InternalError(w, err)
 	default:
+		s.coinDuels.CancelRoom(id)
 		httpserver.WriteJSON(w, 201, map[string]Match{"match": match})
 	}
 }

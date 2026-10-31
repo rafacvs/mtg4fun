@@ -9,7 +9,7 @@ export type Room = {
   mulliganMode: 'standard' | 'aconchegaz';
   creatorId: number;
   status: string;
-  participants: { id: number; name: string; ready: boolean; deckId?: number }[];
+  participants: { id: number; name: string; ready: boolean; deckId?: number; deckRevision?: number }[];
   vacancies: number;
 };
 
