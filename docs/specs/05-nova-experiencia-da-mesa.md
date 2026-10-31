@@ -59,7 +59,7 @@ A carta passa a ser a interface. O estado aparece nela. Virar, comprar, mover, m
 25. Como jogador com uma carta selecionada, quero uma barra com Virar, Mão, Cemitério, Exílio, Topo, +1 marcador e Mais, para as ações frequentes ficarem a um clique.
 26. Como jogador com uma carta na mão, quero a barra trocar para jogar no campo, revelar e os destinos, para a mão não oferecer os comandos do campo.
 27. Como jogador, quero que o clique direito e Mais abram a mesma inspeção, com prévia dos marcadores, estado, destinos e transferência organizados no painel conforme o protótipo.
-28. Como jogador, quero arrastar e ver os destinos com nome, o destino sob o ponteiro na cor de ação, para não soltar a carta num alvo sem rótulo.
+28. Como jogador, quero arrastar a carta até as zonas da mesa, que já têm nome, com a zona sob o ponteiro na cor de ação, para não soltar a carta num alvo sem rótulo.
 29. Como jogador no computador, quero selecionar várias cartas por arraste no vazio ou com Shift, para movê-las juntas.
 30. Como jogador no toque, quero um modo Selecionar e tocar as cartas, para a seleção múltipla não depender de arraste de área.
 31. Como jogador, quero comprar com D, desvirar tudo com U e passar a vez com N, para manter os atalhos que já existem.

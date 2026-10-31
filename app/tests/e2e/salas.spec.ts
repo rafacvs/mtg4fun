@@ -176,7 +176,8 @@ test('entra na URL da mesa, move por todas as zonas e recupera após erro e reca
   await closeActions();
   await expect(hand.locator('.playing-card')).toHaveCount(1);
   expect((await ownHand())[0].id).toBe(returnedId);
-  await dragCard(hand.getByRole('button', { name: 'Island', exact: true }), page.getByRole('region', { name: 'Destinos do arraste', exact: true }).getByRole('button', { name: 'Fundo', exact: true }));
+  await hand.getByRole('button', { name: 'Island', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Imagem de Island', exact: true }).getByRole('button', { name: 'Fundo', exact: true }).click();
   await expect(hand.locator('.playing-card')).toHaveCount(0);
   await buy('1');
   await closeActions();

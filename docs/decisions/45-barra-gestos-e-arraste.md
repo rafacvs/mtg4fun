@@ -78,3 +78,15 @@ aberta pelo novo botão **Ações da seleção**, ao fim da coluna de zonas do
 próprio jogador e com a mesma apresentação dos demais botões. O botão mostra a
 quantidade selecionada, fica desabilitado sem seleção, alterna a barra quando
 acionado e a recolhe quando a seleção muda.
+
+## Remoção do menu de destinos do arraste
+
+Em 31/10/2026, o usuário pediu na conversa, na branch `work/dice-bounce`, a remoção
+do menu **Soltar em** que aparecia ao arrastar uma carta. Isso substitui os sete
+destinos nomeados descritos acima, inclusive no arraste a partir do cemitério aberto.
+
+O arraste agora solta nas próprias zonas da mesa, que continuam destacadas pela cor
+de ação. Como só o menu oferecia **Fundo** e **Campo** com o foco em outro jogador,
+esses movimentos deixam de existir por arraste: o fundo do grimório fica na inspeção
+da carta, e **Campo** exige voltar à própria mesa ou usar a barra da seleção. A
+coluna de zonas com a mesa oculta continua aparecendo durante o arraste.

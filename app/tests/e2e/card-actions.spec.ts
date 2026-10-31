@@ -109,7 +109,7 @@ test('Mais e clique direito mostram a inspeção e atalhos agem na seleção', a
   await expect(tokens.getByRole('heading', { name: 'Criar ficha', exact: true })).toBeVisible();
 });
 
-test('Shift mantém várias cartas e arraste mostra destinos com destaque antes de mover o conjunto', async ({ page }, info) => {
+test('Shift mantém várias cartas e arraste destaca a zona da mesa antes de mover o conjunto', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'Gestos de mouse/teclado; toque exercitado pelo cenário específico.');
   test.setTimeout(60_000);
   const { act, read } = await table(page.request, page);
@@ -121,26 +121,50 @@ test('Shift mantém várias cartas e arraste mostra destinos com destaque antes 
   const field = page.locator('[data-battlefield-canvas]');
   const first = field.locator(`[data-card-id="${ids[0]}"]`), second = field.locator(`[data-card-id="${ids[1]}"]`);
   await expect(second).toBeVisible();
-  await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
-  await first.click();
+  await first.click({ modifiers: ['Shift'] });
   await second.click({ modifiers: ['Shift'] });
   await expect(field.locator('[aria-pressed="true"]')).toHaveCount(2);
   const start = (await first.boundingBox())!;
   await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
   await page.mouse.down();
   await page.mouse.move(start.x + start.width / 2 + 15, start.y + start.height / 2 + 15, { steps: 3 });
-  const targets = page.getByRole('region', { name: 'Destinos do arraste', exact: true });
-  for (const name of ['Campo', 'Mão', 'Cemitério', 'Exílio', 'Comando', 'Topo', 'Fundo']) await expect(targets.getByRole('button', { name, exact: true })).toBeVisible();
-  const grave = targets.getByRole('button', { name: 'Cemitério', exact: true });
+  await expect(page.locator('.drag-ghost')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Destinos do arraste', exact: true })).toHaveCount(0);
+  const grave = page.locator('.own-table-surface').getByRole('region', { name: 'Cemitério', exact: true });
   const end = (await grave.boundingBox())!;
   await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 8 });
-  await expect(grave).toHaveAttribute('aria-current', 'true');
-  await expect.poll(() => grave.evaluate(node => getComputedStyle(node).borderColor)).toBe('rgb(217, 169, 78)');
+  await expect.poll(() => grave.evaluate(node => getComputedStyle(node).outlineColor)).toBe('rgb(217, 169, 78)');
+  await expect.poll(() => grave.evaluate(node => getComputedStyle(node).outlineStyle)).toBe('solid');
   await page.mouse.up();
   await expect(field.locator('[data-card-id]')).toHaveCount(0);
   await expect.poll(async () => (await read()).players[0].graveyardCount).toBe(2);
   current = await read();
   expect(current.players[0].graveyard?.map(card => card.id).sort()).toEqual([...ids].sort());
+});
+
+test('soltar no grimório põe no topo e a inspeção põe no fundo', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'Arraste com mouse.');
+  test.setTimeout(60_000);
+  const { act, read } = await table(page.request, page);
+  const hand = page.getByRole('region', { name: 'Mão', exact: true });
+  const cards = hand.getByRole('button', { name: 'Island', exact: true });
+  await expect(cards).toHaveCount(3);
+  const topId = await cards.first().getAttribute('data-card-id');
+  const start = (await cards.first().boundingBox())!;
+  const library = (await page.locator('.own-table-surface').getByRole('region', { name: 'Grimório', exact: true }).boundingBox())!;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(library.x + library.width / 2, library.y + library.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(cards).toHaveCount(2);
+  let drawn = await act({ kind: 'draw', count: 1 });
+  expect(drawn.players[0].hand!.map(card => card.id)).toContain(topId);
+  await expect(hand.locator(`[data-card-id="${topId}"]`)).toBeVisible();
+  await hand.locator(`[data-card-id="${topId}"]`).click();
+  await page.getByRole('dialog', { name: 'Imagem de Island', exact: true }).getByRole('button', { name: 'Fundo', exact: true }).click();
+  await expect.poll(async () => (await read()).players[0].hand!.map(card => card.id)).not.toContain(topId);
+  drawn = await act({ kind: 'draw', count: 1 });
+  expect(drawn.players[0].hand!.map(card => card.id)).not.toContain(topId);
 });
 
 test('modo Selecionar soma toques e segurar inspeciona sem trocar a seleção', async ({ browser, baseURL }, info) => {

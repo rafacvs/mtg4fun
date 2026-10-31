@@ -5,7 +5,6 @@ import { useMatch } from './useMatch';
 import { CardPreview } from './CardPreview';
 import { CardActionBar } from './CardActionBar';
 import { HandActionBar } from './HandActionBar';
-import { DragDestinations } from './DragDestinations';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { MatchLog } from './MatchLog';
 import { describeActionResult } from './matchLogPresentation';
@@ -400,7 +399,6 @@ export function MatchBoard({ roomId }: { roomId: number }) {
         <img src={cardImageURL(drag.card)} alt="" />
       </div>}
     </div>
-    {drag && <DragDestinations active={drag.zone} />}
     {!drag && !preview && selectionActionsOpen && (() => {
       const cards = selectionIds.map(id => findCard(match, id)).filter((card): card is Card => card !== null);
       if (cards[0]?.zone === 'hand') return <HandActionBar cards={cards} players={match.players} viewerId={match.viewerId} disabled={busy || unconfirmed} onPlay={async () => {
