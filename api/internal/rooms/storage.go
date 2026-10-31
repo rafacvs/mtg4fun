@@ -13,9 +13,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"mtg4fun/internal/auth"
 	"mtg4fun/internal/catalog"
+	"mtg4fun/internal/live"
+	"mtg4fun/internal/minigames"
 )
 
 const capacity = 6
@@ -338,6 +341,11 @@ type Service struct {
 	users   *auth.Service
 	roll    func() (int, error)
 	catalog *catalog.Catalog
+
+	live       *live.Hub
+	coinDuels  *minigames.CoinDuels
+	playRolls  playRollStore
+	publishing sync.Mutex
 }
 
 func New(db *sql.DB, users *auth.Service, cards ...*catalog.Catalog) *Service {
@@ -345,6 +353,7 @@ func New(db *sql.DB, users *auth.Service, cards ...*catalog.Catalog) *Service {
 	if len(cards) > 0 {
 		s.catalog = cards[0]
 	}
+	s.setupLive()
 	return s
 }
 func configuredRoller() func() (int, error) {

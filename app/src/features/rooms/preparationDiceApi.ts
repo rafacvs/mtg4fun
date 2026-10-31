@@ -15,6 +15,10 @@ export type PreparationState = {
   rolls: PreparationRoll[] | null;
   confirmed: Record<string, string> | null;
 };
+// Só o que chega ao vivo é animado; o estado de quem acabou de conectar, não.
+export type ReceivedPreparationState = PreparationState & {
+  source: "snapshot" | "live";
+};
 export const preparationDiceApi = {
   async read(id: number, signal: AbortSignal): Promise<PreparationState> {
     const res = await fetch(`/api/rooms/${id}/preparation`, { signal });

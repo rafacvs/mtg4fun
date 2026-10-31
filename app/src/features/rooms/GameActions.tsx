@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CoinOptions, type CoinSide } from './CoinOptions';
 import { CreateInstances } from './CreateInstances';
 import { FinishMatch } from './FinishMatch';
 import { TurnOrder } from './TurnOrder';
@@ -31,7 +32,7 @@ type Props = PanelFeedbackProps & {
 
 export function GameActions({ open, anchor, initialScreen, roomId, actorName, sides, busy, unconfirmed, onSides, onRoll, onCoin, onClose, onCreateToken, onCreateCustom, result, resultKind, error, onRetry, match, onFinish }: Props) {
   const [screen, setScreen] = useState<GameActionsScreen>(initialScreen);
-  const [coinSide, setCoinSide] = useState<'Cara' | 'Coroa'>('Cara');
+  const [coinSide, setCoinSide] = useState<CoinSide>('Cara');
   const canAct = !busy && !unconfirmed;
   const validSides = Number.isInteger(sides) && sides >= 2 && sides <= 100;
   const header = headers[screen];
@@ -69,9 +70,7 @@ export function GameActions({ open, anchor, initialScreen, roomId, actorName, si
         {result && resultKind === 'roll' && <PanelResult>{result}</PanelResult>}
         <GameActionFooter onCancel={() => setScreen('menu')} disabled={!canAct || !validSides} onConfirm={onRoll} label={validSides ? `Rolar d${sides}` : 'Rolar dado'} />
       </div>}
-      {screen === 'coin' && <div className="coin-form"><h3>Escolha um lado</h3><div className="coin-options" role="group" aria-label="Escolha um lado">
-        {(['Cara', 'Coroa'] as const).map(side => <button type="button" key={side} className="coin-option" aria-pressed={coinSide === side} onClick={() => setCoinSide(side)}><span className="coin-disc"><TableIcon name={side === 'Cara' ? 'coin-sun' : 'crown'} /></span><strong>{side}</strong></button>)}
-      </div><p>Você escolheu {coinSide}.</p>{result && resultKind === 'coin' && <PanelResult>{result}</PanelResult>}<GameActionFooter onCancel={() => setScreen('menu')} disabled={!canAct} onConfirm={onCoin} label="Jogar moeda" /></div>}
+      {screen === 'coin' && <div className="coin-form"><h3>Escolha um lado</h3><CoinOptions value={coinSide} onChange={setCoinSide} /><p>Você escolheu {coinSide}.</p>{result && resultKind === 'coin' && <PanelResult>{result}</PanelResult>}<GameActionFooter onCancel={() => setScreen('menu')} disabled={!canAct} onConfirm={onCoin} label="Jogar moeda" /></div>}
       {screen === 'token' && <CreateInstances roomId={roomId} busy={!canAct} actorName={actorName} onCancel={() => setScreen('menu')} onCreateToken={onCreateToken} onCreateCustom={onCreateCustom} />}
     </TablePanel>
   );

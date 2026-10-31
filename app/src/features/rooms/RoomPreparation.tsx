@@ -6,6 +6,9 @@ import type { Room } from './roomsApi';
 import type { useRooms } from './useRooms';
 import { PreparationRules } from './PreparationRules';
 import { MobilePreparation } from './MobilePreparation';
+import { CoinDuelLayer } from '../minigames/CoinDuelLayer';
+import { EmojiBar } from '../minigames/EmojiBar';
+import { useCoinDuels } from '../minigames/useCoinDuels';
 import './room-preparation.css';
 import './mobile-preparation.css';
 
@@ -38,8 +41,10 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
   const selectedDeck = decks.decks.find(deck => String(deck.id) === deckId);
   const artwork = selectedDeck?.commander || selectedDeck?.cards.find(card => card.available)?.name;
   const readyCount = room.participants.length - waiting.length;
-  if (mobile) return <MobilePreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} sharedDecks={sharedDecks} />;
-  return <section className="room-preparation" aria-label="Preparação da sala">
+  const duels = useCoinDuels(userId);
+  const minigames = <><CoinDuelLayer duels={duels} userId={userId} /><EmojiBar /></>;
+  if (mobile) return <><MobilePreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} sharedDecks={sharedDecks} onChallenge={duels.prepare} interrupted={!!duels.panelOpen} />{minigames}</>;
+  return <><section className="room-preparation" aria-label="Preparação da sala">
     <div className="preparation-content">
       <section className="preparation-table" aria-label="Jogadores à mesa">
         <header className="preparation-heading">
@@ -57,6 +62,7 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
             return <li key={player.id} className={`preparation-seat seat-color-${index % 6} seat-position-${seat} ${own ? 'is-own' : ''}`}>
               <div className="preparation-card-back" aria-hidden="true">{image ? <img src={deckApi.imageURL(image)} alt="" onError={event => { event.currentTarget.src = '/library-back.png'; }} /> : <img src="/library-back.png" alt="" />}<span className="preparation-avatar">{player.name.slice(0, 1).toUpperCase()}</span></div>
               <div className="preparation-seat-copy"><strong>{player.name}{own && <small className="preparation-you"> · você</small>}</strong><small>{own ? selectedDeck?.name || 'Sem deck' : shared?.name || (player.deckId ? 'Deck selecionado' : 'Aguardando deck')}{own && selectedDeck ? ` · ${cardCount(selectedDeck.cards)} cartas` : ''}</small><span className={`preparation-ready ${player.ready ? 'is-ready' : ''}`}>{player.ready ? '✓ Pronto' : '✦ Preparando'}</span></div>
+              {!own && <button type="button" className="coin-duel-seat" aria-label={`Desafiar ${player.name} para um X1`} title="Desafiar para um X1 de cara ou coroa" onClick={() => duels.prepare(player)} />}
             </li>;
           })}{[0, 5, 1, 4, 2].slice(room.participants.length - 1, room.seats - 1).map(seat => <li className={`preparation-empty-seat seat-position-${seat}`} key={`empty-${seat}`} aria-label="Lugar livre"><span aria-hidden="true">＋</span> Lugar livre</li>)}</ul>
         </div>
@@ -93,5 +99,5 @@ export function RoomPreparation({ room, participant, userId, deckId, setDeckId, 
       </aside>
       </div>
     </div>
-  </section>;
+  </section>{minigames}</>;
 }

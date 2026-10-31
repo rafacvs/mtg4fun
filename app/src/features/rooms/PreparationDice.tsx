@@ -160,11 +160,15 @@ export function PreparationDice({
     return () => observer.disconnect();
   }, [deciding, finished, targets]);
   useEffect(() => {
-    if (!canvas.current) return;
     for (const roll of rolls) {
       if (seen.current.has(roll.id)) continue;
       seen.current.add(roll.id);
-      if (!initialized.current && Date.now() - roll.at > 8000) {
+      // Em aba oculta o motor fica parado: lançar aqui faria tudo sair junto na volta.
+      if (
+        state.source !== "live" ||
+        !canvas.current ||
+        document.visibilityState !== "visible"
+      ) {
         setLanded((old) => new Set(old).add(roll.id));
         continue;
       }
@@ -184,7 +188,7 @@ export function PreparationDice({
         onLand: () => setLanded((old) => new Set(old).add(roll.id)),
       });
     }
-    if (state.rolls !== null && rolls.length) initialized.current = true;
+    if (rolls.length) initialized.current = true;
   }, [state, room.participants, userId]);
   useEffect(() => {
     if (!finished) return;

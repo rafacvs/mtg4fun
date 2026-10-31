@@ -6,10 +6,10 @@ import type { Room } from './roomsApi';
 import type { useRooms } from './useRooms';
 import { PreparationRules } from './PreparationRules';
 
-type Props = { room: Room; participant: Room['participants'][number]; userId: number; deckId: string; setDeckId: Dispatch<SetStateAction<string>>; decks: ReturnType<typeof useDecks>; rooms: ReturnType<typeof useRooms>; sharedDecks: { playerId: number; name: string; image?: string }[] };
+type Props = { room: Room; participant: Room['participants'][number]; userId: number; deckId: string; setDeckId: Dispatch<SetStateAction<string>>; decks: ReturnType<typeof useDecks>; rooms: ReturnType<typeof useRooms>; sharedDecks: { playerId: number; name: string; image?: string }[]; onChallenge: (player: { id: number; name: string }) => void; interrupted: boolean };
 
 type Panel = 'deck' | 'rules' | null;
-export function MobilePreparation({ room, participant, userId, deckId, setDeckId, decks, rooms, sharedDecks }: Props) {
+export function MobilePreparation({ room, participant, userId, deckId, setDeckId, decks, rooms, sharedDecks, onChallenge, interrupted }: Props) {
   const [panel, setPanel] = useState<Panel>(null);
   const [settingsPending, setSettingsPending] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -27,6 +27,8 @@ export function MobilePreparation({ room, participant, userId, deckId, setDeckId
     if (panel && !node.open) node.showModal();
     if (!panel && node.open) { node.close(); trigger.current?.focus(); }
   }, [panel]);
+  // Um dialog modal ficaria por cima do X1 recebido.
+  useEffect(() => { if (interrupted) setPanel(null); }, [interrupted]);
   return <section className="mobile-preparation" aria-label="Preparação da sala">
     <header className="mobile-preparation-heading"><div><p className="eyebrow">{waiting.length ? 'A MESA ESTÁ SE FORMANDO' : 'TODOS PRONTOS'}</p><h2>{room.title}</h2></div><button type="button" className="secondary mobile-rules-open" onClick={event => showPanel('rules', event.currentTarget)}>☷ &nbsp; Regras</button></header>
     <div className="mobile-room-facts"><span>{room.format || 'Mesa'}</span><span>♥ {room.life} de vida</span><span>Mulligan em breve</span><span>{room.participants.length}/{room.seats}</span></div>
@@ -35,7 +37,7 @@ export function MobilePreparation({ room, participant, userId, deckId, setDeckId
       {room.participants.map(player => {
         const index = room.participants.findIndex(item => item.id === player.id);
         const position = player.id === userId ? 3 : [5, 1, 0, 2, 4][room.participants.filter(item => item.id !== userId).findIndex(item => item.id === player.id)];
-        return <div key={player.id} className={`mobile-table-seat mobile-table-seat-${position} seat-color-${index % 6}`}><span className="mobile-seat-emblem">{player.name.slice(0, 1).toUpperCase()}{player.ready && <b>✓</b>}</span><small>{player.id === userId ? 'você' : player.name}</small></div>;
+        return <div key={player.id} className={`mobile-table-seat mobile-table-seat-${position} seat-color-${index % 6}`}><span className="mobile-seat-emblem">{player.name.slice(0, 1).toUpperCase()}{player.ready && <b>✓</b>}</span><small>{player.id === userId ? 'você' : player.name}</small>{player.id !== userId && <button type="button" className="coin-duel-seat" aria-label={`Desafiar ${player.name} para um X1`} onClick={() => onChallenge(player)} />}</div>;
       })}
       {[5, 1, 0, 2, 4].slice(room.participants.length - 1, room.seats - 1).map(position => <div key={position} className={`mobile-table-seat mobile-table-seat-${position} mobile-free-seat`} aria-hidden="true"><span>＋</span><small>livre</small></div>)}
     </section>

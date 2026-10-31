@@ -1,42 +1,29 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useLiveChannel, useLiveStatus } from "../live/LiveRoom";
 import {
   preparationDiceApi,
   type PreparationState,
+  type ReceivedPreparationState,
 } from "./preparationDiceApi";
 
 export function usePreparationDice(id: number, stopped: boolean) {
-  const [state, setState] = useState<PreparationState>({
+  const [state, setState] = useState<ReceivedPreparationState>({
     phase: "preparing",
     rolls: [],
     confirmed: {},
+    source: "snapshot",
   });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [syncError, setSyncError] = useState("");
-  useEffect(() => {
-    if (stopped) return;
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
-    const update = async () => {
-      try {
-        const data = await preparationDiceApi.read(id, controller.signal);
-        if (!controller.signal.aborted) {
-          setState(data);
-          setSyncError("");
-        }
-      } catch (e) {
-        if (!controller.signal.aborted)
-          setSyncError(e instanceof Error ? e.message : "Falha de conexão.");
-      } finally {
-        if (!controller.signal.aborted) timer = setTimeout(update, 700);
-      }
-    };
-    void update();
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [id, stopped]);
+  const status = useLiveStatus();
+  useLiveChannel("dice", (message) => {
+    if (stopped || (message.type !== "snapshot" && message.type !== "state"))
+      return;
+    setState({
+      ...(message.data as PreparationState),
+      source: message.type === "state" ? "live" : "snapshot",
+    });
+  });
   async function send(
     kind: "roll" | "confirm" | "unconfirm",
     rollId?: string,
@@ -46,13 +33,21 @@ export function usePreparationDice(id: number, stopped: boolean) {
     setError("");
     try {
       await preparationDiceApi.send(id, kind, rollId, power);
-      // O botão troca de ação junto com a resposta, sem esperar a próxima consulta.
-      setState(await preparationDiceApi.read(id, AbortSignal.timeout(15000)));
+      // O botão troca de ação junto com a resposta, mesmo com a sala reconectando.
+      const current = await preparationDiceApi.read(
+        id,
+        AbortSignal.timeout(15000),
+      );
+      setState({ ...current, source: "live" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível concluir.");
     } finally {
       setPending(false);
     }
   }
+  const syncError =
+    !stopped && status === "reconnecting"
+      ? "Conexão com a sala interrompida. Reconectando…"
+      : "";
   return { state, pending, error: error || syncError, send };
 }

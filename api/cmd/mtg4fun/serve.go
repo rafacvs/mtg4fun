@@ -41,7 +41,8 @@ func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, imageCache, 
 	api.Handle("/api/decks/", deckHandler)
 	imageHandler := images.New(cards, imageCache).Handler(users)
 	api.Handle("/api/cards/image", imageHandler)
-	roomHandler := rooms.New(db, users, cards).Handler()
+	roomService := rooms.New(db, users, cards)
+	roomHandler := roomService.Handler()
 	api.Handle("/api/rooms", roomHandler)
 	api.Handle("/api/rooms/", roomHandler)
 	api.Handle("/api/", users.Handler(secure == "true"))
@@ -52,6 +53,8 @@ func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, imageCache, 
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
+	// Shutdown does not wait for or close upgraded connections.
+	server.RegisterOnShutdown(roomService.CloseLive)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go func() {
