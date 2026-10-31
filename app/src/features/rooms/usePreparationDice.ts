@@ -40,12 +40,12 @@ export function usePreparationDice(id: number, stopped: boolean) {
   async function send(
     kind: "roll" | "confirm",
     rollId?: string,
-    fallOff = false,
+    power = 0,
   ) {
     setPending(true);
     setError("");
     try {
-      await preparationDiceApi.send(id, kind, rollId, fallOff);
+      await preparationDiceApi.send(id, kind, rollId, power);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível concluir.");
     } finally {

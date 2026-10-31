@@ -13,8 +13,14 @@ import (
 	"mtg4fun/internal/httpserver"
 )
 
+const (
+	maxThrowPower     = 10
+	firstFallOffPower = 9
+)
+
 type PreparationRoll struct {
 	FallOff  bool   `json:"fallOff,omitempty"`
+	Power    int    `json:"power,omitempty"`
 	ID       string `json:"id"`
 	PlayerID int64  `json:"playerId"`
 	Name     string `json:"name"`
@@ -71,7 +77,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 		return
 	}
 	var input struct {
-		FallOff  bool   `json:"fallOff"`
+		Power    int    `json:"power"`
 		IntentID string `json:"intentId"`
 		Kind     string `json:"kind"`
 		RollID   string `json:"rollId"`
@@ -83,7 +89,7 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 	} else {
 		dec := json.NewDecoder(http.MaxBytesReader(w, req.Body, 4096))
 		dec.DisallowUnknownFields()
-		if dec.Decode(&input) != nil || dec.Decode(&struct{}{}) != io.EOF || !intentIDPattern.MatchString(input.IntentID) || (input.Kind != "roll" && input.Kind != "confirm") {
+		if dec.Decode(&input) != nil || dec.Decode(&struct{}{}) != io.EOF || !intentIDPattern.MatchString(input.IntentID) || (input.Kind != "roll" && input.Kind != "confirm") || input.Power < 0 || input.Power > maxThrowPower {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return
 		}
@@ -165,7 +171,12 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 				httpserver.InternalError(w, e)
 				return
 			}
-			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now, FallOff: input.FallOff})
+			// A força só existe na brincadeira: a rolagem que vale é sempre normal.
+			power := 0
+			if room.Status == "preparing" {
+				power = input.Power
+			}
+			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now, Power: power, FallOff: power >= firstFallOffPower})
 		} else {
 			if room.Status != "determining_order" {
 				fail("A ordem ainda não está sendo definida.")
