@@ -42,3 +42,35 @@ test('emoji cai para todos na mesa, antes e depois de confirmar as mãos', async
     await page.screenshot({ path: info.outputPath('mesa.png') });
   } finally { await guestContext.close(); }
 });
+
+test('quem assiste recebe e manda emojis para os jogadores', async ({ page, browser, baseURL }, info) => {
+  const options = { baseURL, viewport: page.viewportSize() ?? undefined, hasTouch: info.project.use.hasTouch, isMobile: info.project.use.isMobile };
+  const contexts = await Promise.all([browser.newContext(options), browser.newContext(options)]);
+  const [player, other] = await Promise.all(contexts.map(context => context.newPage()));
+  try {
+    for (const [client, login] of [[player, 'amigo'], [other, 'segundo'], [page, 'amigo3']] as const) expect((await client.request.post('/api/session', { data: { login, password } })).ok()).toBe(true);
+    const { room } = await (await player.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
+    expect((await other.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
+    for (const client of [player, other]) {
+      const created = await (await client.request.post('/api/decks', { multipart: { file: deck } })).json();
+      expect((await client.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: created.deck.id } })).ok()).toBe(true);
+    }
+    expect((await player.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(room.id, player.request, other.request);
+    await player.goto(`/#/salas/${room.id}`);
+    await page.goto(`/#/salas/${room.id}`);
+    await expect(page.getByRole('tablist', { name: 'Escolher jogador' })).toBeVisible();
+
+    const send = async (from: typeof page, emoji: string, name: string, to: typeof page) => {
+      await from.getByRole('button', { name: 'Reagir com emoji' }).click();
+      const tray = (await from.getByRole('group', { name: 'Escolha um emoji' }).boundingBox())!;
+      expect(tray.x).toBeGreaterThanOrEqual(0);
+      expect(tray.x + tray.width).toBeLessThanOrEqual(from.viewportSize()!.width);
+      await from.getByRole('button', { name: `Enviar ${emoji}` }).click();
+      await expect(to.locator('.emoji-drop', { hasText: emoji }).locator('small')).toHaveText(name);
+    };
+    await send(page, '🐐', 'Amigo 3', player);
+    await page.screenshot({ path: info.outputPath('espectador.png') });
+    await send(player, '🔥', 'Amigo da mesa', page);
+  } finally { await Promise.all(contexts.map(context => context.close())); }
+});

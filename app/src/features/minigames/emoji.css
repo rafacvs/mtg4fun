@@ -33,5 +33,12 @@
 .match-emoji { position: absolute; z-index: 18; right: 8px; bottom: 145px; }
 .match-emoji .emoji-toggle.emoji-toggle { width: 44px; }
 .match-emoji .emoji-toggle .table-icon { display: none; }
+/* Quem assiste tem o botão na própria barra; a bandeja abre para cima, sobre o campo. */
+.spectator-controls > div { display: flex; gap: 6px; }
+.spectator-controls .emoji-toggle.emoji-toggle { width: 38px; height: 38px; min-height: 38px; }
+.spectator-controls .emoji-toggle .table-icon { display: none; }
+.match-board .spectator-controls .emoji-tray { top: auto; bottom: calc(100% + 8px); max-width: calc(100vw - 16px); overflow-x: auto; transform: none; animation: none; }
+.desktop-table .spectator-controls .emoji-tray { right: auto; left: 0; }
+.mobile-table .spectator-controls .emoji-tray { right: 0; }
 .match-emoji .emoji-tray { max-width: calc(100vw - 68px); overflow-x: auto; }
 @media (orientation: portrait) { .match-emoji { bottom: 163px; } }

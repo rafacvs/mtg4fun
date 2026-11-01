@@ -20,10 +20,10 @@
 /* In the phone the bar joins the normal flow: the field gives up the height it needs. */
 @media (max-width: 1000px) {
   .mobile-table.spectator-board .table-stage { padding-bottom: calc(var(--dock-height, 200px) + 8px); }
-  .mobile-table.spectator-board .spectator-dock { left: 5px; right: 5px; bottom: max(4px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; width: auto; height: auto; min-height: 0; max-height: none; padding: 6px 8px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); pointer-events: auto; }
+  .mobile-table.spectator-board .spectator-dock { left: 5px; right: 5px; bottom: max(4px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; width: auto; height: auto; min-height: 0; max-height: none; padding: 6px 8px; overflow: visible; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); pointer-events: auto; }
   .mobile-table.spectator-board .spectator-controls { justify-content: space-between; }
   .mobile-table.spectator-board .spectator-controls > div { display: flex; gap: 6px; }
-  .mobile-table.spectator-board .spectator-dock .dock-content { flex: 0 0 auto; height: auto; }
+  .mobile-table.spectator-board .spectator-dock .dock-content { flex: 0 0 auto; height: auto; overflow: hidden; }
   .mobile-table.spectator-board .spectator-dock .zone-hand { height: auto; align-items: stretch; }
   .mobile-table.spectator-board .spectator-dock .zone-cards { justify-content: flex-start; width: 100%; max-width: 100%; height: auto; padding: 2px 4px; }
   .mobile-table.spectator-board .spectator-dock .zone-placeholder { padding: 8px 2px; }

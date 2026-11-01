@@ -22,7 +22,7 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
   if (rooms.loading) return <p role="status">{rooms.connection}</p>;
   if (!room) return <MissingRoom roomId={roomId} watched={watched.current} />;
   if (!participant) {
-    if (room.status === 'started') { watched.current = true; return <SpectatorBoard roomId={roomId} />; }
+    if (room.status === 'started') { watched.current = true; return <LiveRoomProvider key={roomId} roomId={roomId}><SpectatorBoard roomId={roomId} /></LiveRoomProvider>; }
     if (room.status === 'determining_order') return <p role="status">Os jogadores estão definindo a ordem dos turnos. A mesa abre em seguida.</p>;
     return <section aria-label="Entrada na sala">
       <h2>{room.title}</h2>

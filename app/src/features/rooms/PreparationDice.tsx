@@ -56,9 +56,10 @@ export function PreparationDice({
 }) {
   const [landed, setLanded] = useState<Set<string>>(new Set());
   const [opened, setOpened] = useState(false);
+  const started = room.status === "started";
   const { state, pending, error, send } = usePreparationDice(
     room.id,
-    room.status === "started" && opened,
+    started && opened,
   );
   const [targets, setTargets] = useState<{
     arena: Element;
@@ -73,7 +74,9 @@ export function PreparationDice({
   const seen = useRef(new Set<string>());
   const logList = useRef<HTMLOListElement>(null);
   const followLog = useRef(true);
-  const initialized = useRef(false);
+  const sawOrder = useRef(false);
+  if (room.status === "determining_order") sawOrder.current = true;
+  const shownConfirmed = useRef<Record<string, string>>({});
   const [geometry, setGeometry] = useState({
     cx: 400,
     cy: 260,
@@ -88,25 +91,38 @@ export function PreparationDice({
     return () => clearInterval(timer);
   }, []);
   const rolls = state.rolls || [];
-  const confirmed = state.confirmed || {};
-  const deciding = room.status === "determining_order";
-  const finished = room.status === "started";
-  const own = rolls
-    .filter((r) => r.playerId === userId && r.phase === "determining_order")
-    .at(-1);
+  const countingRolls = rolls.filter((r) => r.phase === "determining_order");
+  // Tudo que depende do resultado espera o dado parar: a última rolagem pode
+  // desfazer uma confirmação ou até encerrar a etapa ainda no ar.
+  const settled = countingRolls.every((r) => landed.has(r.id));
+  if (settled) shownConfirmed.current = state.confirmed || {};
+  const confirmed = shownConfirmed.current;
+  const finished =
+    started &&
+    settled &&
+    (!sawOrder.current ||
+      Object.keys(confirmed).length === room.participants.length);
+  const deciding = room.status === "determining_order" || (started && !finished);
+  const own = countingRolls.filter((r) => r.playerId === userId).at(-1);
   const rolling = !!own && !landed.has(own.id);
   const order = room.participants
     .map((p) => ({
       ...p,
-      roll: rolls
-        .filter((r) => r.playerId === p.id && r.phase === "determining_order")
+      roll: countingRolls
+        .filter((r) => r.playerId === p.id && landed.has(r.id))
         .at(-1),
+      flying: countingRolls.some((r) => r.playerId === p.id && !landed.has(r.id)),
     }))
     .sort((a, b) => (b.roll?.value || 0) - (a.roll?.value || 0));
-  const landedOrder = order.filter((p) => p.roll && landed.has(p.roll.id));
+  const landedOrder = order.filter((p) => p.roll);
   const leaders = landedOrder.filter(
     (p) => p.roll?.value === landedOrder[0]?.roll?.value,
   );
+  const isTied = (id: number) => {
+    const value = order.find((p) => p.id === id)?.roll?.value;
+    return !!value && order.some((p) => p.id !== id && p.roll?.value === value);
+  };
+  const ownTied = isTied(userId);
   const ownPosition = order.findIndex((p) => p.id === userId) + 1;
   const allConfirmed =
     Object.keys(confirmed).length === room.participants.length;
@@ -196,11 +212,10 @@ export function PreparationDice({
         onLand: () => setLanded((old) => new Set(old).add(roll.id)),
       });
     }
-    if (rolls.length) initialized.current = true;
   }, [state, room.participants, userId]);
   useEffect(() => {
     if (!finished) return;
-    if (!initialized.current || !rolls.length) {
+    if (!sawOrder.current) {
       setOpened(true);
       return;
     }
@@ -366,7 +381,7 @@ export function PreparationDice({
       {error && <p role="alert">{error}</p>}
     </section>
   );
-  if (finished && opened) return match;
+  if (started && opened) return match;
   if (!deciding && !finished)
     return (
       <>
@@ -458,9 +473,13 @@ export function PreparationDice({
                         ? finished
                           ? `${order.findIndex((v) => v.id === p.id) + 1}º a jogar`
                           : "✓ Confirmou"
-                        : roll
-                          ? "Pode rolar de novo"
-                          : "Ainda não rolou"}
+                        : order.find((v) => v.id === p.id)?.flying
+                          ? "Rolando…"
+                          : isTied(p.id)
+                            ? "Empate · role de novo"
+                            : roll
+                              ? "Pode rolar de novo"
+                              : "Ainda não rolou"}
                     </span>
                   </div>
                   {roll && landed.has(roll.id) && (
@@ -490,7 +509,7 @@ export function PreparationDice({
               ·{" "}
               {finished
                 ? "Todos confirmaram. Abrindo a mesa…"
-                : "Cada jogador rola e confirma seu resultado."}
+                : "Sem empate, a rolagem já fica confirmada."}
             </p>
           </footer>
         </section>
@@ -610,14 +629,23 @@ export function PreparationDice({
               </button>
               <button
                 className="secondary"
-                disabled={pending || rolling || !own}
+                disabled={
+                  pending ||
+                  !settled ||
+                  !own ||
+                  (ownTied && !confirmed[userId])
+                }
                 onClick={() =>
                   void action(confirmed[userId] ? "unconfirm" : "confirm")
                 }
               >
-                {confirmed[userId]
-                  ? "Desconfirmar"
-                  : `Confirmar ${own?.value || ""}`}
+                {rolling
+                  ? "Rolando…"
+                  : confirmed[userId]
+                    ? "Desconfirmar"
+                    : ownTied
+                      ? "Empate · role de novo"
+                      : `Confirmar ${own?.value || ""}`}
               </button>
             </>
           )}

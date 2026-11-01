@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { EmojiBar } from '../minigames/EmojiBar';
 import { CardPreview } from './CardPreview';
 import { CardHoverZoom } from './HoverCardPreview';
 import { findCard } from './matchCards';
@@ -27,7 +28,7 @@ const compactQuery = '(max-width: 1000px)';
 const ignoreDrag = () => {};
 const noCounters = () => Promise.resolve(false);
 
-// Assistir só lê a partida: nenhum gesto daqui chega a uma ação do jogo.
+// Assistir só lê a partida e reage com emojis: nenhum gesto daqui chega a uma ação do jogo.
 export function SpectatorBoard({ roomId }: { roomId: number }) {
   const { match, error } = useMatch(roomId);
   const [compact, setCompact] = useState(() => window.matchMedia(compactQuery).matches);
@@ -88,6 +89,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
               <div>
               {compact && <button type="button" className="secondary spectator-log-toggle" aria-pressed={overview} aria-label="Visão geral dos campos" title="Visão geral dos campos" onClick={() => setOverview(open => !open)}><TableIcon name="grid" /></button>}
               <button type="button" className="secondary spectator-log-toggle" aria-expanded={logOpen} aria-controls="match-rail" aria-label={logOpen ? 'Fechar crônica' : 'Abrir crônica'} title={logOpen ? 'Fechar crônica' : 'Abrir crônica'} onClick={() => setLogOpen(open => !open)}><TableIcon name="log" /></button>
+              <EmojiBar />
               </div>
             </div>
             <div className="spectator-seats" role="tablist" aria-label="Escolher jogador">

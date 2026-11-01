@@ -121,6 +121,8 @@ Escolhas de implementação, não pedidas literalmente:
 - No desktop o botão fica no fim da barra da mão, e a bandeja abre para cima, para não cobrir as ações.
   No celular o botão fica logo acima de Comandos, sem a seta, e a bandeja abre para a esquerda.
 
+Depois disso a conexão também foi aberta a [quem assiste](54-modo-espectador.md), durante a partida.
+
 Verificado com API e MySQL reais: `TestLive` passou, e `emojis-na-mesa.spec.ts` passou nas três telas,
 antes e depois de confirmar as mãos. Capturas em 1440×895, 860×600 e no Pixel 7 nas duas orientações
 foram inspecionadas. `desktop-table.spec.ts` e `mobile-table.spec.ts` têm as mesmas 4 falhas, nas mesmas

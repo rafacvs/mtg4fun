@@ -6,7 +6,7 @@ const deckFile = {
   buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Island"/></zone></cockatrice_deck>'),
 };
 
-test('quem não joga assiste à mesa, consulta as mãos e não tem nenhuma ação', async ({ page, browser, baseURL }, info) => {
+test('quem não joga assiste à mesa, consulta as mãos e não tem nenhuma ação no jogo', async ({ page, browser, baseURL }, info) => {
   test.setTimeout(60_000);
   const context = () => browser.newContext({ baseURL, viewport: info.project.use.viewport, isMobile: info.project.use.isMobile, hasTouch: info.project.use.hasTouch });
   const firstContext = await context();

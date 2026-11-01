@@ -532,6 +532,13 @@ func TestLiveGamesStopWhenTheMatchStartsAndConnectionOutlivesIdleTimeouts(t *tes
 	if kind, text, _ := bia.reply("late"); kind != "error" || !strings.Contains(text, "durante a partida") {
 		t.Fatalf("emoji ao definir a ordem: %s %s", kind, text)
 	}
+	// Quem não joga só entra na conexão depois que a partida começa.
+	if conn, response, err := dialLive(e, room.path, room.outsider, e.url); err == nil {
+		conn.CloseNow()
+		t.Fatal("quem não joga conectou antes de a partida começar")
+	} else if response == nil || response.StatusCode != 404 {
+		t.Fatalf("conexão fora da sala: %+v", response)
+	}
 }
 
 func TestLiveEmojiFallsDuringTheMatchUntilItEnds(t *testing.T) {
@@ -558,10 +565,25 @@ func TestLiveEmojiFallsDuringTheMatchUntilItEnds(t *testing.T) {
 	}
 	time.Sleep(300 * time.Millisecond)
 	react(ana, "playing", "💀")
+	// Quem assiste recebe e manda emojis, mas segue fora dos outros jogos.
+	watcher := connectLive(t, e, path, cookies[2])
+	react(watcher, "watching", "🐐")
+	watcher.next("emoji", "fall")
+	time.Sleep(400 * time.Millisecond)
+	react(ana, "to-watcher", "👀")
+	watcher.next("emoji", "fall")
+	watcher.send("coin-duel", "challenge", "duel", fmt.Sprintf(`{"opponentId":%d}`, sessionUserID(t, e, cookies[0])))
+	if kind, _, _ := watcher.reply("duel"); kind != "error" {
+		t.Fatalf("quem assiste desafiou para um X1: %s", kind)
+	}
 	requireStatus(t, e.request("POST", path+"/match/actions", `{"intentId":"000000ff-4444-4000-8000-000000000000","kind":"finish"}`, cookies[0], nil), 200)
 	bia.send("emoji", "send", "late", `{"emoji":"🔥"}`)
 	if kind, text, _ := bia.reply("late"); kind != "error" || !strings.Contains(text, "durante a partida") {
 		t.Fatalf("emoji depois de encerrar: %s %s", kind, text)
+	}
+	watcher.send("emoji", "send", "late-watcher", `{"emoji":"🔥"}`)
+	if kind, _, _ := watcher.reply("late-watcher"); kind != "error" {
+		t.Fatalf("quem assiste reagiu depois de encerrar: %s", kind)
 	}
 }
 
