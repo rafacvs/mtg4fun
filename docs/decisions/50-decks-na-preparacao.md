@@ -58,7 +58,8 @@ Em 29/10/2026, depois de a [decisão de mulligan](49-mulligan-e-selecao-da-mao.m
 ser integrada à `master`, o usuário pediu que a configuração da sala nesta
 preparação refletisse o modo de mulligan usado ao iniciar a partida. O card
 **Mulligan** das regras deixa de ser um recurso futuro desabilitado e passa a
-oferecer **Padrão** e **Aconchegaz**, com o padrão selecionado inicialmente.
+oferecer **Padrão** e **Aconchegaz**, com o padrão selecionado inicialmente
+(desde 01/11/2026, o Aconchegaz; veja a [decisão de mulligan](49-mulligan-e-selecao-da-mao.md)).
 Somente o criador escolhe; os demais veem a opção desabilitada e sincronizada.
 
 O card usa o endpoint existente `PUT /api/rooms/{id}/mulligan-mode`, sem

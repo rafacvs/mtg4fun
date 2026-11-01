@@ -460,7 +460,7 @@ func (s *Service) create(ctx context.Context, u auth.User, draft roomDraft) (Roo
 		}
 		creator.DeckID = draft.DeckID
 	}
-	r := roomState{ID: id, Title: draft.Name, Format: draft.Format, Seats: draft.Seats, Life: draft.Life, MulliganMode: "standard", CreatorID: u.ID, Status: "preparing", Participants: []participantState{creator}, Vacancies: draft.Seats - 1}
+	r := roomState{ID: id, Title: draft.Name, Format: draft.Format, Seats: draft.Seats, Life: draft.Life, MulliganMode: "aconchegaz", CreatorID: u.ID, Status: "preparing", Participants: []participantState{creator}, Vacancies: draft.Seats - 1}
 	if e = save(ctx, tx, r, u.ID, "created"); e != nil {
 		return Room{}, e
 	}
