@@ -18,6 +18,7 @@ import { EmojiBar } from '../minigames/EmojiBar';
 import { TableFields } from './TableFields';
 import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
+import { findCard } from './matchCards';
 import { LibraryConsultation } from './LibraryConsultation';
 import { dropCell, firstFreeCell, layoutFromCanvas } from './battlefieldLayout';
 import { OwnHand } from './OwnHand';
@@ -508,15 +509,6 @@ function mulliganPending(match: Match) {
 
 function ownHandKept(match: Match) {
   return Boolean(match.players.find(player => player.userId === match.viewerId)?.mulliganKept);
-}
-
-function findCard(match: Match, id: string) {
-  for (const player of match.players) {
-    for (const card of [...player.hand ?? [], ...player.battlefield ?? [], ...player.graveyard ?? [], ...player.exile ?? [], ...player.command ?? [], ...player.consulted ?? [], ...player.revealed ?? [], ...player.exposedCards ?? []]) {
-      if (card.id === id) return card;
-    }
-  }
-  return null;
 }
 
 function selectionGroup(card: Card | null) {

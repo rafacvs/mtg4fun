@@ -460,7 +460,7 @@ func (s *Service) create(ctx context.Context, u auth.User, draft roomDraft) (Roo
 		}
 		creator.DeckID = draft.DeckID
 	}
-	r := roomState{ID: id, Title: draft.Name, Format: draft.Format, Seats: draft.Seats, Life: draft.Life, MulliganMode: "standard", CreatorID: u.ID, Status: "preparing", Participants: []participantState{creator}, Vacancies: draft.Seats - 1}
+	r := roomState{ID: id, Title: draft.Name, Format: draft.Format, Seats: draft.Seats, Life: draft.Life, MulliganMode: "aconchegaz", CreatorID: u.ID, Status: "preparing", Participants: []participantState{creator}, Vacancies: draft.Seats - 1}
 	if e = save(ctx, tx, r, u.ID, "created"); e != nil {
 		return Room{}, e
 	}
@@ -825,7 +825,7 @@ func (s *Service) initializeMatch(ctx context.Context, tx *sql.Tx, r roomState, 
 }
 func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, error) {
 	var b []byte
-	e := s.db.QueryRowContext(ctx, "SELECT m.snapshot FROM matches m JOIN rooms r ON r.id=m.room_id WHERE m.room_id=? AND JSON_CONTAINS(r.snapshot, CAST(? AS JSON), '$.participants')", id, fmt.Sprintf("{\"id\":%d}", u.ID)).Scan(&b)
+	e := s.db.QueryRowContext(ctx, "SELECT snapshot FROM matches WHERE room_id=?", id).Scan(&b)
 	if e != nil {
 		return Match{}, e
 	}
@@ -836,12 +836,17 @@ func (s *Service) match(ctx context.Context, id int64, u auth.User) (Match, erro
 	if m.PendingOrder {
 		return Match{}, sql.ErrNoRows
 	}
-	if playerByID(&m, u.ID) == nil {
-		return Match{}, errNotParticipant
+	spectating := playerByID(&m, u.ID) == nil
+	// A finished match stays with its players; only one in progress can be watched.
+	if spectating && m.Finished {
+		return Match{}, sql.ErrNoRows
 	}
 	log, e := matchLog(ctx, s.db, id, m, u.ID)
 	if e != nil {
 		return Match{}, e
+	}
+	if spectating {
+		return s.spectatorView(m, u.ID, log), nil
 	}
 	return s.libraryView(m, u.ID, log), nil
 }

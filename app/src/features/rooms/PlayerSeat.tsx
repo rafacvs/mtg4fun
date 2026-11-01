@@ -4,8 +4,8 @@ import type { Match } from './roomsApi';
 
 export const seatColors = ['#6cb4f5', '#f27bb0', '#b49af7', '#4fd1b0', '#f2a46f', '#c9cb70'];
 
-export function PlayerSeat({ player, own, turnPosition, currentTurn, focused, onMenu, onFocus, focusEnabled = true }: {
-  player: Match['players'][number]; own: boolean; turnPosition: number; currentTurn: boolean; focused: boolean;
+export function PlayerSeat({ player, own, handVisible = false, turnPosition, currentTurn, focused, onMenu, onFocus, focusEnabled = true }: {
+  player: Match['players'][number]; own: boolean; handVisible?: boolean; turnPosition: number; currentTurn: boolean; focused: boolean;
   focusEnabled?: boolean;
   onMenu: (anchor: HTMLElement) => void; onFocus: () => void;
 }) {
@@ -14,7 +14,7 @@ export function PlayerSeat({ player, own, turnPosition, currentTurn, focused, on
     <div className="seat-name">
       <div className="seat-name-line">
         <h2>{player.name}</h2>
-        <span className="seat-hand-count" aria-label={`Mão: ${player.handCount} cartas${own ? '' : ', privada'}`} title={`Mão: ${player.handCount} · ${own ? 'Sua mão' : 'Conteúdo privado'}`}>
+        <span className="seat-hand-count" aria-label={`Mão: ${player.handCount} cartas${own || handVisible ? '' : ', privada'}`} title={`Mão: ${player.handCount}${handVisible ? '' : ` · ${own ? 'Sua mão' : 'Conteúdo privado'}`}`}>
           <TableIcon name="hand" /><span>{player.handCount}</span>
         </span>
         {markerColors.filter(({ color }) => markerValue(player.markers, color) !== 0).map(({ color, name }) => <span key={color} className={`seat-marker-count seat-marker-${color}`} aria-label={`marcador ${name}`} title={`Marcador ${name}`}><span className="seat-marker-glyph" aria-hidden="true" /><span className="seat-marker-value">{markerValue(player.markers, color)}</span></span>)}

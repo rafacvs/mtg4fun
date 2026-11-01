@@ -458,7 +458,7 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 	if ownHand != 1 || otherHand != 1 {
 		t.Fatalf("mão alheia ou biblioteca exposta: %s", started.body)
 	}
-	requireStatus(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", outsider, nil), 404)
+	requireStatus(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", outsider, nil), 200)
 	requireStatus(t, e.request("DELETE", fmt.Sprintf("/api/decks/%d", anaDeck), "", ana, nil), 204)
 	e.stop()
 	e.start(false)
@@ -469,6 +469,51 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 		t.Fatalf("recuperação: %s", recovered.body)
 	}
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/participants", id), "{}", outsider, nil), 409)
+}
+
+func TestNewRoomStartsWithAconchegazMulligan(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-da-sala")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-da-sala"))
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	var payload struct {
+		Room struct {
+			ID           int64  `json:"id"`
+			MulliganMode string `json:"mulliganMode"`
+		} `json:"room"`
+	}
+	if err := json.Unmarshal(created.body, &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Room.MulliganMode != "aconchegaz" {
+		t.Fatalf("modo inicial da sala: %s", created.body)
+	}
+	uploaded := e.uploadDeck(ana, []byte(`<cockatrice_deck><deckname>Ilhas</deckname><zone name="main"><card number="10" name="Island"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var deck struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &deck); err != nil {
+		t.Fatal(err)
+	}
+	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", payload.Room.ID), fmt.Sprintf(`{"deckId":%d}`, deck.Deck.ID), ana, nil), 200)
+	started := e.request("POST", fmt.Sprintf("/api/rooms/%d/start", payload.Room.ID), "{}", ana, nil)
+	requireStatus(t, started, 201)
+	var match struct {
+		Match struct {
+			MulliganMode string `json:"mulliganMode"`
+		} `json:"match"`
+	}
+	if err := json.Unmarshal(started.body, &match); err != nil {
+		t.Fatal(err)
+	}
+	if match.Match.MulliganMode != "aconchegaz" {
+		t.Fatalf("modo da partida: %s", started.body)
+	}
 }
 
 func TestStartPutsCommanderInCommandAndDrawsSeven(t *testing.T) {
