@@ -180,10 +180,14 @@ func placeCards(p *playerState, cards []Card, from, to, placement string) {
 		if isToken(card) && to != "battlefield" {
 			continue
 		}
-		if from == "battlefield" && (to == "graveyard" || to == "exile") {
+		if from != to {
 			card.Markers = colorCounts{}
 			card.Power, card.Toughness = 0, 0
-			card.Tapped, card.FaceDown = false, false
+			card.Tapped = false
+		}
+		// A card can be played face down from the hand, so only leaving the battlefield clears it.
+		if from == "battlefield" && to != "battlefield" {
+			card.FaceDown = false
 		}
 		card.Zone = to
 		kept = append(kept, card)
@@ -222,17 +226,21 @@ func planBattlefieldEntry(existing []Card, count int, explicit bool, column, row
 		if column < 0 || column > 20000 || row < 0 || row > 2000 {
 			return nil, errInvalidPosition
 		}
-		occupied := 0
-		for _, card := range existing {
-			if card.PositionX == column && card.Row == row {
-				occupied++
-			}
-		}
-		if occupied+count > 3 {
-			return nil, errStackFull
-		}
+		// What does not fit in the chosen stack opens new stacks in the next empty cells of the row.
+		occupied := stackSize(existing, column, row)
 		for i := range plan {
+			if occupied >= 3 {
+				column++
+				for stackSize(existing, column, row) > 0 {
+					column++
+				}
+				occupied = 0
+			}
+			if column > 20000 {
+				return nil, errInvalidPosition
+			}
 			plan[i] = [2]int{column, row}
+			occupied++
 		}
 		return plan, nil
 	}
@@ -246,6 +254,16 @@ func planBattlefieldEntry(existing []Card, count int, explicit bool, column, row
 		virtual = append(virtual, Card{PositionX: x, Row: y})
 	}
 	return plan, nil
+}
+
+func stackSize(cards []Card, column, row int) int {
+	size := 0
+	for _, card := range cards {
+		if card.PositionX == column && card.Row == row {
+			size++
+		}
+	}
+	return size
 }
 
 func isToken(card Card) bool {

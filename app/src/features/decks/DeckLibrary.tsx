@@ -1,51 +1,20 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useCardInspection } from './useCardInspection';
+import { useEffect, useState } from 'react';
 import { useDecks } from './useDecks';
-import { DeckSummary } from './DeckSummary';
+import { DeckDetail } from './DeckDetail';
+import { DeckImportDialog } from './DeckImportDialog';
 import { DeleteDeckConfirmation } from './DeleteDeckConfirmation';
 import { deckApi } from './deckApi';
-import { GROUP_LABELS, GROUP_ORDER } from './deckDisplay';
 import './decks.css';
 
 type Props = { library: ReturnType<typeof useDecks> };
 
 export function DeckLibrary({ library }: Props) {
-  const inspection = useCardInspection();
-  const fileInput = useRef<HTMLInputElement>(null);
-  const importDialog = useRef<HTMLDialogElement>(null);
-  const curveDialog = useRef<HTMLDialogElement>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [curveOpen, setCurveOpen] = useState(false);
   const [libraryQuery, setLibraryQuery] = useState('');
-  const [query, setQuery] = useState('');
-  const [group, setGroup] = useState<string>('all');
   const [deleting, setDeleting] = useState<{ id: number; name: string } | null>(null);
   const chosen = library.decks.find(deck => deck.id === library.selected);
-  const cardCount = chosen?.cards.reduce((sum, card) => sum + card.quantity, 0) ?? 0;
 
-  useEffect(() => { setQuery(''); setGroup('all'); }, [chosen?.id]);
-  useEffect(() => {
-    if (importOpen && !importDialog.current?.open) importDialog.current?.showModal();
-    if (!importOpen && importDialog.current?.open) importDialog.current.close();
-  }, [importOpen]);
   useEffect(() => { if (!library.loading && library.decks.length === 0) setImportOpen(true); }, [library.loading, library.decks.length]);
-  useEffect(() => {
-    if (curveOpen && !curveDialog.current?.open) curveDialog.current?.showModal();
-    if (!curveOpen && curveDialog.current?.open) curveDialog.current.close();
-  }, [curveOpen]);
-  useEffect(() => { setCurveOpen(false); }, [chosen?.id]);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (file && !library.loading && !library.busy) {
-      if (await library.upload(file)) {
-        setImportOpen(false);
-        setFile(null);
-        if (fileInput.current) fileInput.current.value = '';
-      }
-    }
-  }
 
   return <section className="deck-library" aria-labelledby="decks-title">
     <div className="deck-library-sidebar">
@@ -53,8 +22,8 @@ export function DeckLibrary({ library }: Props) {
         <div><p className="eyebrow">BIBLIOTECA</p><h2 id="decks-title">Seus decks</h2><p>Importe, consulte e organize seus decks Cockatrice.</p></div>
         <div className="deck-library-actions"><span className="deck-total">{library.decks.length} {library.decks.length === 1 ? 'deck salvo' : 'decks salvos'}</span><button type="button" aria-label="Abrir importação de deck" onClick={() => setImportOpen(true)}>Importar deck</button></div>
       </div>
-      {library.error && <p role="alert" className="error">{library.error}</p>}
-      {!library.loading && library.decks.length > 0 && <div className="saved-deck-grid" aria-label="Decks salvos"><label className="library-search"><span className="sr-only">Buscar deck</span><input placeholder="Buscar deck" value={libraryQuery} onChange={event => setLibraryQuery(event.target.value)} /></label>{library.decks.filter(deck => deck.name.toLowerCase().includes(libraryQuery.toLowerCase())).map(deck => <button key={deck.id} type="button" className="saved-deck-card secondary" aria-pressed={library.selected === deck.id} onClick={() => { inspection.close(); library.setSelected(deck.id); }}>
+      {library.error && !importOpen && <p role="alert" className="error">{library.error}</p>}
+      {!library.loading && library.decks.length > 0 && <div className="saved-deck-grid" aria-label="Decks salvos"><label className="library-search"><span className="sr-only">Buscar deck</span><input placeholder="Buscar deck" value={libraryQuery} onChange={event => setLibraryQuery(event.target.value)} /></label>{library.decks.filter(deck => deck.name.toLowerCase().includes(libraryQuery.toLowerCase())).map(deck => <button key={deck.id} type="button" className="saved-deck-card secondary" aria-pressed={library.selected === deck.id} onClick={() => library.setSelected(deck.id)}>
           <span className="deck-emblem" aria-hidden="true">{deck.cards.find(card => card.available) ? <img src={deckApi.imageURL(deck.commander || deck.cards.find(card => card.available)!.name)} alt="" /> : "♧"}</span>
           <span>
             <strong>{deck.name}</strong>
@@ -64,76 +33,17 @@ export function DeckLibrary({ library }: Props) {
           <span aria-hidden="true">→</span>
         </button>)}</div>}
     </div>
-    <dialog ref={importDialog} className="import-card import-dialog" aria-labelledby="import-dialog-title" onCancel={event => { event.preventDefault(); setImportOpen(false); }} onClose={() => setImportOpen(false)} onClick={event => { if (event.target === event.currentTarget) setImportOpen(false); }}>
-      <div className="import-dialog-header"><div><p className="eyebrow">BIBLIOTECA</p><h3 id="import-dialog-title">Importar deck</h3></div><button type="button" className="secondary" aria-label="Fechar importação" onClick={() => setImportOpen(false)}>Fechar</button></div>
-      <div className="import-content"><p>Arquivo .cod de até 2 MiB. Somente a seção principal será usada; sideboard e outras seções são ignorados.</p>
-      <form onSubmit={event => void submit(event)}>
-        <label htmlFor="deck-file">Arquivo .cod</label>
-        <div className="upload-controls">
-          <button type="button" className="secondary" disabled={library.busy} onClick={() => fileInput.current?.click()}>Selecionar arquivo</button>
-          <span className="deck-filename">{file?.name ?? 'Nenhum arquivo selecionado'}</span>
-          <button type="submit" disabled={!file || library.loading || library.busy}>{library.busy ? 'Salvando…' : 'Importar deck'}</button>
-        </div>
-        <input ref={fileInput} id="deck-file" type="file" accept=".cod" disabled={library.busy} onChange={event => setFile(event.target.files?.[0] ?? null)} />
-      </form></div>
-    </dialog>
+    <DeckImportDialog open={importOpen} library={library} onClose={() => setImportOpen(false)} />
     {deleting && <DeleteDeckConfirmation name={deleting.name} busy={library.busy} error={library.error} onConfirm={() => library.remove(deleting.id)} onClose={() => setDeleting(null)} />}
     {library.loading ? <p role="status" className="deck-library-main">Carregando decks…</p> : library.decks.length === 0 ? <div className="empty-decks deck-library-main"><h3>Sua biblioteca começa aqui.</h3><p>Nenhum deck salvo. Importe seu primeiro arquivo.</p></div> : <div className="library-workspace">
       <div className="deck-picker">
         <label htmlFor="saved-deck">Escolher deck salvo</label>
-        <select id="saved-deck" value={library.selected ?? ''} onChange={event => { inspection.close(); library.setSelected(event.target.value ? Number(event.target.value) : null); }}>
+        <select id="saved-deck" value={library.selected ?? ''} onChange={event => library.setSelected(event.target.value ? Number(event.target.value) : null)}>
           <option value="">Selecione um deck</option>
           {library.decks.map(deck => <option key={deck.id} value={deck.id}>{deck.name} ({deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cartas)</option>)}
         </select>
       </div>
-      {chosen ? <article className="deck-detail">
-        <div className="deck-detail-header">
-          <div className="deck-hero-title">{chosen.commander && <img className="deck-commander-image" src={deckApi.imageURL(chosen.commander)} alt={`Comandante ${chosen.commander}`} />}<div><p className="eyebrow">DECK SELECIONADO</p><h3>{chosen.name}</h3><p>{cardCount} cartas · {chosen.cards.length} nomes</p></div></div>
-          <div className="deck-detail-actions"><button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => { inspection.close(); setDeleting({ id: chosen.id, name: chosen.name }); }}>Excluir deck</button><button type="button" className="secondary" onClick={() => setCurveOpen(true)}>Ver curva de mana</button></div>
-        </div>
-        <div className="deck-columns">
-          <section className="deck-preview" aria-label="Preview de carta">
-            {inspection.card ? <>
-              <div className="preview-top"><span className="eyebrow">CARTA EM FOCO</span><button type="button" className="text-button" onClick={inspection.close}>Fechar consulta</button></div>
-              <h4>{inspection.card.name}</h4>
-              <p className="card-text">{inspection.card.text || 'O catálogo não informa texto para esta carta.'}</p>
-              {!inspection.imageFailed && <img src={inspection.imageURL} alt={`Imagem ampliada de ${inspection.card.name}`} onError={inspection.reportImageFailure} />}
-              {inspection.imageFailed && <p role="status">A imagem não está disponível agora. O texto da carta continua acessível.</p>}
-            </> : <><span className="eyebrow">PREVIEW</span><h4>Conheça cada carta.</h4><p>Selecione uma carta na lista para ver o texto e a imagem aqui.</p></>}
-          </section>
-          <section className="deck-card-list" aria-label={`Cartas de ${chosen.name}`}>
-            <div className="card-list-heading"><h4>Lista de cartas</h4><span>{chosen.cards.length} nomes</span></div>
-            <div className="deck-filters" aria-label="Filtrar cartas por tipo">
-              <button type="button" aria-pressed={group === 'all'} onClick={() => setGroup('all')}>Tudo {cardCount}</button>
-              {GROUP_ORDER.filter(key => chosen.groups[key].length > 0).map(key => <button type="button" key={key} aria-pressed={group === key} onClick={() => setGroup(key)}>{GROUP_LABELS[key]} {chosen.groups[key].reduce((sum, card) => sum + card.quantity, 0)}</button>)}
-            </div>
-            <div className="deck-card-search">
-              <label htmlFor="deck-card-search">Buscar carta</label>
-              <input id="deck-card-search" value={query} onChange={event => setQuery(event.target.value)} />
-              {chosen.commander ? <button type="button" className="text-button" disabled={library.busy} onClick={() => void library.setCommander(chosen.id, '')}>Limpar comandante</button> : null}
-            </div>
-            <div className="deck-groups">{GROUP_ORDER.map(key => {
-              const cards = chosen.groups[key].filter(card => card.name.toLowerCase().includes(query.trim().toLowerCase()));
-              if (cards.length === 0 || (group !== 'all' && group !== key)) return null;
-              return <section key={key} aria-label={GROUP_LABELS[key]}>
-                <h4>{GROUP_LABELS[key]}</h4>
-                <ul>{cards.map(deckCard => <li key={deckCard.name}>
-                  <span className="card-line">
-                    <span className="card-quantity">{deckCard.quantity} × </span>{deckCard.available ? <img className="deck-card-thumb" src={deckApi.imageURL(deckCard.name)} alt="" loading="lazy" /> : <span aria-hidden="true" />}
-                    <button type="button" className="card-link" aria-label={`Consultar ${deckCard.name}`} aria-pressed={inspection.card?.name === deckCard.name} onClick={() => inspection.inspect(deckCard)}>{deckCard.name}</button>
-                  </span>
-                  {key !== 'commander' ? <button type="button" className="text-button" disabled={library.busy} aria-label={`Marcar comandante ${deckCard.name}`} onClick={() => void library.setCommander(chosen.id, deckCard.name)}>Marcar comandante</button> : null}
-                  {!deckCard.available && <strong>Indisponível no catálogo atual</strong>}
-                </li>)}</ul>
-              </section>;
-            })}</div>
-          </section>
-        </div>
-      </article> : <div className="empty-decks"><h3>Escolha um deck para consultar.</h3><p>Os detalhes e as cartas aparecem aqui.</p></div>}
+      {chosen ? <DeckDetail key={chosen.id} deck={chosen} library={library} actions={<button type="button" className="secondary danger-button" disabled={library.busy} onClick={() => setDeleting({ id: chosen.id, name: chosen.name })}>Excluir deck</button>} /> : <div className="empty-decks"><h3>Escolha um deck para consultar.</h3><p>Os detalhes e as cartas aparecem aqui.</p></div>}
     </div>}
-    {chosen && <dialog ref={curveDialog} className="mana-curve-dialog" aria-labelledby="mana-curve-title" onCancel={event => { event.preventDefault(); setCurveOpen(false); }} onClose={() => setCurveOpen(false)} onClick={event => { if (event.target === event.currentTarget) setCurveOpen(false); }}>
-      <div className="mana-curve-header"><div><p className="eyebrow">ANÁLISE DO DECK</p><h3 id="mana-curve-title">Curva de mana — {chosen.name}</h3></div><button type="button" className="secondary" aria-label="Fechar curva de mana" onClick={() => setCurveOpen(false)}>Fechar</button></div>
-      <DeckSummary deck={chosen} />
-    </dialog>}
   </section>;
 }

@@ -13,9 +13,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"mtg4fun/internal/auth"
 	"mtg4fun/internal/catalog"
+	"mtg4fun/internal/live"
+	"mtg4fun/internal/minigames"
 )
 
 const capacity = 6
@@ -25,6 +28,8 @@ type Participant struct {
 	Name   string `json:"name"`
 	Ready  bool   `json:"ready"`
 	DeckID int64  `json:"deckId,omitempty"`
+	// DeckRevision counts deck edits so members know to reload the public view.
+	DeckRevision int64 `json:"deckRevision,omitempty"`
 }
 type Room struct {
 	CommanderToCommand bool          `json:"commanderToCommand"`
@@ -41,10 +46,11 @@ type Room struct {
 	Vacancies          int           `json:"vacancies"`
 }
 type participantState struct {
-	ID     int64  `json:"id"`
-	Name   string `json:"name"`
-	DeckID int64  `json:"deckId"`
-	Ready  bool   `json:"ready"`
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	DeckID       int64  `json:"deckId"`
+	Ready        bool   `json:"ready"`
+	DeckRevision int64  `json:"deckRevision,omitempty"`
 }
 type roomState struct {
 	Dice               []PreparationRoll  `json:"dice,omitempty"`
@@ -76,7 +82,7 @@ func enabledSetting(setting *bool) bool { return setting == nil || *setting }
 func (r roomState) view() Room {
 	p := make([]Participant, len(r.Participants))
 	for i, v := range r.Participants {
-		p[i] = Participant{v.ID, v.Name, v.Ready, v.DeckID}
+		p[i] = Participant{v.ID, v.Name, v.Ready, v.DeckID, v.DeckRevision}
 	}
 	mode := r.MulliganMode
 	if mode == "" {
@@ -129,6 +135,7 @@ type playerState struct {
 	Markers          colorCounts `json:"markers,omitempty"`
 	Mulligans        int         `json:"mulligans,omitempty"`
 	MulliganKept     bool        `json:"mulliganKept,omitempty"`
+	MulliganBottomed int         `json:"mulliganBottomed,omitempty"`
 	Library          []Card      `json:"library"`
 	Hand             []Card      `json:"hand"`
 	Battlefield      []Card      `json:"battlefield"`
@@ -176,6 +183,7 @@ type MatchPlayer struct {
 	Markers          colorCounts   `json:"markers,omitempty"`
 	Mulligans        int           `json:"mulligans,omitempty"`
 	MulliganKept     bool          `json:"mulliganKept,omitempty"`
+	MulliganBottomed int           `json:"mulliganBottomed,omitempty"`
 	LibraryCount     int           `json:"libraryCount"`
 	HandCount        int           `json:"handCount"`
 	BattlefieldCount int           `json:"battlefieldCount"`
@@ -289,7 +297,7 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
+		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, MulliganBottomed: v.MulliganBottomed, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
 		for _, cards := range [][]Card{v.Hand, v.Library, v.Battlefield, v.Command, v.Graveyard, v.Exile} {
 			for _, card := range cards {
 				if card.Revealed || card.revealedToViewer(viewerID) {
@@ -338,6 +346,11 @@ type Service struct {
 	users   *auth.Service
 	roll    func() (int, error)
 	catalog *catalog.Catalog
+
+	live       *live.Hub
+	coinDuels  *minigames.CoinDuels
+	playRolls  playRollStore
+	publishing sync.Mutex
 }
 
 func New(db *sql.DB, users *auth.Service, cards ...*catalog.Catalog) *Service {
@@ -345,6 +358,7 @@ func New(db *sql.DB, users *auth.Service, cards ...*catalog.Catalog) *Service {
 	if len(cards) > 0 {
 		s.catalog = cards[0]
 	}
+	s.setupLive()
 	return s
 }
 func configuredRoller() func() (int, error) {
@@ -731,7 +745,7 @@ func (s *Service) initializeMatch(ctx context.Context, tx *sql.Tx, r roomState, 
 	if mode == "" {
 		mode = "standard"
 	}
-	m := matchState{RoomID: id, InitialLife: life, TurnOrder: order, MulliganMode: mode, MulliganOpen: true, Players: make([]playerState, 0, len(r.Participants))}
+	m := matchState{RoomID: id, InitialLife: life, TurnOrder: order, MulliganMode: mode, MulliganOpen: enabledSetting(r.DrawOpeningHand), Players: make([]playerState, 0, len(r.Participants))}
 	m.PendingOrder = order == nil
 	for _, p := range r.Participants {
 		cards, e := deckCards(ctx, tx, p.DeckID, p.ID)

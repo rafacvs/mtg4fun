@@ -12,6 +12,8 @@ type preparationDeck struct {
 	PlayerID int64  `json:"playerId"`
 	Name     string `json:"name"`
 	Image    string `json:"image,omitempty"`
+	Colors   string `json:"colors,omitempty"`
+	Cards    int64  `json:"cards"`
 }
 
 // preparationDecks shares only the selected deck's name and one card image
@@ -52,7 +54,8 @@ func (s *Service) preparationDecks(w http.ResponseWriter, r *http.Request) {
 		}
 		var name string
 		var commander, firstCard sql.NullString
-		err = s.db.QueryRowContext(r.Context(), `SELECT d.name,d.commander,(SELECT c.name FROM deck_cards c WHERE c.deck_id=d.id ORDER BY c.position LIMIT 1) FROM decks d WHERE d.id=? AND d.user_id=?`, player.DeckID, player.ID).Scan(&name, &commander, &firstCard)
+		var cards int64
+		err = s.db.QueryRowContext(r.Context(), `SELECT d.name,d.commander,(SELECT c.name FROM deck_cards c WHERE c.deck_id=d.id ORDER BY c.position LIMIT 1),(SELECT COALESCE(SUM(c.quantity),0) FROM deck_cards c WHERE c.deck_id=d.id) FROM decks d WHERE d.id=? AND d.user_id=?`, player.DeckID, player.ID).Scan(&name, &commander, &firstCard, &cards)
 		if errors.Is(err, sql.ErrNoRows) {
 			continue
 		}
@@ -64,7 +67,12 @@ func (s *Service) preparationDecks(w http.ResponseWriter, r *http.Request) {
 		if image == "" {
 			image = firstCard.String
 		}
-		result = append(result, preparationDeck{PlayerID: player.ID, Name: name, Image: image})
+		colors := ""
+		if s.catalog != nil {
+			card, _ := s.catalog.Lookup(image)
+			colors = card.ColorIdentity
+		}
+		result = append(result, preparationDeck{PlayerID: player.ID, Name: name, Image: image, Colors: colors, Cards: cards})
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	httpserver.WriteJSON(w, 200, map[string]any{"decks": result})

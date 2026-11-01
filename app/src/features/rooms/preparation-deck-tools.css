@@ -1,0 +1,10 @@
+/* Importar e editar o deck direto da preparação, no desktop e no painel móvel. */
+.preparation-deck-field { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0 6px; }
+.preparation-deck-field label, .preparation-controls .preparation-deck-field label, .mobile-deck-panel .preparation-deck-field label { margin: 0; }
+.room-preparation .preparation-controls .preparation-import-deck, .mobile-deck-panel .preparation-import-deck { flex: none; width: auto; min-height: 30px; padding: 4px 10px; border-radius: 4px; font-size: .72rem; }
+.preparation-selected-deck, .mobile-selected-deck { position: relative; }
+.room-preparation .preparation-controls .preparation-deck-edit, .mobile-deck-panel .preparation-deck-edit { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: flex-end; width: 100%; min-height: 0; padding: 8px; color: #e7c16e; background: transparent; border: 1px solid transparent; border-radius: 4px; }
+.room-preparation .preparation-controls .preparation-deck-edit:hover, .mobile-deck-panel .preparation-deck-edit:hover { background: #d4af6114; border-color: #d3ae62; }
+.preparation-deck-edit:focus-visible { outline: 2px solid #e7c16e; outline-offset: -2px; }
+.preparation-deck-edit .table-icon { width: 16px; height: 16px; filter: drop-shadow(0 1px 2px #000); }
+@media (pointer: coarse) { .mobile-deck-panel .preparation-import-deck { min-height: 44px; } }

@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, openQuickActions, roomBody } from './fixtures';
+import { test, expect, openMatchRail, openQuickActions, roomBody, confirmHands } from './fixtures';
 
 // The page uses the actual executable and MySQL; no application routes are mocked.
 test('cria fichas e cópias com mouse/toque e recupera atributos após recarga', async ({ page }, info) => {
@@ -9,6 +9,7 @@ test('cria fichas e cópias com mouse/toque e recupera atributos após recarga',
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await confirmHands(room.id, api);
   expect((await api.delete(`/api/decks/${deck.id}`)).status()).toBe(204);
   await page.goto(`/#/salas/${room.id}`);
   const click = async (locator: ReturnType<typeof page.getByRole>) => info.project.use.hasTouch ? locator.tap() : locator.click();

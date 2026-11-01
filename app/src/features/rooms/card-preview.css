@@ -49,6 +49,9 @@
 .match-board .card-copy-action { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 6px; min-height: 42px; padding: 8px 0; border: 0; border-top: 1px solid #aa925438; border-radius: 0; background: transparent; font-size: .72rem; text-align: left; }
 .match-board .card-copy-action .table-icon { width: 15px; height: 15px; }
 .match-board .card-copy-action span { color: #8e8b80; font-weight: 400; }
+.match-board .card-token-action { display: flex; align-items: stretch; gap: 8px; border-top: 1px solid #aa925438; }
+.match-board .card-token-action .card-copy-action { flex: 1; min-width: 0; border-top: 0; }
+.match-board .card-token-action input { flex: 0 0 62px; width: 62px; min-height: 42px; align-self: center; padding: 6px; border: 1px solid #78633c; border-radius: 4px; background: #12181c; color: #efe4cd; font: 700 .85rem Cinzel, serif; text-align: center; }
 @media (min-width: 1001px) {
   .match-board .card-preview { min-height: min(674px, calc(100dvh - 40px)); }
 }

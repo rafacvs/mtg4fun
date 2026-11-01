@@ -67,6 +67,7 @@ e compra inicial de até sete cartas, além do tipo de mulligan descrito na
 
 - Aceitar arquivos .cod com a mesma interpretação funcional de cartas e quantidades usada pelo Cockatrice; não usar uma lista textual como substituto obrigatório.
 - Guardar os decks vinculados ao usuário no banco até exclusão. Oferecer upload, escolha e exclusão; nenhuma edição ou exportação é exigida.
+- Na preparação da sala, o jogador pode importar um .cod e marcar o comandante sem sair da mesa, até se declarar pronto; a mesa vê a mudança. Consulte a [decisão](../decisions/50-decks-na-preparacao.md).
 - Não haverá zona de reserva/sideboard. O grupo não usa essa seção; tratamento de .cod que contenha seções não utilizadas deve ser definido na implementação sem criar uma reserva na mesa.
 - Catálogo de cartas e fichas no servidor, compartilhado por todos. Não é baixado separadamente por usuário.
 - Preservar o fluxo funcional de datasets e imagens do Cockatrice; o catálogo é separado do arquivo de deck.

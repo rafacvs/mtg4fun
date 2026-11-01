@@ -1330,7 +1330,7 @@ func TestMatchActionsPersistPrivatelyAndIdempotently(t *testing.T) {
 			hasShuffle = true
 		}
 	}
-	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !containsBattlefield(own.Hand[0].ID) || restoredAna.Battlefield[0].PositionX != 735 || restoredAna.Battlefield[0].Row != 2 || restoredAna.Battlefield[0].StackOrder != stackOrder || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 22+success || !hasShuffle {
+	if restoredAna.LibraryCount != 5 || len(restoredAna.Hand) != 0 || !containsBattlefield(own.Hand[0].ID) || restoredAna.Battlefield[0].PositionX != 735 || restoredAna.Battlefield[0].Row != 2 || restoredAna.Battlefield[0].StackOrder != stackOrder || contains(restoredAna.Graveyard, own.Hand[0].ID) || contains(restoredAna.Exile, own.Hand[0].ID) || (contains(restoredAna.Graveyard, own.Hand[1].ID) == contains(restoredAna.Exile, own.Hand[1].ID)) || len(restored.Match.Log) != 24+success || !hasShuffle {
 		t.Fatalf("ações não recuperadas: %s", recovered.body)
 	}
 	restoredConsult := e.request("POST", actionPath, `{"intentId":"5d5d5d5d-5d5d-45d5-85d5-5d5d5d5d5d5d","kind":"consult","consultFrom":"top","count":5}`, ana, nil)
@@ -1388,6 +1388,7 @@ func TestMatchRandomActionsTurnsAndIdempotencySurviveRestart(t *testing.T) {
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, anaDeck), ana, nil), 200)
 	requireStatus(t, e.request("PUT", fmt.Sprintf("/api/rooms/%d/participants/me/ready", id), fmt.Sprintf(`{"deckId":%d}`, biaDeck), bia, nil), 200)
 	requireStatus(t, e.request("POST", fmt.Sprintf("/api/rooms/%d/start", id), "{}", ana, nil), 201)
+	confirmHands(t, e, fmt.Sprintf("/api/rooms/%d", id), ana, bia)
 	actions := fmt.Sprintf("/api/rooms/%d/match/actions", id)
 	intent := `{"intentId":"018f2f9e-1a55-4b39-9c75-7c8d5d4a3b2c","kind":"roll","sides":20}`
 	rolled := e.request("POST", actions, intent, ana, nil)

@@ -29,7 +29,7 @@ func TestStandardMulliganIsFreeOnceAndBottomsAdditionalCardsOnKeep(t *testing.T)
 			p.Library = append(p.Library, Card{ID: string(rune('a' + i)), Zone: zone})
 		}
 	}
-	m := matchState{MulliganMode: "standard", MulliganOpen: true}
+	m := matchState{MulliganMode: "standard", MulliganOpen: true, Players: []playerState{{UserID: 2}}}
 	if _, err := mulligan(&m, &p); err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestAconchegazMulliganNeverReducesHand(t *testing.T) {
 			p.Library = append(p.Library, card)
 		}
 	}
-	m := matchState{MulliganMode: "aconchegaz", MulliganOpen: true}
+	m := matchState{MulliganMode: "aconchegaz", MulliganOpen: true, Players: []playerState{{UserID: 2}}}
 	for i := 0; i < 3; i++ {
 		if _, err := mulligan(&m, &p); err != nil {
 			t.Fatal(err)
@@ -94,7 +94,7 @@ func TestStandardMulliganStopsBeforeHandWouldBecomeEmpty(t *testing.T) {
 			p.Library = append(p.Library, card)
 		}
 	}
-	m := matchState{MulliganMode: "standard", MulliganOpen: true}
+	m := matchState{MulliganMode: "standard", MulliganOpen: true, Players: []playerState{{UserID: 2}}}
 	if _, err := mulligan(&m, &p); err != nil {
 		t.Fatal(err)
 	}
@@ -144,5 +144,68 @@ func TestConsultationMovesSelectedCardWithoutDuplication(t *testing.T) {
 	}
 	if len(p.Library) != 0 || len(p.Consulted) != 0 || len(p.Command) != 1 || p.Command[0].Zone != "command" {
 		t.Fatalf("movimento inesperado: %+v", p)
+	}
+}
+
+func TestAllHandsConfirmedStartsTheMatchAndUndoMovesNothing(t *testing.T) {
+	m := matchState{MulliganMode: "standard", MulliganOpen: true, Players: []playerState{{UserID: 1, Mulligans: 2, Hand: []Card{{ID: "a", Zone: "hand"}, {ID: "b", Zone: "hand"}}}, {UserID: 2}}}
+	first, second := &m.Players[0], &m.Players[1]
+	if _, err := keepMulliganHand(&m, first, []string{"a"}); err != nil {
+		t.Fatal(err)
+	}
+	if !m.MulliganOpen {
+		t.Fatal("started with a hand still unconfirmed")
+	}
+	if _, err := undoKeepMulliganHand(&m, first); err != nil {
+		t.Fatal(err)
+	}
+	if first.MulliganKept || len(first.Hand) != 1 || first.Hand[0].ID != "b" || len(first.Library) != 1 || first.Library[0].ID != "a" {
+		t.Fatalf("undo moved cards: %+v", first)
+	}
+	if _, err := keepMulliganHand(&m, first, []string{"b"}); err != errMulliganSelection {
+		t.Fatalf("asked again for the card already at the bottom: %v", err)
+	}
+	if _, err := keepMulliganHand(&m, first, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := keepMulliganHand(&m, second, nil); err != nil {
+		t.Fatal(err)
+	}
+	if m.MulliganOpen {
+		t.Fatal("match did not start")
+	}
+	if _, err := undoKeepMulliganHand(&m, second); err != errMulliganClosed {
+		t.Fatalf("undo after the start: %v", err)
+	}
+}
+
+func TestConfirmationIsRefusedDuringConsultationAndClampedToTheHand(t *testing.T) {
+	m := matchState{MulliganMode: "standard", MulliganOpen: true, Players: []playerState{{UserID: 1, ConsultationFrom: "all"}, {UserID: 2, Mulligans: 4, Hand: []Card{{ID: "a"}}}}}
+	if _, err := keepMulliganHand(&m, &m.Players[0], nil); err != errMulliganConsulting {
+		t.Fatalf("consulting: %v", err)
+	}
+	if got := mulliganBottomRequired(&m, &m.Players[1]); got != 1 {
+		t.Fatalf("required %d with one card in hand", got)
+	}
+}
+
+func TestBeforeTheStartOnlyTheHandCanBeReworked(t *testing.T) {
+	p := &playerState{UserID: 1, Hand: []Card{{ID: "hand"}}, Library: []Card{{ID: "library"}}, Battlefield: []Card{{ID: "field"}}}
+	for kind, want := range map[string]bool{"mulligan": true, "keep_hand": true, "unkeep_hand": true, "draw": true, "consult": true, "shuffle": true, "turn": false, "finish": false, "roll": false, "coin": false, "counter": false, "set_tapped": false, "create-token": false, "reveal_cards": false} {
+		if got := allowedBeforeMatchStarts(p, matchAction{Kind: kind}); got != want {
+			t.Errorf("%s: %v", kind, got)
+		}
+	}
+	for _, c := range []struct {
+		id, to string
+		want   bool
+	}{{"hand", "library", true}, {"library", "hand", true}, {"hand", "battlefield", false}, {"hand", "graveyard", false}, {"field", "hand", false}} {
+		if got := allowedBeforeMatchStarts(p, matchAction{Kind: "move", CardIDs: []string{c.id}, To: c.to}); got != c.want {
+			t.Errorf("%s -> %s: %v", c.id, c.to, got)
+		}
+	}
+	p.MulliganKept = true
+	if allowedBeforeMatchStarts(p, matchAction{Kind: "draw"}) || !allowedBeforeMatchStarts(p, matchAction{Kind: "unkeep_hand"}) {
+		t.Error("a confirmed player can only undo")
 	}
 }

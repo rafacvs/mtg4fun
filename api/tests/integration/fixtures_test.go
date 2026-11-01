@@ -289,6 +289,16 @@ func returnOpeningHandsToLibrary(t *testing.T, e *environment, roomID int64, coo
 	for i, cookie := range cookies {
 		returnOpeningHandToLibrary(t, e, roomID, cookie, fmt.Sprintf("e1000000-0000-4000-8000-%012d", i+1))
 	}
+	confirmHands(t, e, fmt.Sprintf("/api/rooms/%d", roomID), cookies...)
+}
+
+// The match only accepts play actions once every participant confirmed their hand.
+func confirmHands(t *testing.T, e *environment, path string, cookies ...*http.Cookie) {
+	t.Helper()
+	for i, cookie := range cookies {
+		body := fmt.Sprintf(`{"intentId":"e2000000-0000-4000-8000-%012d","kind":"keep_hand"}`, i+1)
+		requireStatus(t, e.request("POST", path+"/match/actions", body, cookie, nil), 200)
+	}
 }
 
 func roomJSON() string {

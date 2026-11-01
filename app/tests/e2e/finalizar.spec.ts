@@ -1,4 +1,4 @@
-import { test, expect, openQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, openQuickActions, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 for (const count of [1, 3]) {
@@ -25,6 +25,7 @@ for (const count of [1, 3]) {
         expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
       }
       expect((await page.request.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+      await confirmHands(roomId, ...pages.map(current => current.request));
       await returnOpeningHandToLibrary(page.request, roomId);
       const read = async (): Promise<Match> => (await (await page.request.get(`/api/rooms/${roomId}/match`)).json()).match;
       await Promise.all(pages.map(current => current.goto(`/#/salas/${roomId}`)));

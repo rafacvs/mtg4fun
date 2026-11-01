@@ -1,4 +1,4 @@
-import { test, expect, roomBody, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, roomBody, returnOpeningHandToLibrary, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('arrastar seleção e soltar sobre carta não abre inspeção', async ({ page }, info) => {
@@ -9,6 +9,7 @@ test('arrastar seleção e soltar sobre carta não abre inspeção', async ({ pa
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
   await returnOpeningHandToLibrary(api, room.id);
   const path = `/api/rooms/${room.id}/match`;
   const act = async (action: object): Promise<Match> => { const response = await api.post(`${path}/actions`, { data: { intentId: crypto.randomUUID(), ...action } }); expect(response.ok()).toBeTruthy(); return (await response.json()).match; };

@@ -28,6 +28,7 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/rooms/{id}/mulligan-mode", s.updateMulliganMode)
 	mux.HandleFunc("POST /api/rooms/{id}/start", s.startMatch)
 	mux.HandleFunc("POST /api/rooms/{id}/preparation/start", s.beginOrder)
+	mux.HandleFunc("GET /api/rooms/{id}/live", s.liveRoom)
 	mux.HandleFunc("GET /api/rooms/{id}/preparation", s.preparationState)
 	mux.HandleFunc("POST /api/rooms/{id}/preparation/actions", s.preparationAction)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
@@ -178,7 +179,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			return matchAction{}, false
 		}
 	case "create-token":
-		if input.TokenName == "" || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
+		if input.TokenName == "" || input.Count < 0 || input.Count > maxTokensPerAction || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
@@ -234,7 +235,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
 		}
-	case "coin", "finish", "mulligan":
+	case "coin", "finish", "mulligan", "unkeep_hand":
 		if input.Sides != 0 || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false
@@ -311,7 +312,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errMatchFinished), errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange), errors.Is(err, errMulliganClosed), errors.Is(err, errMulliganSelection):
+	case errors.Is(err, errMatchFinished), errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange), errors.Is(err, errMulliganClosed), errors.Is(err, errMulliganSelection), errors.Is(err, errMulliganPending), errors.Is(err, errMulliganConsulting):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)
@@ -475,6 +476,7 @@ func (s *Service) startMatch(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		httpserver.InternalError(w, err)
 	default:
+		s.coinDuels.CancelRoom(id)
 		httpserver.WriteJSON(w, 201, map[string]Match{"match": match})
 	}
 }

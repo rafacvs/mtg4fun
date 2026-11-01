@@ -1,4 +1,4 @@
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, roomBody, confirmHands } from './fixtures';
 import type { Page } from '@playwright/test';
 
 async function signIn(page: Page) {
@@ -50,7 +50,7 @@ test('envia e guarda nome, formato, lugares, vida e deck ao criar a mesa', async
   else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
   await expect(page.getByLabel('Deck para a partida')).toHaveValue(String(deck.id));
   if (mobilePreparation) await page.getByRole('button', { name: 'Usar este deck' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: /[Ff]alta: Amigo da mesa/ })).toBeVisible();
   await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Iniciar partida', exact: true }).click();
@@ -73,6 +73,7 @@ test('separa mesas livres das em andamento e não promete vagas em partidas inic
     const { room: live } = await (await other.request.post('/api/rooms', { data: roomBody({ name: 'Mesa em jogo' }) })).json();
     expect((await other.request.put(`/api/rooms/${live.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     expect((await other.request.post(`/api/rooms/${live.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(live.id, other.request);
     const { room: open } = await (await other.request.post('/api/rooms', { data: roomBody({ name: 'Mesa aberta' }) })).json();
     const { room: mine } = await (await page.request.post('/api/rooms', { data: roomBody({ name: 'Minha mesa' }) })).json();
     await expect(page.getByRole('article', { name: mine.title, exact: true })).toBeVisible();
@@ -84,6 +85,7 @@ test('separa mesas livres das em andamento e não promete vagas em partidas inic
     const { deck: myDeck } = await (await page.request.post('/api/decks', { multipart: { file: { name: 'minha.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><deckname>Minha</deckname><zone name="main"><card number="3" name="Island"/></zone></cockatrice_deck>') } } })).json();
     expect((await page.request.put(`/api/rooms/${mine.id}/participants/me/ready`, { data: { deckId: myDeck.id } })).ok()).toBe(true);
     expect((await page.request.post(`/api/rooms/${mine.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(mine.id, page.request);
     await expect(inProgress.getByRole('article', { name: mine.title, exact: true }).getByRole('link', { name: 'Voltar à partida', exact: true })).toBeVisible();
     await expect(free.getByRole('article', { name: mine.title, exact: true })).toHaveCount(0);
     const running = page.getByRole('article', { name: live.title, exact: true });
@@ -104,6 +106,7 @@ test('filtra as mesas por estado, vaga e busca sobre as salas reais', async ({ p
     const { room: live } = await (await other.request.post('/api/rooms', { data: roomBody({ name: `Filtro em jogo ${stamp}` }) })).json();
     expect((await other.request.put(`/api/rooms/${live.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
     expect((await other.request.post(`/api/rooms/${live.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(live.id, other.request);
     const { room: open } = await (await other.request.post('/api/rooms', { data: roomBody({ name: `Filtro aberta ${stamp}` }) })).json();
     const { room: full } = await (await other.request.post('/api/rooms', { data: roomBody({ name: `Filtro cheia ${stamp}`, seats: 1 }) })).json();
     const rooms = page.getByRole('region', { name: 'Salas', exact: true });
@@ -165,6 +168,7 @@ test('decks usam dados reais e confirmam exclusão sem alterar partida', async (
   const { room } = await (await page.request.post('/api/rooms', { data: roomBody() })).json();
   expect((await page.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId } })).ok()).toBe(true);
   expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await confirmHands(room.id, page.request);
   await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
   const confirmation = page.getByRole('dialog', { name: 'Excluir deck?' });
   await expect(confirmation).toBeVisible();

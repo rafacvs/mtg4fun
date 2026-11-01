@@ -123,6 +123,16 @@ export async function closeQuickActions(page: Page) {
   if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') === 'true') await page.getByRole('button', { name: 'Fechar comandos', exact: true }).click();
 }
 
+// A mesa só aceita jogadas depois que todos os participantes confirmam a mão.
+export async function confirmHands(roomId: number | string, ...requests: APIRequestContext[]) {
+  for (const request of requests) {
+    const { match } = await (await request.get(`/api/rooms/${roomId}/match`)).json();
+    if (!match.mulliganOpen) return;
+    const result = await request.post(`/api/rooms/${roomId}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'keep_hand', cardIds: [] } });
+    expect(result.ok(), await result.text()).toBe(true);
+  }
+}
+
 export async function returnOpeningHandToLibrary(request: APIRequestContext, roomId: number) {
   const { match } = await (await request.get(`/api/rooms/${roomId}/match`)).json();
   const player = match.players.find((item: { userId: number }) => item.userId === match.viewerId);

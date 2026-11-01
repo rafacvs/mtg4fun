@@ -51,7 +51,7 @@ export function LibraryCards(props: Props) {
               if (
                 event.target === event.currentTarget &&
                 !props.busy &&
-                (event.key === 'Enter' || event.key === ' ')
+                event.key === 'Enter'
               ) {
                 event.preventDefault();
                 props.onSelect(card.id);

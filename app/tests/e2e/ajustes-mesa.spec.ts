@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, openHand, openQuickActions, closeMatchRail, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, openMatchRail, openHand, openQuickActions, closeMatchRail, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import type { APIRequestContext, BrowserContext } from '@playwright/test';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
@@ -16,6 +16,7 @@ async function prepare(api: APIRequestContext, other: APIRequestContext) {
     decks.push({ request, id: deck.id });
   }
   expect((await api.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
+  await confirmHands(roomId, api);
   for (const { request } of decks) await returnOpeningHandToLibrary(request, roomId);
   for (const {request, id} of decks) expect((await request.delete(`/api/decks/${id}`)).status()).toBe(204);
   const action = async (fields: Record<string, unknown>, request = api): Promise<Match> => {

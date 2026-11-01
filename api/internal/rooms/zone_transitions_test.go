@@ -27,12 +27,8 @@ func TestMoveClearsBattlefieldStateAndRemovesTokens(t *testing.T) {
 				if len(got) != 1 || got[0].Zone != destination {
 					t.Fatalf("destination: %+v", got)
 				}
-				if destination == "graveyard" || destination == "exile" {
-					if got[0].Tapped || got[0].FaceDown || got[0].Power != 0 || got[0].Toughness != 0 || got[0].Markers != (colorCounts{}) {
-						t.Fatalf("state survived: %+v", got[0])
-					}
-				} else if !got[0].Tapped || got[0].Power != 4 {
-					t.Fatal("unrequested reset")
+				if got[0].Tapped || got[0].FaceDown || got[0].Power != 0 || got[0].Toughness != 0 || got[0].Markers != (colorCounts{}) {
+					t.Fatalf("state survived: %+v", got[0])
 				}
 			})
 		}
@@ -45,12 +41,6 @@ func TestMoveOntoBattlefieldUsesTheCellOrTheFirstOpenStack(t *testing.T) {
 		{ID: "4", PositionX: 1, Row: 2}, {ID: "5", PositionX: 1, Row: 2}, {ID: "6", PositionX: 1, Row: 2},
 	}}
 	m := &matchState{}
-	if _, err := moveCards(m, p, matchAction{CardIDs: []string{"a"}, To: "battlefield", HasPosition: true, PositionX: 1, Row: 2}); err != errStackFull {
-		t.Fatalf("pilha cheia: %v", err)
-	}
-	if len(p.Hand) != 2 || len(p.Battlefield) != 6 {
-		t.Fatalf("recusa alterou as zonas: %+v", p)
-	}
 	if _, err := moveCards(m, p, matchAction{CardIDs: []string{"a", "b"}, To: "battlefield"}); err != nil {
 		t.Fatal(err)
 	}
@@ -67,6 +57,64 @@ func TestMoveOntoBattlefieldUsesTheCellOrTheFirstOpenStack(t *testing.T) {
 	}
 	if p.Battlefield[len(p.Battlefield)-1].PositionX != 4 || p.Battlefield[len(p.Battlefield)-1].Row != 3 {
 		t.Fatalf("célula pedida: %+v", p.Battlefield[len(p.Battlefield)-1])
+	}
+}
+
+func TestMoveFromAnotherZoneClearsCountersAndTapButKeepsFaceDownEntry(t *testing.T) {
+	for _, from := range []string{"hand", "graveyard", "exile", "command"} {
+		t.Run(from, func(t *testing.T) {
+			p := &playerState{UserID: 1}
+			*zone(p, from) = []Card{{ID: "card", Zone: from, ControllerID: 1, OwnerID: 1, Tapped: true, FaceDown: true, Power: 2, Toughness: 1, Markers: colorCounts{Red: 3}}}
+			if _, err := moveCards(&matchState{}, p, matchAction{CardIDs: []string{"card"}, To: "battlefield"}); err != nil {
+				t.Fatal(err)
+			}
+			got := p.Battlefield[0]
+			if got.Tapped || got.Power != 0 || got.Toughness != 0 || got.Markers != (colorCounts{}) {
+				t.Fatalf("state survived: %+v", got)
+			}
+			if !got.FaceDown {
+				t.Fatal("played face down lost its face")
+			}
+		})
+	}
+}
+
+func TestMoveWithinBattlefieldKeepsCardState(t *testing.T) {
+	p := &playerState{UserID: 1, Battlefield: []Card{{ID: "card", Zone: "battlefield", ControllerID: 1, OwnerID: 1, Tapped: true, FaceDown: true, Power: 2, Markers: colorCounts{Red: 3}}}}
+	if _, err := moveCards(&matchState{}, p, matchAction{CardIDs: []string{"card"}, To: "battlefield"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Battlefield[0]; !got.Tapped || !got.FaceDown || got.Power != 2 || got.Markers.Red != 3 {
+		t.Fatalf("state lost: %+v", got)
+	}
+}
+
+func TestDroppingManyCardsOpensAsManyStacksAsNeeded(t *testing.T) {
+	cases := []struct {
+		name     string
+		existing []Card
+		count    int
+		want     [][2]int
+	}{
+		{"campo vazio", nil, 7, [][2]int{{5, 1}, {5, 1}, {5, 1}, {6, 1}, {6, 1}, {6, 1}, {7, 1}}},
+		{"completa a pilha alvo", []Card{{PositionX: 5, Row: 1}}, 3, [][2]int{{5, 1}, {5, 1}, {6, 1}}},
+		{"pilha alvo cheia", []Card{{PositionX: 5, Row: 1}, {PositionX: 5, Row: 1}, {PositionX: 5, Row: 1}}, 1, [][2]int{{6, 1}}},
+		{"não mistura com outra carta da fileira", []Card{{PositionX: 6, Row: 1}}, 4, [][2]int{{5, 1}, {5, 1}, {5, 1}, {7, 1}}},
+		{"outra fileira não ocupa", []Card{{PositionX: 6, Row: 2}}, 4, [][2]int{{5, 1}, {5, 1}, {5, 1}, {6, 1}}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := planBattlefieldEntry(c.existing, c.count, true, 5, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(got, c.want) {
+				t.Fatalf("got %v, want %v", got, c.want)
+			}
+		})
+	}
+	if _, err := planBattlefieldEntry(nil, 4, true, 20000, 0); err != errInvalidPosition {
+		t.Fatalf("beyond the table: %v", err)
 	}
 }
 

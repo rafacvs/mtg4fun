@@ -19,13 +19,13 @@ test("preparação desktop acomoda mesa, faixa e painéis na altura disponível"
     await page.setViewportSize(viewport);
     await page.goto(`/#/salas/${room.id}`);
     await expect(
-      page.getByRole("button", { name: /^Rolar D20$/ }),
+      page.getByRole("button", { name: /^Rolar d20$/ }),
     ).toBeVisible();
     await expect(page.locator(".preparation-empty-seat")).toHaveCount(3);
     await expect(
       page
         .getByRole("region", { name: "Jogadores à mesa" })
-        .getByRole("button", { name: /^Rolar D20$/ }),
+        .getByRole("button", { name: /^Rolar d20$/ }),
     ).toBeVisible();
     await expect(
       page
@@ -138,13 +138,13 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     ).toBe(true);
     await page.goto(`/#/salas/${room.id}`);
     await expect(
-      page.getByRole("button", { name: /^Rolar D20$/ }),
+      page.getByRole("button", { name: /^Rolar d20$/ }),
     ).toBeVisible();
     await page.screenshot({
       path: info.outputPath("preparacao.png"),
       fullPage: true,
     });
-    await page.getByRole("button", { name: /^Rolar D20$/ }).click();
+    await page.getByRole("button", { name: /^Rolar d20$/ }).click();
     await expect(page.locator(".dice-register li")).toHaveCount(1, {
       timeout: 15000,
     });
@@ -199,7 +199,7 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     await press();
     await new Promise((resolve) => setTimeout(resolve, 500));
     await expect(
-      page.getByRole("button", { name: /^Rolar D20$/ }),
+      page.getByRole("button", { name: /^Rolar d20$/ }),
     ).toBeVisible();
     expect(await background()).toBe(idleBackground);
     const normal = actionRequest();
@@ -279,7 +279,7 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
     ).toBeVisible();
     // Na etapa que vale só existe o clique: segurar não carrega nem muda a força.
     const orderButton = page.getByRole("button", {
-      name: "Rolar D20",
+      name: "Rolar d20",
       exact: true,
     });
     const orderRoll = actionRequest();
@@ -902,7 +902,7 @@ test("desconfirmar libera rolar de novo até todos confirmarem", async ({
     await page.request.post(path + "/preparation/start", { data: {} });
     await page.goto(`/#/salas/${room.id}`);
     const rollButton = page.getByRole("button", {
-      name: "Rolar D20",
+      name: "Rolar d20",
       exact: true,
     });
     const confirm = page.getByRole("button", { name: /^Confirmar / });

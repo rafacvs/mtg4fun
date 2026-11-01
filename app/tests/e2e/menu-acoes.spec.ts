@@ -1,4 +1,4 @@
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, roomBody, confirmHands } from './fixtures';
 
 for (const viewport of [{ width: 1312, height: 825 }, { width: 1100, height: 700 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) test(`submenus de ações em ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop'); test.setTimeout(90_000);
@@ -8,6 +8,7 @@ for (const viewport of [{ width: 1312, height: 825 }, { width: 1100, height: 700
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
   await page.setViewportSize(viewport); await page.goto(`/#/salas/${room.id}`);
   if (viewport.width <= 1000) await page.getByRole('button', { name: 'Comandos', exact: true }).click();
   await page.getByRole('navigation', { name: 'Ações rápidas' }).getByRole('button', { name: 'Ações', exact: true }).click();

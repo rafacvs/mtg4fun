@@ -326,3 +326,9 @@ reinício e bloqueio depois de iniciar. `preparation-dice.spec.ts` passou nas tr
 medindo o quadro antes e depois de iniciar com 2, 4 e 6 jogadores. Capturas destas
 telas não foram inspecionadas. A regressão completa não foi executada.
 
+## Distribuição por WebSocket em 31/10/2026
+
+A [decisão 52](52-websocket-minijogos.md) substitui o que está acima sobre consultar a
+preparação a cada 700 ms, sobre rolagens de brincadeira ficarem no snapshot e sobre
+recuperá-las depois de reiniciar a API. As rolagens que valem e as regras de confirmação
+não mudam.

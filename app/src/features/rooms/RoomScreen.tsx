@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { useDecks } from '../decks/useDecks';
+import { LiveRoomProvider } from '../live/LiveRoom';
 import { MatchBoard } from './MatchBoard';
 import { useRooms } from './useRooms';
 import { roomsApi } from './roomsApi';
@@ -24,7 +25,9 @@ export function RoomScreen({ roomId, userId, decks }: Props) {
     {room.status === 'preparing' && <button disabled={rooms.busy || room.vacancies === 0} onClick={() => void rooms.join(roomId)}>Entrar na sala</button>}
     {rooms.error && <p role="alert" className="error">{rooms.error}</p>}
   </section>;
-  return <PreparationDice room={room} userId={userId} decks={decks} preparation={<RoomPreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} />} match={<MatchBoard roomId={roomId} />} />;
+  return <LiveRoomProvider key={roomId} roomId={roomId}>
+    <PreparationDice room={room} userId={userId} decks={decks} preparation={<RoomPreparation room={room} participant={participant} userId={userId} deckId={deckId} setDeckId={setDeckId} decks={decks} rooms={rooms} />} match={<MatchBoard roomId={roomId} />} />
+  </LiveRoomProvider>;
 }
 
 function MissingRoom({ roomId }: { roomId: number }) {

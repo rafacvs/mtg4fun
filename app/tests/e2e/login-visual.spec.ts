@@ -1,4 +1,4 @@
-import { test, expect, openQuickActions, openHand, roomBody } from './fixtures';
+import { test, expect, openQuickActions, openHand, roomBody, confirmHands } from './fixtures';
 
 test('esferas de mana renderizam e animam sem impedir entrar e sair', async ({ page }, info) => {
   const errors: string[] = [];
@@ -82,6 +82,7 @@ test('depois de entrar, reabre uma partida iniciada e compra uma carta', async (
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await confirmHands(room.id, api);
   expect((await api.delete('/api/session')).status()).toBe(204);
   await page.goto('/');
   await page.getByLabel('Login', { exact: true }).fill('amigo');

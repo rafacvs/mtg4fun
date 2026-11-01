@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	"mtg4fun/internal/catalog"
 )
@@ -42,9 +43,17 @@ type Deck struct {
 	Groups        Groups     `json:"groups"`
 	Cards         []Card     `json:"cards"`
 }
+
+// RoomUsage is how rooms take part in deck edits, without decks depending on them.
+type RoomUsage interface {
+	DeckLocked(ctx context.Context, userID, deckID int64) (bool, error)
+	DeckChanged(ctx context.Context, userID, deckID int64) error
+}
+
 type Service struct {
 	db      *sql.DB
 	catalog *catalog.Catalog
+	rooms   RoomUsage
 }
 
 func New(db *sql.DB, cards *catalog.Catalog) *Service {
@@ -53,6 +62,10 @@ func New(db *sql.DB, cards *catalog.Catalog) *Service {
 
 var errInvalidDeck = errors.New("deck inválido")
 var errUnknownCommander = errors.New("Carta não encontrada neste deck.")
+var errDeckLocked = errors.New("Desfaça o pronto na sala para editar este deck.")
+
+// UseRooms connects deck edits to the rooms that are using the deck.
+func (s *Service) UseRooms(rooms RoomUsage) { s.rooms = rooms }
 
 func (s *Service) resolve(card *Card) {
 	entry, ok := s.catalog.Lookup(card.Name)
@@ -165,12 +178,27 @@ func (s *Service) setCommander(ctx context.Context, userID, deckID int64, name s
 			return Deck{}, errUnknownCommander
 		}
 	}
+	if s.rooms != nil {
+		locked, err := s.rooms.DeckLocked(ctx, userID, deckID)
+		if err != nil {
+			return Deck{}, err
+		}
+		if locked {
+			return Deck{}, errDeckLocked
+		}
+	}
 	var stored any
 	if name != "" {
 		stored = name
 	}
 	if _, err = s.db.ExecContext(ctx, "UPDATE decks SET commander=? WHERE id=? AND user_id=?", stored, deckID, userID); err != nil {
 		return Deck{}, err
+	}
+	if s.rooms != nil {
+		// The edit is already saved; failing here would only misreport it.
+		if err := s.rooms.DeckChanged(ctx, userID, deckID); err != nil {
+			log.Printf("avisar salas sobre o deck %d: %v", deckID, err)
+		}
 	}
 	deck.Commander = name
 	s.present(&deck)

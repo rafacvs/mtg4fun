@@ -14,7 +14,7 @@ export function TableFields({ fitAllRequest, match, gesture, hoverZone, focusedI
   focusEnabled: boolean; fieldFocusEnabled: boolean;
   onPlayerMenu: (id: number, anchor: HTMLElement) => void;
   focusedId: number | null; onFocus: (id: number) => void;
-  onLibrary: () => void; onDraw: () => void; onHideRevealed: () => void;
+  onLibrary?: () => void; onDraw?: () => void; onHideRevealed: () => void;
   onOpenZone: (player: Match['players'][number], zone: 'graveyard' | 'exile', anchor: HTMLElement) => void;
   selectionActions: { count: number; open: boolean; onToggle: () => void };
 }) {

@@ -1,3 +1,4 @@
+import './player-dead.css';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Card, Match } from './roomsApi';
 import { MarkerReadout } from './CounterValues';
@@ -103,7 +104,7 @@ export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, on
 function Battlefield({ fitAllRequest, player, viewerId, droppable, hoverZone, gesture, focused, currentTurn, onFocus, focusEnabled }: ZoneProps & { fitAllRequest: number; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; focused: boolean; currentTurn: boolean; onFocus?: () => void; focusEnabled: boolean }) {
   const cards = player.battlefield ?? [];
   const { ref, layout, extent, zoom, center } = useFieldViewport(cards, gesture.onDragCancel, fitAllRequest);
-  return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
+  return <section className={`table-zone zone-battlefield ${droppable && hoverZone === 'battlefield' ? 'drop-hover' : ''} ${player.life <= 0 ? 'is-dead' : ''}`} aria-label="Campo" data-drop-zone={droppable ? 'battlefield' : undefined} data-field-owner={player.userId}>
     <header>
       <span>Campo</span>
       <strong aria-label={`${player.battlefieldCount} cartas`}>{player.battlefieldCount}</strong>
@@ -123,6 +124,7 @@ function Battlefield({ fitAllRequest, player, viewerId, droppable, hoverZone, ge
         </BattlefieldCanvas>
       </div>
     </div>
+    {player.life <= 0 && <div className="player-dead-mark" role="img" aria-label={`${player.name} está sem vida`}><TableIcon name="skull" /></div>}
   </section>;
 }
 

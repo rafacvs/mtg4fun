@@ -60,7 +60,7 @@ export function LibrarySearchCards({ cards, filtered, selectedIDs, busy, onSelec
         onKeyDown={event => {
           if (event.target !== event.currentTarget || busy) return;
           const offset = ['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : 0;
-          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(card.id); }
+          if (event.key === 'Enter') { event.preventDefault(); onSelect(card.id); }
           else if (offset) {
             event.preventDefault();
             const neighbour = cards[cards.findIndex(item => item.id === card.id) + offset];

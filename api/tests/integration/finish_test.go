@@ -33,6 +33,13 @@ func decodeFinish(t *testing.T, result response) finishView {
 
 func prepareFinishMatch(t *testing.T, count int) (*environment, []*http.Cookie, string) {
 	t.Helper()
+	e, cookies, path := prepareUnconfirmedMatch(t, count)
+	confirmHands(t, e, path, cookies[:count]...)
+	return e, cookies, path
+}
+
+func prepareUnconfirmedMatch(t *testing.T, count int) (*environment, []*http.Cookie, string) {
+	t.Helper()
 	e := newEnvironment(t)
 	for i := 0; i <= count; i++ {
 		e.mustCreate(fmt.Sprintf("finish%d", i), fmt.Sprintf("Amigo %d", i), "senha-da-mesa")
@@ -163,7 +170,7 @@ func TestConcurrentFinishVotesDoNotCountOnePlayerTwice(t *testing.T) {
 	close(gate)
 	for i := 0; i < 2; i++ {
 		m := decodeFinish(t, <-results)
-		if m.Finished || len(m.FinishVotes) != 1 || len(m.Log) != 2 {
+		if m.Finished || len(m.FinishVotes) != 1 || len(m.Log) != 8 {
 			t.Fatal("concorrência duplicou voto ou encerrou prematuramente")
 		}
 	}

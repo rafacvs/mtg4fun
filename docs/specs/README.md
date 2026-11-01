@@ -31,7 +31,7 @@ Criar uma aplicação web própria para jogar Magic online entre amigos que conh
 
 Cockatrice é referência funcional para ações, zonas, estados de cartas e interações. Servatrice é referência para responsabilidades de servidor. Não há tradução direta de C++/Qt, obrigação de repetir sua arquitetura ou compatibilidade de protocolo. A compatibilidade explicitamente necessária é com decks .cod e o fluxo de catálogo/imagens.
 
-A arquitetura usa React e TypeScript no navegador, Go no servidor, banco de dados e hospedagem própria com Docker. Desktop e celular compartilham cliente e servidor. HTTP atende operações comuns. Para salas, atualizações em tempo real usam SSE, conforme a [decisão aprovada](../decisions/03-salas-sse.md); o transporte de partidas permanece aberto (WebSocket ou mecanismo equivalente), exigindo aprovação antes da implementação.
+A arquitetura usa React e TypeScript no navegador, Go no servidor, banco de dados e hospedagem própria com Docker. Desktop e celular compartilham cliente e servidor. HTTP atende operações comuns. Para salas, atualizações em tempo real usam SSE, conforme a [decisão aprovada](../decisions/03-salas-sse.md); jogos efêmeros da sala usam WebSocket, conforme a [decisão 52](../decisions/52-websocket-minijogos.md); o transporte de partidas permanece aberto (WebSocket ou mecanismo equivalente), exigindo aprovação antes da implementação.
 
 Preferir menos componentes, camadas, dependências e código, desde que os comportamentos permaneçam corretos e claros.
 

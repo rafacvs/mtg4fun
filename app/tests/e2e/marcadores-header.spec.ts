@@ -1,4 +1,4 @@
-import { test, expect, roomBody } from './fixtures';
+import { test, expect, roomBody, confirmHands } from './fixtures';
 
 test('marcadores não zerados aparecem no cabeçalho e a vida abre a edição', async ({ page, browser, baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop'); test.setTimeout(90_000);
@@ -13,6 +13,7 @@ test('marcadores não zerados aparecem no cabeçalho e a vida abre a edição', 
       expect((await api.put(`/api/rooms/${room}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBeTruthy();
     }
     expect((await page.request.post(`/api/rooms/${room}/start`, { data: {} })).ok()).toBeTruthy();
+    await confirmHands(room, page.request, other.request);
     for (const [api, color, value] of [[page.request, 'red', 3], [other.request, 'blue', 2]] as const) {
       const match = (await (await api.get(`/api/rooms/${room}/match`)).json()).match;
       expect((await api.post(`/api/rooms/${room}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'player', playerId: match.viewerId, subject: 'marker', color, operation: 'set', value } })).ok()).toBeTruthy();

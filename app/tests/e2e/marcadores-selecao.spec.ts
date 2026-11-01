@@ -1,4 +1,4 @@
-import { test, expect, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('marcadores da seleção alteram todas as cartas e persistem', async ({ page, browser, baseURL }) => {
@@ -15,6 +15,7 @@ test('marcadores da seleção alteram todas as cartas e persistem', async ({ pag
       expect((await request.put(`/api/rooms/${room}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBeTruthy();
     }
     expect((await page.request.post(`/api/rooms/${room}/start`, { data: {} })).ok()).toBeTruthy();
+    await confirmHands(room, page.request, other.request);
     await returnOpeningHandToLibrary(page.request, room); await returnOpeningHandToLibrary(other.request, room);
     const path = `/api/rooms/${room}/match`;
     const act = async (fields: object): Promise<Match> => { const res = await page.request.post(`${path}/actions`, { data: { intentId: crypto.randomUUID(), ...fields } }); expect(res.ok()).toBeTruthy(); return (await res.json()).match; };

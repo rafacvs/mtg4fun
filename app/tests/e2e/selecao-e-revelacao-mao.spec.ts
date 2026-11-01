@@ -1,4 +1,4 @@
-import { test, expect, roomBody, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, roomBody, returnOpeningHandToLibrary, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 import type { Browser, Page } from '@playwright/test';
 
@@ -19,6 +19,7 @@ async function startMatch(page: Page, others: Page[]) {
     expect((await player.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBeTruthy();
   }
   expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, page.request, ...others.map(other => other.request));
   for (const player of [page, ...others]) await returnOpeningHandToLibrary(player.request, room.id);
   const act = async (action: object): Promise<Match> => {
     const response = await page.request.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), ...action } });

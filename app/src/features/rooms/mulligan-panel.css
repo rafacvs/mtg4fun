@@ -17,3 +17,6 @@
 .mulligan-reader p { overflow: visible; color: var(--text); white-space: pre-line; font-size: .8rem; line-height: 1.45; }
 @media (max-width: 800px) { .mulligan-backdrop { padding: 8px; } .mulligan-panel { max-height: calc(100dvh - 16px); padding: 14px; } .mulligan-cards { grid-template-columns: repeat(4, minmax(72px, 1fr)); } .mulligan-panel > footer { align-items: stretch; flex-direction: column; } .mulligan-panel > footer > div { display: grid; grid-template-columns: 1fr 1fr; } }
 @media (max-width: 800px), (hover: none) { .mulligan-reader-backdrop { display: grid; } }
+
+.mulligan-waiting { align-self: center; margin-right: auto; color: #d4b26d; font-size: .78rem; }
+.mobile-table .mobile-table-controls .mulligan-waiting { flex: 1 1 100%; margin: 0; padding: 4px 8px; border-radius: 4px; background: #0b0e10e8; font-size: 11px; text-align: right; }

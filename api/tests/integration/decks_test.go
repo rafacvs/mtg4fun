@@ -424,3 +424,89 @@ func hasCard(cards []listedCard, name string, quantity int64) bool {
 	}
 	return false
 }
+
+func TestDeckCommanderReachesTheRoomAndWaitsForUnready(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("ana", "Ana", "senha-segura-de-teste")
+	e.mustCreate("bia", "Bia", "senha-segura-de-teste")
+	e.start(false)
+	ana := sessionCookie(t, e.login("ana", "senha-segura-de-teste"))
+	bia := sessionCookie(t, e.login("bia", "senha-segura-de-teste"))
+	uploaded := e.uploadDeck(ana, []byte(`<cockatrice_deck><deckname>Hidras</deckname><zone name="main"><card number="5" name="Island"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>`))
+	requireStatus(t, uploaded, 201)
+	var created struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(uploaded.body, &created); err != nil {
+		t.Fatal(err)
+	}
+	deckID := strconv.FormatInt(created.Deck.ID, 10)
+	opened := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, opened, 201)
+	path := "/api/rooms/" + strconv.FormatInt(decodeRoom(t, opened).ID, 10)
+	requireStatus(t, e.request("POST", path+"/participants", "{}", bia, nil), 200)
+	requireStatus(t, e.request("PUT", path+"/participants/me/deck", `{"deckId":`+deckID+`}`, ana, nil), 200)
+
+	commanderPath := "/api/decks/" + deckID + "/commander"
+	sharedImage := func() string {
+		t.Helper()
+		shared := e.request("GET", path+"/preparation-decks", "", bia, nil)
+		requireStatus(t, shared, 200)
+		var payload struct {
+			Decks []struct {
+				Image string `json:"image"`
+			} `json:"decks"`
+		}
+		if err := json.Unmarshal(shared.body, &payload); err != nil || len(payload.Decks) != 1 {
+			t.Fatalf("decks da preparação inesperados: %s", shared.body)
+		}
+		return payload.Decks[0].Image
+	}
+	revision := func() int64 {
+		t.Helper()
+		listed := e.request("GET", "/api/rooms", "", bia, nil)
+		requireStatus(t, listed, 200)
+		var payload struct {
+			Rooms []struct {
+				Participants []struct {
+					DeckID       int64 `json:"deckId"`
+					DeckRevision int64 `json:"deckRevision"`
+				} `json:"participants"`
+			} `json:"rooms"`
+		}
+		if err := json.Unmarshal(listed.body, &payload); err != nil {
+			t.Fatal(err)
+		}
+		for _, room := range payload.Rooms {
+			for _, player := range room.Participants {
+				if player.DeckID == created.Deck.ID {
+					return player.DeckRevision
+				}
+			}
+		}
+		t.Fatalf("participante com o deck não encontrado: %s", listed.body)
+		return 0
+	}
+
+	if sharedImage() != "Island" || revision() != 0 {
+		t.Fatalf("estado inicial inesperado: imagem %q, revisão %d", sharedImage(), revision())
+	}
+	requireStatus(t, e.request("PUT", commanderPath, `{"name":"Gargos, Vicious Watcher"}`, ana, nil), 200)
+	if sharedImage() != "Gargos, Vicious Watcher" || revision() != 1 {
+		t.Fatalf("a sala deveria ver o comandante novo: imagem %q, revisão %d", sharedImage(), revision())
+	}
+
+	requireStatus(t, e.request("PUT", path+"/participants/me/ready", "{}", ana, nil), 200)
+	requireStatus(t, e.request("PUT", commanderPath, `{"name":"Island"}`, ana, nil), 409)
+	if sharedImage() != "Gargos, Vicious Watcher" || revision() != 1 {
+		t.Fatalf("pronto deveria travar o deck: imagem %q, revisão %d", sharedImage(), revision())
+	}
+
+	requireStatus(t, e.request("DELETE", path+"/participants/me/ready", "{}", ana, nil), 200)
+	requireStatus(t, e.request("PUT", commanderPath, `{"name":"Island"}`, ana, nil), 200)
+	if sharedImage() != "Island" || revision() != 2 {
+		t.Fatalf("desfazer o pronto deveria liberar a edição: imagem %q, revisão %d", sharedImage(), revision())
+	}
+}

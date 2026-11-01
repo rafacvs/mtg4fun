@@ -84,9 +84,14 @@ func TestCountersConcurrencyPrivacyAndAtomicFailure(t *testing.T) {
 	}
 	move := fmt.Sprintf(`{"intentId":"30000000-0000-4000-8000-000000000002","kind":"move","cardIds":[%q],"to":"battlefield"}`, cardID)
 	view = decodeCounters(t, e.request("POST", path, move, cookies[0], nil))
+	if view.Players[0].Battlefield[0].Power != 0 || view.Players[0].Battlefield[0].Markers.Purple != 0 {
+		t.Fatal("mudar de zona não limpou modificador e marcador")
+	}
+	requireStatus(t, e.request("POST", path, action("card", "power", "set", "", cardID, 4), cookies[0], nil), 200)
+	requireStatus(t, e.request("POST", path, action("card", "marker", "set", "purple", cardID, 9), cookies[0], nil), 200)
 	view = decodeCounters(t, e.request("POST", path, action("card", "power", "increment", "", cardID, -1), cookies[0], nil))
 	if view.Players[0].Battlefield[0].Power != 3 || view.Players[0].Battlefield[0].Markers.Purple != 9 {
-		t.Fatal("modificador não preservou movimento/incremento")
+		t.Fatal("modificador não preservou o incremento")
 	}
 	public := decodeCounters(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", cookies[1], nil))
 	if public.Players[0].Battlefield[0].Power != 3 || public.Players[0].Battlefield[0].Markers.Purple != 9 || public.Players[0].Markers.Red != 10 {

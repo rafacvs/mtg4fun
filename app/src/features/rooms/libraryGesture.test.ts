@@ -27,4 +27,8 @@ test('shortcuts ignore typing, modifiers and held keys', () => {
   assert.equal(shortcutCommand(event, true), null);
   assert.equal(shortcutCommand({ ...event, repeat: true }, false), null);
   assert.equal(shortcutCommand({ ...event, ctrlKey: true }, false), null);
+  assert.equal(shortcutCommand({ ...event, key: ' ' }, false), 'turn');
+  assert.equal(shortcutCommand({ ...event, key: ' ', shiftKey: true }, false), 'turn-previous');
+  assert.equal(shortcutCommand({ ...event, key: ' ' }, true), null);
+  assert.equal(shortcutCommand({ ...event, key: ' ', repeat: true }, false), null);
 });

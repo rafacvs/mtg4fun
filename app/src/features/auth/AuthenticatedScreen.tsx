@@ -4,6 +4,8 @@ import type { User } from './sessionApi';
 import './auth.css';
 import { RoomsList } from '../rooms/RoomsList';
 import { useDecks } from '../decks/useDecks';
+import { playerMark } from '../rooms/playerIdentity';
+import { TableIcon } from '../rooms/TableIcon';
 import { RoomScreen } from '../rooms/RoomScreen';
 
 function currentScreen() {
@@ -38,7 +40,7 @@ export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
   }
 
   if (typeof screen === 'number') return <div className="room-screen">
-    <header className="room-header"><a href="/#/salas">Voltar ao lobby</a><h1 id="title">Sala {screen}</h1><span>{user.name}</span></header>
+    <header className="room-header"><a href="/#/salas"><TableIcon name="chevron-left" />Voltar ao lobby</a><h1 id="title">Sala {screen}</h1><span className="room-header-user"><span className="dice-player-shield" aria-hidden="true">{playerMark(user.name)}</span>{user.name}</span></header>
     <RoomScreen key={screen} roomId={screen} userId={user.id} decks={decks} />
   </div>;
 

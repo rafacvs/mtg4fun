@@ -1,4 +1,4 @@
-import { test, expect, roomBody, returnOpeningHandToLibrary } from './fixtures';
+import { test, expect, roomBody, returnOpeningHandToLibrary, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
 test('mão em leque rebaixada, inteira no hover, e marcadores na lateral da carta', async ({ page }, info) => {
@@ -10,6 +10,7 @@ test('mão em leque rebaixada, inteira no hover, e marcadores na lateral da cart
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
   await returnOpeningHandToLibrary(api, room.id);
   const act = async (action: object): Promise<Match> => (await (await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), ...action } })).json()).match;
   const drawn = await act({ kind: 'draw', count: 6 });
@@ -69,6 +70,7 @@ test('reorganizar a mão coloca a carta ao lado da que recebeu o arraste, sem tr
   const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
   await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
   await returnOpeningHandToLibrary(api, room.id);
   expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 5 } })).ok()).toBeTruthy();
   await page.setViewportSize({ width: 1440, height: 900 });

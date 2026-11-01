@@ -31,9 +31,9 @@ test('desfaz a prontidão, devolve o seletor e impede o início', async ({ page,
     await choosePreparationDeck(page, String(deck.id));
     if (mobilePreparation) await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toHaveCount(0);
     else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
-    await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Amigo da mesa' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /[Ff]alta: Amigo da mesa/ })).toBeVisible();
     await page.getByRole('button', { name: 'Estou pronto', exact: true }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Segundo amigo' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /[Ff]alta: Segundo amigo/ })).toBeVisible();
     if (mobilePreparation) await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toHaveCount(0);
     else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
     await choosePreparationDeck(guest, String(first.id));
@@ -44,7 +44,7 @@ test('desfaz a prontidão, devolve o seletor e impede o início', async ({ page,
     await guest.getByRole('button', { name: guestMobile ? 'desfazer pronto' : 'Desfazer prontidão', exact: true }).click();
     if (mobilePreparation) await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toHaveCount(0);
     else await expect(page.getByRole('button', { name: 'Iniciar partida', exact: true })).toBeDisabled();
-    await expect(page.getByRole('status').filter({ hasText: 'Ainda falta: Segundo amigo' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /[Ff]alta: Segundo amigo/ })).toBeVisible();
     if (guestMobile) await guest.getByRole('button', { name: /Trocar/ }).click();
     const selector = guest.getByLabel('Deck para a partida');
     await expect(selector).toBeEnabled();

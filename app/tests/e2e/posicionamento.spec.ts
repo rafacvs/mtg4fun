@@ -1,4 +1,4 @@
-import { test, expect, selectFieldArea, openHand, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody } from './fixtures';
+import { test, expect, selectFieldArea, openHand, openQuickActions, closeQuickActions, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
 import type { Page } from '@playwright/test';
 
 test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independentemente', async ({ page }, testInfo) => {
@@ -12,6 +12,7 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
   const { room } = await created.json();
   expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+  await confirmHands(room.id, api);
   await returnOpeningHandToLibrary(api, room.id);
 
   await page.setViewportSize({ width: 844, height: 390 });

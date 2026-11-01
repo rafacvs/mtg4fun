@@ -305,6 +305,7 @@ func TestOrderedZonesPlacementAndReorderOverHTTP(t *testing.T) {
 		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), cookie, nil), 200)
 	}
 	requireStatus(t, e.request("POST", path+"/start", "{}", owner, nil), 201)
+	confirmHands(t, e, path, owner, opponent)
 	number := 0
 	action := func(cookie *http.Cookie, fields string) response {
 		number++

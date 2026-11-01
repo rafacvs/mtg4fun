@@ -23,6 +23,34 @@ def free_port():
         return listener.getsockname()[1]
 
 
+def verify_live(port, room_id, cookies, url):
+    """The room WebSocket must cross the proxy with the session, and refuse other origins."""
+    cookie = "; ".join(f"{item.name}={item.value}" for item in cookies)
+
+    def handshake(origin):
+        with socket.create_connection(("127.0.0.1", port), timeout=10) as connection:
+            connection.sendall((f"GET /api/rooms/{room_id}/live HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n"
+                                f"Upgrade: websocket\r\nConnection: Upgrade\r\nOrigin: {origin}\r\nCookie: {cookie}\r\n"
+                                "Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n").encode())
+            received = b""
+            # The first frame after the upgrade is the state of the dice game.
+            while b'"game":"dice"' not in received and len(received) < 8192:
+                chunk = connection.recv(4096)
+                if not chunk:
+                    break
+                received += chunk
+                if not received.startswith(b"HTTP/1.1 101"):
+                    break
+            return received
+
+    allowed = handshake(url)
+    if not allowed.startswith(b"HTTP/1.1 101") or b'"game":"dice"' not in allowed:
+        raise AssertionError(f"WebSocket não atravessou o proxy: {allowed[:300]!r}")
+    refused = handshake("https://outro.example")
+    if not refused.startswith(b"HTTP/1.1 403"):
+        raise AssertionError(f"WebSocket aceitou outra origem: {refused[:300]!r}")
+
+
 def verify(mode):
     project = f"mtg4fun-{mode}-test-{secrets.token_hex(4)}"
     port = free_port()
@@ -159,7 +187,10 @@ def verify(mode):
             require(request("DELETE"), 204)
             require(request(), 401)
             require(request("POST", data=credentials), 200)
-            print(f"{mode}: navegador, API, conta, sessão, recriação e logout verificados.", flush=True)
+            created_room = request("POST", "/api/rooms", {"name": "Mesa ao vivo", "format": "Commander", "seats": 2, "life": 40})
+            require(created_room, 201)
+            verify_live(port, json.loads(created_room[1])["room"]["id"], cookies, url)
+            print(f"{mode}: navegador, API, conta, sessão, recriação, logout e WebSocket verificados.", flush=True)
         except BaseException:
             print(compose("logs", "--no-color", "--tail=60", check=False), flush=True)
             raise

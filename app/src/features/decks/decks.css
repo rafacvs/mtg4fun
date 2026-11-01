@@ -197,3 +197,9 @@
 @media (max-width: 520px) { .mana-curve-dialog .deck-pie-layout, .mana-curve-dialog .deck-summary-heading { grid-template-columns: 1fr; } .deck-detail-actions { width: 100%; } }
 .deck-detail-header { margin: -25px -25px 0; padding: 25px; background: linear-gradient(90deg, #101815f2, #19241bb3), url('../../assets/theme/mat-forest.jpg') center / cover; border-radius: 6px 6px 0 0; }
 @media (max-width: 999px) { .deck-detail-header { margin: -17px -17px 0; padding: 17px; } }
+
+/* O mesmo detalhe da biblioteca, aberto sobre a preparação da mesa. */
+.deck-editor-dialog { width: min(96vw, 1040px); max-height: calc(100dvh - 32px); overflow: hidden auto; padding: 0; color: var(--text); background: transparent; border: 0; }
+.deck-editor-dialog::backdrop { background: #000c; backdrop-filter: blur(5px); }
+.deck-editor-dialog > .error { margin: 0 0 8px; }
+.deck-editor-dialog .deck-detail-header { min-height: 0; }
