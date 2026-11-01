@@ -64,6 +64,7 @@ test('no celular toca para ler e segura para selecionar a carta', async ({ page 
   expect((await api.post('/api/session', { data: { login: process.env.E2E_LOGIN || 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
   const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'mulligan-mobile.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>') } } })).json();
   const roomId = (await (await api.post('/api/rooms', { data: { name: `Mulligan mobile ${Date.now()}`, format: 'Livre', seats: 1, life: 40 } })).json()).room.id;
+  expect((await api.put(`/api/rooms/${roomId}/mulligan-mode`, { data: { mode: 'standard' } })).ok()).toBe(true);
   expect((await api.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
   expect((await api.post(`/api/rooms/${roomId}/start`, { data: {} })).status()).toBe(201);
   await page.goto(`/#/salas/${roomId}`);

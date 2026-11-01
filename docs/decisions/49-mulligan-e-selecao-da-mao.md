@@ -7,6 +7,10 @@ com o mouse e dois tipos de mulligan configuráveis na preparação. Depois da
 análise, aprovou que somente o criador escolha o tipo e que o padrão seja a
 opção inicial.
 
+Em 01/11/2026, o usuário pediu em conversa que o Aconchegaz passasse a ser a opção
+inicial das salas novas. O criador continua podendo escolher o padrão. Salas já
+criadas mantêm o modo gravado, e o snapshot antigo sem modo continua lido como padrão.
+
 ## Comportamento aprovado
 
 - **Padrão:** cada mulligan devolve a mão ao grimório, embaralha e compra sete.
