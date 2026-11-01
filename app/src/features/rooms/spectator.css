@@ -1,0 +1,39 @@
+.spectator-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+.spectator-badge { display: inline-flex; align-items: center; gap: 6px; color: var(--gold); font: 600 10px/1 Cinzel, serif; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
+.spectator-badge .table-icon { width: 15px; height: 15px; flex: 0 0 15px; }
+.match-board .spectator-log-toggle { display: inline-grid; place-items: center; width: 38px; min-width: 38px; height: 38px; min-height: 38px; padding: 0; }
+.spectator-log-toggle:is([aria-expanded='true'], [aria-pressed='true']) { border-color: var(--gold); color: var(--gold); }
+.spectator-seats { display: flex; flex: 0 1 auto; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.match-board .spectator-seats button { position: relative; display: inline-flex; flex: 0 0 auto; align-items: center; gap: 7px; min-height: 38px; padding: 4px 10px; border-radius: 6px; font-size: .78rem; white-space: nowrap; }
+.spectator-seats button > span { max-width: 13ch; overflow: hidden; text-overflow: ellipsis; }
+.spectator-seats button[aria-selected='true'] { border-color: var(--gold); background: var(--gold-wash); color: var(--gold-light); }
+.spectator-seats small { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: .72rem; }
+.spectator-seats small .table-icon { width: 13px; height: 13px; flex: 0 0 13px; }
+.spectator-turn { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+
+@media (min-width: 1001px) {
+  .desktop-table .spectator-dock { gap: 14px; padding-left: 14px; }
+  .desktop-table .spectator-seats { max-width: 42%; }
+  .desktop-table .spectator-rail .log-panel .rail-panel-content { display: flex; }
+}
+
+/* In the phone the bar joins the normal flow: the field gives up the height it needs. */
+@media (max-width: 1000px) {
+  .mobile-table.spectator-board .table-stage { padding-bottom: calc(var(--dock-height, 200px) + 8px); }
+  .mobile-table.spectator-board .spectator-dock { left: 5px; right: 5px; bottom: max(4px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; width: auto; height: auto; min-height: 0; max-height: none; padding: 6px 8px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); pointer-events: auto; }
+  .mobile-table.spectator-board .spectator-controls { justify-content: space-between; }
+  .mobile-table.spectator-board .spectator-controls > div { display: flex; gap: 6px; }
+  .mobile-table.spectator-board .spectator-dock .dock-content { flex: 0 0 auto; height: auto; }
+  .mobile-table.spectator-board .spectator-dock .zone-hand { height: auto; align-items: stretch; }
+  .mobile-table.spectator-board .spectator-dock .zone-cards { justify-content: flex-start; width: 100%; max-width: 100%; height: auto; padding: 2px 4px; }
+  .mobile-table.spectator-board .spectator-dock .zone-placeholder { padding: 8px 2px; }
+  .mobile-table.spectator-board .spectator-rail { inset: 8px 8px calc(var(--dock-height, 200px) + 12px); grid-template-rows: 44px minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+  .mobile-table.spectator-board .spectator-rail .rail-panel-content:not([hidden]) { display: flex; top: 56px; }
+}
+/* Landscape has little height: identity on the left, the cards beside it in a single row. */
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table.spectator-board .spectator-dock { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 4px; }
+  .mobile-table.spectator-board .spectator-controls { grid-column: 1; grid-row: 1; }
+  .mobile-table.spectator-board .spectator-seats { grid-column: 1; grid-row: 2; }
+  .mobile-table.spectator-board .spectator-dock .dock-content { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+}

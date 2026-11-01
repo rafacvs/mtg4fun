@@ -2,7 +2,23 @@ package rooms
 
 // Enrich only the owner's consultation. Public reveals never disclose library order.
 func (s *Service) libraryView(state matchState, viewerID int64, log []MatchLog) Match {
+	return s.enrichedView(state, state.view(viewerID, log), viewerID)
+}
+
+// spectatorView adds every hand to the public view. It stays apart from view so
+// that only the read for someone outside the match can ever disclose a hand.
+func (s *Service) spectatorView(state matchState, viewerID int64, log []MatchLog) Match {
 	view := state.view(viewerID, log)
+	for i, player := range state.Players {
+		view.Players[i].Hand = visible(player.Hand, player.UserID)
+		for j := range view.Players[i].Hand {
+			view.Players[i].Hand[j].RevealedTo = nil
+		}
+	}
+	return s.enrichedView(state, view, viewerID)
+}
+
+func (s *Service) enrichedView(state matchState, view Match, viewerID int64) Match {
 	for i := range view.Players {
 		player := &view.Players[i]
 		for _, cards := range [][]VisibleCard{player.Hand, player.Battlefield, player.Graveyard, player.Exile, player.Command, player.Consulted, player.Revealed} {

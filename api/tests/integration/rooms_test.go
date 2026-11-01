@@ -458,7 +458,7 @@ func TestPreparationStartsPersistentIndependentMatch(t *testing.T) {
 	if ownHand != 1 || otherHand != 1 {
 		t.Fatalf("mão alheia ou biblioteca exposta: %s", started.body)
 	}
-	requireStatus(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", outsider, nil), 404)
+	requireStatus(t, e.request("GET", fmt.Sprintf("/api/rooms/%d/match", id), "", outsider, nil), 200)
 	requireStatus(t, e.request("DELETE", fmt.Sprintf("/api/decks/%d", anaDeck), "", ana, nil), 204)
 	e.stop()
 	e.start(false)

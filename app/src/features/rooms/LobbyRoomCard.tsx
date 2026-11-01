@@ -55,7 +55,7 @@ export function LobbyRoomCard({ room, userId, busy, onEnter }: {
         ? <a className="room-enter" href={`/#/salas/${room.id}`}>{preparing ? 'Entrar na mesa' : 'Voltar à partida'}</a>
         : preparing
           ? <button type="button" className="room-join" disabled={busy || room.vacancies === 0} onClick={() => onEnter(room.id)}>Entrar na sala</button>
-          : <span className="room-closed">Partida fechada</span>}
+          : <a className="room-enter" href={`/#/salas/${room.id}`}>Assistir</a>}
     </div>
   </article>;
 }

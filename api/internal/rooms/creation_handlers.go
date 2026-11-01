@@ -5,6 +5,7 @@ import (
 	"errors"
 	"mtg4fun/internal/httpserver"
 	"net/http"
+	"slices"
 )
 
 type catalogToken struct {
@@ -24,12 +25,15 @@ func (s *Service) listTokens(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if _, err := s.match(r.Context(), id, user); err != nil {
-		if errors.Is(err, errNotParticipant) || errors.Is(err, sql.ErrNoRows) {
-			httpserver.WriteError(w, 404, "Partida não encontrada.")
-			return
-		}
+	match, err := s.match(r.Context(), id, user)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		httpserver.InternalError(w, err)
+		return
+	}
+	// Reading the match is open to spectators; creating tokens is not.
+	seated := slices.ContainsFunc(match.Players, func(p MatchPlayer) bool { return p.UserID == user.ID })
+	if err != nil || !seated {
+		httpserver.WriteError(w, 404, "Partida não encontrada.")
 		return
 	}
 	tokens := []catalogToken{}

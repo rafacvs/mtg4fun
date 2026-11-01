@@ -9,30 +9,33 @@ import matSwamp from '../../assets/theme/mat-swamp.jpg';
 
 const playmats = [matForest, matSea, matMountain, matSwamp];
 
-export function TableFields({ fitAllRequest, match, gesture, hoverZone, focusedId, disabled, onPlayerMenu, onFocus, onLibrary, onDraw, onHideRevealed, onOpenZone, selectionActions, ownCommands, focusEnabled, fieldFocusEnabled }: {
+export function TableFields({ fitAllRequest, match, gesture, hoverZone, focusedId, disabled, onPlayerMenu, onFocus, onLibrary, onDraw, onHideRevealed, onOpenZone, selectionActions, ownCommands, focusEnabled, fieldFocusEnabled, watchedId }: {
   fitAllRequest: number; ownCommands?: ReactNode; match: Match; gesture: CardGesture; hoverZone: string | null; disabled: boolean;
   focusEnabled: boolean; fieldFocusEnabled: boolean;
   onPlayerMenu: (id: number, anchor: HTMLElement) => void;
   focusedId: number | null; onFocus: (id: number) => void;
-  onLibrary?: () => void; onDraw?: () => void; onHideRevealed: () => void;
+  onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void;
   onOpenZone: (player: Match['players'][number], zone: 'graveyard' | 'exile', anchor: HTMLElement) => void;
-  selectionActions: { count: number; open: boolean; onToggle: () => void };
+  selectionActions?: { count: number; open: boolean; onToggle: () => void };
+  /** Espectador: o jogador que ocupa o lugar principal da mesa, sem ganhar os controles dele. */
+  watchedId?: number;
 }) {
-  const own = match.players.find(player => player.userId === match.viewerId)!;
-  const viewerTurnIndex = match.turnOrder.findIndex(player => player.userId === match.viewerId);
+  const mainId = watchedId ?? match.viewerId;
+  const main = match.players.find(player => player.userId === mainId)!;
+  const mainTurnIndex = match.turnOrder.findIndex(player => player.userId === mainId);
   const turnDistance = (id: number) => {
     const index = match.turnOrder.findIndex(player => player.userId === id);
-    return index < 0 || viewerTurnIndex < 0 ? match.turnOrder.length : (index - viewerTurnIndex + match.turnOrder.length) % match.turnOrder.length;
+    return index < 0 || mainTurnIndex < 0 ? match.turnOrder.length : (index - mainTurnIndex + match.turnOrder.length) % match.turnOrder.length;
   };
-  const opponents = match.players.filter(player => player.userId !== match.viewerId)
+  const opponents = match.players.filter(player => player.userId !== mainId)
     .sort((left, right) => turnDistance(left.userId) - turnDistance(right.userId));
   const renderPlayer = (player: Match['players'][number]) => {
     const isOwn = player.userId === match.viewerId;
     const focused = player.userId === focusedId;
     const index = match.players.findIndex(item => item.userId === player.userId);
     const currentTurn = player.userId === match.currentTurn.userId;
-    const seat = <PlayerSeat player={player} own={isOwn} currentTurn={currentTurn} focused={focused} focusEnabled={focusEnabled} turnPosition={match.turnOrder.findIndex(item => item.userId === player.userId) + 1} onMenu={anchor => onPlayerMenu(player.userId, anchor)} onFocus={() => onFocus(player.userId)} />;
-    return <div key={player.userId} className={`${isOwn ? 'own-table-surface' : 'opponent-table-surface'} ${focused ? 'focused-table-surface' : ''}`} style={{ '--seat-color': seatColors[index % seatColors.length], '--playmat-image': `url(${playmats[index % playmats.length]})` } as CSSProperties}>
+    const seat = <PlayerSeat player={player} own={isOwn} handVisible={watchedId !== undefined} currentTurn={currentTurn} focused={focused} focusEnabled={focusEnabled} turnPosition={match.turnOrder.findIndex(item => item.userId === player.userId) + 1} onMenu={anchor => onPlayerMenu(player.userId, anchor)} onFocus={() => onFocus(player.userId)} />;
+    return <div key={player.userId} className={`${player.userId === mainId ? 'own-table-surface' : 'opponent-table-surface'} ${focused ? 'focused-table-surface' : ''}`} style={{ '--seat-color': seatColors[index % seatColors.length], '--playmat-image': `url(${playmats[index % playmats.length]})` } as CSSProperties}>
       <PlayerTable fitAllRequest={fitAllRequest} player={player} focused={focused} expanded={focused} own={isOwn} viewerId={match.viewerId} hoverZone={hoverZone} gesture={gesture} fieldZoom={1} onPlayerMenu={anchor => onPlayerMenu(player.userId, anchor)} onFocus={() => onFocus(player.userId)} currentTurn={currentTurn} fieldFocusEnabled={fieldFocusEnabled} onLibrary={isOwn ? onLibrary : undefined} onDraw={isOwn ? onDraw : undefined} onHideRevealed={isOwn ? onHideRevealed : undefined} onOpenZone={onOpenZone} selectionActions={isOwn ? selectionActions : undefined} disabled={disabled} seat={seat} />
       {isOwn && ownCommands}
     </div>;
@@ -40,6 +43,6 @@ export function TableFields({ fitAllRequest, match, gesture, hoverZone, focusedI
   const controllerColors = Object.fromEntries(match.players.map((player, index) => [`--seat-${player.userId}`, seatColors[index % seatColors.length]])) as CSSProperties;
   return <div className={`desktop-fields player-count-${match.players.length} ${focusedId ? 'has-field-focus' : ''}`} style={controllerColors}>
     {opponents.length > 0 && <section className="opponent-strip" aria-label="Oponentes" tabIndex={0}>{opponents.map(renderPlayer)}</section>}
-    {renderPlayer(own)}
+    {renderPlayer(main)}
   </div>;
 }
