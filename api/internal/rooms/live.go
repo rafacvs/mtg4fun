@@ -20,7 +20,7 @@ const maxPlayRolls = 50
 func (s *Service) setupLive() {
 	s.live = live.NewHub()
 	s.coinDuels = &minigames.CoinDuels{Hub: s.live, Participant: s.preparingParticipant}
-	s.live.Register(diceGame{s}, s.coinDuels, &minigames.Emoji{Hub: s.live, Participant: s.preparingParticipant})
+	s.live.Register(diceGame{s}, s.coinDuels, &minigames.Emoji{Hub: s.live, Participant: s.reactingParticipant})
 }
 
 // CloseLive asks the connected clients to come back after a restart.
@@ -36,7 +36,8 @@ func (s *Service) liveRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	room, err := readRoom(s.db.QueryRowContext(r.Context(), "SELECT snapshot FROM rooms WHERE id=?", id))
-	if errors.Is(err, sql.ErrNoRows) || (err == nil && !memberOf(room, user.ID)) {
+	// During the match anyone can watch, so anyone can follow the room live.
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && !memberOf(room, user.ID) && room.Status != "started") {
 		httpserver.WriteError(w, 404, "Sala não encontrada.")
 		return
 	}
@@ -52,16 +53,41 @@ func (s *Service) liveRoom(w http.ResponseWriter, r *http.Request) {
 
 // preparingParticipant allows the games that exist only before the match starts.
 func (s *Service) preparingParticipant(ctx context.Context, id, userID int64) (string, error) {
-	room, err := readRoom(s.db.QueryRowContext(ctx, "SELECT snapshot FROM rooms WHERE id=?", id))
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", live.UserError{Message: "Sala não encontrada."}
-	}
+	room, err := s.liveRoomState(ctx, id)
 	if err != nil {
 		return "", err
 	}
 	if room.Status != "preparing" {
 		return "", live.UserError{Message: "Disponível só antes de iniciar a partida."}
 	}
+	return seatedName(room, userID)
+}
+
+// reactingParticipant allows reactions from those seated before the match and from
+// anyone connected during it, but not while the order is being decided.
+func (s *Service) reactingParticipant(ctx context.Context, id, userID int64) (string, error) {
+	room, err := s.liveRoomState(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	switch room.Status {
+	case "started":
+		return "", nil
+	case "preparing":
+		return seatedName(room, userID)
+	}
+	return "", live.UserError{Message: "Disponível só na preparação e durante a partida."}
+}
+
+func (s *Service) liveRoomState(ctx context.Context, id int64) (roomState, error) {
+	room, err := readRoom(s.db.QueryRowContext(ctx, "SELECT snapshot FROM rooms WHERE id=?", id))
+	if errors.Is(err, sql.ErrNoRows) {
+		return room, live.UserError{Message: "Sala não encontrada."}
+	}
+	return room, err
+}
+
+func seatedName(room roomState, userID int64) (string, error) {
 	for _, p := range room.Participants {
 		if p.ID == userID {
 			return p.Name, nil

@@ -529,8 +529,61 @@ func TestLiveGamesStopWhenTheMatchStartsAndConnectionOutlivesIdleTimeouts(t *tes
 		t.Fatalf("fase não chegou à sala: %s", state.Phase)
 	}
 	bia.send("emoji", "send", "late", `{"emoji":"🔥"}`)
-	if kind, text, _ := bia.reply("late"); kind != "error" || !strings.Contains(text, "antes de iniciar") {
-		t.Fatalf("emoji depois de iniciar: %s %s", kind, text)
+	if kind, text, _ := bia.reply("late"); kind != "error" || !strings.Contains(text, "durante a partida") {
+		t.Fatalf("emoji ao definir a ordem: %s %s", kind, text)
+	}
+	// Quem não joga só entra na conexão depois que a partida começa.
+	if conn, response, err := dialLive(e, room.path, room.outsider, e.url); err == nil {
+		conn.CloseNow()
+		t.Fatal("quem não joga conectou antes de a partida começar")
+	} else if response == nil || response.StatusCode != 404 {
+		t.Fatalf("conexão fora da sala: %+v", response)
+	}
+}
+
+func TestLiveEmojiFallsDuringTheMatchUntilItEnds(t *testing.T) {
+	e, cookies, path := prepareUnconfirmedMatch(t, 2)
+	ana := connectLive(t, e, path, cookies[0])
+	bia := connectLive(t, e, path, cookies[1])
+	react := func(from *liveClient, id, emoji string) {
+		t.Helper()
+		from.send("emoji", "send", id, fmt.Sprintf(`{"emoji":%q}`, emoji))
+		var fall struct {
+			Emoji string `json:"emoji"`
+		}
+		if err := json.Unmarshal(bia.next("emoji", "fall").Data, &fall); err != nil {
+			t.Fatal(err)
+		}
+		if fall.Emoji != emoji {
+			t.Fatalf("emoji incorreto: %+v", fall)
+		}
+	}
+	// Antes de confirmar as mãos a mesa já está aberta.
+	react(ana, "confirming", "🔥")
+	for i, cookie := range cookies[:2] {
+		requireStatus(t, e.request("POST", path+"/match/actions", fmt.Sprintf(`{"intentId":"%08x-4444-4000-8000-000000000000","kind":"keep_hand","cardIds":[]}`, i), cookie, nil), 200)
+	}
+	time.Sleep(300 * time.Millisecond)
+	react(ana, "playing", "💀")
+	// Quem assiste recebe e manda emojis, mas segue fora dos outros jogos.
+	watcher := connectLive(t, e, path, cookies[2])
+	react(watcher, "watching", "🐐")
+	watcher.next("emoji", "fall")
+	time.Sleep(400 * time.Millisecond)
+	react(ana, "to-watcher", "👀")
+	watcher.next("emoji", "fall")
+	watcher.send("coin-duel", "challenge", "duel", fmt.Sprintf(`{"opponentId":%d}`, sessionUserID(t, e, cookies[0])))
+	if kind, _, _ := watcher.reply("duel"); kind != "error" {
+		t.Fatalf("quem assiste desafiou para um X1: %s", kind)
+	}
+	requireStatus(t, e.request("POST", path+"/match/actions", `{"intentId":"000000ff-4444-4000-8000-000000000000","kind":"finish"}`, cookies[0], nil), 200)
+	bia.send("emoji", "send", "late", `{"emoji":"🔥"}`)
+	if kind, text, _ := bia.reply("late"); kind != "error" || !strings.Contains(text, "durante a partida") {
+		t.Fatalf("emoji depois de encerrar: %s %s", kind, text)
+	}
+	watcher.send("emoji", "send", "late-watcher", `{"emoji":"🔥"}`)
+	if kind, _, _ := watcher.reply("late-watcher"); kind != "error" {
+		t.Fatalf("quem assiste reagiu depois de encerrar: %s", kind)
 	}
 }
 

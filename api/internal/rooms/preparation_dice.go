@@ -37,6 +37,23 @@ func memberOf(r roomState, id int64) bool {
 	return false
 }
 
+// tiedPlayers lists who else holds this value in their latest roll that counts.
+func tiedPlayers(r roomState, playerID int64, value int) []int64 {
+	latest := map[int64]int{}
+	for _, roll := range r.Dice {
+		if roll.Phase == "determining_order" && roll.PlayerID != playerID {
+			latest[roll.PlayerID] = roll.Value
+		}
+	}
+	tied := []int64{}
+	for id, rolled := range latest {
+		if rolled == value {
+			tied = append(tied, id)
+		}
+	}
+	return tied
+}
+
 func (s *Service) preparationState(w http.ResponseWriter, req *http.Request) {
 	id, ok := roomID(w, req)
 	if !ok {
@@ -187,6 +204,17 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 			}
 			// A força só existe na brincadeira: a rolagem que vale é sempre normal.
 			room.Dice = append(room.Dice, PreparationRoll{ID: input.IntentID, PlayerID: user.ID, Name: user.Name, Value: value, Seed: now, Phase: room.Status, At: now})
+			// Sem empate a rolagem já fica confirmada; no empate, ninguém do empate fica.
+			tied := tiedPlayers(room, user.ID, value)
+			for _, playerID := range tied {
+				delete(room.Confirmed, playerID)
+			}
+			if len(tied) == 0 {
+				if room.Confirmed == nil {
+					room.Confirmed = map[int64]string{}
+				}
+				room.Confirmed[user.ID] = input.IntentID
+			}
 		} else if input.Kind == "unconfirm" {
 			// A última confirmação inicia a partida: depois dela não há o que desfazer.
 			if room.Status != "determining_order" || room.Confirmed[user.ID] == "" {
@@ -209,11 +237,9 @@ func (s *Service) changePreparation(w http.ResponseWriter, req *http.Request, st
 				fail("Confirme sua rolagem mais recente.")
 				return
 			}
-			for _, roll := range room.Dice {
-				if room.Confirmed[roll.PlayerID] == roll.ID && roll.Value == latest.Value {
-					fail("Empate: role novamente antes de confirmar.")
-					return
-				}
+			if len(tiedPlayers(room, user.ID, latest.Value)) > 0 {
+				fail("Empate: role novamente antes de confirmar.")
+				return
 			}
 			if room.Confirmed == nil {
 				room.Confirmed = map[int64]string{}

@@ -297,21 +297,17 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
       await page.mouse.up();
     }
     expect((await orderRoll).postDataJSON().power).toBeUndefined();
-    await expect(page.getByRole("button", { name: /^Confirmar / })).toBeEnabled(
-      { timeout: 15000 },
-    );
+    await expect(
+      page.getByRole("button", { name: "Desconfirmar", exact: true }),
+    ).toBeEnabled({ timeout: 15000 });
     await expect(page.locator(".own-roll strong")).toHaveText("Amigo da mesa");
     await page.screenshot({
       path: info.outputPath("ordem.png"),
       fullPage: true,
     });
-    await page.getByRole("button", { name: /^Confirmar / }).click();
-    await expect(
-      page.getByRole("button", { name: "Desconfirmar", exact: true }),
-    ).toBeEnabled();
     const state = await (await other.request.get(path + "/preparation")).json();
     const first = state.rolls.at(-1);
-    let roll;
+    let tied = false;
     for (let i = 0; i < 20; i++) {
       await new Promise((resolve) => setTimeout(resolve, 250));
       const intentId = randomUUID();
@@ -325,23 +321,37 @@ test("d20 sincroniza, confirma a ordem e abre a partida", async ({
           await other.request.post(path + "/preparation/actions", { data })
         ).ok(),
       ).toBe(true);
-      const updated = await (
-        await other.request.get(path + "/preparation")
-      ).json();
-      expect(
-        updated.rolls.filter((r: { id: string }) => r.id === intentId),
-      ).toHaveLength(1);
-      roll = updated.rolls.at(-1);
-      const confirm = await other.request.post(path + "/preparation/actions", {
-        data: { kind: "confirm", intentId: randomUUID(), rollId: roll.id },
-      });
-      if (roll.value === first.value) {
-        expect(confirm.status()).toBe(409);
-        continue;
+      if (!tied) {
+        const updated = await (
+          await page.request.get(path + "/preparation")
+        ).json();
+        expect(
+          updated.rolls.filter((r: { id: string }) => r.id === intentId),
+        ).toHaveLength(1);
+        if (updated.rolls.at(-1).value === first.value) {
+          // No empate ninguém fica confirmado, e quem empatou rola de novo.
+          expect(Object.keys(updated.confirmed ?? {})).toHaveLength(0);
+          tied = true;
+          continue;
+        }
+      } else {
+        const updated = await (
+          await page.request.get(path + "/preparation")
+        ).json();
+        if (updated.rolls.at(-1).value === first.value) continue;
       }
-      expect(confirm.ok(), await confirm.text()).toBe(true);
       break;
     }
+    // Depois do desempate quem ficou sem rolar de novo escolhe: aqui, confirma.
+    if (tied)
+      await page
+        .getByRole("button", { name: /^Confirmar \d/ })
+        .click({ timeout: 15000 });
+    await expect
+      .poll(async () => (await page.request.get(path + "/match")).status(), {
+        timeout: 15000,
+      })
+      .toBe(200);
     const game = await (await page.request.get(path + "/match")).json();
     expect(game.match.turnOrder).toHaveLength(2);
     expect(game.match.turnOrder[0].roll).toBeGreaterThan(
@@ -683,6 +693,7 @@ test("confirmação com quatro jogadores mantém mesa, ordem e registro na tela"
       page.locator(".order-preparation .preparation-panel-corners > img"),
     ).toHaveCount(12);
     const values = new Set<number>();
+    const rolled: { request: (typeof requests)[number]; roll: { id: string; playerId: number } }[] = [];
     let highestValue = 0;
     let leaderName = "";
     for (const [index, request] of requests.entries()) {
@@ -707,21 +718,22 @@ test("confirmação com quatro jogadores mantém mesa, ordem e registro na tela"
           highestValue = roll.value;
           leaderName = roll.name;
         }
-        await expect(page.locator(".own-roll strong")).toHaveText(leaderName);
-        expect(
-          (
-            await request.post(path + "/preparation/actions", {
-              data: {
-                kind: "confirm",
-                intentId: randomUUID(),
-                rollId: roll.id,
-              },
-            })
-          ).ok(),
-        ).toBe(true);
+        // A última rolagem sem empate já encerra a etapa.
+        if (index < requests.length - 1)
+          await expect(page.locator(".own-roll strong")).toHaveText(leaderName);
+        rolled.push({ request, roll });
         values.add(roll.value);
         break;
       }
+    }
+    // Quem perdeu a confirmação num empate já desfeito confirma agora.
+    for (const { request, roll } of rolled) {
+      const current = await (await request.get(path + "/preparation")).json();
+      if (current.confirmed?.[roll.playerId]) continue;
+      const response = await request.post(path + "/preparation/actions", {
+        data: { kind: "confirm", intentId: randomUUID(), rollId: roll.id },
+      });
+      expect(response.ok(), await response.text()).toBe(true);
     }
     await expect(page.locator(".order-result h3")).toContainText(
       "Você joga em",
@@ -911,11 +923,18 @@ test("desconfirmar libera rolar de novo até todos confirmarem", async ({
       exact: true,
     });
     await rollButton.click();
-    await expect(confirm).toBeEnabled({ timeout: 15000 });
-    await confirm.click();
-    await expect(unconfirm).toBeEnabled();
+    // Sem spoiler: nada do resultado aparece enquanto o dado está no ar.
+    const flying = page.getByRole("button", { name: "Rolando…", exact: true });
+    await expect(flying).toBeDisabled();
+    await expect(page.locator(".order-seat.own")).toContainText("Rolando…");
+    await expect(page.getByRole("button", { name: /^Confirmar \d/ })).toHaveCount(0);
+    await expect(page.locator(".order-preparation").getByRole("img", { name: /^D20:/ })).toHaveCount(0);
+    await expect(page.locator(".order-seat.own")).not.toContainText("Confirmou");
+    // Ao parar, sem empate, a rolagem já está confirmada.
+    await expect(unconfirm).toBeEnabled({ timeout: 15000 });
     await expect(rollButton).toBeDisabled();
     await expect(page.locator(".order-seat.own")).toContainText("Confirmou");
+    await expect(page.locator(".order-seat.own").getByRole("img", { name: /^D20:/ })).toBeVisible();
     await page.screenshot({ path: info.outputPath("confirmado.png") });
     await unconfirm.click();
     await expect(confirm).toBeEnabled();
@@ -926,9 +945,7 @@ test("desconfirmar libera rolar de novo até todos confirmarem", async ({
     expect(Object.keys((await state()).confirmed ?? {})).toHaveLength(0);
     await rollButton.click();
     await expect.poll(async () => (await state()).rolls.length).toBe(2);
-    await expect(confirm).toBeEnabled({ timeout: 15000 });
-    await confirm.click();
-    await expect(unconfirm).toBeEnabled();
+    await expect(unconfirm).toBeEnabled({ timeout: 15000 });
     expect(Object.values((await state()).confirmed)).toEqual([
       (await state()).rolls.at(-1).id,
     ]);
@@ -937,3 +954,87 @@ test("desconfirmar libera rolar de novo até todos confirmarem", async ({
   }
 });
 
+test("empate deixa os dois sem confirmar e libera rolar de novo", async ({
+  page,
+  browser,
+  baseURL,
+}, info) => {
+  test.skip(info.project.name !== "desktop", "A regra não depende da tela");
+  test.setTimeout(120000);
+  const context = await browser.newContext({ baseURL });
+  try {
+    const requests = [page.request, context.request];
+    const decks: number[] = [];
+    for (const [index, request] of requests.entries()) {
+      await request.post("/api/session", {
+        data: { login: ["amigo", "segundo"][index], password: "senha-do-navegador" },
+      });
+      const response = await request.post("/api/decks", {
+        multipart: {
+          file: {
+            name: "empate.cod",
+            mimeType: "application/xml",
+            buffer: Buffer.from(
+              '<cockatrice_deck><deckname>Deck</deckname><zone name="main"><card number="10" name="Island"/></zone></cockatrice_deck>',
+            ),
+          },
+        },
+      });
+      decks.push((await response.json()).deck.id);
+    }
+    const { room } = await (
+      await page.request.post("/api/rooms", {
+        data: roomBody({ seats: 2, deckId: decks[0] }),
+      })
+    ).json();
+    const path = `/api/rooms/${room.id}`;
+    await context.request.post(path + "/participants", { data: {} });
+    for (const [index, request] of requests.entries())
+      await request.put(path + "/participants/me/ready", {
+        data: { deckId: decks[index] },
+      });
+    await page.request.post(path + "/preparation/start", { data: {} });
+    const act = (request: (typeof requests)[number], kind: string) =>
+      request.post(path + "/preparation/actions", {
+        data: { kind, intentId: randomUUID() },
+      });
+    const state = async () =>
+      (await page.request.get(path + "/preparation")).json();
+    expect((await act(page.request, "roll")).ok()).toBe(true);
+    const target = (await state()).rolls.at(-1).value;
+    // Sem isso, a primeira rolagem sem empate do outro jogador iniciaria a partida.
+    expect((await act(page.request, "unconfirm")).ok()).toBe(true);
+    // O d20 é sorteado no servidor: o outro jogador rola até empatar.
+    await expect
+      .poll(
+        async () => {
+          await act(context.request, "unconfirm");
+          await act(context.request, "roll");
+          return (await state()).rolls.at(-1).value;
+        },
+        { timeout: 110000, intervals: [250] },
+      )
+      .toBe(target);
+    expect(Object.keys((await state()).confirmed ?? {})).toHaveLength(0);
+
+    await page.goto(`/#/salas/${room.id}`);
+    const seat = page.locator(".order-seat.own");
+    await expect(seat).toContainText("Empate · role de novo");
+    await expect(
+      page.getByRole("button", { name: "Empate · role de novo", exact: true }),
+    ).toBeDisabled();
+    const rollButton = page.getByRole("button", { name: "Rolar d20", exact: true });
+    await expect(rollButton).toBeEnabled();
+    await page.screenshot({ path: info.outputPath("empate.png") });
+    await rollButton.click();
+    await expect(page.getByRole("button", { name: "Rolando…", exact: true })).toBeDisabled();
+    await expect(seat).toContainText("Rolando…");
+    // Enquanto o dado está no ar o outro lado não sabe se o empate acabou.
+    await expect(page.locator(".order-seat.other-0")).toContainText("Empate · role de novo");
+    await expect(seat).not.toContainText("Rolando…", { timeout: 15000 });
+    if ((await state()).rolls.at(-1).value !== target)
+      await expect(page.locator(".order-seat.other-0")).not.toContainText("Empate");
+  } finally {
+    await context.close();
+  }
+});

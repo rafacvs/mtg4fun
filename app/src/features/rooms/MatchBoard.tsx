@@ -14,6 +14,7 @@ import { MobileTableControls } from './MobileTableControls';
 import { TableQuickActions } from './TableQuickActions';
 import { PanelFeedback, PanelHeader } from './TablePanel';
 import { TableIcon } from './TableIcon';
+import { EmojiBar } from '../minigames/EmojiBar';
 import { TableFields } from './TableFields';
 import { shortcutCommand } from './libraryGesture';
 import { cardImageURL } from './cardImage';
@@ -354,10 +355,12 @@ export function MatchBoard({ roomId }: { roomId: number }) {
             <div id="own-dock-content" className="dock-content">
               {!compact && (waitingForHands ? mulliganActions : quickActions)}
               <OwnHand scrollAxis="x" key={`${roomId}-${match.viewerId}`} cards={own.hand} count={own.handCount} hoverZone={drag?.zone ?? null} viewerId={match.viewerId} gesture={gesture} />
+              {!compact && <EmojiBar />}
             </div>
           </section>
         </div>
         {compact && <>
+          <div className="match-emoji"><EmojiBar /></div>
           {(commandsOpen || informationOpen) && <div className="floating-panel-scrim" aria-hidden="true" onClick={closeFloatingPanel} />}
           {waitingForHands ? mulliganActions : <MobileTableControls moreRef={moreControl} moreOpen={commandsOpen}
             onMore={() => { setCommandsOpen(value => !value); setInformationOpen(false); }} />}

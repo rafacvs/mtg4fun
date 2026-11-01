@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 )
 
@@ -66,20 +67,19 @@ func TestPreparationDiceHTTPPersistenceAndTies(t *testing.T) {
 	if bytes.Contains(ordered.body, []byte(`"power":10`)) {
 		t.Fatalf("rolagem que vale aceitou força: %s", ordered.body)
 	}
-	requireStatus(t, action(ana, 3, "confirm", "00000000-0000-4000-8000-000000000002"), 200)
+	requireStatus(t, action(ana, 3, "confirm", "00000000-0000-4000-8000-000000000002"), 409)
 	requireStatus(t, action(bia, 4, "roll", ""), 200)
 	requireStatus(t, action(bia, 5, "confirm", "00000000-0000-4000-8000-000000000004"), 409)
-	requireStatus(t, action(ana, 6, "roll", ""), 409)
 	e.stop()
 	e.rolls = "9"
 	e.start(false)
 	recovered := e.request("GET", path+"/preparation", "", bia, nil)
-	if !bytes.Contains(recovered.body, []byte(`"confirmed":{`)) || !bytes.Contains(recovered.body, []byte(`"value":17`)) {
+	if !bytes.Contains(recovered.body, []byte(`"value":17`)) {
 		t.Fatalf("perdeu rolagens: %s", recovered.body)
 	}
 	requireStatus(t, action(bia, 7, "roll", ""), 200)
-	requireStatus(t, action(bia, 8, "confirm", "00000000-0000-4000-8000-000000000007"), 200)
-	requireStatus(t, action(bia, 8, "confirm", "00000000-0000-4000-8000-000000000007"), 200)
+	requireStatus(t, action(ana, 8, "confirm", "00000000-0000-4000-8000-000000000002"), 200)
+	requireStatus(t, action(ana, 8, "confirm", "00000000-0000-4000-8000-000000000002"), 200)
 	game := e.request("GET", path+"/match", "", ana, nil)
 	requireStatus(t, game, 200)
 	var payload struct {
@@ -149,22 +149,30 @@ func TestPreparationUnconfirmAllowsRollingAgain(t *testing.T) {
 	requireStatus(t, action(outsider, 91, "unconfirm", ""), 404)
 	requireStatus(t, action(ana, 92, "unconfirm", ""), 409)
 
+	// Sem empate, rolar já confirma: só dá para rolar de novo depois de desconfirmar.
 	requireStatus(t, action(ana, 1, "roll", ""), 200)
-	requireStatus(t, action(ana, 2, "confirm", roll(1)), 200)
+	requireStatus(t, action(ana, 2, "confirm", roll(1)), 409)
 	requireStatus(t, action(ana, 3, "roll", ""), 409)
+	if confirmedBy(bia)[strconv.FormatInt(sessionUserID(t, e, ana), 10)] != roll(1) {
+		t.Fatal("rolar não confirmou")
+	}
 
-	// Bia empata; quando Ana desconfirma, o empate deixa de bloquear.
+	// Bia empata: as duas perdem a confirmação e nenhuma confirma enquanto durar.
 	requireStatus(t, action(bia, 4, "roll", ""), 200)
+	if len(confirmedBy(bia)) != 0 {
+		t.Fatal("o empate não desfez as confirmações")
+	}
 	requireStatus(t, action(bia, 5, "confirm", roll(4)), 409)
+	requireStatus(t, action(ana, 13, "confirm", roll(1)), 409)
+	requireStatus(t, action(ana, 7, "unconfirm", ""), 409)
+
+	// Rolar de novo vale e confirma; desconfirmar continua liberado.
+	requireStatus(t, action(ana, 8, "roll", ""), 200)
 	requireStatus(t, action(ana, 6, "unconfirm", ""), 200)
 	requireStatus(t, action(ana, 6, "unconfirm", ""), 200)
 	if len(confirmedBy(bia)) != 0 {
 		t.Fatal("desconfirmar não apareceu para os outros")
 	}
-	requireStatus(t, action(ana, 7, "unconfirm", ""), 409)
-
-	// Rolar de novo vale; a rolagem antiga já não pode ser confirmada.
-	requireStatus(t, action(ana, 8, "roll", ""), 200)
 	requireStatus(t, action(ana, 9, "confirm", roll(1)), 409)
 	requireStatus(t, action(ana, 10, "confirm", roll(8)), 200)
 	e.stop()
@@ -196,5 +204,87 @@ func TestPreparationUnconfirmAllowsRollingAgain(t *testing.T) {
 	}
 	if len(started.Match.TurnOrder) != 2 || started.Match.TurnOrder[0].Roll != 12 || started.Match.TurnOrder[1].Roll != 7 {
 		t.Fatalf("ordem final ignorou a nova rolagem: %s", match.body)
+	}
+}
+
+func TestOrderRollConfirmsUnlessTied(t *testing.T) {
+	e := newEnvironment(t)
+	for _, name := range []string{"ana", "bia", "cida"} {
+		e.mustCreate(name, name, "senha-da-sala")
+	}
+	e.rolls = "10,15,10,3"
+	e.start(false)
+	cookies := []*http.Cookie{}
+	for _, name := range []string{"ana", "bia", "cida"} {
+		cookies = append(cookies, sessionCookie(t, e.login(name, "senha-da-sala")))
+	}
+	ana, bia, cida := cookies[0], cookies[1], cookies[2]
+	deck, err := os.ReadFile("testdata/cockatrice-deck.cod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	created := e.request("POST", "/api/rooms", roomJSON(), ana, nil)
+	requireStatus(t, created, 201)
+	path := fmt.Sprintf("/api/rooms/%d", decodeRoom(t, created).ID)
+	for i, cookie := range cookies {
+		if i > 0 {
+			requireStatus(t, e.request("POST", path+"/participants", "{}", cookie, nil), 200)
+		}
+		result := e.uploadDeck(cookie, deck)
+		requireStatus(t, result, 201)
+		var payload struct{ Deck struct{ ID int64 } }
+		if err = json.Unmarshal(result.body, &payload); err != nil {
+			t.Fatal(err)
+		}
+		requireStatus(t, e.request("PUT", path+"/participants/me/ready", fmt.Sprintf(`{"deckId":%d}`, payload.Deck.ID), cookie, nil), 200)
+	}
+	requireStatus(t, e.request("POST", path+"/preparation/start", "{}", ana, nil), 200)
+	roll := func(n int) string { return fmt.Sprintf("00000000-0000-4000-8000-%012d", n) }
+	action := func(cookie *http.Cookie, n int, kind, rollID string) response {
+		return e.request("POST", path+"/preparation/actions", fmt.Sprintf(`{"intentId":%q,"kind":%q,"rollId":%q}`, roll(n), kind, rollID), cookie, nil)
+	}
+	confirmed := func() map[string]string {
+		state := e.request("GET", path+"/preparation", "", ana, nil)
+		requireStatus(t, state, 200)
+		var payload struct {
+			Confirmed map[string]string `json:"confirmed"`
+		}
+		if err := json.Unmarshal(state.body, &payload); err != nil {
+			t.Fatal(err)
+		}
+		return payload.Confirmed
+	}
+	id := func(cookie *http.Cookie) string { return strconv.FormatInt(sessionUserID(t, e, cookie), 10) }
+
+	requireStatus(t, action(ana, 1, "roll", ""), 200)
+	requireStatus(t, action(bia, 2, "roll", ""), 200)
+	if got := confirmed(); got[id(ana)] != roll(1) || got[id(bia)] != roll(2) {
+		t.Fatalf("rolagens sem empate não confirmaram: %v", got)
+	}
+	// Cida empata com Ana: só as duas saem, e Bia continua confirmada.
+	requireStatus(t, action(cida, 3, "roll", ""), 200)
+	if got := confirmed(); len(got) != 1 || got[id(bia)] != roll(2) {
+		t.Fatalf("empate mexeu nas confirmações erradas: %v", got)
+	}
+	// Ana rola de novo e confirma; sem o empate, Cida escolhe confirmar ou rolar.
+	requireStatus(t, action(ana, 4, "roll", ""), 200)
+	if got := confirmed(); len(got) != 2 || got[id(ana)] != roll(4) || got[id(cida)] != "" {
+		t.Fatalf("depois de desempatar: %v", got)
+	}
+	requireStatus(t, action(cida, 5, "confirm", roll(3)), 200)
+	match := e.request("GET", path+"/match", "", ana, nil)
+	requireStatus(t, match, 200)
+	var started struct {
+		Match struct {
+			TurnOrder []struct {
+				Roll int `json:"roll"`
+			} `json:"turnOrder"`
+		} `json:"match"`
+	}
+	if err = json.Unmarshal(match.body, &started); err != nil {
+		t.Fatal(err)
+	}
+	if order := started.Match.TurnOrder; len(order) != 3 || order[0].Roll != 15 || order[1].Roll != 10 || order[2].Roll != 3 {
+		t.Fatalf("ordem incorreta: %s", match.body)
 	}
 }

@@ -332,3 +332,32 @@ A [decisão 52](52-websocket-minijogos.md) substitui o que está acima sobre con
 preparação a cada 700 ms, sobre rolagens de brincadeira ficarem no snapshot e sobre
 recuperá-las depois de reiniciar a API. As rolagens que valem e as regras de confirmação
 não mudam.
+
+## Confirmação automática e sem spoiler em 01/11/2026
+
+O usuário pediu em conversa: quem rola “por padrão já tem que confirmar”, e “só não fica confirmado
+caso houve um empate”, com quem empatou liberado para rolar de novo e qualquer um podendo desconfirmar.
+Pediu também o fim do spoiler do botão, que mostrava “Confirmar 6” antes de o dado parar: “quero emoção”.
+Isso substitui, na etapa de ordem, a confirmação manual de cada rolagem.
+
+Comportamento: uma rolagem sem empate com a rolagem atual de outro jogador já fica confirmada no servidor.
+No empate, a rolagem nova não confirma e quem empatou perde a confirmação; enquanto durar, ninguém do empate
+confirma. O dado que ainda rola não aparece no botão, na ordem, no assento nem na contagem de confirmações,
+e a tela da ordem definida espera o último dado parar.
+
+Escolhas de implementação, não pedidas literalmente:
+
+- Se um dos dois que empataram rola de novo e desfaz o empate, o outro fica sem confirmar e escolhe entre
+  confirmar o valor que tem ou rolar de novo. Confirmar sozinho poderia iniciar a partida sem dar essa escolha.
+- A última rolagem sem empate continua iniciando a partida na hora, sem volta, então esse último jogador
+  não chega a poder desconfirmar. Depois que o dado para, a tela mantém os 4,5 s antes de abrir a mesa.
+- Com um dado de outro jogador no ar, Confirmar e Desconfirmar ficam travados; Rolar segue liberado.
+- O assento e o botão mostram “Rolando…” com o dado no ar e “Empate · role de novo” durante o empate.
+
+Verificação: `TestOrderRollConfirmsUnlessTied` e os testes de preparação, com API e MySQL reais, cobrem
+confirmação automática, empate, desempate e início da partida. `preparation-dice.spec.ts` cobre o dado no ar
+sem resultado na tela, nas três telas; o empate no navegador é só no desktop, onde a captura foi inspecionada.
+`regras-preparacao.spec.ts` e `preparacao-mobile.spec.ts` continuam parando ao esperar a mesa logo depois de
+iniciar, como antes desta mudança. A suíte Go completa só falha em
+`TestTransferredSelectionPreservesZoneRulesAndRollsBack`, igual à `master`. A suíte completa de navegador e o
+smoke Docker não foram executados.

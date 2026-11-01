@@ -33,10 +33,18 @@ consultar a mão, mas ele não pode ter ações dentro do jogo”.
 - Só dá para assistir com a partida em andamento. Na preparação continua valendo a entrada
   na sala. Na definição da ordem aparece um aviso, e a mesa abre sozinha ao terminar. Partida
   encerrada volta a responder 404 para quem não jogou, e quem assistia volta ao lobby.
-- Assistir não grava nada no banco nem usa o WebSocket: a pessoa lê a partida a cada segundo,
-  como os jogadores, e não aparece em nenhuma lista.
+- Assistir não grava nada no banco: a pessoa lê a partida a cada segundo, como os jogadores, e não
+  aparece em nenhuma lista. O uso do WebSocket mudou; veja a seção seguinte.
 - A primeira aba é o primeiro da ordem de turnos. A mesa não muda sozinha a cada turno, para
   as cartas não trocarem de lugar enquanto a pessoa lê.
+
+## Emojis para quem assiste em 01/11/2026
+
+O usuário pediu em conversa: “o espectador ele vai conectar também com o WebSocket, ele pode ver os
+emojis, ele pode mandar também”. Isso substitui, só para os emojis, a ausência de ações de quem assiste.
+Qualquer usuário autenticado conecta em `GET /api/rooms/{id}/live` enquanto a partida estiver em andamento,
+recebe e envia emojis com o mesmo limite, e os outros jogos continuam recusando. Antes de a partida começar,
+quem não joga continua recebendo 404. O nome de quem assiste aparece embaixo do emoji para todos.
 
 ## Verificação em 31/10/2026
 
