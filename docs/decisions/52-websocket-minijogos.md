@@ -108,6 +108,24 @@ celular o botão fica à esquerda, então a bandeja abre para a direita, sobre R
 
 O raio do dado acompanha o raio do feltro, com mínimo de 9 px; a física já escalava com a mesa.
 
+## Emojis na partida em 01/11/2026
+
+O usuário pediu em conversa os emojis “dentro do jogo também, não só na preparação”. Isso substitui,
+só para os emojis, “X1 e emojis só na preparação”. O X1 continua só na preparação, e o limite, a lista
+e a queda não mudaram.
+
+Escolhas de implementação, não pedidas literalmente:
+
+- O servidor aceita emojis na preparação e na partida, inclusive enquanto as mãos são confirmadas.
+  Continua recusando na etapa de definir o turno, como foi aprovado acima, e depois de encerrar.
+- No desktop o botão fica no fim da barra da mão, e a bandeja abre para cima, para não cobrir as ações.
+  No celular o botão fica logo acima de Comandos, sem a seta, e a bandeja abre para a esquerda.
+
+Verificado com API e MySQL reais: `TestLive` passou, e `emojis-na-mesa.spec.ts` passou nas três telas,
+antes e depois de confirmar as mãos. Capturas em 1440×895, 860×600 e no Pixel 7 nas duas orientações
+foram inspecionadas. `desktop-table.spec.ts` e `mobile-table.spec.ts` têm as mesmas 4 falhas, nas mesmas
+linhas, da `master`. A suíte Go completa, a suíte completa de navegador e o smoke Docker não foram executados.
+
 ## Verificação em 31/10/2026
 
 Estes resultados comprovam comportamento observado, não aprovam a arquitetura.

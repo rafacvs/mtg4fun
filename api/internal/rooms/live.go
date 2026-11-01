@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -20,7 +21,7 @@ const maxPlayRolls = 50
 func (s *Service) setupLive() {
 	s.live = live.NewHub()
 	s.coinDuels = &minigames.CoinDuels{Hub: s.live, Participant: s.preparingParticipant}
-	s.live.Register(diceGame{s}, s.coinDuels, &minigames.Emoji{Hub: s.live, Participant: s.preparingParticipant})
+	s.live.Register(diceGame{s}, s.coinDuels, &minigames.Emoji{Hub: s.live, Participant: s.reactingParticipant})
 }
 
 // CloseLive asks the connected clients to come back after a restart.
@@ -52,6 +53,16 @@ func (s *Service) liveRoom(w http.ResponseWriter, r *http.Request) {
 
 // preparingParticipant allows the games that exist only before the match starts.
 func (s *Service) preparingParticipant(ctx context.Context, id, userID int64) (string, error) {
+	return s.participantDuring(ctx, id, userID, "Disponível só antes de iniciar a partida.", "preparing")
+}
+
+// reactingParticipant allows reactions before and during the match, but not while
+// the order is being decided.
+func (s *Service) reactingParticipant(ctx context.Context, id, userID int64) (string, error) {
+	return s.participantDuring(ctx, id, userID, "Disponível só na preparação e durante a partida.", "preparing", "started")
+}
+
+func (s *Service) participantDuring(ctx context.Context, id, userID int64, refusal string, statuses ...string) (string, error) {
 	room, err := readRoom(s.db.QueryRowContext(ctx, "SELECT snapshot FROM rooms WHERE id=?", id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", live.UserError{Message: "Sala não encontrada."}
@@ -59,8 +70,8 @@ func (s *Service) preparingParticipant(ctx context.Context, id, userID int64) (s
 	if err != nil {
 		return "", err
 	}
-	if room.Status != "preparing" {
-		return "", live.UserError{Message: "Disponível só antes de iniciar a partida."}
+	if !slices.Contains(statuses, room.Status) {
+		return "", live.UserError{Message: refusal}
 	}
 	for _, p := range room.Participants {
 		if p.ID == userID {
