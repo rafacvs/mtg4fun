@@ -94,7 +94,6 @@
 .room-preparing .room-enter, .room-action .room-join:hover:not(:disabled) { border: 1px solid transparent; background: linear-gradient(180deg, var(--gold-light), var(--gold-d)); color: #1b1405; }
 .room-action .room-join:disabled { border: 1px solid #ffffff1c; background: #ffffff0a; color: #8d897c; opacity: 1; }
 .room-enter::after { content: ''; position: absolute; inset: 0; }
-.room-closed { width: 100%; color: #7f7c70; font-size: .76rem; text-align: center; }
 
 @media (prefers-reduced-motion: no-preference) {
   .room-connection-live i { animation: lobby-pulse 2.6s ease-out infinite; }
@@ -124,7 +123,6 @@
   .lobby-seats { grid-area: seats; margin-top: 4px; }
   .room-action { grid-area: action; }
   .room-card::before { width: 75%; }
-  .room-closed { display: none; }
 }
 @media (min-width: 600px) and (max-width: 1040px) {
   .room-card { grid-template-columns: minmax(0, 1fr) 150px; grid-template-areas: 'identity state' 'seats action'; }
@@ -147,7 +145,6 @@
   .room-card h3 { white-space: normal; overflow-wrap: anywhere; }
   .lobby-seat { width: 32px; height: 32px; font-size: .78rem; }
   .room-enter, .room-action .room-join { min-height: 40px; }
-  .room-action:has(.room-closed) { display: none; }
 }
 /* Telefone: o lobby dispensa o painel e o título repetido. */
 @media (max-width: 759px) {

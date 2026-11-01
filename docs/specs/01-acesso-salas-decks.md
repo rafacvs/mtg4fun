@@ -60,7 +60,7 @@ e compra inicial de até sete cartas, além do tipo de mulligan descrito na
 - No início, carregar os decks, inicializar a vida pelo valor configurado na sala, embaralhar os grimórios e sortear a ordem de turnos.
 - A compra inicial de até sete cartas é opcional conforme a configuração da sala; sem ela, a compra é manual.
 - O comandante definido no deck começa em comando quando a opção da sala está ligada; desligada, começa no grimório embaralhado.
-- Após o início, participantes ficam fixos. Desconexão não libera o lugar para outro usuário.
+- Após o início, participantes ficam fixos. Desconexão não libera o lugar para outro usuário. Outros usuários podem apenas [assistir](../decisions/54-modo-espectador.md).
 - Um participante original pode autenticar novamente e recuperar seu estado.
 
 ### Decks, catálogo e imagens
@@ -89,7 +89,7 @@ Critérios observáveis:
 - Deck .cod permanece disponível após desconexão/reinício e reproduz cartas/quantidades.
 - Um deck salvo pode ser usado em partidas diferentes sem novo upload.
 - Excluir um deck não altera cartas de partida iniciada.
-- Sexto jogador entra; sétimo é recusado; partida iniciada rejeita não participantes.
+- Sexto jogador entra; sétimo é recusado; partida iniciada rejeita a entrada e as ações de não participantes.
 - Início exige prontidão e autorização do criador.
 - Participante original retoma seu lugar; nova conexão invalida o controle anterior.
 - Catálogo compartilhado e cache evitam downloads por usuário para o mesmo recurso já armazenado.
@@ -98,7 +98,7 @@ Um fluxo de navegador cobre login, upload, criação/entrada e prontidão em des
 
 ## Fora do escopo
 
-Editor/exportador de decks, sideboard na mesa, aprovação de entradas antes do início, espectadores, cadastro público, painel administrativo, e-mail de recuperação e tradução de cartas.
+Editor/exportador de decks, sideboard na mesa, aprovação de entradas antes do início, cadastro público, painel administrativo, e-mail de recuperação e tradução de cartas.
 
 ## Notas adicionais
 

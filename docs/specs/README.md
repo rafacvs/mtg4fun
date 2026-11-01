@@ -67,6 +67,8 @@ As fronteiras de teste descritas são propostas da síntese original, quando ain
 
 ## Fora da primeira versão
 
-Motor de regras, validação de formatos/decks, fases, editor de decks, sideboard na mesa, espectadores, cadastro público, administração web, recuperação por e-mail, voz/chat de conversa integrados, desfazer genérico, compatibilidade com Servatrice e interface de histórico/replay.
+Motor de regras, validação de formatos/decks, fases, editor de decks, sideboard na mesa, cadastro público, administração web, recuperação por e-mail, voz/chat de conversa integrados, desfazer genérico, compatibilidade com Servatrice e interface de histórico/replay.
+
+O [modo espectador](../decisions/54-modo-espectador.md) foi aprovado depois, só para assistir a partidas em andamento.
 
 Manter snapshots e logs de partidas encerradas é obrigatório; isso não implica oferecer navegação por histórico nem manter uma versão de snapshot para cada ação.
