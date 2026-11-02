@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card, Match } from './roomsApi';
 import type { CardStateChange } from './CardStateControls';
 import { useMatch } from './useMatch';
+import { PendingAction } from './PendingAction';
 import { CardPreview } from './CardPreview';
 import { CardActionBar } from './CardActionBar';
 import { HandActionBar } from './HandActionBar';
@@ -345,7 +346,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     <div className="match-content">
       {match.finishVotes.length > 0 && <p className="finish-vote-notice" role="status">Encerramento solicitado: {match.finishVotes.length} de {match.finishRequired} concordância(s). Use Finalizar para acompanhar ou concordar.</p>}
       {error && <p role="alert" className="error">{error}{unconfirmed && <button disabled={busy} onClick={() => void retry()}>Tentar novamente</button>}</p>}
-      {optimisticPending && <p className="pending-action" role="status">Ação pendente · aguardando confirmação</p>}
+      <PendingAction pending={optimisticPending} />
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
