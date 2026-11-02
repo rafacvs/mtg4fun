@@ -42,3 +42,22 @@
 .mobile-table .spectator-controls .emoji-tray { right: 0; }
 .match-emoji .emoji-tray { max-width: calc(100vw - 68px); overflow-x: auto; }
 @media (orientation: portrait) { .match-emoji { bottom: 163px; } }
+/* Lupa no fim da bandeja: abre todos os emojis, com pesquisa. */
+.emoji-more .table-icon { width: 18px; height: 18px; color: #d8b36b; }
+.emoji-more[aria-expanded='true'] { background: #e5c57726 !important; }
+
+.emoji-picker { position: fixed; z-index: 70; display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid #6e5c36; border-radius: 6px; background: #0d1213; box-shadow: 0 18px 44px #000c; box-sizing: border-box; }
+.emoji-picker .emoji-search { flex: none; width: 100%; min-height: 36px; padding: 6px 10px; border: 1px solid #4d4531; border-radius: 4px; background: #080d0e; color: #f4e9ce; font: 14px Geist, sans-serif; box-sizing: border-box; }
+.emoji-picker .emoji-search:focus { border-color: #e0bd6e; outline: 0; }
+.emoji-groups { flex: none; display: flex; justify-content: space-between; gap: 2px; }
+.emoji-picker .emoji-groups button { width: 32px; min-width: 0; height: 30px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; font-size: 18px; line-height: 1; box-shadow: none; }
+.emoji-groups button:hover { background: #e5c57726; }
+.emoji-catalog { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.emoji-catalog h3 { position: sticky; top: 0; z-index: 1; margin: 0; padding: 6px 2px 4px; background: #0d1213; color: #a8976e; font: 600 9.5px/1 Cinzel, serif; letter-spacing: .18em; text-transform: uppercase; }
+.emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); }
+.emoji-grid .emoji-option.emoji-option { width: 100%; height: 36px; content-visibility: auto; contain-intrinsic-size: 36px; }
+.emoji-picker-note { margin: 18px 4px; color: #a6a298; font: 13px Geist, sans-serif; text-align: center; }
+/* Deitado, quem assiste tem o botão no fim da coluna da esquerda: a bandeja abre para a direita. */
+@media (max-width: 1000px) and (orientation: landscape) {
+  .mobile-table.spectator-board .spectator-controls .emoji-tray { right: auto; left: 0; }
+}

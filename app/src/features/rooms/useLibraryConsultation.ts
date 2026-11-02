@@ -7,6 +7,7 @@ export type LibraryOperations = {
   onReveal: (count: number) => Promise<boolean>;
   onRevealSelection: (ids: string[]) => Promise<boolean>;
   onDraw: (count: number) => Promise<boolean>;
+  onMill: (count: number) => Promise<boolean>;
   onMove: (ids: string[], to: string, placement?: 'top' | 'bottom') => Promise<boolean>;
   onReorder: (ids: string[]) => Promise<boolean>;
   onClose: (placement: 'top' | 'bottom', shuffle: boolean) => Promise<boolean>;
@@ -21,7 +22,7 @@ export function useLibraryConsultation(
   operations: LibraryOperations,
   consultationFrom?: LibrarySource,
 ) {
-  const [view, setView] = useState<'menu' | 'look' | 'reveal' | 'draw'>('menu');
+  const [view, setView] = useState<'menu' | 'look' | 'reveal' | 'draw' | 'mill'>('menu');
   const [source, setSource] = useState<'top' | 'bottom'>('top');
   const [count, setCount] = useState(1);
   const [search, setSearch] = useState('');
@@ -56,6 +57,8 @@ export function useLibraryConsultation(
     const succeeded =
       view === 'draw'
         ? await operations.onDraw(count)
+        : view === 'mill'
+          ? await operations.onMill(count)
         : view === 'reveal'
           ? await operations.onReveal(count)
           : await operations.onConsult(source, count);
@@ -65,7 +68,7 @@ export function useLibraryConsultation(
       setSearch('');
       setTypeFilter('');
       setSelected([]);
-      setNotice(view === 'draw' ? `${count} carta(s) comprada(s).` : '');
+      setNotice(view === 'draw' ? `${count} carta(s) comprada(s).` : view === 'mill' ? `${count} carta(s) descartada(s) no cemitério.` : '');
     }
   };
   const searchLibrary = async () => {

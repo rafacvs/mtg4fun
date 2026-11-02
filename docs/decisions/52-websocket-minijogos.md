@@ -58,7 +58,7 @@ Nginx e Vite encaminham o upgrade dessa rota. Não há tabela, migration nem ser
   chega ao vivo com a aba visível é animado; o restante entra direto no registro.
   `GET /preparation` continua disponível, mas o cliente não o consulta periodicamente.
 - **X1 (`coin-duel`):** segue as regras aprovadas acima, com sorteio no servidor.
-- **Emojis (`emoji`):** lista fixa no servidor.
+- **Emojis (`emoji`):** lista fixa no servidor. Substituída depois por [qualquer emoji e o tomate](emojis-tomate-mortos-e-descarte.md).
 
 ## Escolhas de implementação, não pedidas literalmente
 

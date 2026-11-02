@@ -8,7 +8,7 @@ export type LibraryViewer = { userId: number; name: string; position: number; co
 type Source = 'top' | 'bottom';
 
 type Props = {
-  view: 'draw' | 'look' | 'reveal'; source: Source; count: number; libraryCount: number; busy: boolean; viewers: LibraryViewer[];
+  view: 'draw' | 'mill' | 'look' | 'reveal'; source: Source; count: number; libraryCount: number; busy: boolean; viewers: LibraryViewer[];
   onSource: (source: Source) => void; onCount: (count: number) => void; onBegin: () => void; onCancel: () => void;
 };
 
@@ -22,7 +22,7 @@ function CountStepper({ count, libraryCount, busy, onCount, large = false }: Pic
   </div>;
 }
 
-function DrawScene({ count, libraryCount }: { count: number; libraryCount: number }) {
+function DrawScene({ count, libraryCount, destination = 'hand' }: { count: number; libraryCount: number; destination?: 'hand' | 'graveyard' }) {
   const fan = Math.max(1, Math.min(count || 1, 5));
   return <div className="library-scene library-draw-scene" aria-hidden="true">
     <div className="library-scene-side">
@@ -35,7 +35,7 @@ function DrawScene({ count, libraryCount }: { count: number; libraryCount: numbe
         const offset = index - (fan - 1) / 2;
         return <span key={index} style={{ '--fan-x': `${offset * 22}px`, '--fan-angle': `${offset * 9}deg` } as CSSProperties}><LibraryCardBack /></span>;
       })}</div>
-      <em>Sua mão</em>
+      <em>{destination === 'hand' ? 'Sua mão' : 'Cemitério'}</em>
     </div>
   </div>;
 }
@@ -63,11 +63,16 @@ function SourceOption({ value, icon, title, description, source, busy, onSource 
 export function LibrarySetup({ view, source, count, libraryCount, busy, viewers, onSource, onCount, onBegin, onCancel }: Props) {
   const valid = Number.isInteger(count) && count >= 1 && count <= libraryCount;
   const stepper = { count, libraryCount, busy, onCount };
-  const action = view === 'draw' ? `Comprar ${cardsLabel(count)}` : view === 'reveal' ? `Revelar ${cardsLabel(count)}` : `Olhar ${cardsLabel(count)} do ${source === 'top' ? 'topo' : 'fundo'}`;
+  const action = view === 'draw' ? `Comprar ${cardsLabel(count)}` : view === 'mill' ? `Descartar ${cardsLabel(count)}` : view === 'reveal' ? `Revelar ${cardsLabel(count)}` : `Olhar ${cardsLabel(count)} do ${source === 'top' ? 'topo' : 'fundo'}`;
   return <div className={`library-setup library-setup-${view}`}>
     {view === 'draw' && <>
       <DrawScene count={count} libraryCount={libraryCount} />
       <LibrarySection title="Quantidade"><CountStepper {...stepper} large /><p className="library-caption">Do topo do grimório para a sua mão.</p></LibrarySection>
+    </>}
+    {view === 'mill' && <>
+      <p className="library-pill public"><TableIcon name="sun" />Todos verão as cartas no cemitério</p>
+      <DrawScene count={count} libraryCount={libraryCount} destination="graveyard" />
+      <LibrarySection title="Quantidade"><CountStepper {...stepper} large /><p className="library-caption">Do topo do grimório direto para o cemitério.</p></LibrarySection>
     </>}
     {view === 'look' && <>
       <p className="library-pill"><TableIcon name="lock" />Só você verá estas cartas</p>

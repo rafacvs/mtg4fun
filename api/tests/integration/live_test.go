@@ -303,21 +303,38 @@ func TestLiveEmojiFallsForEveryoneWithServerCooldown(t *testing.T) {
 	if fall.Emoji != "💀" || fall.FromID != room.anaID || fall.FromName != "ana" {
 		t.Fatalf("emoji incorreto: %+v", fall)
 	}
+	ana.next("emoji", "fall")
 	// A espera é da pessoa: abrir outra aba não libera outro emoji.
 	secondTab.send("emoji", "send", "e2", `{"emoji":"🔥"}`)
 	kind, _, retry := secondTab.reply("e2")
-	if kind != "error" || retry <= 0 || retry > 200 {
+	if kind != "error" || retry <= 0 || retry > 120 {
 		t.Fatalf("espera não aplicada: %s, %d ms", kind, retry)
 	}
 	bia.silent("emoji", 300*time.Millisecond)
-	bia.send("emoji", "send", "e3", `{"emoji":"não é emoji"}`)
-	if kind, text, _ := bia.reply("e3"); kind != "error" || text != "Emoji inválido." {
-		t.Fatalf("aceitou emoji fora da lista: %s %s", kind, text)
+	for i, text := range []string{"não é emoji", "😂 oi", ""} {
+		time.Sleep(300 * time.Millisecond)
+		id := fmt.Sprintf("texto-%d", i)
+		bia.send("emoji", "send", id, fmt.Sprintf(`{"emoji":%q}`, text))
+		if kind, message, _ := bia.reply(id); kind != "error" || message != "Emoji inválido." {
+			t.Fatalf("aceitou texto como emoji %q: %s %s", text, kind, message)
+		}
 	}
+	// Qualquer emoji vale, não só os fixados na barra.
+	for i, emoji := range []string{"🦖", "👩‍🚀", "🇧🇷"} {
+		time.Sleep(300 * time.Millisecond)
+		bia.send("emoji", "send", fmt.Sprintf("livre-%d", i), fmt.Sprintf(`{"emoji":%q}`, emoji))
+		var fall struct {
+			Emoji string `json:"emoji"`
+		}
+		if err := json.Unmarshal(ana.next("emoji", "fall").Data, &fall); err != nil || fall.Emoji != emoji {
+			t.Fatalf("emoji fora da barra não chegou: %+v %v", fall, err)
+		}
+	}
+	time.Sleep(3100 * time.Millisecond)
 
 	// Dá para spamar, mas cada clique espera mais que o anterior, até o limite.
-	var previous int64
-	for i := range 12 {
+	var first, previous int64
+	for i := range 14 {
 		id := fmt.Sprintf("spam-%d", i)
 		ana.send("emoji", "send", id, `{"emoji":"🔥"}`)
 		if kind, text, _ := ana.reply(id); kind != "ack" {
@@ -326,15 +343,55 @@ func TestLiveEmojiFallsForEveryoneWithServerCooldown(t *testing.T) {
 		check := fmt.Sprintf("espera-%d", i)
 		ana.send("emoji", "send", check, `{"emoji":"🔥"}`)
 		kind, _, wait := ana.reply(check)
-		if kind != "error" || wait < previous-50 || wait > 3000 {
+		if kind != "error" || wait < previous-50 || wait > 1200 {
 			t.Fatalf("clique %d: %s, esperou %d ms depois de %d ms", i, kind, wait, previous)
+		}
+		if i == 0 {
+			first = wait
 		}
 		previous = wait
 		time.Sleep(time.Duration(wait+30) * time.Millisecond)
 	}
-	if previous < 2500 {
-		t.Fatalf("a espera deveria ter crescido até perto de 3 s: %d ms", previous)
+	if first > 150 || previous < 2*first {
+		t.Fatalf("a espera deveria começar curta e crescer devagar: de %d ms para %d ms", first, previous)
 	}
+}
+
+func TestLiveTomatoSplatsACardForEveryone(t *testing.T) {
+	e, cookies, path := prepareUnconfirmedMatch(t, 2)
+	confirmHands(t, e, path, cookies[:2]...)
+	ana := connectLive(t, e, path, cookies[0])
+	bia := connectLive(t, e, path, cookies[1])
+	watcher := connectLive(t, e, path, cookies[2])
+
+	ana.send("emoji", "throw", "t1", `{"cardId":"7-0-1"}`)
+	ana.requireAck("t1")
+	for _, viewer := range []*liveClient{bia, watcher} {
+		var splat struct {
+			CardID   string `json:"cardId"`
+			FromName string `json:"fromName"`
+		}
+		if err := json.Unmarshal(viewer.next("emoji", "splat").Data, &splat); err != nil {
+			t.Fatal(err)
+		}
+		if splat.CardID != "7-0-1" || splat.FromName != "Amigo 0" {
+			t.Fatalf("tomate incorreto: %+v", splat)
+		}
+	}
+	// O tomate gasta a mesma espera dos emojis.
+	ana.send("emoji", "send", "logo", `{"emoji":"🍅"}`)
+	if kind, _, wait := ana.reply("logo"); kind != "error" || wait <= 0 {
+		t.Fatalf("tomate sem espera: %s %d", kind, wait)
+	}
+	for i, card := range []string{"", `<img src=x>`, strings.Repeat("a", 65)} {
+		time.Sleep(300 * time.Millisecond)
+		id := fmt.Sprintf("ruim-%d", i)
+		watcher.send("emoji", "throw", id, fmt.Sprintf(`{"cardId":%q}`, card))
+		if kind, text, _ := watcher.reply(id); kind != "error" || text != "Carta inválida." {
+			t.Fatalf("aceitou carta %q: %s %s", card, kind, text)
+		}
+	}
+	bia.silent("emoji", 300*time.Millisecond)
 }
 
 type duelState struct {

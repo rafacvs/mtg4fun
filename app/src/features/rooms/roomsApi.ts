@@ -141,6 +141,7 @@ export const roomsApi = {
   batchCounter: (id: number, input: BatchCounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter_batch', ...input }),
   counter: (id: number, input: CounterAction, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'counter', ...input }),
   draw: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'draw', count }),
+  mill: (id: number, count: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'mill', count }),
   mulligan: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'mulligan' }),
   keepHand: (id: number, cardIds: string[], intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'keep_hand', cardIds }),
   undoKeepHand: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'unkeep_hand' }),

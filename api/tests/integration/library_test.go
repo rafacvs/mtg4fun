@@ -367,3 +367,46 @@ func TestOrderedZonesPlacementAndReorderOverHTTP(t *testing.T) {
 		t.Fatalf("reordenação do cemitério: %v", graveyard)
 	}
 }
+
+func TestMillingPutsTheTopCardsInTheGraveyardForEveryone(t *testing.T) {
+	deck := `<cockatrice_deck><zone name="main"><card number="1" name="Island"/><card number="1" name="Fire // Ice"/><card number="1" name="Urza's Saga"/><card number="1" name="Gargos, Vicious Watcher"/><card number="1" name="Printed Test"/></zone></cockatrice_deck>`
+	e, cookies, path := prepareCreationMatch(t, deck)
+	owner, opponent := cookies[0], cookies[1]
+	number := 0
+	action := func(fields string) response {
+		number++
+		return e.request("POST", path+"/actions", fmt.Sprintf(`{"intentId":"%08x-9999-4000-8000-000000000000",%s}`, number, fields), owner, nil)
+	}
+	// Quem criou a sala é o primeiro jogador para todos.
+	ownPlayer := func(cookie *http.Cookie) libraryPlayer {
+		return libraryPlayers(t, e.request("GET", path, "", cookie, nil))[0]
+	}
+	top := libraryPlayers(t, action(`"kind":"consult","consultFrom":"top","count":2`))[0].Consulted
+	requireStatus(t, action(`"kind":"close","libraryPlacement":"top"`), 200)
+	if len(top) != 2 {
+		t.Fatalf("consulta do topo: %+v", top)
+	}
+
+	requireStatus(t, action(`"kind":"mill","count":2`), 200)
+	for _, cookie := range []*http.Cookie{owner, opponent} {
+		player := ownPlayer(cookie)
+		if player.LibraryCount != 3 || len(player.Graveyard) != 2 {
+			t.Fatalf("descarte: grimório %d, cemitério %+v", player.LibraryCount, player.Graveyard)
+		}
+		// A primeira do topo cai antes; a segunda fica por cima no cemitério.
+		if player.Graveyard[0].Name != top[0].Name || player.Graveyard[1].Name != top[1].Name {
+			t.Fatalf("ordem no cemitério: %+v, topo era %+v", player.Graveyard, top)
+		}
+	}
+	entries := readLogEntries(t, e.request("GET", path, "", opponent, nil))
+	last := entries[len(entries)-1]
+	if last.Kind != "mill" || last.From != "library" || last.To != "graveyard" || len(last.Cards) != 2 {
+		t.Fatalf("registro do descarte para o oponente: %+v", last)
+	}
+
+	requireStatus(t, action(`"kind":"mill","count":4`), 409)
+	requireStatus(t, action(`"kind":"mill","count":0`), 400)
+	requireStatus(t, action(`"kind":"mill","count":1,"cardIds":["x"]`), 400)
+	requireStatus(t, action(`"kind":"consult","consultFrom":"top","count":1`), 200)
+	requireStatus(t, action(`"kind":"mill","count":1`), 409)
+}

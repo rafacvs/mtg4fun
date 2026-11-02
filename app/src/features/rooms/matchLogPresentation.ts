@@ -40,7 +40,7 @@ function canJoin(previous: LogEntry, next: LogEntry) {
 
 export function describeLogLine(line: LogLine) {
   const description = describeLogEntry(line.entry);
-  const countIsDescribed = ['set_tapped', 'set_face_down', 'hide_all_revealed', 'reveal_cards_to', 'draw', 'move', 'position'].includes(line.entry.kind);
+  const countIsDescribed = ['set_tapped', 'set_face_down', 'hide_all_revealed', 'reveal_cards_to', 'draw', 'mill', 'move', 'position'].includes(line.entry.kind);
   return line.actions > 1 && !countIsDescribed ? `${description} (${line.actions} ações seguidas)` : description;
 }
 
@@ -58,6 +58,7 @@ export function describeLogEntry(entry: { actorName: string; kind: string; from?
   if (entry.kind === 'reveal_cards_to') return `${entry.actorName} revelou ${entry.count} carta(s) da mão para ${entry.result}.`;
   if (entry.kind === 'hide_all_revealed') return `${entry.actorName} ocultou todas as suas reveladas (${entry.count}).`;
   if (entry.kind === 'draw') return `${entry.actorName} comprou ${entry.count} carta(s).`;
+  if (entry.kind === 'mill') return `${entry.actorName} descartou ${entry.count} carta(s) do topo do grimório no cemitério.`;
   if (entry.kind === 'mulligan') return `${entry.actorName} embaralhou a mão e comprou sete novas cartas (mulligan ${entry.count}).`;
   if (entry.kind === 'keep_hand') return `${entry.actorName} ${entry.result}.`;
   if (entry.kind === 'unkeep_hand') return `${entry.actorName} desfez a confirmação da mão.`;

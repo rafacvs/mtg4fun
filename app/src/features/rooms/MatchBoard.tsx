@@ -38,7 +38,7 @@ type Drag = { card: Card; x: number; y: number; zone: string | null };
 type OpenZone = { playerId: number; zone: 'graveyard' | 'exile'; anchor: HTMLElement };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mulligan, keepHand, undoKeepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, revealCardsTo, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
+  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mill, mulligan, keepHand, undoKeepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, revealCardsTo, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl } = useMatch(roomId);
   const match = synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [sides, setSides] = useState(20);
@@ -47,6 +47,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [portrait, setPortrait] = useState(() => window.matchMedia('(max-width: 1000px) and (orientation: portrait)').matches);
   const [overview, setOverview] = useState(false);
   const [fitAllRequest, setFitAllRequest] = useState(0);
+  const [hideDead, setHideDead] = useState(false);
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [informationOpen, setInformationOpen] = useState(false);
   const [informationTab, setInformationTab] = useState<'preview' | 'players' | 'log'>('preview');
@@ -337,7 +338,8 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     onMulligan={() => { setSelectionIds([]); void mulligan().then(ok => { if (ok) setMulliganPanelOpen(true); }); }}
     onKeep={() => { if (mulliganBottom) setMulliganPanelOpen(true); else void confirmHand([]); }}
     onUndo={() => void undoKeepHand()} />;
-  const quickActions = <TableQuickActions onFitAll={() => setFitAllRequest(value => value + 1)} disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen} logOpen={logOpen && (!compact || informationOpen)} onChronicle={() => { if (compact) { setInformationTab('log'); setLogOpen(true); setHoverPreviewOpen(false); setPlayersOpen(false); setInformationOpen(true); setCommandsOpen(false); } else setLogOpen(value => !value); }}
+  const deadCount = match.players.filter(player => player.userId !== match.viewerId && player.life <= 0).length;
+  const quickActions = <TableQuickActions deadCount={deadCount} hideDead={hideDead} onToggleDead={() => setHideDead(value => !value)} onFitAll={() => setFitAllRequest(value => value + 1)} disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen} logOpen={logOpen && (!compact || informationOpen)} onChronicle={() => { if (compact) { setInformationTab('log'); setLogOpen(true); setHoverPreviewOpen(false); setPlayersOpen(false); setInformationOpen(true); setCommandsOpen(false); } else setLogOpen(value => !value); }}
     onTurn={() => void turn('next')} onPreviousTurn={() => void turn('previous')} onDraw={drawOne} onUntap={() => void untapAll()}
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsScreen('menu'); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
@@ -350,7 +352,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields fitAllRequest={fitAllRequest} match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : focusId} focusEnabled={compact} fieldFocusEnabled={!compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={waitingForHands && handKept ? undefined : openLibrary} onDraw={waitingForHands && handKept ? undefined : drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} selectionActions={{ count: selectionIds.length, open: selectionActionsOpen, onToggle: () => setSelectionActionsOpen(open => !open) }} ownCommands={compact && !waitingForHands ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <TableFields hideDead={hideDead} fitAllRequest={fitAllRequest} match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : focusId} focusEnabled={compact} fieldFocusEnabled={!compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={waitingForHands && handKept ? undefined : openLibrary} onDraw={waitingForHands && handKept ? undefined : drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} selectionActions={{ count: selectionIds.length, open: selectionActionsOpen, onToggle: () => setSelectionActionsOpen(open => !open) }} ownCommands={compact && !waitingForHands ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small><b>{own.handCount}</b> {own.handCount === 1 ? 'carta' : 'cartas'}</small></span></div>
             <div id="own-dock-content" className="dock-content">
@@ -444,6 +446,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       onReveal={reveal}
       onRevealSelection={revealSelection}
       onDraw={draw}
+      onMill={mill}
       onMove={move}
       onReorder={reorder}
       onClose={closeConsultation}

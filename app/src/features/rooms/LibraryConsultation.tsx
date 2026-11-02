@@ -58,7 +58,9 @@ export function LibraryConsultation(props: Props) {
         ? 'Revelar cartas'
         : state.view === 'draw'
           ? 'Comprar cartas'
-          : 'Grimório';
+          : state.view === 'mill'
+            ? 'Descartar cartas'
+            : 'Grimório';
 
   const { resetScreen } = state;
   useEffect(() => { if (!open) resetScreen(); }, [open, resetScreen]);
@@ -115,6 +117,7 @@ export function LibraryConsultation(props: Props) {
           disabled={busy}
           empty={!libraryCount}
           onDraw={() => state.choose('draw')}
+          onMill={() => state.choose('mill')}
           onShuffle={() => void state.finish(true)}
           onLook={() => state.choose('look')}
           onSearch={() => void state.searchLibrary()}
