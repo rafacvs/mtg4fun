@@ -98,3 +98,5 @@ o movimento e a surpresa verde. O fallback sem WebGL oferece os dois botões.
 No modo WebGL, a esfera azul também tem um botão de teclado, visível ao
 receber foco. O diálogo compartilhado mantém fechamento por botão, Escape
 ou clique no fundo. Não há alteração de autenticação ou sessão.
+Após testar, o usuário pediu o título **EU TENHO RESPOSTA RWSRRSSRRS**
+no cabeçalho desse popup; a imagem continua sendo Contra Magias.

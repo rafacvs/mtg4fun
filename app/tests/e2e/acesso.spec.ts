@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures';
 
-for (const [color, title] of [['verde', 'Hora do Banza'], ['azul', 'Contra Magias']]) {
+for (const [color, title] of [['verde', 'Hora do Banza'], ['azul', 'EU TENHO RESPOSTA RWSRRSSRRS']]) {
   test(`esfera ${color} abre e fecha a surpresa fornecida sem WebGL`, async ({ page }) => {
     await page.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext;
@@ -14,7 +14,7 @@ for (const [color, title] of [['verde', 'Hora do Banza'], ['azul', 'Contra Magia
     await page.getByRole('button', { name: `Abrir surpresa da esfera ${color}` }).click();
     const surprise = page.getByRole('dialog', { name: title });
     await expect(surprise).toBeVisible();
-    const image = surprise.getByRole('img', { name: title });
+    const image = surprise.getByRole('img', { name: color === 'azul' ? 'Contra Magias' : title });
     await expect(image).toBeVisible();
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     await surprise.getByRole('button', { name: 'Fechar surpresa' }).click();

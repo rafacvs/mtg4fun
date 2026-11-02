@@ -74,7 +74,7 @@ test('esfera azul abre Contra Magias na cena WebGL e pelo teclado, mantendo a su
   await activate(0, 3);
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await activate(-2.853, .927);
-  const blue = page.getByRole('dialog', { name: 'Contra Magias' });
+  const blue = page.getByRole('dialog', { name: 'EU TENHO RESPOSTA RWSRRSSRRS' });
   await expect(blue).toBeVisible();
   const image = blue.getByRole('img', { name: 'Contra Magias' });
   await expect(image).toHaveAttribute('src', /contra-magias-surprise/);

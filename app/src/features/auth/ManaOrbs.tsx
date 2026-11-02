@@ -8,7 +8,7 @@ export function ManaOrbs() {
   const dialog = useRef<HTMLDialogElement>(null);
   const [ready, setReady] = useState(false);
   const [surprise, setSurprise] = useState<'green' | 'blue' | null>(null);
-  const title = surprise === 'blue' ? 'Contra Magias' : 'Hora do Banza';
+  const title = surprise === 'blue' ? 'EU TENHO RESPOSTA RWSRRSSRRS' : 'Hora do Banza';
   useEffect(() => {
     let active = true;
     let dispose: (() => void) | undefined;
@@ -37,7 +37,7 @@ export function ManaOrbs() {
     </div>
     <dialog ref={dialog} className="mana-orb-dialog" aria-labelledby="mana-orb-dialog-title" onCancel={event => { event.preventDefault(); setSurprise(null); }} onClose={() => { if (!dialog.current?.open) setSurprise(null); }} onClick={event => { if (event.target === event.currentTarget) setSurprise(null); }}>
       <div className="mana-orb-dialog-header"><h2 id="mana-orb-dialog-title">{title}</h2><button type="button" className="secondary" aria-label="Fechar surpresa" onClick={() => setSurprise(null)}>Fechar</button></div>
-      <img src={surprise === 'blue' ? blueSurpriseImage : surpriseImage} alt={title} />
+      <img src={surprise === 'blue' ? blueSurpriseImage : surpriseImage} alt={surprise === 'blue' ? 'Contra Magias' : 'Hora do Banza'} />
     </dialog>
   </>;
 }
