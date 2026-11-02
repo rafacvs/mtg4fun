@@ -281,7 +281,8 @@ aceite; teste funcional não aprova aparência nem decisões de produto.
   telas. Preservar fluxos e requisitos vigentes sem redesenho adicional.
 - Fileiras obrigatórias, classificação por tipo e empilhamento automático.
 - Recorte de arte das cartas no campo, mão ou leitura.
-- Novas artes, seleção de tema, personalização de playmat ou tema pelo deck.
+- Novas artes, seleção de tema ou tema pelo deck. A personalização de playmat
+  foi aprovada posteriormente na [entrega Meus playmats](../issues/meus-playmats.md).
 - Alterar regras, persistência de posições, permissões, privacidade,
   autenticação, banco, infraestrutura, transporte ou contratos de API.
 - Motor de regras, fases, chat, histórico, novas operações de biblioteca ou

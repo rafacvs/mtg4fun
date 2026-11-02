@@ -71,4 +71,8 @@ Motor de regras, validação de formatos/decks, fases, editor de decks, sideboar
 
 O [modo espectador](../decisions/54-modo-espectador.md) foi aprovado depois, só para assistir a partidas em andamento.
 
+A personalização do fundo do campo em **Meus playmats** foi aprovada depois,
+conforme a [entrega](../issues/meus-playmats.md) e a
+[decisão de armazenamento e configuração por partida](../decisions/meus-playmats.md).
+
 Manter snapshots e logs de partidas encerradas é obrigatório; isso não implica oferecer navegação por histórico nem manter uma versão de snapshot para cada ação.

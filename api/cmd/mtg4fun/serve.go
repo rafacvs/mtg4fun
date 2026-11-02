@@ -18,6 +18,7 @@ import (
 	"mtg4fun/internal/decks"
 	"mtg4fun/internal/httpserver"
 	"mtg4fun/internal/images"
+	"mtg4fun/internal/playmats"
 	"mtg4fun/internal/rooms"
 )
 
@@ -42,6 +43,9 @@ func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, imageCache, 
 	api.Handle("/api/decks/", deckHandler)
 	imageHandler := images.New(cards, imageCache).Handler(users)
 	api.Handle("/api/cards/image", imageHandler)
+	playmatHandler := playmats.Handler(db, users)
+	api.Handle("/api/playmats", playmatHandler)
+	api.Handle("/api/playmats/", playmatHandler)
 	roomService := rooms.New(db, users, cards)
 	deckService.UseRooms(roomService)
 	roomHandler := roomService.Handler()

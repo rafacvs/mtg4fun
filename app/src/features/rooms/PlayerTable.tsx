@@ -1,3 +1,5 @@
+import { playmatStyle } from '../playmats/playmatStyle';
+import '../playmats/playmat-surface.css';
 import './player-dead.css';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Card, Match } from './roomsApi';
@@ -53,7 +55,8 @@ function canDrag(card: Card, viewerId: number) {
 }
 
 export function PlayerTable({ fitAllRequest = 0, player, focused, expanded, own, viewerId, hoverZone, gesture, fieldZoom, onFieldZoom, onFocus, onReturnToOwn, onPlayerMenu, currentTurn, fieldFocusEnabled = false, onLibrary, onDraw, onHideRevealed, onOpenZone, selectionActions, disabled, seat }: { fitAllRequest?: number; seat?: ReactNode; player: Player; focused: boolean; expanded: boolean; own: boolean; viewerId: number; hoverZone: string | null; gesture: CardGesture; fieldZoom: number; onFieldZoom?: (direction: -1 | 1) => void; onFocus?: () => void; onReturnToOwn?: () => void; onPlayerMenu: (anchor: HTMLElement) => void; currentTurn: boolean; fieldFocusEnabled?: boolean; onLibrary?: () => void; onDraw?: () => void; onHideRevealed?: () => void; onOpenZone?: ZoneProps['onOpenZone']; selectionActions?: ZoneProps['selectionActions']; disabled?: boolean }) {
-  return <article className={`player-table ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
+  return <article style={player.playmat ? playmatStyle(player.playmat) : undefined} className={`player-table ${player.playmat ? 'custom-playmat' : ''} ${focused ? 'focused-table' : ''} ${currentTurn ? 'is-current-turn' : ''}`} aria-label={`Mesa de ${player.name}`}>
+    {player.playmat && <div className="playmat-surface" aria-hidden="true" />}
     {seat ?? <header className="player-heading">
       <button className="player-identity secondary" onClick={event => onPlayerMenu(lifeAnchor(event.currentTarget))} aria-label={`Abrir jogador ${player.name}`}>
         <span className="player-name-life">
