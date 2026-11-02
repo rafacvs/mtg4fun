@@ -76,3 +76,6 @@ conforme a [entrega](../issues/meus-playmats.md) e a
 [decisão de armazenamento e configuração por partida](../decisions/meus-playmats.md).
 
 Manter snapshots e logs de partidas encerradas é obrigatório; isso não implica oferecer navegação por histórico nem manter uma versão de snapshot para cada ação.
+
+A sala de espera inclui a [Queda de braço](../issues/queda-de-braco.md),
+com as regras e ajustes autorizados registrados na [decisão](../decisions/queda-de-braco.md).

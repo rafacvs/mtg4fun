@@ -1,3 +1,4 @@
+import { ArmWrestlingScreen } from './ArmWrestlingScreen';
 import { createPortal } from 'react-dom';
 import './coin-duel.css';
 import { ChallengeMenu } from './ChallengeMenu';
@@ -13,7 +14,8 @@ export function CoinDuelLayer({ duels, userId, artOf, seatOf }: { duels: Duels; 
   return createPortal(<div className="coin-duel-layer">
     {target && !own && !flip && <ChallengeMenu target={target} seat={seatOf(target.id)} duels={duels} />}
     {own?.status === 'invited' && !flip && <DuelInvite duel={own} userId={userId} duels={duels} />}
-    {playing && <DuelScreen key={flip?.duelId ?? own?.id} duel={flip ? null : own} outcome={flip} userId={userId} duels={duels} artOf={artOf} seatOf={seatOf} />}
+    {own?.status === 'playing' && own.game === 'arm-wrestling' && <ArmWrestlingScreen duel={own} userId={userId} duels={duels} artOf={artOf} />}
+    {playing && own?.game !== 'arm-wrestling' && <DuelScreen key={flip?.duelId ?? own?.id} duel={flip ? null : own} outcome={flip} userId={userId} duels={duels} artOf={artOf} seatOf={seatOf} />}
     {notice && <p className="coin-duel-notice" role="status">{notice}</p>}
   </div>, document.body);
 }

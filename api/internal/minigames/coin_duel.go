@@ -37,6 +37,8 @@ const (
 // Duel is the state of a coin duel. Both players see each other's side as it is
 // chosen, so two people can only agree to flip with different sides.
 type Duel struct {
+	Game           string           `json:"game,omitempty"`
+	Arm            *ArmState        `json:"arm,omitempty"`
 	ID             int64            `json:"id"`
 	Status         string           `json:"status"`
 	ChallengerID   int64            `json:"challengerId"`
@@ -49,6 +51,7 @@ type Duel struct {
 	Conflict bool `json:"conflict"`
 	room     int64
 	timer    *time.Timer
+	armTimer *time.Timer
 }
 
 func (d *Duel) has(member int64) bool { return d.ChallengerID == member || d.OpponentID == member }
@@ -69,6 +72,7 @@ func (d *Duel) name(member int64) string {
 
 // Outcome is how a duel ended, shown to the whole room and kept in its history.
 type Outcome struct {
+	Game       string `json:"game,omitempty"`
 	DuelID     int64  `json:"duelId"`
 	Kind       string `json:"kind"`
 	Side       string `json:"side,omitempty"`
@@ -121,7 +125,7 @@ func (c *CoinDuels) view(roomID int64) map[string]any {
 	duels := []Duel{}
 	for _, duel := range c.duels {
 		if duel.room == roomID {
-			duels = append(duels, Duel{ID: duel.ID, Status: duel.Status, ChallengerID: duel.ChallengerID, ChallengerName: duel.ChallengerName, OpponentID: duel.OpponentID, OpponentName: duel.OpponentName, Picks: maps.Clone(duel.Picks), Confirmed: maps.Clone(duel.Confirmed), Conflict: duel.Conflict})
+			duels = append(duels, Duel{Game: duel.Game, Arm: cloneArm(duel.Arm), ID: duel.ID, Status: duel.Status, ChallengerID: duel.ChallengerID, ChallengerName: duel.ChallengerName, OpponentID: duel.OpponentID, OpponentName: duel.OpponentName, Picks: maps.Clone(duel.Picks), Confirmed: maps.Clone(duel.Confirmed), Conflict: duel.Conflict})
 		}
 	}
 	marks := map[int64]string{}
@@ -141,12 +145,18 @@ func (c *CoinDuels) Handle(ctx context.Context, request live.Request) error {
 	switch request.Type {
 	case "challenge":
 		var input struct {
-			OpponentID int64 `json:"opponentId"`
+			OpponentID int64  `json:"opponentId"`
+			Game       string `json:"game"`
 		}
 		if json.Unmarshal(request.Data, &input) != nil {
 			return live.UserError{Message: "Desafio inválido."}
 		}
-		return c.challenge(ctx, request, input.OpponentID)
+		if input.Game != "" && input.Game != "arm-wrestling" {
+			return live.UserError{Message: "Jogo inválido."}
+		}
+		return c.challenge(ctx, request, input.OpponentID, input.Game)
+	case "arm-start", "arm-press":
+		return c.armAction(request)
 	case "pick":
 		var input struct {
 			Side string `json:"side"`
@@ -171,7 +181,7 @@ func (c *CoinDuels) Handle(ctx context.Context, request live.Request) error {
 	return live.UserError{Message: "Ação inválida."}
 }
 
-func (c *CoinDuels) challenge(ctx context.Context, request live.Request, opponentID int64) error {
+func (c *CoinDuels) challenge(ctx context.Context, request live.Request, opponentID int64, game string) error {
 	if opponentID == request.From.ID {
 		return live.UserError{Message: "Escolha outro jogador."}
 	}
@@ -203,7 +213,7 @@ func (c *CoinDuels) challenge(ctx context.Context, request live.Request, opponen
 		c.duels = map[int64]*Duel{}
 	}
 	c.nextID++
-	duel := &Duel{ID: c.nextID, Status: duelInvited, ChallengerID: request.From.ID, ChallengerName: request.From.Name, OpponentID: opponentID, OpponentName: opponentName, Picks: map[int64]string{}, Confirmed: map[int64]bool{}, room: request.RoomID}
+	duel := &Duel{Game: game, ID: c.nextID, Status: duelInvited, ChallengerID: request.From.ID, ChallengerName: request.From.Name, OpponentID: opponentID, OpponentName: opponentName, Picks: map[int64]string{}, Confirmed: map[int64]bool{}, room: request.RoomID}
 	c.duels[duel.ID] = duel
 	c.restartTimer(duel)
 	c.publishState(request.RoomID)
@@ -245,6 +255,9 @@ func (c *CoinDuels) accept(request live.Request) error {
 		return err
 	}
 	duel.Status = duelPlaying
+	if duel.Game == "arm-wrestling" {
+		duel.Arm = newArm()
+	}
 	c.restartTimer(duel)
 	c.publishState(request.RoomID)
 	return nil
@@ -268,6 +281,9 @@ func (c *CoinDuels) pick(request live.Request, side string) error {
 	if err != nil {
 		return err
 	}
+	if duel.Game == "arm-wrestling" {
+		return live.UserError{Message: "Use o relógio da queda de braço."}
+	}
 	if duel.Confirmed[request.From.ID] {
 		return live.UserError{Message: "Desconfirme para trocar de lado."}
 	}
@@ -288,6 +304,9 @@ func (c *CoinDuels) confirm(request live.Request) error {
 	duel, err := c.playing(request)
 	if err != nil {
 		return err
+	}
+	if duel.Game == "arm-wrestling" {
+		return live.UserError{Message: "Use o relógio da queda de braço."}
 	}
 	side := duel.Picks[request.From.ID]
 	if side == "" {
@@ -329,6 +348,9 @@ func (c *CoinDuels) unconfirm(request live.Request) error {
 	duel, err := c.playing(request)
 	if err != nil {
 		return err
+	}
+	if duel.Game == "arm-wrestling" {
+		return live.UserError{Message: "Use o relógio da queda de braço."}
 	}
 	delete(duel.Confirmed, request.From.ID)
 	c.restartTimer(duel)
@@ -378,6 +400,7 @@ func (c *CoinDuels) CancelRoom(roomID int64) {
 
 // finish records who lost, which stays visible on the table until the match starts.
 func (c *CoinDuels) finish(duel *Duel, outcome Outcome, mark string) {
+	outcome.Game = duel.Game
 	outcome.DuelID = duel.ID
 	outcome.At = time.Now().UnixMilli()
 	if c.records == nil {
@@ -407,6 +430,9 @@ func (c *CoinDuels) end(duel *Duel, reason string) {
 
 func (c *CoinDuels) remove(duel *Duel) {
 	duel.timer.Stop()
+	if duel.armTimer != nil {
+		duel.armTimer.Stop()
+	}
 	delete(c.duels, duel.ID)
 }
 
