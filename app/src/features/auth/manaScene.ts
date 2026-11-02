@@ -1,6 +1,6 @@
 import { ACESFilmicToneMapping, AmbientLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PointLight, Raycaster, Scene, SphereGeometry, Vector2, WebGLRenderer } from 'three';
 
-export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, onUnavailable: () => void, onGreenOrbClick: () => void) {
+export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, onUnavailable: () => void, onGreenOrbClick: () => void, onBlueOrbClick: () => void) {
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -18,6 +18,7 @@ export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, 
   scene.add(ring);
   const geometry = new SphereGeometry(1.1, 48, 32);
   let greenOrb: Mesh | null = null;
+  let blueOrb: Mesh | null = null;
   const materials = [0xf2e8c0, 0x3f8fd6, 0x3a3740, 0xe0553a, 0x43a263].map((color, index) => {
     const material = new MeshStandardMaterial({ color, roughness: .35, metalness: .2, emissive: color, emissiveIntensity: index === 2 ? .06 : .22 });
     const orb = new Mesh(geometry, material);
@@ -25,6 +26,7 @@ export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, 
     orb.position.set(Math.cos(angle) * 3, Math.sin(angle) * 3, 0);
     ring.add(orb);
     if (index === 4) greenOrb = orb;
+    if (index === 1) blueOrb = orb;
     return material;
   });
   const raycaster = new Raycaster();
@@ -68,17 +70,22 @@ export function createManaScene(canvas: HTMLCanvasElement, onReady: () => void, 
     onUnavailable();
   };
   const onRestored = () => { lost = false; resize(); updateMotion(); };
-  const pointsAtGreenOrb = (event: PointerEvent | MouseEvent) => {
+  const orbAtPointer = (event: PointerEvent | MouseEvent) => {
     const bounds = canvas.getBoundingClientRect();
     pointer.set(
       (event.clientX - bounds.left) / bounds.width * 2 - 1,
       -((event.clientY - bounds.top) / bounds.height * 2 - 1),
     );
     raycaster.setFromCamera(pointer, camera);
-    return greenOrb !== null && raycaster.intersectObject(greenOrb, false).length > 0;
+    const hit = raycaster.intersectObjects(ring.children, false)[0]?.object;
+    return hit === greenOrb ? 'green' : hit === blueOrb ? 'blue' : null;
   };
-  const onPointerMove = (event: PointerEvent) => { canvas.style.cursor = pointsAtGreenOrb(event) ? 'pointer' : 'default'; };
-  const onClick = (event: MouseEvent) => { if (pointsAtGreenOrb(event)) onGreenOrbClick(); };
+  const onPointerMove = (event: PointerEvent) => { canvas.style.cursor = orbAtPointer(event) ? 'pointer' : 'default'; };
+  const onClick = (event: MouseEvent) => {
+    const orb = orbAtPointer(event);
+    if (orb === 'green') onGreenOrbClick();
+    if (orb === 'blue') onBlueOrbClick();
+  };
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   motion.addEventListener('change', updateMotion);

@@ -13,6 +13,9 @@ type Props = {
   onSelect: (id: string) => void;
   onInspect: (card: Card) => void;
   onReorder: (id: string, targetID: string) => Promise<void>;
+  placement?: 'top' | 'bottom';
+  cardPlacements?: Record<string, 'top' | 'bottom'>;
+  onPlacement?: (id: string, target: 'top' | 'bottom') => void;
 };
 
 export function LibraryCards(props: Props) {
@@ -82,6 +85,22 @@ export function LibraryCards(props: Props) {
                 </span>
               )}
             </div>
+            {props.onPlacement && (
+              <div className="library-card-placement" role="group" aria-label={`Destino de ${card.name}`}>
+                {(['top', 'bottom'] as const).map(target => (
+                  <button
+                    key={target}
+                    type="button"
+                    className={(props.cardPlacements?.[card.id] ?? props.placement) === target ? '' : 'secondary'}
+                    aria-pressed={(props.cardPlacements?.[card.id] ?? props.placement) === target}
+                    disabled={props.busy}
+                    onClick={event => { event.stopPropagation(); props.onPlacement?.(card.id, target); }}
+                  >
+                    {target === 'top' ? '↑ Topo' : '↓ Fundo'}
+                  </button>
+                ))}
+              </div>
+            )}
           </article>
         );
       })}

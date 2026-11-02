@@ -35,16 +35,18 @@ type Props = LibraryOperations & {
 export function LibraryConsultation(props: Props) {
   const { open, match, cards, revealed, consultationFrom, libraryCount, error, onInspect, onDismiss } =
     props;
-  const busy = props.busy || props.unconfirmed;
   const pool = [
     ...cards,
     ...revealed.filter((card) => !cards.some((consulted) => consulted.id === card.id)),
   ];
   const state = useLibraryConsultation(pool, props, consultationFrom);
+  const busy = props.busy || props.unconfirmed || state.finishing;
   const active = Boolean(consultationFrom || pool.length);
   const searching = consultationFrom === 'all' || (!consultationFrom && cards.length > 0);
   const searchSheet = active && searching;
   const publicCount = pool.filter((card) => card.revealed).length;
+  const individualPlacement = consultationFrom === 'top' && publicCount < pool.length;
+  const topCount = pool.filter(card => (state.cardPlacements[card.id] ?? state.placement) === 'top').length;
   const [closeAttempted, setCloseAttempted] = useState(false);
   const title = active
     ? publicCount === pool.length && pool.length
@@ -154,6 +156,9 @@ export function LibraryConsultation(props: Props) {
               onSelect={state.toggle}
               onInspect={onInspect}
               onReorder={state.reorder}
+              placement={state.placement}
+              cardPlacements={state.cardPlacements}
+              onPlacement={individualPlacement ? state.setCardPlacement : undefined}
             />
           </div>
           {selectedCount > 0 && (
@@ -183,6 +188,11 @@ export function LibraryConsultation(props: Props) {
                 </select>
               </label>
               <small>Na ordem exibida, da primeira à última.</small>
+              {individualPlacement && (
+                <p className="library-placement-summary" role="status">
+                  Resumo: <strong>{topCount} ao topo</strong> · <strong>{pool.length - topCount} ao fundo</strong> — o seletor define o padrão; cada carta pode ser ajustada.
+                </p>
+              )}
             </div>
             <div className="library-finish-actions">
               <button

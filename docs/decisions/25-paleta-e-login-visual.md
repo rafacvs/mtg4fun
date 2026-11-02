@@ -87,3 +87,14 @@ seguida a referência inicial à esfera vermelha. A detecção acompanha a esfer
 na cena WebGL em movimento. O fallback sem WebGL oferece o mesmo botão, e o
 canvas permite abrir a surpresa por teclado. O diálogo fecha pelo botão,
 Escape ou clique no fundo, sem alterar autenticação ou sessão.
+
+## Surpresa da esfera azul
+
+Em 02/11/2026, antes da abertura do PR consolidado, o usuário forneceu a
+imagem **Contra Magias** e pediu que ela fosse exibida ao clicar na esfera
+azul do login. A imagem foi incorporada como asset local, sem alterações.
+A detecção WebGL passa a distinguir as esferas azul e verde, preservando
+o movimento e a surpresa verde. O fallback sem WebGL oferece os dois botões.
+No modo WebGL, a esfera azul também tem um botão de teclado, visível ao
+receber foco. O diálogo compartilhado mantém fechamento por botão, Escape
+ou clique no fundo. Não há alteração de autenticação ou sessão.

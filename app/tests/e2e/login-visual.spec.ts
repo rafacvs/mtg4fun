@@ -49,12 +49,50 @@ test('login continua funcionando sem WebGL', async ({ page }, info) => {
   });
   await page.goto('/');
   await expect(page.locator('.mana-orbs-fallback')).toBeVisible();
-  await expect(page.locator('.mana-orbs-fallback span')).toHaveCount(5);
+  await expect(page.locator('.mana-orbs-fallback span')).toHaveCount(3);
+  await expect(page.locator('.mana-orbs-fallback button')).toHaveCount(2);
   await page.screenshot({ path: info.outputPath('login-sem-webgl.png'), fullPage: true });
   await page.getByLabel('Login', { exact: true }).fill('amigo');
   await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Lobby', exact: true })).toBeVisible();
+});
+
+test('esfera azul abre Contra Magias na cena WebGL e pelo teclado, mantendo a surpresa verde', async ({ page }, info) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  const scene = page.locator('.mana-orbs');
+  await expect(scene).toHaveClass(/is-ready/, { timeout: 15_000 });
+  const canvas = scene.locator('canvas');
+  const box = (await canvas.boundingBox())!;
+  const scale = Math.min(box.width, box.height) / 9;
+  const activate = async (x: number, y: number) => {
+    const position = { x: box.width / 2 + x * scale, y: box.height / 2 - y * scale };
+    if (info.project.use.hasTouch) await canvas.tap({ position });
+    else await canvas.click({ position });
+  };
+  await activate(0, 3);
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await activate(-2.853, .927);
+  const blue = page.getByRole('dialog', { name: 'Contra Magias' });
+  await expect(blue).toBeVisible();
+  const image = blue.getByRole('img', { name: 'Contra Magias' });
+  await expect(image).toHaveAttribute('src', /contra-magias-surprise/);
+  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await page.screenshot({ path: info.outputPath('contra-magias.png') });
+  await page.keyboard.press('Escape');
+  await expect(blue).not.toBeVisible();
+  await activate(2.853, .927);
+  const green = page.getByRole('dialog', { name: 'Hora do Banza' });
+  await expect(green).toBeVisible();
+  await green.getByRole('button', { name: 'Fechar surpresa' }).click();
+  const keyboard = page.getByRole('button', { name: 'Abrir surpresa da esfera azul' });
+  await keyboard.focus();
+  await keyboard.press('Enter');
+  await expect(blue).toBeVisible();
+  await blue.getByRole('button', { name: 'Fechar surpresa' }).click();
+  await expect(blue).not.toBeVisible();
+  await expect(page.getByLabel('Login', { exact: true })).toBeEnabled();
 });
 
 test('entrada usa a tipografia da mesa e o fundo noturno aprovado', async ({ page }) => {

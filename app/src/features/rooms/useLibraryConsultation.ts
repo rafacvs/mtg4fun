@@ -31,7 +31,10 @@ export function useLibraryConsultation(
     consultationFrom === 'bottom' ? 'bottom' : 'top',
   );
   const [notice, setNotice] = useState('');
+  const [cardPlacements, setCardPlacements] = useState<Record<string, 'top' | 'bottom'>>({});
+  const [finishing, setFinishing] = useState(false);
   useEffect(() => {
+    setCardPlacements({});
     setPlacement(consultationFrom === 'bottom' ? 'bottom' : 'top');
     setSelected([]);
     setSearch('');
@@ -111,12 +114,23 @@ export function useLibraryConsultation(
     await operations.onReorder(next.map((card) => card.id));
   };
   const finish = async (shuffle = false) => {
-    if (await operations.onClose(placement, shuffle)) {
-      choose('menu');
-      setNotice(shuffle ? 'Grimório embaralhado.' : 'Cartas devolvidas ao grimório.');
-      return true;
+    setFinishing(true);
+    try {
+      // Move the exceptions first, then close the remaining block at its default
+      // destination. Both operations preserve the displayed order within a block.
+      const opposite = placement === 'top' ? 'bottom' : 'top';
+      const exceptions = cards.filter(card => cardPlacements[card.id] === opposite).map(card => card.id);
+      if (!shuffle && exceptions.length && !(await operations.onMove(exceptions, 'library', opposite))) return false;
+      if (await operations.onClose(placement, shuffle)) {
+        setCardPlacements({});
+        choose('menu');
+        setNotice(shuffle ? 'Grimório embaralhado.' : 'Cartas devolvidas ao grimório.');
+        return true;
+      }
+      return false;
+    } finally {
+      setFinishing(false);
     }
-    return false;
   };
   return {
     view,
@@ -132,6 +146,9 @@ export function useLibraryConsultation(
     setSearch,
     placement,
     setPlacement,
+    cardPlacements,
+    setCardPlacement: (id: string, target: 'top' | 'bottom') => setCardPlacements(current => ({ ...current, [id]: target })),
+    finishing,
     notice,
     filtered,
     countType,
