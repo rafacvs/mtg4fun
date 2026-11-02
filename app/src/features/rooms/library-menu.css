@@ -25,7 +25,13 @@
 /* Menu */
 .library-menu { flex:1; min-height:0; display:flex; flex-direction:column; gap:16px; }
 .library-menu > .library-section:last-child { flex:1; min-height:0; }
-.library-move-tiles { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.library-move-tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+/* Três ações lado a lado: medalha em cima e texto embaixo, para caber na largura do painel. */
+.match-board .library-framed .library-move-tiles .library-tile-row { flex-direction:column; justify-content:center; gap:5px; min-height:0; padding:9px 4px 10px; text-align:center; }
+.library-move-tiles .library-medal { width:44px; height:44px; margin:3px; }
+.library-move-tiles .library-medal .table-icon { width:20px; height:20px; }
+.library-move-tiles .library-tile-text { align-items:center; }
+.library-move-tiles .library-chip { align-self:center; }
 .library-view-tiles { flex:1; min-height:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .match-board .library-framed .library-tile { position:relative; min-width:0; padding:0; color:#ece1c6; border:1px solid #39352a; border-radius:5px; background:linear-gradient(150deg,#1d2120,#10171a); font-weight:400; }
 .match-board .library-framed .library-tile:hover:not(:disabled) { border-color:#c9a662; background:linear-gradient(150deg,#26291f,#12191b); }
@@ -52,6 +58,7 @@
 .library-medal-ember { background:radial-gradient(circle,#4a2a20,#120d0c 72%); color:#ecb377; }
 .library-medal-violet { background:radial-gradient(circle,#332f6e,#0d0d20 74%); color:#d8d5f2; }
 .library-medal-teal { background:radial-gradient(circle,#1c4a55,#091417 74%); color:#d9e4d5; }
+.library-medal-bone { background:radial-gradient(circle,#3f3b33,#100f0d 72%); color:#e8e0cc; }
 .library-medal-gold { background:radial-gradient(circle,#57451f,#14100a 74%); color:#efcf85; }
 
 /* Shared setup pieces */
@@ -95,6 +102,8 @@
 .library-draw-fan > span { position:absolute; inset:0; transform:translateX(var(--fan-x)) rotate(var(--fan-angle)); transform-origin:50% 100%; filter:drop-shadow(0 2px 4px #000a); }
 .library-setup-draw .library-section { margin-top:54px; }
 .library-setup-draw .library-section h3 { margin-bottom:6px; }
+.library-setup-mill .library-section { margin-top:22px; }
+.library-setup-mill .library-section h3 { margin-bottom:6px; }
 .library-framed .library-setup p.library-caption { margin:12px 0 0; color:#a6a298; text-align:center; font:12px/1.3 Geist,sans-serif; }
 
 /* Look */

@@ -1,4 +1,4 @@
-import { test, expect, openMatchRail, closeMatchRail, returnOpeningHandToLibrary, roomBody, confirmHands } from './fixtures';
+import { test, expect, openMatchRail, closeMatchRail, returnOpeningHandToLibrary, roomBody, confirmHands, openLibrary } from './fixtures';
 import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 
 async function expectOrderedLayout(library: Locator) {
@@ -478,4 +478,45 @@ test('recupera a confirmação perdida no painel sem aplicar a consulta duas vez
   } finally {
     await Promise.all(game.contexts.map((context) => context.close()));
   }
+});
+
+test('descartar do topo manda as cartas direto para o cemitério, à vista de todos', async ({ page, browser, baseURL }, info) => {
+  const otherContext = await browser.newContext({ baseURL });
+  try {
+    const other = otherContext.request;
+    expect((await page.request.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+    expect((await other.post('/api/session', { data: { login: 'segundo', password: 'senha-do-navegador' } })).ok()).toBe(true);
+    const { room } = await (await page.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
+    expect((await other.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
+    const file = { name: 'descarte.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="12" name="Island"/></zone></cockatrice_deck>') };
+    for (const api of [page.request, other]) {
+      const { deck } = await (await api.post('/api/decks', { multipart: { file } })).json();
+      expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBe(true);
+    }
+    expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(room.id, page.request, other);
+    const own = async (api = page.request) => {
+      const { match } = await (await api.get(`/api/rooms/${room.id}/match`)).json();
+      return match.players.find((player: { name: string }) => player.name === 'Amigo da mesa');
+    };
+    const before = await own();
+    await page.goto(`/#/salas/${room.id}`);
+    await expect(page.getByRole('button', { name: 'Comandos', exact: true }).or(page.getByRole('button', { name: 'Abrir ações do grimório', exact: true })).first()).toBeVisible();
+
+    const library = await openLibrary(page);
+    await page.screenshot({ path: info.outputPath('menu-grimorio.png') });
+    await library.getByRole('button', { name: 'Descartar cartas', exact: true }).click();
+    await expect(library.getByRole('heading', { name: 'Descartar cartas' })).toBeVisible();
+    await library.getByRole('button', { name: 'Aumentar quantidade' }).click();
+    await page.screenshot({ path: info.outputPath('descartar.png') });
+    await library.getByRole('button', { name: 'Descartar 2 cartas', exact: true }).click();
+    await expect(library.getByRole('status').filter({ hasText: '2 carta(s) descartada(s) no cemitério.' })).toBeVisible();
+    await expect(library.getByText(`${before.libraryCount - 2} cartas`, { exact: true })).toBeVisible();
+
+    const seen = await own(other);
+    expect(seen.libraryCount).toBe(before.libraryCount - 2);
+    expect(seen.graveyard.map((card: { name: string }) => card.name)).toEqual(['Island', 'Island']);
+    const { match } = await (await other.get(`/api/rooms/${room.id}/match`)).json();
+    expect(match.log.at(-1)).toMatchObject({ kind: 'mill', count: 2, actorName: 'Amigo da mesa' });
+  } finally { await otherContext.close(); }
 });

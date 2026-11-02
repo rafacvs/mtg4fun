@@ -19,14 +19,15 @@ function MenuTile({ tile, tall = false }: { tile: Tile; tall?: boolean }) {
   </button>;
 }
 
-export function LibraryMenu({ disabled, empty, onDraw, onShuffle, onLook, onSearch, onReveal }: {
-  disabled: boolean; empty: boolean; onDraw: () => void; onShuffle: () => void; onLook: () => void; onSearch: () => void; onReveal: () => void;
+export function LibraryMenu({ disabled, empty, onDraw, onMill, onShuffle, onLook, onSearch, onReveal }: {
+  disabled: boolean; empty: boolean; onDraw: () => void; onMill: () => void; onShuffle: () => void; onLook: () => void; onSearch: () => void; onReveal: () => void;
 }) {
   const unavailable = disabled || empty;
   return <div className="library-menu">
     <LibrarySection title="Mexer no grimório">
       <div className="library-move-tiles">
         <MenuTile tile={{ icon: 'library-draw', tone: 'green', title: 'Comprar', label: 'Comprar cartas', chip: 'Vai para a mão', chipIcon: 'library-draw', disabled: unavailable, onClick: onDraw }} />
+        <MenuTile tile={{ icon: 'graveyard', tone: 'bone', title: 'Descartar', label: 'Descartar cartas', chip: 'Vai ao cemitério', chipIcon: 'sun', publicChip: true, disabled: unavailable, onClick: onMill }} />
         <MenuTile tile={{ icon: 'library-shuffle', tone: 'ember', title: 'Embaralhar', label: 'Embaralhar', chip: 'Na hora', chipIcon: 'bolt', disabled, onClick: onShuffle }} />
       </div>
     </LibrarySection>

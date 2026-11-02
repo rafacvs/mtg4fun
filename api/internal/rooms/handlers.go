@@ -214,7 +214,7 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 			return matchAction{}, false
 		}
 
-	case "draw":
+	case "draw", "mill":
 		if input.Count < 1 || input.To != "" || len(input.CardIDs) != 0 || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.CardID != "" || input.PositionX != 0 || input.Row != 0 || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Ação inválida.")
 			return matchAction{}, false

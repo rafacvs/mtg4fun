@@ -1,0 +1,24 @@
+/* Mira: o cursor vira alvo em toda a tela e as cartas do campo se destacam. */
+body.tomato-aiming, body.tomato-aiming * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' fill='none' stroke='%23ff3b24' stroke-width='2'%3E%3Ccircle cx='16' cy='16' r='11'/%3E%3Ccircle cx='16' cy='16' r='5'/%3E%3Cpath d='M16 1v8M16 23v8M1 16h8M23 16h8'/%3E%3Ccircle cx='16' cy='16' r='1.500' fill='%23ff3b24'/%3E%3C/svg%3E") 16 16, crosshair !important;
+}
+body.tomato-aiming .zone-battlefield [data-card-id]:hover { outline: 2px solid #ff4a2e; outline-offset: 2px; box-shadow: 0 0 16px #ff3b2477; }
+/* Embaixo, acima da mão: no topo a faixa cobriria as cartas do alto do campo. */
+.tomato-aim-hint { position: fixed; z-index: 80; bottom: 24%; left: 50%; opacity: .92; max-width: calc(100vw - 32px); margin: 0; padding: 8px 14px; border: 1px solid #b8341f; border-radius: 6px; background: #2a0f0bee; color: #fde3d8; font: 600 13px Geist, sans-serif; text-align: center; transform: translateX(-50%); pointer-events: none; box-shadow: 0 10px 30px #000a; }
+
+/* Respingo: o tomate chega, a polpa estoura, o caldo escorre e tudo some. */
+.tomato-splat { position: absolute; inset: 0; z-index: 6; overflow: hidden; border-radius: 6px; pointer-events: none; animation: tomato-splat-life 1.9s linear forwards; }
+.tomato-splat svg { position: absolute; inset: 0; width: 100%; height: 100%; translate: var(--hit-x) var(--hit-y); }
+/* O caldo escorre sempre para baixo; só a polpa gira, para cada tomate cair de um jeito. */
+.tomato-flying { position: absolute; left: calc(50% + var(--hit-x)); top: calc(40% + var(--hit-y)); font-size: 30px; line-height: 1; transform: translate(-50%, -50%); animation: tomato-fly .16s ease-in forwards; }
+.tomato-pulp { transform-box: fill-box; transform-origin: center; rotate: var(--hit-turn); animation: tomato-pop .16s cubic-bezier(.2, 1.6, .4, 1) .1s both; }
+.tomato-drips > g { transform-box: fill-box; transform-origin: top; animation: tomato-drip .85s cubic-bezier(.5, 0, .8, .6) calc(.18s + var(--drip-delay)) both; }
+.tomato-splat small { position: absolute; left: 50%; top: 4px; max-width: 92%; overflow: hidden; padding: 1px 6px; border-radius: 8px; background: #0e1113cc; color: #fde3d8; font: 600 10px Geist, sans-serif; text-overflow: ellipsis; white-space: nowrap; translate: -50% 0; animation: tomato-pop .2s ease-out .12s both; }
+@keyframes tomato-splat-life { 0%, 74% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tomato-fly { from { opacity: 0; transform: translate(-50%, -150%) scale(2.6) rotate(-40deg); } 85% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -50%) scale(1) rotate(0); } }
+@keyframes tomato-pop { from { opacity: 0; transform: scale(.2); } 70% { opacity: 1; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+@keyframes tomato-drip { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .tomato-flying { display: none; }
+  .tomato-pulp, .tomato-drips > g, .tomato-splat small { animation: none; }
+}

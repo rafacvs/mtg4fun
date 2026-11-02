@@ -64,7 +64,8 @@ test('emoji cai na tela de todos, abre ao lado do botão e fica mais lento com o
       // Clica o tempo todo; só conta o que o botão e a espera deixaram passar.
       const seen = new Set<Element>();
       const rain = document.querySelector('.emoji-rain')!;
-      while (performance.now() - start < 3500) {
+      // Spama até o aviso de espera aparecer, que com o limite atual leva uns 5 s.
+      while (performance.now() - start < 9000 && !document.querySelector('.emoji-wait')) {
         button.click();
         for (const drop of rain.querySelectorAll('.emoji-drop')) if (!seen.has(drop)) { seen.add(drop); moments.push(performance.now() - start - last); last = performance.now() - start; }
         await new Promise(resolve => setTimeout(resolve, 30));
@@ -75,7 +76,7 @@ test('emoji cai na tela de todos, abre ao lado do botão e fica mais lento com o
     const middle = Math.floor(sent.length / 2);
     const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
     expect(average(sent.slice(middle)), `intervalos: ${sent.join(', ')}`).toBeGreaterThan(average(sent.slice(1, middle)));
-    await expect(page.getByRole('status').filter({ hasText: /Calma… \ds/ })).toBeVisible({ timeout: 6000 });
+    await expect(page.getByRole('status').filter({ hasText: /Calma… \ds/ })).toBeVisible();
     await expect(fire).toBeDisabled();
     await expect(fire).toBeEnabled({ timeout: 4000 });
     // Os outros veem cair também.

@@ -74,3 +74,77 @@ test('quem assiste recebe e manda emojis para os jogadores', async ({ page, brow
     await send(player, '🔥', 'Amigo da mesa', page);
   } finally { await Promise.all(contexts.map(context => context.close())); }
 });
+
+test('todos os emojis com pesquisa, e o tomate do botão direito suja a carta para todos', async ({ page, browser, baseURL }, info) => {
+  test.setTimeout(60_000);
+  const guestContext = await browser.newContext({ baseURL, viewport: page.viewportSize() ?? undefined, hasTouch: info.project.use.hasTouch, isMobile: info.project.use.isMobile });
+  const guest = await guestContext.newPage();
+  try {
+    for (const [client, login] of [[page, 'amigo'], [guest, 'segundo']] as const) expect((await client.request.post('/api/session', { data: { login, password } })).ok()).toBe(true);
+    const { room } = await (await page.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
+    expect((await guest.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
+    for (const client of [page, guest]) {
+      const created = await (await client.request.post('/api/decks', { multipart: { file: deck } })).json();
+      expect((await client.request.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: created.deck.id } })).ok()).toBe(true);
+    }
+    expect((await page.request.post(`/api/rooms/${room.id}/start`, { data: {} })).status()).toBe(201);
+    await confirmHands(room.id, page.request, guest.request);
+    // No celular só o próprio campo aparece: lá o alvo é a própria carta; no desktop, a do outro.
+    const thrower = info.project.use.hasTouch ? page.request : guest.request;
+    const { match } = await (await thrower.get(`/api/rooms/${room.id}/match`)).json();
+    const target = match.players.find((player: { userId: number }) => player.userId === match.viewerId).hand[0].id;
+    expect((await thrower.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'move', cardIds: [target], to: 'battlefield' } })).ok()).toBe(true);
+    for (const client of [page, guest]) await client.goto(`/#/salas/${room.id}`);
+
+    await page.getByRole('button', { name: 'Reagir com emoji' }).click();
+    await page.getByRole('button', { name: 'Todos os emojis' }).click();
+    const picker = page.getByRole('dialog', { name: 'Todos os emojis' });
+    await expect(picker.getByRole('region', { name: 'Bandeiras' })).toBeVisible();
+    const box = (await picker.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    await page.screenshot({ path: info.outputPath('todos-os-emojis.png') });
+    // A pesquisa ignora acentos e encontra pelos nomes em português.
+    await picker.getByRole('searchbox', { name: 'Pesquisar emoji' }).fill('suico');
+    await picker.getByRole('button', { name: /^Enviar 🧀/ }).click();
+    for (const viewer of [page, guest]) await expect(viewer.locator('.emoji-drop', { hasText: '🧀' }).locator('small')).toHaveText('Amigo da mesa');
+    await picker.getByRole('searchbox', { name: 'Pesquisar emoji' }).fill('nada disso existe');
+    await expect(picker.getByText('Nenhum emoji para “nada disso existe”.')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(picker).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Enviar 🍅' }).click({ button: 'right' });
+    await expect(page.getByRole('status').filter({ hasText: 'Clique nas cartas do campo para tacar tomates' })).toBeVisible();
+    await expect(page.locator('body')).toHaveClass(/tomato-aiming/);
+    const card = page.locator(`.zone-battlefield [data-card-id="${target}"]`);
+    await card.click();
+    for (const viewer of [page, guest]) {
+      const splat = viewer.locator(`[data-card-id="${target}"] .tomato-splat`);
+      if (viewer === page || !info.project.use.hasTouch) await expect(splat).toHaveCount(1);
+    }
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: info.outputPath('tomate.png') });
+    // A mira continua: dá para tacar de novo sem voltar à barra, e clicar fora não desliga.
+    await expect(page.locator('body')).toHaveClass(/tomato-aiming/);
+    const spot = (await card.boundingBox())!;
+    await page.mouse.click(spot.x + spot.width + 40, spot.y + spot.height / 2);
+    await expect(page.locator('body')).toHaveClass(/tomato-aiming/);
+    await card.click();
+    await expect(page.locator(`[data-card-id="${target}"] .tomato-splat`)).toHaveCount(2);
+    await page.waitForTimeout(700);
+    await card.screenshot({ path: info.outputPath('dois-tomates.png') });
+    // Mirar não abre a carta, e a sujeira some sozinha.
+    await expect(page.locator('.card-preview[role="dialog"]')).toHaveCount(0);
+    await expect(page.locator('.tomato-splat')).toHaveCount(0, { timeout: 4000 });
+
+    // Só o botão direito guarda a mira.
+    await page.mouse.click(20, 200, { button: 'right' });
+    await expect(page.locator('body')).not.toHaveClass(/tomato-aiming/);
+    await expect(page.getByRole('status').filter({ hasText: 'Botão direito para parar' })).toHaveCount(0);
+    await page.waitForTimeout(1300);
+    await card.click();
+    await expect(page.locator('.card-preview[role="dialog"]')).toBeVisible();
+    await expect(guest.locator('.tomato-splat')).toHaveCount(0);
+  } finally { await guestContext.close(); }
+});

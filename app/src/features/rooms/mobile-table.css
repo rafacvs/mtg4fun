@@ -612,5 +612,5 @@
 }
 
 @media (max-width: 1000px) {
-  .mobile-table .mobile-commands .quick-actions :is(.untap-action, .fit-all-action, .actions-toggle) .table-icon { width:24px; height:24px; flex-basis:24px; }
+  .mobile-table .mobile-commands .quick-actions :is(.untap-action, .fit-all-action, .actions-toggle, .dead-fields-toggle) .table-icon { width:24px; height:24px; flex-basis:24px; }
 }

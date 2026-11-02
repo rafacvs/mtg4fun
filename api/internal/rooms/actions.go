@@ -312,6 +312,21 @@ func drawCards(p *playerState, count int) (actionLogPayload, error) {
 	return actionLogPayload{Kind: "draw", From: "library", To: "hand", Count: count}, nil
 }
 
+// millCards puts cards from the top of the library straight into the graveyard,
+// where everyone sees them.
+func millCards(p *playerState, count int) (actionLogPayload, error) {
+	if p.ConsultationFrom != "" {
+		return actionLogPayload{}, errCardNotFound
+	}
+	if count < 1 || count > len(p.Library) {
+		return actionLogPayload{}, errInsufficientCards
+	}
+	cards := append([]Card(nil), p.Library[:count]...)
+	p.Library = p.Library[count:]
+	placeCards(p, cards, "library", "graveyard", "")
+	return actionLogPayload{Kind: "mill", From: "library", To: "graveyard", Count: count, Cards: referencesForCards(p.Graveyard[len(p.Graveyard)-count:])}, nil
+}
+
 func mulligan(m *matchState, p *playerState) (actionLogPayload, error) {
 	if !m.MulliganOpen || p.MulliganKept || len(p.Hand) != 7 || p.ConsultationFrom != "" {
 		return actionLogPayload{}, errMulliganClosed
@@ -485,15 +500,32 @@ func changeTurn(m *matchState, direction string) (actionLogPayload, error) {
 	if len(m.TurnOrder) == 0 {
 		return actionLogPayload{}, errCardNotFound
 	}
+	step := len(m.TurnOrder) - 1
 	if direction == "next" {
-		m.TurnIndex = (m.TurnIndex + 1) % len(m.TurnOrder)
+		step = 1
+	}
+	m.TurnIndex = nextLivingTurn(m, step)
+	if direction == "next" {
 		for i := range m.Players {
 			clearRevelations(&m.Players[i])
 		}
 		return actionLogPayload{Kind: "turn", Result: "avançou para o turno de " + m.TurnOrder[m.TurnIndex].Name + " e ocultou todas as revelações"}, nil
 	}
-	m.TurnIndex = (m.TurnIndex + len(m.TurnOrder) - 1) % len(m.TurnOrder)
 	return actionLogPayload{Kind: "turn", Result: "corrigiu para o turno de " + m.TurnOrder[m.TurnIndex].Name}, nil
+}
+
+// nextLivingTurn walks the turn order skipping players without life. When
+// nobody else is alive the turn returns to the only one left, and when nobody
+// is alive it simply moves one seat.
+func nextLivingTurn(m *matchState, step int) int {
+	count := len(m.TurnOrder)
+	for distance := 1; distance <= count; distance++ {
+		index := (m.TurnIndex + step*distance) % count
+		if p := playerByID(m, m.TurnOrder[index].UserID); p == nil || p.Life > 0 {
+			return index
+		}
+	}
+	return (m.TurnIndex + step) % count
 }
 
 func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input matchAction) (Match, error) {
@@ -590,6 +622,8 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload, err = changeCardState(p, input)
 	case "draw":
 		payload, err = drawCards(p, input.Count)
+	case "mill":
+		payload, err = millCards(p, input.Count)
 	case "mulligan":
 		payload, err = mulligan(&m, p)
 	case "keep_hand":

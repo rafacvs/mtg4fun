@@ -10,6 +10,7 @@ import { PlayingCard } from './PlayingCard';
 import { PublicZoneViewer } from './PublicZoneViewer';
 import type { Match } from './roomsApi';
 import { TableFields } from './TableFields';
+import { DeadFieldsToggle } from './TableQuickActions';
 import { TableIcon } from './TableIcon';
 import { PanelHeader } from './TablePanel';
 import { useMatch } from './useMatch';
@@ -36,6 +37,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
   const [focusId, setFocusId] = useState<number | null>(null);
   const [overview, setOverview] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const [hideDead, setHideDead] = useState(false);
   const [menu, setMenu] = useState<{ playerId: number; anchor: HTMLElement } | null>(null);
   const [openZone, setOpenZone] = useState<OpenZone | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -70,6 +72,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
     onInspect: card => setPreviewId(card.id),
     onDragMove: ignoreDrag, onDragEnd: ignoreDrag, onDragCancel: ignoreDrag,
   };
+  const deadCount = match.players.filter(player => player.userId !== watched.userId && player.life <= 0).length;
   const watch = (id: number) => { setChosenId(id); setOverview(false); };
   const toggleFocus = (id: number) => {
     if (compact) watch(id);
@@ -82,13 +85,14 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
       {error && <p role="alert" className="error">{error}</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields fitAllRequest={0} match={match} watchedId={watched.userId} gesture={gesture} hoverZone={null} focusedId={compact ? (overview ? null : watched.userId) : focusId} focusEnabled={compact} fieldFocusEnabled={!compact} disabled onPlayerMenu={(playerId, anchor) => setMenu({ playerId, anchor })} onFocus={toggleFocus} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} />
+          <TableFields hideDead={hideDead} fitAllRequest={0} match={match} watchedId={watched.userId} gesture={gesture} hoverZone={null} focusedId={compact ? (overview ? null : watched.userId) : focusId} focusEnabled={compact} fieldFocusEnabled={!compact} disabled onPlayerMenu={(playerId, anchor) => setMenu({ playerId, anchor })} onFocus={toggleFocus} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} />
           <section ref={dock} className="own-dock spectator-dock" aria-label="Mãos dos jogadores">
             <div className="spectator-controls">
               <span className="spectator-badge"><TableIcon name="eye" />Assistindo</span>
               <div>
               {compact && <button type="button" className="secondary spectator-log-toggle" aria-pressed={overview} aria-label="Visão geral dos campos" title="Visão geral dos campos" onClick={() => setOverview(open => !open)}><TableIcon name="grid" /></button>}
               <button type="button" className="secondary spectator-log-toggle" aria-expanded={logOpen} aria-controls="match-rail" aria-label={logOpen ? 'Fechar crônica' : 'Abrir crônica'} title={logOpen ? 'Fechar crônica' : 'Abrir crônica'} onClick={() => setLogOpen(open => !open)}><TableIcon name="log" /></button>
+              {deadCount > 0 && <DeadFieldsToggle className="spectator-log-toggle" count={deadCount} hidden={hideDead} onToggle={() => setHideDead(value => !value)} />}
               <EmojiBar />
               </div>
             </div>

@@ -116,6 +116,10 @@ export function useMatch(roomId: number) {
       const intentId = createActionIntent();
       return act(() => roomsApi.draw(roomId, count, intentId));
     },
+    mill: (count: number) => {
+      const intentId = createActionIntent();
+      return act(() => roomsApi.mill(roomId, count, intentId));
+    },
     mulligan: () => { const intentId = createActionIntent(); return act(() => roomsApi.mulligan(roomId, intentId)); },
     keepHand: (ids: string[]) => { const intentId = createActionIntent(); return act(() => roomsApi.keepHand(roomId, ids, intentId)); },
     undoKeepHand: () => { const intentId = createActionIntent(); return act(() => roomsApi.undoKeepHand(roomId, intentId)); },
