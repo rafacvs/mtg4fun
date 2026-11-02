@@ -111,7 +111,6 @@
 .empty-rooms-filtered button { margin-top: 10px; min-height: 40px; }
 
 /* Largura: o conteúdo acompanha a barra superior. */
-@media (min-width: 760px) { .app-layout:has(.rooms) { width: min(100% - 48px, 1280px); } }
 
 /* Abaixo disso a fileira vira ficha: identidade e estado em cima, assentos no meio. */
 @media (max-width: 1040px) {

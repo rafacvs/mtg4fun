@@ -205,8 +205,7 @@ test('carta se move pendente antes da resposta real e volta se o servidor recusa
   const { read, path } = await table(page.request, page);
   const hand = page.getByRole('region', { name: 'Mão', exact: true });
   const id = (await read()).players[0].hand![0].id;
-  const bar = page.getByRole('toolbar', { name: 'Ações da seleção' });
-  await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
+  const field = page.locator('[data-battlefield-canvas]');
   for (const accepted of [false, true]) {
     let release!: () => void;
     let arrived!: () => void;
@@ -226,10 +225,14 @@ test('carta se move pendente antes da resposta real e volta se o servidor recusa
       try { await route.continue(accepted ? undefined : { postData: JSON.stringify({ ...body, to: 'zona-inexistente' }) }); } finally { settled(); }
     });
     try {
-      if (await hand.locator(`[data-card-id="${id}"]`).getAttribute('aria-pressed') !== 'true') await hand.locator(`[data-card-id="${id}"]`).click();
-      await bar.getByRole('button', { name: 'Cemitério', exact: true }).click();
+      const source = (await hand.locator(`[data-card-id="${id}"]`).boundingBox())!;
+      const target = (await field.boundingBox())!;
+      await page.mouse.move(source.x + source.width / 2, source.y + 20);
+      await page.mouse.down();
+      await page.mouse.move(target.x + 70, target.y + 70, { steps: 10 });
+      await page.mouse.up();
       await sent;
-      const pendingCard = page.getByRole('region', { name: 'Cemitério', exact: true }).locator(`[data-card-id="${id}"]`);
+      const pendingCard = field.locator(`[data-card-id="${id}"]`);
       await expect(pendingCard).toBeVisible();
       await expect(pendingCard).toHaveAttribute('data-pending', 'true');
       await expect(page.getByRole('status').filter({ hasText: 'Ação pendente' })).toBeVisible();
@@ -237,15 +240,83 @@ test('carta se move pendente antes da resposta real e volta se o servidor recusa
       release();
       if (accepted) {
         await expect(pendingCard).toHaveAttribute('data-pending', 'false');
-        expect((await read()).players[0].graveyard?.map(card => card.id)).toEqual([id]);
+        expect((await read()).players[0].battlefield?.map(card => card.id)).toEqual([id]);
         await page.reload();
         await expect(pendingCard).toBeVisible();
       } else {
         await expect(hand.locator(`[data-card-id="${id}"]`)).toBeVisible();
         await expect(pendingCard).toHaveCount(0);
-        await expect(page.getByRole('alert')).toContainText(/zona/i);
-        expect((await read()).players[0].graveyardCount).toBe(0);
+        await expect(page.getByRole('alert')).toHaveText('Ação inválida.');
+        expect((await read()).players[0].battlefieldCount).toBe(0);
       }
+      await expect(page.locator('.pending-action')).toHaveCount(0);
     } finally { release(); if (inFlight) await completed; await page.unroute(`**${path}/actions`); }
   }
+});
+
+test('arraste rápido não pisca aviso; arraste lento mostra pendência até a confirmação real', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'Regressão do aviso no arraste com mouse.');
+  test.setTimeout(60_000);
+  const { read, path } = await table(page.request, page);
+  const ids = (await read()).players[0].hand!.map(card => card.id);
+  const hand = page.getByRole('region', { name: 'Mão', exact: true });
+  const field = page.locator('[data-battlefield-canvas]');
+  await expect(hand.locator('[data-card-id]')).toHaveCount(3);
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.evaluate(() => {
+    document.body.dataset.pendingFlashes = '0';
+    new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (node instanceof Element && (node.matches('.pending-action') || node.querySelector('.pending-action'))) {
+          document.body.dataset.pendingFlashes = String(Number(document.body.dataset.pendingFlashes) + 1);
+        }
+      }
+    }).observe(document.body, { subtree: true, childList: true });
+  });
+
+  for (const [index, slow] of [false, true].entries()) {
+    let release!: () => void;
+    let arrived!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const sent = new Promise<void>(resolve => { arrived = resolve; });
+    await page.route(`**${path}/actions`, async route => {
+      if (route.request().postDataJSON().kind === 'move') {
+        arrived();
+        await gate;
+      }
+      // Only hold the outgoing request; the real API validates and persists it.
+      await route.continue();
+    });
+    try {
+      const source = (await hand.locator(`[data-card-id="${ids[index]}"]`).boundingBox())!;
+      const target = (await field.boundingBox())!;
+      await page.mouse.move(source.x + source.width / 2, source.y + 20);
+      await page.mouse.down();
+      await page.mouse.move(target.x + 70 + index * 130, target.y + 70, { steps: 10 });
+      await page.mouse.up();
+      await sent;
+      const card = field.locator(`[data-card-id="${ids[index]}"]`);
+      await expect(card).toHaveAttribute('data-pending', 'true');
+      await expect(page.locator('.pending-action')).toHaveCount(0);
+      await page.clock.runFor(200);
+      await expect(page.locator('.pending-action')).toHaveCount(0);
+      if (slow) {
+        await page.clock.runFor(150);
+        await expect(page.getByRole('status').filter({ hasText: 'Ação pendente' })).toBeVisible();
+      }
+      release();
+      await expect(card).toHaveAttribute('data-pending', 'false');
+      await expect(page.locator('.pending-action')).toHaveCount(0);
+      await page.clock.runFor(1000);
+      await expect(page.locator('.pending-action')).toHaveCount(0);
+      expect(await page.locator('body').getAttribute('data-pending-flashes')).toBe(slow ? '1' : '0');
+      expect((await read()).players[0].battlefield?.map(item => item.id)).toEqual(ids.slice(0, index + 1));
+    } finally {
+      release();
+      await page.unroute(`**${path}/actions`);
+    }
+  }
+  await page.reload();
+  for (const id of ids.slice(0, 2)) await expect(field.locator(`[data-card-id="${id}"]`)).toHaveAttribute('data-pending', 'false');
 });

@@ -1,0 +1,17 @@
+.arm-medal{width:46px;height:46px;object-fit:contain;flex:none;transform:scale(1.2)}
+.arm-screen{width:min(820px,100%);max-height:calc(100dvh - 24px);overflow:auto;padding:18px;background:#0b0f12;border:1px solid #5b4a26;border-radius:6px;color:#f1e8d4;pointer-events:auto}
+.arm-screen header p,.arm-round{color:#c9a35a;font-family:Cinzel,Georgia,serif}
+.arm-screen h2{font-family:Cinzel,Georgia,serif;font-size:clamp(18px,4vw,30px);margin:4px 0}
+.arm-screen header small,.arm-help{color:#9aa0a0;font-size:12px}
+.arm-round{text-align:center;font-size:12px}
+.arm-stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;text-align:center}
+.arm-stage h3{font-family:Cinzel,Georgia,serif;font-size:14px;overflow-wrap:anywhere;margin:4px 0}
+.arm-stage p{font:12px ui-monospace,monospace}
+.arm-avatar{width:44px;height:60px;object-fit:cover;border:2px solid #f472b6;border-radius:6px}.arm-foe .arm-avatar{border-color:#60a5fa}
+.arm-dial{display:block;width:min(100%,230px);aspect-ratio:1;margin:auto;border:0;padding:0;background:transparent;touch-action:manipulation;cursor:pointer}.arm-dial svg{width:100%;height:100%}.arm-dial:disabled{cursor:default}.arm-dial:focus-visible{outline:2px solid #c9a35a;outline-offset:2px}.arm-foe .arm-dial{opacity:.85}
+.arm-hits{display:flex;justify-content:center;gap:4px;font-size:21px}.arm-hits span{font-family:Arial,sans-serif}
+.arm-bar{height:22px;background:#60a5fa;border:1px solid #2a3036;margin:16px 0}.arm-bar b{display:block;height:100%;background:#f472b6;transition:width .12s}
+.arm-help{padding:8px;background:#000a;text-align:center;min-height:36px}.arm-screen footer{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}.arm-screen footer .duel-primary{flex:1;min-width:160px}
+@media(max-height:500px){.arm-avatar{display:none}.arm-dial{width:130px}.arm-screen{padding:10px}.arm-round,.arm-bar{margin:6px 0}}
+
+.arm-hits svg{width:23px;height:23px;display:block}

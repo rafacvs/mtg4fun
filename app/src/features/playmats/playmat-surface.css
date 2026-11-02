@@ -1,0 +1,5 @@
+.match-board .player-table.custom-playmat { position: relative; isolation: isolate; overflow: hidden; background: #090f0e; }
+.playmat-surface { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.playmat-surface::before, .playmat-preview-art::before { content: ''; position: absolute; inset: 0; background-image: var(--playmat-image); background-position: center; background-size: var(--playmat-size); background-repeat: var(--playmat-repeat); transform: scale(var(--playmat-scale)); }
+.playmat-surface::after, .playmat-preview-art::after { content: ''; position: absolute; inset: 0; background: var(--playmat-shade); }
+.match-board .custom-playmat .zone-battlefield { background: transparent; box-shadow: none; }

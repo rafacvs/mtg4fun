@@ -6,11 +6,12 @@ import type { CoinDuelOutcome } from './useCoinDuels';
 export function DuelResultBanner({ outcome, seatOf }: { outcome: CoinDuelOutcome | null; seatOf: (playerId: number) => number }) {
   if (!outcome) return null;
   const flip = outcome.kind === 'flip';
-  const title = flip ? `${outcome.loserName} perdeu pra uma moeda.` : outcome.kind === 'forfeit' ? `${outcome.loserName} arregou.` : `${outcome.loserName} recusou o X1.`;
-  const line = flip ? 'Uma moeda. Sem deck, sem estratégia, sem nada. Só uma moeda.' : 'Nem precisou de moeda.';
+  const arm = outcome.game === 'arm-wrestling';
+  const title = outcome.kind === 'arm' ? `${outcome.winnerName} venceu a queda de braço contra ${outcome.loserName}.` : flip ? `${outcome.loserName} perdeu pra uma moeda.` : outcome.kind === 'forfeit' ? `${outcome.loserName} arregou.` : `${outcome.loserName} recusou o X1.`;
+  const line = arm ? 'Queda de braço · resultado para toda a mesa' : flip ? 'Uma moeda. Sem deck, sem estratégia, sem nada. Só uma moeda.' : 'Nem precisou de moeda.';
   return <section className="duel-banner" role="status" aria-label="Resultado do X1">
     <span className="duel-coin-mini is-medal" aria-hidden="true"><TableIcon name="crown" /></span>
-    <p>Resultado do X1 · Cara ou coroa</p>
+    <p>Resultado do X1 · {arm ? 'Queda de braço' : 'Cara ou coroa'}</p>
     <h2>{title}</h2>
     <span className="duel-banner-line">{line}</span>
     {flip && <div className="duel-banner-chips">

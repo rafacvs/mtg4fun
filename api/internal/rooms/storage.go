@@ -19,6 +19,7 @@ import (
 	"mtg4fun/internal/catalog"
 	"mtg4fun/internal/live"
 	"mtg4fun/internal/minigames"
+	"mtg4fun/internal/playmats"
 )
 
 const capacity = 6
@@ -129,23 +130,24 @@ type Card struct {
 	Markers          colorCounts `json:"markers,omitempty"`
 }
 type playerState struct {
-	UserID           int64       `json:"userId"`
-	Name             string      `json:"name"`
-	Life             int         `json:"life"`
-	Markers          colorCounts `json:"markers,omitempty"`
-	Mulligans        int         `json:"mulligans,omitempty"`
-	MulliganKept     bool        `json:"mulliganKept,omitempty"`
-	MulliganBottomed int         `json:"mulliganBottomed,omitempty"`
-	Library          []Card      `json:"library"`
-	Hand             []Card      `json:"hand"`
-	Battlefield      []Card      `json:"battlefield"`
-	Graveyard        []Card      `json:"graveyard"`
-	Exile            []Card      `json:"exile"`
-	Command          []Card      `json:"command"`
-	ConsultationIDs  []string    `json:"consultationIds,omitempty"`
-	Consulted        []Card      `json:"consulted,omitempty"`
-	Revealed         []Card      `json:"revealed,omitempty"`
-	ConsultationFrom string      `json:"consultationFrom,omitempty"`
+	Playmat          *playmats.Settings `json:"playmat,omitempty"`
+	UserID           int64              `json:"userId"`
+	Name             string             `json:"name"`
+	Life             int                `json:"life"`
+	Markers          colorCounts        `json:"markers,omitempty"`
+	Mulligans        int                `json:"mulligans,omitempty"`
+	MulliganKept     bool               `json:"mulliganKept,omitempty"`
+	MulliganBottomed int                `json:"mulliganBottomed,omitempty"`
+	Library          []Card             `json:"library"`
+	Hand             []Card             `json:"hand"`
+	Battlefield      []Card             `json:"battlefield"`
+	Graveyard        []Card             `json:"graveyard"`
+	Exile            []Card             `json:"exile"`
+	Command          []Card             `json:"command"`
+	ConsultationIDs  []string           `json:"consultationIds,omitempty"`
+	Consulted        []Card             `json:"consulted,omitempty"`
+	Revealed         []Card             `json:"revealed,omitempty"`
+	ConsultationFrom string             `json:"consultationFrom,omitempty"`
 }
 type matchState struct {
 	PendingOrder   bool          `json:"pendingOrder,omitempty"`
@@ -175,29 +177,30 @@ type Match struct {
 	Log            []MatchLog    `json:"log"`
 }
 type MatchPlayer struct {
-	Consulting       bool          `json:"consulting"`
-	ExposedCards     []ExposedCard `json:"exposedCards,omitempty"`
-	UserID           int64         `json:"userId"`
-	Name             string        `json:"name"`
-	Life             int           `json:"life"`
-	Markers          colorCounts   `json:"markers,omitempty"`
-	Mulligans        int           `json:"mulligans,omitempty"`
-	MulliganKept     bool          `json:"mulliganKept,omitempty"`
-	MulliganBottomed int           `json:"mulliganBottomed,omitempty"`
-	LibraryCount     int           `json:"libraryCount"`
-	HandCount        int           `json:"handCount"`
-	BattlefieldCount int           `json:"battlefieldCount"`
-	GraveyardCount   int           `json:"graveyardCount"`
-	ExileCount       int           `json:"exileCount"`
-	CommandCount     int           `json:"commandCount"`
-	Hand             []VisibleCard `json:"hand,omitempty"`
-	Battlefield      []VisibleCard `json:"battlefield,omitempty"`
-	Graveyard        []VisibleCard `json:"graveyard,omitempty"`
-	Exile            []VisibleCard `json:"exile,omitempty"`
-	Command          []VisibleCard `json:"command,omitempty"`
-	Consulted        []VisibleCard `json:"consulted,omitempty"`
-	Revealed         []VisibleCard `json:"revealed,omitempty"`
-	ConsultationFrom string        `json:"consultationFrom,omitempty"`
+	Playmat          *playmats.Settings `json:"playmat,omitempty"`
+	Consulting       bool               `json:"consulting"`
+	ExposedCards     []ExposedCard      `json:"exposedCards,omitempty"`
+	UserID           int64              `json:"userId"`
+	Name             string             `json:"name"`
+	Life             int                `json:"life"`
+	Markers          colorCounts        `json:"markers,omitempty"`
+	Mulligans        int                `json:"mulligans,omitempty"`
+	MulliganKept     bool               `json:"mulliganKept,omitempty"`
+	MulliganBottomed int                `json:"mulliganBottomed,omitempty"`
+	LibraryCount     int                `json:"libraryCount"`
+	HandCount        int                `json:"handCount"`
+	BattlefieldCount int                `json:"battlefieldCount"`
+	GraveyardCount   int                `json:"graveyardCount"`
+	ExileCount       int                `json:"exileCount"`
+	CommandCount     int                `json:"commandCount"`
+	Hand             []VisibleCard      `json:"hand,omitempty"`
+	Battlefield      []VisibleCard      `json:"battlefield,omitempty"`
+	Graveyard        []VisibleCard      `json:"graveyard,omitempty"`
+	Exile            []VisibleCard      `json:"exile,omitempty"`
+	Command          []VisibleCard      `json:"command,omitempty"`
+	Consulted        []VisibleCard      `json:"consulted,omitempty"`
+	Revealed         []VisibleCard      `json:"revealed,omitempty"`
+	ConsultationFrom string             `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
 	Type             string      `json:"type,omitempty"`
@@ -297,7 +300,7 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	p := make([]MatchPlayer, len(m.Players))
 	for i, v := range m.Players {
-		p[i] = MatchPlayer{Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, MulliganBottomed: v.MulliganBottomed, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
+		p[i] = MatchPlayer{Playmat: v.Playmat, Consulting: v.ConsultationFrom != "", UserID: v.UserID, Name: v.Name, Life: v.Life, Markers: v.Markers, Mulligans: v.Mulligans, MulliganKept: v.MulliganKept, MulliganBottomed: v.MulliganBottomed, LibraryCount: len(v.Library), HandCount: len(v.Hand), BattlefieldCount: len(v.Battlefield), GraveyardCount: len(v.Graveyard), ExileCount: len(v.Exile), CommandCount: len(v.Command), Battlefield: visible(v.Battlefield, viewerID), Graveyard: visible(v.Graveyard, viewerID), Exile: visible(v.Exile, viewerID), Command: visible(v.Command, viewerID)}
 		for _, cards := range [][]Card{v.Hand, v.Library, v.Battlefield, v.Command, v.Graveyard, v.Exile} {
 			for _, card := range cards {
 				if card.Revealed || card.revealedToViewer(viewerID) {
@@ -791,7 +794,11 @@ func (s *Service) initializeMatch(ctx context.Context, tx *sql.Tx, r roomState, 
 		for i := range hand {
 			hand[i].Zone = "hand"
 		}
-		m.Players = append(m.Players, playerState{UserID: p.ID, Name: p.Name, Life: life, Library: append([]Card(nil), cards[drawn:]...), Hand: hand, Battlefield: []Card{}, Graveyard: []Card{}, Exile: []Card{}, Command: command, Consulted: []Card{}})
+		mat, err := playmats.ForMatch(ctx, tx, p.ID)
+		if err != nil {
+			return Match{}, err
+		}
+		m.Players = append(m.Players, playerState{Playmat: &mat, UserID: p.ID, Name: p.Name, Life: life, Library: append([]Card(nil), cards[drawn:]...), Hand: hand, Battlefield: []Card{}, Graveyard: []Card{}, Exile: []Card{}, Command: command, Consulted: []Card{}})
 	}
 	snapshot, e := json.Marshal(m)
 	if e != nil {

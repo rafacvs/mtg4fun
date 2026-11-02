@@ -90,3 +90,27 @@ de ação. Como só o menu oferecia **Fundo** e **Campo** com o foco em outro jo
 esses movimentos deixam de existir por arraste: o fundo do grimório fica na inspeção
 da carta, e **Campo** exige voltar à própria mesa ou usar a barra da seleção. A
 coluna de zonas com a mesa oculta continua aparecendo durante o arraste.
+
+## Aviso de confirmação sem lampejo
+
+Em 02/11/2026, o usuário relatou uma mensagem que aparecia e sumia rapidamente
+sobre a mesa ao arrastar uma carta, e pediu correção com testes. A mensagem
+era o aviso global **Ação pendente · aguardando confirmação**, exibido até
+nas operações confirmadas em poucos milissegundos.
+
+Como ajuste local de apresentação, o texto passa a aparecer somente depois de
+300 ms de pendência contínua. A marca de pendência na carta, a projeção
+imediata, o bloqueio de ações concorrentes e os erros continuam com o
+comportamento existente. Confirmar, recusar ou desmontar a mesa cancela o
+temporizador; ele não atrasa a operação nem a confirmação do servidor.
+
+O teste de navegador arrasta cartas de verdade com a API e MySQL descartáveis,
+controlando apenas o relógio do navegador e a latência da requisição. Um
+observador de DOM detecta até inserções breves do aviso no arraste rápido.
+O arraste lento deve mostrar o aviso antes da liberação da requisição e
+ocultá-lo depois da confirmação persistida, inclusive após recarregar.
+
+Na mesma conversa, o usuário pediu remover a dica **Arraste cartas para
+ordenar ou jogar; arraste no espaço vazio para selecionar várias**, que
+aparecia ao manter o mouse sobre cartas da mão. O atributo `title` do
+contêiner da mão foi removido; os gestos e a ampliação da carta permanecem.

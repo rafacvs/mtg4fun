@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useLiveChannel, useLiveClient } from '../live/LiveRoom';
 import type { CoinSide } from '../rooms/CoinOptions';
 
+export type ArmPlayer = { stopped: number; points: number; hits: number[]; zone: number; since: number; lockUntil: number };
+export type ArmState = { mode: 'normal' | 'crazy'; started: number; ready: Record<string, boolean>; players: Record<string, ArmPlayer> };
 export type CoinDuel = {
+  game?: 'arm-wrestling'; arm?: ArmState;
   id: number; status: 'invited' | 'playing';
   challengerId: number; challengerName: string; opponentId: number; opponentName: string;
   picks: Record<string, CoinSide>; confirmed: Record<string, boolean>; conflict: boolean;
 };
 export type CoinDuelOutcome = {
-  duelId: number; kind: 'flip' | 'forfeit' | 'refused'; side?: CoinSide;
+  duelId: number; game?: 'arm-wrestling'; kind: 'flip' | 'forfeit' | 'refused' | 'arm'; side?: CoinSide;
   loserId: number; loserName: string; loserSide?: CoinSide;
   winnerId: number; winnerName: string; winnerSide?: CoinSide; at: number;
 };
@@ -92,7 +95,9 @@ export function useCoinDuels(userId: number) {
     panelOpen: !!own || !!target || !!flip,
     prepare: (player: { id: number; name: string }, anchor: HTMLElement | null = null) => { setError(''); setTarget({ id: player.id, name: player.name, anchor }); },
     dismiss: () => { setTarget(null); setError(''); },
-    challenge: (opponentId: number) => act('challenge', { opponentId }),
+    challenge: (opponentId: number, game?: 'arm-wrestling') => act('challenge', { opponentId, game }),
+    armStart: () => act('arm-start'),
+    armPress: () => act('arm-press'),
     accept: () => act('accept'),
     refuse: () => act('refuse'),
     pick: (side: CoinSide) => act('pick', { side }),

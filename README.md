@@ -128,6 +128,14 @@ sai da lista; estado final e registro são preservados. Veja a
 [decisão de encerramento](docs/decisions/24-finalizar-partida.md).
 O grimório usa o verso de carta fornecido na revisão visual, com efeito de pilha.
 
+Em **Meus playmats**, envie JPG, PNG ou WEBP de até 10 MB para personalizar o
+campo, escolha um dos quatro cenários ou ative o sorteio por partida. A prévia
+oferece proporções, encaixe, zoom e escurecimento. Clique em **Salvar playmat**;
+o fundo é definido ao iniciar a próxima partida e fica visível para todos.
+Imagens e preferências são incluídas no backup do MySQL. Excluir uma imagem da
+biblioteca preserva o fundo das partidas que já a utilizaram.
+Veja o [contrato de playmats](docs/decisions/meus-playmats.md).
+
 ## Executar com Docker
 
 Requisitos: Docker com Docker Compose 2.20 ou mais recente. Execute os comandos

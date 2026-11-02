@@ -113,7 +113,7 @@ test('topo e fundo do grimório na busca valem depois de fechar sem embaralhar, 
     await step.getByRole('button', { name: 'Grimório', exact: true }).click();
     await expect(step.locator('.search-send')).toHaveText(/para o topo do grimório/);
     await step.locator('.search-send').click();
-    await expect.poll(async () => (await read()).consulted.map((item: { id: string }) => item.id)).toEqual([ids[3], ids[0], ids[1], ids[2]]);
+    await expect.poll(async () => ((await read()).consulted ?? []).map((item: { id: string }) => item.id)).toEqual([ids[3], ids[0], ids[1], ids[2]]);
     await expect(panel.locator('.search-card-rank').first()).toHaveText('1');
     await expect(panel.locator('.selected')).toHaveCount(0);
 
@@ -126,7 +126,7 @@ test('topo e fundo do grimório na busca valem depois de fechar sem embaralhar, 
     await expect(card(ids[2])).toHaveClass(/drag-target/);
     await expect(panel.locator('.search-card-ghost')).toContainText('soltar na posição 4');
     await page.mouse.up();
-    await expect.poll(async () => (await read()).consulted.map((item: { id: string }) => item.id)).toEqual([ids[3], ids[1], ids[2], ids[0]]);
+    await expect.poll(async () => ((await read()).consulted ?? []).map((item: { id: string }) => item.id)).toEqual([ids[3], ids[1], ids[2], ids[0]]);
     await expect(panel.locator('.selected')).toHaveCount(0);
 
     await panel.getByRole('button', { name: 'Fechar sem embaralhar', exact: true }).click();
@@ -148,6 +148,7 @@ test('ordena a faixa do topo, mostra posição do fundo e embaralha ao fechar', 
     await panel.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
     await panel.getByLabel('Quantidade de cartas').fill('2');
     await panel.getByRole('button', { name: 'Olhar 2 cartas do topo', exact: true }).click();
+    await expect(panel.locator('.library-card')).toHaveCount(2);
     const original = (await read()).consulted as { id: string; libraryPosition: number }[];
     expect(original.map(card => card.libraryPosition)).toEqual([1, 2]);
     const cards = panel.locator('.library-card');
@@ -155,14 +156,15 @@ test('ordena a faixa do topo, mostra posição do fundo e embaralha ao fechar', 
     expect(boxes[1].x).toBeGreaterThan(boxes[0].x);
     expect(boxes[1].y).toBe(boxes[0].y);
     await cards.first().getByRole('button', { name: /^Reordenar/ }).press('ArrowRight');
-    await expect.poll(async () => (await read()).consulted.map((card: { id: string }) => card.id)).toEqual([original[1].id, original[0].id]);
+    await expect.poll(async () => ((await read()).consulted ?? []).map((card: { id: string }) => card.id)).toEqual([original[1].id, original[0].id]);
     await panel.getByRole('button', { name: 'Fechar sem embaralhar', exact: true }).click();
     await expect(panel).not.toBeVisible();
     await open();
     await panel.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
     await panel.getByLabel('Quantidade de cartas').fill('2');
     await panel.getByRole('button', { name: 'Olhar 2 cartas do topo', exact: true }).click();
-    expect((await read()).consulted.map((card: { id: string }) => card.id)).toEqual([original[1].id, original[0].id]);
+    await expect(panel.locator('.library-card')).toHaveCount(2);
+    expect(((await read()).consulted ?? []).map((card: { id: string }) => card.id)).toEqual([original[1].id, original[0].id]);
     await panel.getByLabel('Destino das restantes').selectOption('bottom');
     await panel.getByRole('button', { name: 'Fechar sem embaralhar', exact: true }).click();
     await expect(panel).not.toBeVisible();
@@ -171,8 +173,10 @@ test('ordena a faixa do topo, mostra posição do fundo e embaralha ao fechar', 
     await panel.getByRole('radio', { name: 'Do fundo', exact: true }).check();
     await panel.getByLabel('Quantidade de cartas').fill('2');
     await panel.getByRole('button', { name: 'Olhar 2 cartas do fundo', exact: true }).click();
-    expect((await read()).consulted.map((card: { libraryPosition: number }) => card.libraryPosition)).toEqual([3, 4]);
+    await expect(panel.locator('.library-card')).toHaveCount(2);
+    expect(((await read()).consulted ?? []).map((card: { libraryPosition: number }) => card.libraryPosition)).toEqual([3, 4]);
     await expect(cards.first()).toContainText('Posição 3');
+    await expect(panel.locator('.library-card-placement')).toHaveCount(0);
     await panel.getByRole('button', { name: 'Embaralhar e fechar', exact: true }).click();
     await expect(panel).not.toBeVisible();
     expect((await read()).consulting).toBe(false);
@@ -181,3 +185,58 @@ test('ordena a faixa do topo, mostra posição do fundo e embaralha ao fechar', 
     await expect(panel.getByRole('button', { name: 'Embaralhar', exact: true })).toBeEnabled();
   } finally { await game.context.close(); }
 });
+
+for (const defaultPlacement of ['top', 'bottom'] as const) {
+  test(`olhar topo escolhe destino por carta com padrão ${defaultPlacement} e preserva a ordem ao fechar`, async ({ browser, baseURL }, info) => {
+    test.setTimeout(60_000);
+    const game = await prepare(browser, baseURL, info);
+    const { page, panel, open, read } = game;
+    try {
+      await open();
+      await panel.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
+      await panel.getByLabel('Quantidade de cartas').fill('3');
+      await panel.getByRole('button', { name: 'Olhar 3 cartas do topo', exact: true }).click();
+      await expect(panel.locator('.library-card-placement')).toHaveCount(3);
+      const ids = ((await read()).consulted ?? []).map((card: { id: string }) => card.id) as string[];
+      const card = (id: string) => panel.locator(`[data-library-card-id="${id}"]`);
+      const destination = defaultPlacement === 'top' ? '↓ Fundo' : '↑ Topo';
+      const opposite = defaultPlacement === 'top' ? 'bottom' : 'top';
+      await panel.getByLabel('Destino das restantes').selectOption(defaultPlacement);
+      await card(ids[0]).getByRole('button', { name: destination, exact: true }).click();
+      await card(ids[2]).getByRole('button', { name: destination, exact: true }).click();
+      await expect(panel.locator('.library-selection')).toHaveCount(0);
+      await expect(card(ids[0]).getByRole('button', { name: destination, exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await card(ids[2]).getByRole('button', { name: /^Reordenar/ }).press('ArrowLeft');
+      await expect.poll(async () => ((await read()).consulted ?? []).map((item: { id: string }) => item.id)).toEqual([ids[0], ids[2], ids[1]]);
+      await expect(card(ids[2]).getByRole('button', { name: /^Reordenar/ })).toBeEnabled();
+      await card(ids[2]).getByRole('button', { name: /^Reordenar/ }).press('ArrowLeft');
+      await expect.poll(async () => ((await read()).consulted ?? []).map((item: { id: string }) => item.id)).toEqual([ids[2], ids[0], ids[1]]);
+      await panel.getByRole('button', { name: 'Minimizar consulta', exact: true }).click();
+      await open();
+      await expect(card(ids[2]).getByRole('button', { name: destination, exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await expect(panel.locator('.library-placement-summary')).toContainText(defaultPlacement === 'top' ? '1 ao topo · 2 ao fundo' : '2 ao topo · 1 ao fundo');
+      // Buttons fit inside each card; they must remain reachable on touch screens.
+      const fits = await panel.locator('.library-card-placement').evaluateAll(groups => groups.every(group => [...group.children].every(button => button.getBoundingClientRect().right <= group.getBoundingClientRect().right + 1)));
+      expect(fits).toBe(true);
+      await page.screenshot({ path: info.outputPath(`destinos-${defaultPlacement}.png`) });
+      await panel.getByRole('button', { name: 'Fechar sem embaralhar', exact: true }).click();
+      await expect(panel).not.toBeVisible();
+      expect((await read()).libraryCount).toBe(4);
+      await page.reload();
+      await open();
+      await panel.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
+      await panel.getByRole('radio', { name: opposite === 'top' ? 'Do topo' : 'Do fundo', exact: true }).check();
+      await panel.getByLabel('Quantidade de cartas').fill('2');
+      await panel.getByRole('button', { name: `Olhar 2 cartas do ${opposite === 'top' ? 'topo' : 'fundo'}`, exact: true }).click();
+      await expect.poll(async () => ((await read()).consulted ?? []).map((item: { id: string }) => item.id)).toEqual([ids[2], ids[0]]);
+      await panel.getByRole('button', { name: 'Fechar sem embaralhar', exact: true }).click();
+      await expect(panel).not.toBeVisible();
+      await open();
+      await panel.getByRole('button', { name: 'Olhar cartas', exact: true }).click();
+      await panel.getByRole('radio', { name: defaultPlacement === 'top' ? 'Do topo' : 'Do fundo', exact: true }).check();
+      await panel.getByLabel('Quantidade de cartas').fill('1');
+      await panel.getByRole('button', { name: `Olhar 1 carta do ${defaultPlacement === 'top' ? 'topo' : 'fundo'}`, exact: true }).click();
+      await expect.poll(async () => ((await read()).consulted ?? []).map((item: { id: string }) => item.id)).toEqual([ids[1]]);
+    } finally { await game.context.close(); }
+  });
+}

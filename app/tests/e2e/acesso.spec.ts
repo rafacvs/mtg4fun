@@ -1,22 +1,26 @@
 import { test, expect } from './fixtures';
 
-test('esfera verde abre e fecha a surpresa fornecida', async ({ page }) => {
-  await page.addInitScript(() => {
-    const original = HTMLCanvasElement.prototype.getContext;
-    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
-      value: function(this: HTMLCanvasElement, type: string, ...options: unknown[]) {
-        return type === 'webgl2' ? null : Reflect.apply(original, this, [type, ...options]);
-      },
+for (const [color, title] of [['verde', 'Hora do Banza'], ['azul', 'EU TENHO RESPOSTA RWSRRSSRRS']]) {
+  test(`esfera ${color} abre e fecha a surpresa fornecida sem WebGL`, async ({ page }) => {
+    await page.addInitScript(() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+        value: function(this: HTMLCanvasElement, type: string, ...options: unknown[]) {
+          return type === 'webgl2' ? null : Reflect.apply(original, this, [type, ...options]);
+        },
+      });
     });
+    await page.goto('/');
+    await page.getByRole('button', { name: `Abrir surpresa da esfera ${color}` }).click();
+    const surprise = page.getByRole('dialog', { name: title });
+    await expect(surprise).toBeVisible();
+    const image = surprise.getByRole('img', { name: color === 'azul' ? 'Contra Magias' : title });
+    await expect(image).toBeVisible();
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await surprise.getByRole('button', { name: 'Fechar surpresa' }).click();
+    await expect(surprise).not.toBeVisible();
   });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Abrir surpresa da esfera verde' }).click();
-  const surprise = page.getByRole('dialog', { name: 'Hora do Banza' });
-  await expect(surprise).toBeVisible();
-  await expect(surprise.getByRole('img', { name: 'Hora do Banza' })).toBeVisible();
-  await surprise.getByRole('button', { name: 'Fechar surpresa' }).click();
-  await expect(surprise).not.toBeVisible();
-});
+}
 
 test('convidado entra, recarrega a sessão e sai', async ({ page }, testInfo) => {
   await page.goto('/');

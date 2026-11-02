@@ -1,3 +1,4 @@
+import armMedal from '../../assets/arm-wrestling.png';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { playerMark } from '../rooms/playerIdentity';
 import { TableIcon } from '../rooms/TableIcon';
@@ -35,6 +36,10 @@ export function ChallengeMenu({ target, seat, duels }: { target: NonNullable<Due
       <span className="duel-coin-mini is-large" aria-hidden="true"><TableIcon name="crown" /></span>
       <span><strong>Cara ou coroa</strong><small>Cada um escolhe um lado. A moeda decide quem passa vergonha.</small></span>
       <TableIcon name="chevron" />
+    </button>
+    <button type="button" className="duel-menu-game" disabled={duels.pending} onClick={() => void duels.challenge(target.id, 'arm-wrestling')}>
+      <img src={armMedal} alt="" className="arm-medal" />
+      <span><strong>Queda de braço</strong><small>Acerte as zonas. Cinco tentativas, maior pontuação vence.</small></span><TableIcon name="chevron" />
     </button>
     {duels.error && <p role="alert" className="duel-error">{duels.error}</p>}
     <p className="duel-menu-note"><TableIcon name="clock" />Quem perder fica marcado na mesa até a partida começar.</p>
