@@ -1,4 +1,4 @@
-import { test, expect, roomBody, confirmHands } from './fixtures';
+import { test, expect, roomBody, confirmHands, openQuickActions } from './fixtures';
 
 const deckFile = {
   name: 'ilha.cod',
@@ -27,7 +27,10 @@ test('quem não joga assiste à mesa, consulta as mãos e não tem nenhuma açã
 
     expect((await page.request.post('/api/session', { data: { login: 'amigo3', password: 'senha-do-navegador' } })).ok()).toBe(true);
     await page.goto('/#/salas');
-    await page.getByRole('article', { name: title, exact: true }).getByRole('link', { name: 'Assistir', exact: true }).click();
+    const [liveSocket] = await Promise.all([
+      page.waitForEvent('websocket', socket => socket.url().includes(`/api/rooms/${room.id}/live`)),
+      page.getByRole('article', { name: title, exact: true }).getByRole('link', { name: 'Assistir', exact: true }).click(),
+    ]);
 
     const seats = page.getByRole('tablist', { name: 'Escolher jogador', exact: true });
     await expect(seats.getByRole('tab')).toHaveCount(2);
@@ -40,7 +43,7 @@ test('quem não joga assiste à mesa, consulta as mãos e não tem nenhuma açã
     }
 
     // Nada do que um jogador usa existe aqui, nem o atalho de teclado.
-    for (const name of ['Comprar', 'Passar a vez', 'Passar turno', 'Desvirar', 'Ações', 'Mulligan', 'Abrir ações do grimório']) await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
+    for (const name of ['Comprar', 'Passar a vez', 'Passar turno', 'Desvirar', 'Mulligan', 'Abrir ações do grimório']) await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
     if (info.project.name === 'desktop') {
       const actions: string[] = [];
       page.on('request', request => { if (request.method() !== 'GET') actions.push(request.url()); });
@@ -57,6 +60,28 @@ test('quem não joga assiste à mesa, consulta as mãos e não tem nenhuma açã
     await expect(reading.getByRole('img', { name: 'Imagem ampliada de Island', exact: true })).toBeVisible();
     await expect(reading.getByRole('button', { name: /Campo|Cemitério|Criar cópia|Virar/ })).toHaveCount(0);
     await reading.getByRole('button', { name: 'Fechar', exact: true }).click();
+
+    // O mesmo caminho dos jogadores permite sair sem alterar a partida.
+    const playerPage = await firstContext.newPage();
+    await playerPage.goto(`/#/salas/${room.id}`);
+    await openQuickActions(playerPage);
+    await playerPage.getByRole('button', { name: 'Ações', exact: true }).click();
+    await expect(playerPage.getByRole('dialog', { name: 'Ações do jogo', exact: true }).getByRole('link', { name: 'Lobby', exact: true })).toHaveAttribute('href', '/#/salas');
+    await playerPage.close();
+    const beforeLeaving = await (await first.get(`/api/rooms/${room.id}/match`)).json();
+    await page.getByRole('button', { name: 'Ações', exact: true }).click();
+    const navigation = page.getByRole('dialog', { name: 'Ações da sala', exact: true });
+    await expect(navigation).toBeVisible();
+    await expect(navigation.getByRole('link', { name: 'Lobby', exact: true })).toBeInViewport();
+    await expect(navigation.getByRole('button', { name: /Finalizar|Rolar dado|Criar ficha|Passar turno/ })).toHaveCount(0);
+    await page.screenshot({ path: info.outputPath('sair-espectador.png') });
+    await navigation.getByRole('link', { name: 'Lobby', exact: true }).click();
+    await expect(page).toHaveURL(/#\/salas$/);
+    await expect.poll(() => liveSocket.isClosed()).toBe(true);
+    const afterLeaving = await (await first.get(`/api/rooms/${room.id}/match`)).json();
+    expect(afterLeaving).toEqual(beforeLeaving);
+    await page.getByRole('article', { name: title, exact: true }).getByRole('link', { name: 'Assistir', exact: true }).click();
+    await page.getByRole('tablist', { name: 'Escolher jogador', exact: true }).getByRole('tab', { name: /Segundo amigo/ }).click();
 
     // A mesa acompanha o jogo enquanto a pessoa assiste, e fecha com a partida.
     expect((await second.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 1 } })).ok()).toBe(true);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { EmojiBar } from '../minigames/EmojiBar';
+import { SpectatorActions } from './SpectatorActions';
 import { CardPreview } from './CardPreview';
 import { CardHoverZoom } from './HoverCardPreview';
 import { findCard } from './matchCards';
@@ -36,6 +37,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
   const [chosenId, setChosenId] = useState<number | null>(null);
   const [focusId, setFocusId] = useState<number | null>(null);
   const [overview, setOverview] = useState(false);
+  const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [hideDead, setHideDead] = useState(false);
   const [menu, setMenu] = useState<{ playerId: number; anchor: HTMLElement } | null>(null);
@@ -90,6 +92,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
             <div className="spectator-controls">
               <span className="spectator-badge"><TableIcon name="eye" />Assistindo</span>
               <div>
+              <button type="button" className="actions-toggle secondary spectator-log-toggle" aria-label="Ações" title="Ações da sala" aria-expanded={Boolean(actionsAnchor)} onClick={event => setActionsAnchor(event.currentTarget)}><TableIcon name="more" /></button>
               {compact && <button type="button" className="secondary spectator-log-toggle" aria-pressed={overview} aria-label="Visão geral dos campos" title="Visão geral dos campos" onClick={() => setOverview(open => !open)}><TableIcon name="grid" /></button>}
               <button type="button" className="secondary spectator-log-toggle" aria-expanded={logOpen} aria-controls="match-rail" aria-label={logOpen ? 'Fechar crônica' : 'Abrir crônica'} title={logOpen ? 'Fechar crônica' : 'Abrir crônica'} onClick={() => setLogOpen(open => !open)}><TableIcon name="log" /></button>
               {deadCount > 0 && <DeadFieldsToggle className="spectator-log-toggle" count={deadCount} hidden={hideDead} onToggle={() => setHideDead(value => !value)} />}
@@ -119,6 +122,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
       </div>
     </div>
     {openZone && zonePlayer && <PublicZoneViewer title={openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio'} playerName={zonePlayer.name} cards={zonePlayer[openZone.zone] ?? []} anchor={openZone.anchor} viewerId={match.viewerId} disabled gesture={gesture} onInspect={card => setPreviewId(card.id)} onClose={() => setOpenZone(null)} />}
+    <SpectatorActions anchor={actionsAnchor} onClose={() => setActionsAnchor(null)} />
     <PlayerMenu player={match.players.find(player => player.userId === menu?.playerId)} viewerId={match.viewerId} anchor={menu?.anchor ?? null} disabled busy={false} error="" unconfirmed={false} onRetry={noCounters} onCounter={noCounters} onClose={() => setMenu(null)} />
     <CardPreview mobileSheet={compact} card={preview} viewerId={match.viewerId} onClose={() => setPreviewId(null)} />
     {zoomCard && <CardHoverZoom card={zoomCard} />}
