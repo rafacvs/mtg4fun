@@ -1,21 +1,21 @@
 package rooms
 
 // Enrich only the owner's consultation. Public reveals never disclose library order.
-func (s *Service) libraryView(state matchState, viewerID int64, log []MatchLog) Match {
-	return s.enrichedView(state, state.view(viewerID, log), viewerID)
+func (s *Service) libraryView(state matchState, viewerID int64, history matchHistory) Match {
+	return s.enrichedView(state, history.apply(state.view(viewerID, history.Entries)), viewerID)
 }
 
 // spectatorView adds every hand to the public view. It stays apart from view so
 // that only the read for someone outside the match can ever disclose a hand.
-func (s *Service) spectatorView(state matchState, viewerID int64, log []MatchLog) Match {
-	view := state.view(viewerID, log)
+func (s *Service) spectatorView(state matchState, viewerID int64, history matchHistory) Match {
+	view := state.view(viewerID, history.Entries)
 	for i, player := range state.Players {
 		view.Players[i].Hand = visible(player.Hand, player.UserID)
 		for j := range view.Players[i].Hand {
 			view.Players[i].Hand[j].RevealedTo = nil
 		}
 	}
-	return s.enrichedView(state, view, viewerID)
+	return s.enrichedView(state, history.apply(view), viewerID)
 }
 
 func (s *Service) enrichedView(state matchState, view Match, viewerID int64) Match {
@@ -28,6 +28,11 @@ func (s *Service) enrichedView(state matchState, view Match, viewerID int64) Mat
 		}
 		for j := range player.ExposedCards {
 			s.addCreatedTokens(player.ExposedCards[j].Name, &player.ExposedCards[j].CreatedTokens)
+		}
+		for _, card := range player.Battlefield {
+			if s.isLand(card.Name, card.Faces, card.FaceIndex) {
+				player.LandCount++
+			}
 		}
 		if player.UserID != viewerID {
 			continue
@@ -58,4 +63,9 @@ func (s *Service) addCreatedTokens(name string, target *[]string) {
 	if ok {
 		*target = append([]string(nil), entry.CreatedTokens...)
 	}
+}
+
+func (h matchHistory) apply(view Match) Match {
+	view.RoomCreatedAt, view.StartedAt, view.FinishedAt = h.RoomCreatedAt, h.StartedAt, h.FinishedAt
+	return view
 }

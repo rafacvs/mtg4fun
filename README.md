@@ -115,6 +115,12 @@ leitura e rolagem independente das entradas.
 Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
 por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas
 antigas sem referência de carta continuam como texto.
+A crônica mostra os tempos de sala e partida e um resumo por jogador em cada
+turno na opção **Terrenos / Draws**, com compras e terrenos jogados. O trilho lateral mostra o total atual de
+terrenos no campo. Turnos anteriores continuam consultáveis. Nos movimentos
+anteriores à atualização, a quantidade histórica de terrenos pode aparecer
+como “—”. Veja as [regras dos indicadores](docs/decisions/indicadores-partida.md).
+
 O registro acompanha novas ações enquanto você está no final; ao ler entradas
 anteriores, mantém a posição e oferece **Novas ações** para voltar ao fim.
 Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).

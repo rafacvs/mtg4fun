@@ -112,7 +112,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
           {compact && <PanelHeader title="Crônica" closeLabel="Fechar crônica" onClose={() => setLogOpen(false)} />}
           <section className="rail-panel log-panel is-open">
             <div id="log-panel-content" className="rail-panel-content">
-              <MatchLog entries={match.log} visible onUnreadChange={ignoreDrag} onPreview={ignoreDrag} onInspect={id => { if (findCard(match, id)) setPreviewId(id); }} />
+              <MatchLog match={match} entries={match.log} visible onUnreadChange={ignoreDrag} onPreview={ignoreDrag} onInspect={id => { if (findCard(match, id)) setPreviewId(id); }} />
             </div>
           </section>
         </aside>}

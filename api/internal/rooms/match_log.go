@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"slices"
+	"time"
 )
 
 // Only references are stored with events. Identity comes from the current
@@ -86,12 +87,29 @@ func currentLogCards(m matchState, viewerID int64) map[string]LogCard {
 
 type queryer interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
-func matchLog(ctx context.Context, q queryer, roomID int64, m matchState, viewerID int64) ([]MatchLog, error) {
-	rows, err := q.QueryContext(ctx, "SELECT actor_id,action,payload FROM match_events WHERE room_id=? ORDER BY id", roomID)
+type matchHistory struct {
+	Entries       []MatchLog
+	RoomCreatedAt *time.Time
+	StartedAt     *time.Time
+	FinishedAt    *time.Time
+}
+
+func matchLog(ctx context.Context, q queryer, roomID int64, m matchState, viewerID int64) (matchHistory, error) {
+	history := matchHistory{Entries: []MatchLog{}}
+	var created sql.NullTime
+	if err := q.QueryRowContext(ctx, "SELECT MIN(created_at) FROM room_events WHERE room_id=? AND action='created'", roomID).Scan(&created); err != nil {
+		return history, err
+	}
+	if created.Valid {
+		history.RoomCreatedAt = &created.Time
+	}
+
+	rows, err := q.QueryContext(ctx, "SELECT actor_id,action,payload,created_at FROM match_events WHERE room_id=? ORDER BY id", roomID)
 	if err != nil {
-		return nil, err
+		return history, err
 	}
 	defer rows.Close()
 	names := map[int64]string{}
@@ -99,22 +117,31 @@ func matchLog(ctx context.Context, q queryer, roomID int64, m matchState, viewer
 		names[p.UserID] = p.Name
 	}
 	visible := currentLogCards(m, viewerID)
-	log := []MatchLog{}
+
 	for rows.Next() {
 		var actor int64
 		var action string
 		var raw []byte
-		if err = rows.Scan(&actor, &action, &raw); err != nil {
-			return nil, err
+		var at time.Time
+		if err = rows.Scan(&actor, &action, &raw, &at); err != nil {
+			return history, err
 		}
 		var p actionLogPayload
 		if err = json.Unmarshal(raw, &p); err != nil {
-			return nil, err
+			return history, err
 		}
 		if p.Kind == "" {
 			p.Kind = action
 		}
-		entry := MatchLog{ActorID: actor, ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result}
+		if p.Kind == "started" && history.StartedAt == nil {
+			stamp := at
+			history.StartedAt = &stamp
+		}
+		if p.Kind == "finished" {
+			stamp := at
+			history.FinishedAt = &stamp
+		}
+		entry := MatchLog{DrawCount: p.DrawCount, LandPlays: p.LandPlays, ActorID: actor, ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result}
 		for _, ref := range p.Cards {
 			if ref.Public || actor == viewerID || slices.Contains(ref.Viewers, viewerID) {
 				if card, ok := visible[ref.ID]; ok {
@@ -122,7 +149,7 @@ func matchLog(ctx context.Context, q queryer, roomID int64, m matchState, viewer
 				}
 			}
 		}
-		log = append(log, entry)
+		history.Entries = append(history.Entries, entry)
 	}
-	return log, rows.Err()
+	return history, rows.Err()
 }

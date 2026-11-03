@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"sort"
 	"strings"
 
@@ -60,12 +61,14 @@ type matchAction struct {
 }
 
 type actionLogPayload struct {
-	Cards  []logCardReference `json:"cards,omitempty"`
-	Kind   string             `json:"kind"`
-	From   string             `json:"from,omitempty"`
-	To     string             `json:"to,omitempty"`
-	Count  int                `json:"count,omitempty"`
-	Result string             `json:"result,omitempty"`
+	DrawCount *int               `json:"drawCount,omitempty"`
+	LandPlays *int               `json:"landPlays,omitempty"`
+	Cards     []logCardReference `json:"cards,omitempty"`
+	Kind      string             `json:"kind"`
+	From      string             `json:"from,omitempty"`
+	To        string             `json:"to,omitempty"`
+	Count     int                `json:"count,omitempty"`
+	Result    string             `json:"result,omitempty"`
 }
 
 func playerByID(m *matchState, id int64) *playerState {
@@ -663,6 +666,22 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	}
 	if err != nil {
 		return Match{}, err
+	}
+	if payload.Kind == "draw" {
+		count := 0
+		if !m.MulliganOpen {
+			count = payload.Count
+		}
+		payload.DrawCount = &count
+	}
+	if payload.Kind == "move" && payload.From == "hand" && payload.To == "battlefield" {
+		count := 0
+		for _, card := range p.Battlefield {
+			if slices.Contains(input.CardIDs, card.ID) && !card.FaceDown && s.isLand(card.Name, card.Faces, card.FaceIndex) {
+				count++
+			}
+		}
+		payload.LandPlays = &count
 	}
 	endHandRevelationsOutsideHand(&m)
 	snapshot, err := json.Marshal(m)

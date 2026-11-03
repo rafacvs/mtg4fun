@@ -140,3 +140,10 @@ Motor de regras, formatos, fases, agrupamento permanente de cartas, desfazer gen
 ## Notas adicionais
 
 A UI deve servir a quem conhece Magic, mas não o Cockatrice. Não inclui tutorial de regras. A apresentação vigente é a [nova experiência](05-nova-experiencia-da-mesa.md). O desfazer genérico continua fora desta spec e está registrado na issue 37.
+
+### Indicadores de acompanhamento
+
+A crônica mostra tempos de sala/partida e, para cada turno, compras e terrenos
+jogados por jogador, preservando resumos anteriores. O trilho do campo mostra
+o total atual de cartas Land. Regras, autorização e compatibilidade:
+[decisão dos indicadores](../decisions/indicadores-partida.md).

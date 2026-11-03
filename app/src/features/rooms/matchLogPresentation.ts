@@ -2,7 +2,7 @@ import { zoneNames } from './PlayerTable';
 import type { Match } from './roomsApi';
 
 export type LogEntry = Match['log'][number];
-export type LogFilter = 'game' | 'adjustments' | 'all';
+export type LogFilter = 'game' | 'adjustments' | 'all' | 'statistics';
 
 export function isLogAdjustment(entry: LogEntry) {
   return ['position', 'reorder', 'reorder_zone', 'consult', 'close'].includes(entry.kind);
@@ -24,6 +24,8 @@ export function groupLogTurns(entries: LogEntry[]): LogTurn[] {
       previous.entry = {
         ...previous.entry,
         count: (previous.entry.count ?? 0) + (entry.count ?? 0),
+        drawCount: previous.entry.drawCount === undefined || entry.drawCount === undefined ? undefined : previous.entry.drawCount + entry.drawCount,
+        landPlays: previous.entry.landPlays === undefined || entry.landPlays === undefined ? undefined : previous.entry.landPlays + entry.landPlays,
         cards: cards.filter((card, i) => cards.findIndex(other => other.id === card.id) === i),
       };
       previous.actions += 1;
