@@ -17,7 +17,9 @@ queda de braço; mensagens antigas de Cara ou coroa permanecem válidas.
 
 O servidor define zonas, tempo e pontuação; o navegador anima os relógios e envia
 o gesto, sem declarar pontos ou ângulos. A avaliação usa o instante de chegada ao
-servidor: latência pode afetar acertos nas zonas estreitas. Ambos clicam Começar;
+servidor: latência pode afetar acertos nas zonas estreitas. A
+[correção de 03/11/2026](queda-de-braco-acertos.md) sincroniza a animação e compensa
+visualmente o envio, preservando essa avaliação. Ambos clicam Começar;
 a contagem de um segundo permite iniciar juntos. F5 recupera o estado corrente.
 
 O HTML simula um adversário; aqui o adversário é outro participante real. Após o
