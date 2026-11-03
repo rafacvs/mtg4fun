@@ -1,4 +1,4 @@
-import { test, expect, roomBody, confirmHands } from './fixtures';
+import { test, expect, roomBody, confirmHands, selectFieldArea } from './fixtures';
 
 test('arrastar o campo navega sem mover cartas', async ({ page }) => {
   expect((await page.request.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBe(true);
@@ -14,6 +14,10 @@ test('arrastar o campo navega sem mover cartas', async ({ page }) => {
   await page.goto(`/#/salas/${room.id}`);
   const scroll = page.getByRole('region', { name: 'Campo', exact: true }).locator('.battlefield-scroll');
   await expect(scroll).toBeVisible();
+  await selectFieldArea(page, scroll);
+  await expect(scroll.locator('.playing-card.is-selected')).toHaveCount(4);
+  await page.keyboard.press('Escape');
+  await expect(scroll.locator('.playing-card.is-selected')).toHaveCount(0);
   const box = (await scroll.boundingBox())!;
   // The view only travels when the cards no longer fit it.
   expect(await scroll.evaluate(el => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight)).toBe(false);
@@ -34,9 +38,9 @@ test('arrastar o campo navega sem mover cartas', async ({ page }) => {
   });
   expect(empty).not.toBeNull();
   await page.mouse.move(empty!.x, empty!.y);
-  await page.mouse.down();
+  await page.mouse.down({ button: 'right' });
   await page.mouse.move(empty!.x - 80, empty!.y - 50, { steps: 8 });
-  await page.mouse.up();
+  await page.mouse.up({ button: 'right' });
   const after = await scroll.evaluate(el => ({ x: el.scrollLeft, y: el.scrollTop }));
   expect(after.x).toBeGreaterThan(before.x);
   expect(after.y).toBeGreaterThan(before.y);

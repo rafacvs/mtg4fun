@@ -30,7 +30,7 @@ export function BattlefieldCanvas({ cards, zoom, enabled, onSelectArea, children
     suppressClick.current = false;
     if (event.pointerType !== 'mouse' || (event.button !== 0 && event.button !== 2) || (event.target as Element).closest('.playing-card')) return;
     const rightButton = event.button === 2;
-    if (!event.shiftKey && !rightButton) {
+    if (rightButton) {
       const scroll = event.currentTarget.closest<HTMLElement>('.battlefield-scroll');
       if (!scroll) return;
       event.preventDefault();
