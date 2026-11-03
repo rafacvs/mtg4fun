@@ -157,6 +157,8 @@ func (c *CoinDuels) Handle(ctx context.Context, request live.Request) error {
 		return c.challenge(ctx, request, input.OpponentID, input.Game)
 	case "arm-start", "arm-press":
 		return c.armAction(request)
+	case "arm-sync":
+		return c.armSync(request)
 	case "pick":
 		var input struct {
 			Side string `json:"side"`

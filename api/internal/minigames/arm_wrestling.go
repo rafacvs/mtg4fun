@@ -1,12 +1,37 @@
 package minigames
 
 import (
+	"encoding/json"
 	"math"
 	"math/rand/v2"
 	"time"
 
 	"mtg4fun/internal/live"
 )
+
+// Timing samples are informational only. A client never supplies a scoring
+// time, position or score; armAction still judges the actual arrival time.
+func (c *CoinDuels) armSync(request live.Request) error {
+	var input struct {
+		Nonce string `json:"nonce"`
+	}
+	if json.Unmarshal(request.Data, &input) != nil || len(input.Nonce) == 0 || len(input.Nonce) > 64 {
+		return live.UserError{Message: "Sincronização inválida."}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	d, err := c.playing(request)
+	if err != nil {
+		return err
+	}
+	if d.Game != "arm-wrestling" || d.Arm == nil {
+		return live.UserError{Message: "Não há queda de braço em andamento."}
+	}
+	c.Hub.Publish(request.RoomID, c.Name(), "arm-clock", map[string]any{
+		"userId": request.From.ID, "nonce": input.Nonce, "serverTime": time.Now().UnixMilli(),
+	})
+	return nil
+}
 
 // All scores, zones and input times are controlled by the server.
 type ArmPlayer struct {
