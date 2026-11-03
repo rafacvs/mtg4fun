@@ -4,6 +4,7 @@ import { AppBrand } from '../../components/AppBrand';
 import { DeckLibrary } from '../decks/DeckLibrary';
 import type { User } from './sessionApi';
 import './auth.css';
+import { LeaderboardScreen } from '../leaderboards/LeaderboardScreen';
 import { RoomsList } from '../rooms/RoomsList';
 import { useDecks } from '../decks/useDecks';
 import { playerMark } from '../rooms/playerIdentity';
@@ -12,7 +13,7 @@ import { RoomScreen } from '../rooms/RoomScreen';
 
 function currentScreen() {
   const room = window.location.hash.match(/^#\/salas\/([1-9]\d*)$/);
-  return room ? Number(room[1]) : window.location.hash === '#/playmats' ? 'playmats' : window.location.hash === '#/decks' ? 'decks' : 'salas';
+  return room ? Number(room[1]) : window.location.hash === '#/leaderboards' ? 'leaderboards' : window.location.hash === '#/playmats' ? 'playmats' : window.location.hash === '#/decks' ? 'decks' : 'salas';
 }
 
 type Props = {
@@ -33,7 +34,7 @@ export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
     return () => { window.removeEventListener('popstate', sync); window.removeEventListener('hashchange', sync); };
   }, []);
 
-  function navigate(event: MouseEvent<HTMLAnchorElement>, next: 'salas' | 'decks' | 'playmats') {
+  function navigate(event: MouseEvent<HTMLAnchorElement>, next: 'salas' | 'decks' | 'playmats' | 'leaderboards') {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     window.history.pushState(null, '', `/#/${next}`);
@@ -51,8 +52,8 @@ export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
       <div className="app-heading">
         <AppBrand className="header-brand" />
         <p className="eyebrow">SEU ESPAÇO DE JOGO</p>
-        <h1 id="title">{screen === 'salas' ? 'Lobby' : screen === 'playmats' ? 'Meus playmats' : 'Meus decks'}</h1>
-        <p>{screen === 'salas' ? 'Encontre sua mesa e entre na partida.' : screen === 'playmats' ? 'Personalize o fundo da sua mesa.' : 'Sua coleção, pronta para a próxima partida.'}</p>
+        <h1 id="title">{screen === 'leaderboards' ? 'Leaderboard' : screen === 'salas' ? 'Lobby' : screen === 'playmats' ? 'Meus playmats' : 'Meus decks'}</h1>
+        <p>{screen === 'leaderboards' ? 'A glória passa. A zoeira fica.' : screen === 'salas' ? 'Encontre sua mesa e entre na partida.' : screen === 'playmats' ? 'Personalize o fundo da sua mesa.' : 'Sua coleção, pronta para a próxima partida.'}</p>
       </div>
       <div className="account-actions"><span title={`Conectado como ${user.login}`}>{user.name}</span><button type="button" className="text-button" onClick={() => void onLogout()} disabled={busy}>{busy ? 'Saindo…' : 'Sair'}</button></div>
     </header>
@@ -60,11 +61,12 @@ export function AuthenticatedScreen({ user, busy, error, onLogout }: Props) {
       <a href="/#/salas" aria-current={screen === 'salas' ? 'page' : undefined} onClick={event => navigate(event, 'salas')}>Salas</a>
       <a href="/#/decks" aria-current={screen === 'decks' ? 'page' : undefined} onClick={event => navigate(event, 'decks')}>Meus decks</a>
       <a href="/#/playmats" aria-current={screen === 'playmats' ? 'page' : undefined} onClick={event => navigate(event, 'playmats')}>Meus playmats</a>
+      <a href="/#/leaderboards" aria-current={screen === 'leaderboards' ? 'page' : undefined} onClick={event => navigate(event, 'leaderboards')}>Leaderboard</a>
     </nav>
     {screen === 'salas' ? <>
       {decks.decks.length === 0 && !decks.loading && <div className="lobby-hint">Antes de confirmar sua entrada em uma partida, <a href="/#/decks" onClick={event => navigate(event, 'decks')}>importe um deck</a>.</div>}
       <RoomsList userId={user.id} decks={decks.decks} />
-    </> : screen === 'playmats' ? <PlaymatLibrary name={user.name} /> : <DeckLibrary library={decks} />}
+    </> : screen === 'leaderboards' ? <LeaderboardScreen /> : screen === 'playmats' ? <PlaymatLibrary name={user.name} /> : <DeckLibrary library={decks} />}
     {error && <p role="alert" className="error">{error}</p>}
   </div>;
 }

@@ -18,6 +18,7 @@ import (
 	"mtg4fun/internal/decks"
 	"mtg4fun/internal/httpserver"
 	"mtg4fun/internal/images"
+	"mtg4fun/internal/leaderboards"
 	"mtg4fun/internal/playmats"
 	"mtg4fun/internal/rooms"
 )
@@ -37,6 +38,7 @@ func serve(users *auth.Service, db *sql.DB, cards *catalog.Catalog, imageCache, 
 		return err
 	}
 	api := http.NewServeMux()
+	api.Handle("/api/leaderboards", leaderboards.Handler(db, users))
 	deckService := decks.New(db, cards)
 	deckHandler := deckService.Handler(users)
 	api.Handle("/api/decks", deckHandler)

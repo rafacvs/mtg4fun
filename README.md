@@ -22,6 +22,12 @@ confirmarem prontidão. Na preparação, o criador pode ajustar a vida inicial
 sete cartas, além do tipo de mulligan (Aconchegaz, inicial, ou padrão). Os participantes
 veem as alterações.
 
+O **Leaderboard** (`/#/leaderboards`) reúne vitórias e troféus da zoeira com
+dados das partidas: vida perdida, tempo dos turnos passados, compras e mais.
+Há filtros por mês/semana e um hall da vergonha. As
+[regras de contagem](docs/decisions/leaderboards.md) descrevem quais registros
+são considerados e quando uma vitória pode ser reconhecida.
+
 A mesa permite comprar cartas e movê-las entre mão, campo, cemitério, exílio,
 comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
 numa carta e escolha **Mover para…** no detalhe. A mão própria permanece
