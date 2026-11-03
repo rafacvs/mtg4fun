@@ -46,6 +46,13 @@
     z-index: 2; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 18px 34px #000d;
     transform: translateY(-28px) rotate(calc(var(--fan-t) * 2deg));
   }
+  /* Keep the vacated area interactive while the card rises, so its hover
+     does not switch off when the pointer stays near the bottom of the hand. */
+  .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled) { overflow: visible; }
+  .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled)::after {
+    content: ''; position: absolute; top: 100%; left: 0; right: 0;
+    height: calc(var(--hand-card-height) * .4 + 40px);
+  }
   .desktop-table .own-dock .zone-hand .playing-card.is-selected { z-index: 1; outline: 2px solid var(--gold); outline-offset: 0; box-shadow: 0 0 18px var(--gold-glow), 0 14px 28px #000c; }
   .desktop-table .own-dock .zone-hand .zone-placeholder { align-self: center; color: var(--muted); font-size: 12px; }
 
