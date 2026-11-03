@@ -15,7 +15,7 @@ async function hit(page: Page, arcIndex = 1, input: 'dial' | 'button' | 'space' 
     const end = (Math.atan2(numbers.at(-1)!, numbers.at(-2)!) * 180 / Math.PI + 360) % 360;
     const width = (end - start + 360) % 360;
     const delta = (Number(needle[1]) - start + 360) % 360;
-    if (delta > width * .2 && delta < width * .5) {
+    if (delta > width * .1 && delta < width * .6) {
       if (input === 'button') document.querySelector<HTMLButtonElement>('.arm-screen .duel-primary')!.click();
       else if (input === 'space') {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
@@ -24,8 +24,15 @@ async function hit(page: Page, arcIndex = 1, input: 'dial' | 'button' | 'space' 
       return true;
     }
     return false;
-  }, { index: arcIndex, input }, { polling: 'raf', timeout: 15000 });
+  }, { index: arcIndex, input }, { polling: 5, timeout: 15000 });
   await expect(page.locator('.arm-me .arm-hits')).not.toHaveAttribute('aria-label', before!, { timeout: 2000 });
+}
+
+async function preparePair(page: Page, guest: Page) {
+  for (const [client, login] of [[page, 'amigo'], [guest, 'segundo']] as const) expect((await client.request.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
+  const { room } = await (await page.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
+  expect((await guest.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
+  for (const client of [page, guest]) { await client.goto(`/#/salas/${room.id}`); await expect(client.getByRole('button', { name: /^Rolar d20$/ })).toBeVisible(); }
 }
 
 test('queda de braço: menu, convite, dois relógios, acertos, F5 e desistência', async ({ page, browser, baseURL }, info) => {
@@ -33,10 +40,7 @@ test('queda de braço: menu, convite, dois relógios, acertos, F5 e desistência
   const context = await browser.newContext({ baseURL: baseURL!, viewport: page.viewportSize() ?? undefined, isMobile: info.project.use.isMobile, hasTouch: info.project.use.hasTouch });
   const guest = await context.newPage();
   try {
-    for (const [client, login] of [[page, 'amigo'], [guest, 'segundo']] as const) expect((await client.request.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
-    const { room } = await (await page.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
-    expect((await guest.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
-    for (const client of [page, guest]) { await client.goto(`/#/salas/${room.id}`); await expect(client.getByRole('button', { name: /^Rolar d20$/ })).toBeVisible(); }
+    await preparePair(page, guest);
     await page.getByRole('button', { name: 'Desafiar Segundo amigo para um X1' }).click();
     const menu = page.getByRole('dialog', { name: 'Desafiar Segundo amigo' });
     await expect(menu.getByRole('button', { name: /Cara ou coroa/ })).toBeVisible();
@@ -92,10 +96,7 @@ for (const condition of [{ name: 'condições normais', offset: 0, lag: 0 }, { n
       server.onMessage(message => { setTimeout(() => client.send(message), condition.lag); });
     });
     try {
-      for (const [client, login] of [[page, 'amigo'], [guest, 'segundo']] as const) expect((await client.request.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
-      const { room } = await (await page.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
-      expect((await guest.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
-      for (const client of [page, guest]) { await client.goto(`/#/salas/${room.id}`); await expect(client.getByRole('button', { name: /^Rolar d20$/ })).toBeVisible(); }
+      await preparePair(page, guest);
       await page.getByRole('button', { name: 'Desafiar Segundo amigo para um X1' }).click();
       await page.getByRole('button', { name: /Queda de braço/ }).click();
       await guest.getByRole('button', { name: 'Aceitar', exact: true }).click();
@@ -126,10 +127,7 @@ for (const input of ['dial', 'button', 'space'] as const) {
     const context = await browser.newContext({ baseURL });
     const guest = await context.newPage();
     try {
-      for (const [client, login] of [[page, 'amigo'], [guest, 'segundo']] as const) expect((await client.request.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBe(true);
-      const { room } = await (await page.request.post('/api/rooms', { data: roomBody({ seats: 2 }) })).json();
-      expect((await guest.request.post(`/api/rooms/${room.id}/participants`, { data: {} })).ok()).toBe(true);
-      for (const client of [page, guest]) { await client.goto(`/#/salas/${room.id}`); await expect(client.getByRole('button', { name: /^Rolar d20$/ })).toBeVisible(); }
+      await preparePair(page, guest);
       for (const [zone, points] of [12, 2, 3, 6].entries()) {
         // A fresh duel per color avoids automatic misses completing a round
         // while the test switches between the two independent clocks.
