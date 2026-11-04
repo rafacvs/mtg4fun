@@ -67,7 +67,7 @@ poder/resistência continuam editáveis como no
 - Observar outro campo não muda mão, ações próprias nem permissões.
 - Cartas encaixam em colunas e fileiras. A célula tem o tamanho da própria pilha: carta deitada e pilha de até três cartas ocupam mais espaço, e só empurram as cartas à direita na mesma fileira e as fileiras abaixo. O campo cresce para a direita e para baixo. Detalhe: [decisão 30](../decisions/30-grade-do-campo.md).
 - Sobreposição é apenas visual: não cria grupo, vínculo ou propagação automática de ações.
-- Seleção por área no desktop com Shift + arraste ou botão direito + arraste no espaço vazio; modo explícito de seleção múltipla no celular, adicionando cartas por toque.
+- Seleção por área no desktop com botão esquerdo + arraste no espaço vazio; botão direito + arraste navega pelo campo (ver [inversão dos arrastes](../decisions/inverter-arrastes-campo.md)); modo explícito de seleção múltipla no celular, adicionando cartas por toque.
 - Cartas selecionadas podem ser movidas juntas e receber ações coletivas aplicáveis.
 - Clique ou toque seleciona na hora e abre a barra. Arraste move. Inspeção é o mouse ou o toque longo. O duplo clique ainda vira, sem atrasar a seleção. Ações essenciais não dependem de gestos secretos.
 - Não há agrupamento permanente, vínculo de aura/equipamento ou inclinação acidental causada pelo posicionamento. Sobreposição e rotação para indicar carta virada são permitidas.
@@ -140,3 +140,10 @@ Motor de regras, formatos, fases, agrupamento permanente de cartas, desfazer gen
 ## Notas adicionais
 
 A UI deve servir a quem conhece Magic, mas não o Cockatrice. Não inclui tutorial de regras. A apresentação vigente é a [nova experiência](05-nova-experiencia-da-mesa.md). O desfazer genérico continua fora desta spec e está registrado na issue 37.
+
+### Indicadores de acompanhamento
+
+A crônica mostra tempos de sala/partida e, para cada turno, compras e terrenos
+jogados por jogador, preservando resumos anteriores. O trilho do campo mostra
+o total atual de cartas Land. Regras, autorização e compatibilidade:
+[decisão dos indicadores](../decisions/indicadores-partida.md).

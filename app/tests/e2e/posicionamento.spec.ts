@@ -185,12 +185,10 @@ test('arrasta cartas para fileiras, sobrepõe e reposiciona cada uma independent
       }) ?? null;
     });
     expect(area).not.toBeNull();
-    await page.keyboard.down('Shift');
     await page.mouse.move(area!.x, area!.y);
     await page.mouse.down();
     await page.mouse.move(area!.endX, area!.endY, { steps: 8 });
     await page.mouse.up();
-    await page.keyboard.up('Shift');
     await expect(field.locator('.playing-card.is-selected')).toHaveCount(2);
     const selectionBar = page.getByRole('toolbar', { name: 'Ações da seleção' });
     await expect(selectionBar.getByRole('button', { name: '+1/+1' })).toBeVisible();

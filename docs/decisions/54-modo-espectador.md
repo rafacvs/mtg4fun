@@ -67,3 +67,22 @@ Estes resultados comprovam comportamento observado, não aprovam a escolha.
   A suíte completa de navegador e o smoke Docker não foram executados.
 - `npm run build` não concluiu porque `app/dist` tem arquivo sem permissão de escrita, sem relação
   com esta mudança. O build foi validado com `vite build --outDir` em pasta temporária.
+
+## Saída pelo lobby em 03/11/2026
+
+O usuário pediu a possibilidade de sair da sala no modo espectador e esclareceu:
+“sair da sala tem que ser no mesmo lugar que os jogadores normais voltam pro
+lobby”. O caminho existente é **Ações → Lobby**. A implementação reutiliza o
+link dos jogadores em um menu de navegação do espectador, sem disponibilizar
+ações de jogo. A saída volta a `/#/salas`; a desmontagem da mesa interrompe o
+polling e encerra o WebSocket existentes. A pessoa continua autenticada e pode
+voltar a assistir. Não há alteração de API, banco ou dependências.
+
+Critérios: [saída do espectador](../issues/sair-espectador.md).
+
+Nesta entrega passaram o build/TypeScript e os cenários de navegador em
+desktop e nas duas orientações do celular. O fluxo confirma o mesmo link no
+menu dos jogadores, a saída manual do espectador, o fechamento do WebSocket,
+a igualdade do estado da partida antes/depois e a possibilidade de voltar a
+assistir. A adaptação do teste abre Comandos antes de Ações na mesa do jogador
+em telas compactas. Não foram repetidos testes Go: a API não foi alterada.

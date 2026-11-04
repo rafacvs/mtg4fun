@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"mtg4fun/internal/auth"
 	"mtg4fun/internal/catalog"
@@ -163,6 +164,9 @@ type matchState struct {
 	Players        []playerState `json:"players"`
 }
 type Match struct {
+	RoomCreatedAt  *time.Time    `json:"roomCreatedAt,omitempty"`
+	StartedAt      *time.Time    `json:"startedAt,omitempty"`
+	FinishedAt     *time.Time    `json:"finishedAt,omitempty"`
 	Finished       bool          `json:"finished"`
 	FinishVotes    []int64       `json:"finishVotes"`
 	FinishRequired int           `json:"finishRequired"`
@@ -177,6 +181,7 @@ type Match struct {
 	Log            []MatchLog    `json:"log"`
 }
 type MatchPlayer struct {
+	LandCount        int                `json:"landCount"`
 	Playmat          *playmats.Settings `json:"playmat,omitempty"`
 	Consulting       bool               `json:"consulting"`
 	ExposedCards     []ExposedCard      `json:"exposedCards,omitempty"`
@@ -256,6 +261,8 @@ type ExposedCard struct {
 	CreatedTokens    []string    `json:"createdTokens,omitempty"`
 }
 type MatchLog struct {
+	DrawCount *int      `json:"drawCount,omitempty"`
+	LandPlays *int      `json:"landPlays,omitempty"`
 	Cards     []LogCard `json:"cards,omitempty"`
 	ActorID   int64     `json:"actorId"`
 	ActorName string    `json:"actorName"`

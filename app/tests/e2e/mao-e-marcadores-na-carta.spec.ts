@@ -94,3 +94,41 @@ test('reorganizar a mão coloca a carta ao lado da que recebeu o arraste, sem tr
   await expect.poll(order).toEqual([e, b, c, d, a]);
   await expect(cards).toHaveCount(5);
 });
+
+
+test('hover na borda inferior da mão permanece estável e libera a carta ao sair', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const api = page.request;
+  expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBeTruthy();
+  const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'hover.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="6" name="Island"/></zone></cockatrice_deck>') } } })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
+  expect((await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBeTruthy();
+  expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto(`/#/salas/${room.id}`);
+    const cards = page.getByRole('region', { name: 'Mão', exact: true }).locator('.playing-card');
+    await expect(cards).toHaveCount(6);
+    for (const index of [0, 3, 5]) {
+      await page.mouse.move(5, 5);
+      await page.waitForTimeout(200);
+      const card = cards.nth(index);
+      const box = (await card.boundingBox())!;
+      // Keep the pointer where the raised card no longer visually covers it.
+      await page.mouse.move(box.x + box.width / 2, viewport.height - 2);
+      await page.waitForTimeout(250);
+      const samples = await card.evaluate(async node => {
+        const samples: boolean[] = [];
+        for (let frame = 0; frame < 30; frame++) {
+          await new Promise(requestAnimationFrame);
+          samples.push(node.matches(':hover') && node.getBoundingClientRect().bottom < innerHeight - 10);
+        }
+        return samples;
+      });
+      expect(samples.every(Boolean)).toBe(true);
+      await page.mouse.move(5, 5);
+      await expect.poll(() => card.evaluate(node => node.matches(':hover'))).toBe(false);
+    }
+  }
+});

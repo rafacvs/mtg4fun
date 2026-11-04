@@ -402,7 +402,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section className={`rail-panel log-panel ${logOpen ? 'is-open' : ''}`}>
             {compact && <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>}
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
-              <MatchLog entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
+              <MatchLog match={match} entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
                 const card = findCard(match, id);
                 if (card) setHoverCardId(card.id);
               }} onInspect={id => {

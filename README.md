@@ -22,14 +22,20 @@ confirmarem prontidão. Na preparação, o criador pode ajustar a vida inicial
 sete cartas, além do tipo de mulligan (Aconchegaz, inicial, ou padrão). Os participantes
 veem as alterações.
 
+O **Leaderboard** (`/#/leaderboards`) reúne vitórias e troféus da zoeira com
+dados das partidas: vida perdida, tempo dos turnos passados, compras e mais.
+Há filtros por mês/semana e um hall da vergonha. As
+[regras de contagem](docs/decisions/leaderboards.md) descrevem quais registros
+são considerados e quando uma vitória pode ser reconhecida.
+
 A mesa permite comprar cartas e movê-las entre mão, campo, cemitério, exílio,
 comando e topo/fundo do grimório, com estado e log persistidos. Clique/toque
 numa carta e escolha **Mover para…** no detalhe. A mão própria permanece
 disponível ao observar oponentes; desktop oferece visão conjunta/ampliação e
 celular funciona na vertical e horizontal, com **Visão geral** em grade e toque
 para ampliar um campo. A partida atualiza
-a cada segundo. No campo, arraste o espaço vazio para navegar; segure Shift e arraste uma área para selecionar várias
-cartas. A seleção múltipla por toque não está disponível nesta revisão.
+a cada segundo. No campo, arraste o espaço vazio com o botão direito para navegar e com o
+botão esquerdo para selecionar várias cartas. A seleção múltipla por toque não está disponível nesta revisão.
 Arrastar uma selecionada reposiciona o conjunto preservando sua disposição.
 Clicar no espaço vazio do campo ou pressionar Escape limpa a seleção.
 Duplo clique em uma carta selecionada vira/desvira o conjunto para o estado
@@ -115,6 +121,12 @@ leitura e rolagem independente das entradas.
 Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
 por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas
 antigas sem referência de carta continuam como texto.
+A crônica mostra os tempos de sala e partida e um resumo por jogador em cada
+turno na opção **Terrenos / Draws**, com compras e terrenos jogados. O trilho lateral mostra o total atual de
+terrenos no campo. Turnos anteriores continuam consultáveis. Nos movimentos
+anteriores à atualização, a quantidade histórica de terrenos pode aparecer
+como “—”. Veja as [regras dos indicadores](docs/decisions/indicadores-partida.md).
+
 O registro acompanha novas ações enquanto você está no final; ao ler entradas
 anteriores, mantém a posição e oferece **Novas ações** para voltar ao fim.
 Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).

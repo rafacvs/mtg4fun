@@ -19,6 +19,10 @@ export type RoomDraft = { name: string; format: string; seats: number; life: num
 export type MarkerColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple';
 export type Markers = Partial<Record<MarkerColor, number>>;
 export type Match = {
+  roomCreatedAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  serverTime?: string;
   finished: boolean;
   finishVotes: number[];
   finishRequired: number;
@@ -29,8 +33,8 @@ export type Match = {
   currentTurn: { userId: number; name: string; roll: number };
   mulliganMode: 'standard' | 'aconchegaz';
   mulliganOpen: boolean;
-  players: { playmat?: PlaymatSettings; userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; mulliganBottomed?: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
-  log: { actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
+  players: { landCount?: number; playmat?: PlaymatSettings; userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; mulliganBottomed?: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
+  log: { landPlays?: number; drawCount?: number; actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
 export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; revealedTo?: number[]; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; createdTokens?: string[] };
 export type CatalogToken = { name: string; text?: string; power?: string; toughness?: string; imageName?: string };
@@ -70,7 +74,7 @@ async function matchChange(path: string, body: unknown): Promise<Match> {
       const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await response.json();
       if (!response.ok) throw new MatchActionResponseError(data.error || 'Não foi possível concluir. Tente novamente.');
-      return data.match;
+      return { ...data.match, serverTime: response.headers.get('Date') ?? undefined };
     } catch (reason) {
       if (reason instanceof MatchActionResponseError) throw reason;
       if (attempt === 1) throw new UnconfirmedActionError('Não foi possível confirmar a ação. Tente novamente para recuperar a confirmação.');
@@ -127,7 +131,7 @@ export const roomsApi = {
     const response = await fetch(`/api/rooms/${id}/match`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a partida.');
-    return data.match;
+    return { ...data.match, serverTime: response.headers.get('Date') ?? undefined };
   },
   tokens: async (id: number, query: string): Promise<CatalogToken[]> => {
     const response = await fetch(`/api/rooms/${id}/match/tokens?q=${encodeURIComponent(query)}`);

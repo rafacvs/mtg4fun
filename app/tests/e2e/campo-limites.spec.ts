@@ -26,9 +26,9 @@ async function pan(page: Page, field: Locator, deltaX: number, deltaY: number) {
   });
   expect(point).not.toBeNull();
   await page.mouse.move(point!.x, point!.y);
-  await page.mouse.down();
+  await page.mouse.down({ button: 'right' });
   await page.mouse.move(point!.x + deltaX, point!.y + deltaY, { steps: 6 });
-  await page.mouse.up();
+  await page.mouse.up({ button: 'right' });
 }
 
 test('arrastar a visão não esconde cartas atrás do trilho e do cabeçalho, em nenhum campo', async ({ browser, baseURL }, info) => {

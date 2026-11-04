@@ -4,6 +4,7 @@ import { CreateInstances } from './CreateInstances';
 import { FinishMatch } from './FinishMatch';
 import { TurnOrder } from './TurnOrder';
 import { TableIcon } from './TableIcon';
+import { GameLobbyLink } from './GameLobbyLink';
 import { GameActionFooter } from './GameActionFooter';
 import { MenuItem, PanelFeedback, PanelHeader, PanelResult, TablePanel, type PanelFeedbackProps } from './TablePanel';
 import type { CustomToken, Match } from './roomsApi';
@@ -50,7 +51,7 @@ export function GameActions({ open, anchor, initialScreen, roomId, actorName, si
         </div></section>
         <div className="game-exit-divider" aria-hidden="true"><span>◇</span></div>
         <div className="game-exit-actions">
-          <a href="/#/salas" className="game-lobby-link"><TableIcon name="back" /><span>Lobby</span></a>
+          <GameLobbyLink />
           <FinishMatch match={match} busy={busy} unconfirmed={unconfirmed} error={error} onConfirm={onFinish} onRetry={onRetry} />
         </div>
       </div>}
