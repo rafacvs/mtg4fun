@@ -36,6 +36,9 @@ servidor e compensação visual do envio. Pediu restringir a correção ao minig
 - Contagem regressiva e bloqueio usam o tempo estimado atual, sem antecipar
   o envio antes de começar. Enquanto sincroniza, a tela informa isso e bloqueia
   Começar/Acertar/espaço. Recarga/reconexão recalibra o relógio.
+- O ponteiro é atualizado diretamente no SVG a cada frame, evitando atraso de
+  uma renderização do React nas faixas estreitas. Ao completar as tentativas,
+  congela imediatamente no instante confirmado pelo servidor.
 - Servidor segue avaliando no instante de chegada, sem aceitar horário, ângulo
   ou pontuação do navegador. Faixas, pontos, tentativas, erros, volta perdida,
   Fase Maluco e desistência permanecem com as regras aprovadas anteriormente.
@@ -55,5 +58,24 @@ integração usa WebSocket/API/MySQL reais, confere os dois solicitantes,
 recusa de terceiro, payload inválido e ausência de alteração de prontidão ou
 início. Build/TypeScript e `go vet ./...` passaram.
 
-Regressão de navegador em execução; o resultado final será registrado antes
-de publicar a correção. O ambiente local continua na porta 8080.
+A rodada final dos 21 cenários da queda de braço passou em desktop e nas duas
+orientações de celular: acertos reais dos dois jogadores, quatro cores,
+relógio/botão/espaço, convite invertido, recarga, parada, erro/volta perdida,
+resultado/desistência, diferença de relógio de um segundo, alteração do relógio
+durante o jogo e atraso de 120 ms em cada direção. A versão intermediária
+revelou atraso de frame e observação estreita demais no teste; a rodada final
+usa o ponteiro atualizado diretamente e observa a faixa real a cada 5 ms,
+sem fabricar pontuação.
+
+A regressão dos demais minigames passou nos 13 cenários aplicáveis de Cara ou
+coroa, emojis e dados; dois casos de dimensões do dado são exclusivos de
+desktop e foram ignorados nos projetos móveis. Go com `-race` nos módulos
+minigames/live passou. Os 41 testes unitários existentes do frontend passaram.
+O build e a integração do relógio também passaram no checkout isolado sobre
+a master, sem depender dos PRs anteriores. O patch de código é idêntico ao
+revisado nas duas frentes (padrões e requisitos), sem bloqueios encontrados.
+
+O PR da correção parte diretamente da master e contém apenas o minigame,
+seus testes e documentação. O ambiente principal preserva as entregas
+anteriores e continua na porta 8080. A suíte completa da aplicação não foi
+executada.
