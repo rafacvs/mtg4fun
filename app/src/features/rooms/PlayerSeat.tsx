@@ -24,8 +24,8 @@ export function PlayerSeat({ player, own, handVisible = false, turnPosition, cur
         {player.consulting && <span role="status" className="seat-activity">Consultando o grimório</span>}
       </div>}
     </div>
-    {own ? <div className="seat-life" aria-label={`Vida: ${player.life}`}><strong className="seat-life-mobile" aria-hidden="true">{player.life}</strong></div>
-      : <strong className="seat-life-readout" aria-label={`Vida: ${player.life}`}>{player.life}</strong>}
+    {own ? <div className="seat-life" data-arrow-player={player.userId} aria-label={`Vida: ${player.life}`}><strong className="seat-life-mobile" aria-hidden="true">{player.life}</strong></div>
+      : <strong className="seat-life-readout" data-arrow-player={player.userId} aria-label={`Vida: ${player.life}`}>{player.life}</strong>}
     <button className="seat-markers secondary" aria-label={`Abrir jogador ${player.name}`} title="Vida e marcadores" onClick={event => onMenu(event.currentTarget)} />
     {focusEnabled && <button className="seat-focus secondary" aria-label={focused ? 'Voltar à visão geral' : `Ampliar mesa de ${player.name}`} aria-pressed={focused} title={focused ? 'Voltar à visão geral' : 'Ampliar mesa'} onClick={onFocus}>{focused ? 'Visão geral' : 'Ampliar'}</button>}
   </header>;

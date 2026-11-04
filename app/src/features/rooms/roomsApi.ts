@@ -19,6 +19,7 @@ export type RoomDraft = { name: string; format: string; seats: number; life: num
 export type MarkerColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple';
 export type Markers = Partial<Record<MarkerColor, number>>;
 export type Match = {
+  arrows?: TargetArrow[];
   roomCreatedAt?: string;
   startedAt?: string;
   finishedAt?: string;
@@ -36,6 +37,7 @@ export type Match = {
   players: { landCount?: number; playmat?: PlaymatSettings; userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; mulliganBottomed?: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { landPlays?: number; drawCount?: number; actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
+export type TargetArrow = { ownerId: number; sourceCardId: string; targetCardId?: string; targetPlayerId?: number };
 export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; revealedTo?: number[]; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; createdTokens?: string[] };
 export type CatalogToken = { name: string; text?: string; power?: string; toughness?: string; imageName?: string };
 export type CustomToken = { name: string; description: string; power?: string; toughness?: string };
@@ -105,6 +107,8 @@ function subscribe(updates: Updates): () => void {
 }
 
 export const roomsApi = {
+  addArrow: (id: number, cardId: string, targetCardId: string | undefined, playerId: number | undefined, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'arrow_add', cardId, ...(targetCardId ? { targetCardId } : { playerId }) }),
+  clearArrows: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'arrow_clear' }),
   finish: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'finish' }),
   subscribe,
   setTapped: (id: number, cardIds: string[], tapped: boolean, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'set_tapped', cardIds, tapped }),

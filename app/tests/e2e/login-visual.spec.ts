@@ -95,6 +95,33 @@ test('esfera azul abre Contra Magias na cena WebGL e pelo teclado, mantendo a su
   await expect(page.getByLabel('Login', { exact: true })).toBeEnabled();
 });
 
+test('surpresa verde não permanece visível enquanto a imagem azul carrega', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      value: function(this: HTMLCanvasElement, type: string, ...options: unknown[]) {
+        return type === 'webgl2' ? null : Reflect.apply(original, this, [type, ...options]);
+      },
+    });
+  });
+  let release!: () => void;
+  const delay = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/*contra-magias-surprise*', async route => { await delay; await route.continue(); });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Abrir surpresa da esfera verde' }).click();
+  const green = page.getByRole('dialog', { name: 'Hora do Banza' });
+  await expect(green.getByRole('img', { name: 'Hora do Banza' })).toBeVisible();
+  await green.getByRole('button', { name: 'Fechar surpresa' }).click();
+  await page.getByRole('button', { name: 'Abrir surpresa da esfera azul' }).click();
+  const blue = page.getByRole('dialog', { name: 'EU TENHO RESPOSTA RWSRRSSRRS' });
+  await expect(blue).toBeVisible();
+  await expect(blue.getByRole('img', { name: 'Hora do Banza' })).toHaveCount(0);
+  const image = blue.getByRole('img', { name: 'Contra Magias' });
+  await expect(image).toHaveAttribute('src', /contra-magias-surprise/);
+  release();
+  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+});
+
 test('entrada usa a tipografia da mesa e o fundo noturno aprovado', async ({ page }) => {
   await page.goto('/');
   const title = page.getByRole('heading', { name: /Toda boa partida/ });

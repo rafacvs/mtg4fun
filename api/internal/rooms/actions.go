@@ -27,6 +27,7 @@ var errMulliganPending = errors.New("A partida só começa quando todos confirma
 var errMulliganConsulting = errors.New("Feche a consulta do grimório antes de confirmar a mão.")
 
 type matchAction struct {
+	TargetCardID     string
 	IntentID         string
 	Kind             string
 	Count            int
@@ -597,6 +598,24 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	beforeCards := referencesForIDs(m, ids)
 	var payload actionLogPayload
 	switch input.Kind {
+	case "arrow_add":
+		arrow := targetArrow{OwnerID: u.ID, SourceCardID: input.CardID, TargetCardID: input.TargetCardID, TargetPlayerID: input.PlayerID}
+		if !validTargetArrow(&m, arrow) {
+			return Match{}, errCardNotFound
+		}
+		m.Arrows = append(visibleTargetArrows(&m), arrow)
+		payload = actionLogPayload{Kind: input.Kind}
+		err = nil
+	case "arrow_clear":
+		kept := make([]targetArrow, 0, len(m.Arrows))
+		for _, arrow := range visibleTargetArrows(&m) {
+			if arrow.OwnerID != u.ID {
+				kept = append(kept, arrow)
+			}
+		}
+		m.Arrows = kept
+		payload = actionLogPayload{Kind: input.Kind}
+		err = nil
 	case "finish":
 		payload = voteToFinish(&m, u.ID)
 		err = nil
@@ -684,6 +703,7 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 		payload.LandPlays = &count
 	}
 	endHandRevelationsOutsideHand(&m)
+	m.Arrows = visibleTargetArrows(&m)
 	snapshot, err := json.Marshal(m)
 	if err != nil {
 		return Match{}, err

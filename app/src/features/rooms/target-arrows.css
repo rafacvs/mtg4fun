@@ -1,0 +1,4 @@
+.target-arrows { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; overflow: visible; }
+.target-arrows .target-arrow-line { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
+.target-arrows circle, .target-arrows .target-arrow-head { fill: currentColor; }
+.target-arrows .target-arrow-head { stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }

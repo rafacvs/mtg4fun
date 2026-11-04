@@ -151,6 +151,7 @@ type playerState struct {
 	ConsultationFrom string             `json:"consultationFrom,omitempty"`
 }
 type matchState struct {
+	Arrows         []targetArrow `json:"arrows,omitempty"`
 	PendingOrder   bool          `json:"pendingOrder,omitempty"`
 	Finished       bool          `json:"finished,omitempty"`
 	FinishVotes    []int64       `json:"finishVotes,omitempty"`
@@ -164,6 +165,7 @@ type matchState struct {
 	Players        []playerState `json:"players"`
 }
 type Match struct {
+	Arrows         []targetArrow `json:"arrows"`
 	RoomCreatedAt  *time.Time    `json:"roomCreatedAt,omitempty"`
 	StartedAt      *time.Time    `json:"startedAt,omitempty"`
 	FinishedAt     *time.Time    `json:"finishedAt,omitempty"`
@@ -348,7 +350,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 	if len(m.TurnOrder) > 0 {
 		current = m.TurnOrder[m.TurnIndex%len(m.TurnOrder)]
 	}
-	return Match{Finished: m.Finished, FinishVotes: append([]int64{}, m.FinishVotes...), FinishRequired: (len(m.Players) + 1) / 2, RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, MulliganMode: m.MulliganMode, MulliganOpen: m.MulliganOpen, Players: p, Log: log}
+	return Match{Arrows: visibleTargetArrows(&m), Finished: m.Finished, FinishVotes: append([]int64{}, m.FinishVotes...), FinishRequired: (len(m.Players) + 1) / 2, RoomID: m.RoomID, ViewerID: viewerID, InitialLife: m.InitialLife, TurnOrder: m.TurnOrder, CurrentTurn: current, MulliganMode: m.MulliganMode, MulliganOpen: m.MulliganOpen, Players: p, Log: log}
 }
 
 type Service struct {
