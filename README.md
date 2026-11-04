@@ -101,8 +101,9 @@ moeda e fichas. O próprio grimório concentra suas operações, incluindo compr
 várias cartas. Menus verticais têm padrão compartilhado: no desktop abrem junto
 ao elemento clicado, ajustados às bordas; em telas estreitas abrem como painel
 inferior. Consultas de várias cartas usam um espaço maior.
-Atalhos: **D** comprar, **U** desvirar todas, **N** passar turno e **H** ocultar
-as próprias reveladas. Não atuam durante digitação, com modificadores ou com
+Atalhos: **D** comprar, **U** desvirar todas, **T** virar ou desvirar as cartas
+selecionadas no campo, **N** passar turno e **H** mover a seleção para a mão.
+Não atuam durante digitação, com modificadores ou com
 um diálogo aberto. Duplo clique no grimório compra uma carta; clique abre suas
 ações. As linhas do campo aceitam agrupamento manual de até três cartas, com
 espaço para cartas viradas e scroll horizontal. Os controles de zoom ficam
