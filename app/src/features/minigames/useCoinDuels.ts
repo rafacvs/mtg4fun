@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveChannel, useLiveClient } from '../live/LiveRoom';
 import type { CoinSide } from '../rooms/CoinOptions';
+import { ArmClock } from './armClock';
 
 export type ArmPlayer = { stopped: number; points: number; hits: number[]; zone: number; since: number; lockUntil: number };
 export type ArmState = { mode: 'normal' | 'crazy'; started: number; ready: Record<string, boolean>; players: Record<string, ArmPlayer> };
@@ -33,6 +34,7 @@ export function useDuelHistory() {
 
 export function useCoinDuels(userId: number) {
   const client = useLiveClient();
+  const armClock = useRef(new ArmClock()).current;
   const [state, setState] = useState<DuelState>({ duels: [], marks: {}, history: [] });
   const [flip, setFlip] = useState<CoinDuelOutcome | null>(null);
   const [banner, setBanner] = useState<CoinDuelOutcome | null>(null);
@@ -65,6 +67,9 @@ export function useCoinDuels(userId: number) {
   }
 
   useLiveChannel('coin-duel', message => {
+    if (message.type === 'arm-clock' && message.data.userId === userId) {
+      armClock.observe(message.data.nonce, message.data.serverTime);
+    }
     if (message.type === 'snapshot' || message.type === 'state') setState(message.data);
     if (message.type === 'result') received(message.data);
     if (message.type === 'cancelled' && message.data.players.includes(userId) && document.visibilityState === 'visible') {
@@ -90,7 +95,15 @@ export function useCoinDuels(userId: number) {
     }
   }
 
+  async function syncArmClock() {
+    const nonce = crypto.randomUUID();
+    armClock.begin(nonce);
+    try { await client.request('coin-duel', 'arm-sync', { nonce }); }
+    finally { armClock.cancel(nonce); }
+  }
+
   return {
+    armClock, syncArmClock,
     own, flip, banner, notice, target, pending, error, marks: state.marks,
     panelOpen: !!own || !!target || !!flip,
     prepare: (player: { id: number; name: string }, anchor: HTMLElement | null = null) => { setError(''); setTarget({ id: player.id, name: player.name, anchor }); },
