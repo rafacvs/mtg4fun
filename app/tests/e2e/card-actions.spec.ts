@@ -125,6 +125,10 @@ test('Shift mantém várias cartas e arraste destaca a zona da mesa antes de mov
   await first.click({ modifiers: ['Shift'] });
   await second.click({ modifiers: ['Shift'] });
   await expect(field.locator('[aria-pressed="true"]')).toHaveCount(2);
+  await page.keyboard.press('t');
+  await expect.poll(async () => (await read()).players[0].battlefield?.filter(card => ids.includes(card.id) && card.tapped).length).toBe(2);
+  await page.keyboard.press('t');
+  await expect.poll(async () => (await read()).players[0].battlefield?.filter(card => ids.includes(card.id) && card.tapped).length).toBe(0);
   const start = (await first.boundingBox())!;
   await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
   await page.mouse.down();

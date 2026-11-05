@@ -37,7 +37,7 @@ export function ManaOrbs() {
     </div>
     <dialog ref={dialog} className="mana-orb-dialog" aria-labelledby="mana-orb-dialog-title" onCancel={event => { event.preventDefault(); setSurprise(null); }} onClose={() => { if (!dialog.current?.open) setSurprise(null); }} onClick={event => { if (event.target === event.currentTarget) setSurprise(null); }}>
       <div className="mana-orb-dialog-header"><h2 id="mana-orb-dialog-title">{title}</h2><button type="button" className="secondary" aria-label="Fechar surpresa" onClick={() => setSurprise(null)}>Fechar</button></div>
-      <img src={surprise === 'blue' ? blueSurpriseImage : surpriseImage} alt={surprise === 'blue' ? 'Contra Magias' : 'Hora do Banza'} />
+      {surprise && <img key={surprise} src={surprise === 'blue' ? blueSurpriseImage : surpriseImage} alt={surprise === 'blue' ? 'Contra Magias' : 'Hora do Banza'} />}
     </dialog>
   </>;
 }

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Como funciona o leaderboard · MTG4FUN</title>
+  <style>
+    body { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 4rem; background: #10191c; color: #e8ece8; font: 16px/1.6 system-ui, sans-serif; }
+    h1, h2 { color: #e9c877; line-height: 1.2; } a { color: #8bdac5; } code { color: #a9e2d1; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #465451; padding: .65rem; text-align: left; vertical-align: top; } th { background: #22312e; } .scroll { overflow-x: auto; } .note { border-left: 3px solid #e9c877; padding-left: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Como funciona o leaderboard</h1>
+  <p>O leaderboard reúne as partidas salvas e calcula a classificação quando a página consulta a API. Não existe uma tabela de ranking pré-calculado: os números são reconstruídos a partir dos estados e eventos de cada partida.</p>
+  <h2>De onde vêm os dados</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Tabela</th><th>Campos consultados</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td><code>id</code>, <code>name</code></td><td>Identifica jogadores e nomes exibidos. A tela mostra apenas quem participou de ao menos uma partida no período.</td></tr>
+      <tr><td><code>matches</code></td><td><code>room_id</code>, <code>snapshot</code></td><td>O estado da partida fornece participantes, vida inicial, vida final e se a partida terminou.</td></tr>
+      <tr><td><code>rooms</code></td><td><code>id</code>, <code>snapshot</code></td><td>Vincula a sala à partida e fornece a configuração de compra da mão inicial, usada na interpretação de eventos antigos.</td></tr>
+      <tr><td><code>match_events</code></td><td><code>id</code>, <code>room_id</code>, <code>actor_id</code>, <code>action</code>, <code>payload</code>, <code>created_at</code></td><td>Seleciona partidas pelo início e reconstrói mudanças de vida, turnos, compras, mulligans, fichas, dados e encerramento.</td></tr>
+    </tbody>
+  </table></div>
+  <p>A API <code>GET /api/leaderboards?period=all|month|week</code> exige sessão autenticada e lê os dados em uma transação somente de leitura, com visão consistente. Retorna nomes, IDs e agregados, sem expor cartas, decks ou snapshots.</p>
+  <h2>Período e classificação</h2>
+  <p>“Desde sempre” considera o histórico; mês e semana usam o horário de Brasília, com a semana começando na segunda. O filtro seleciona partidas pela data de início: uma partida longa permanece inteira no período em que começou.</p>
+  <p>Uma vitória exige uma partida encerrada com exatamente um participante acima de zero de vida. Sem vencedor claro, a partida não entra nos resultados decididos. A classificação ordena por vitórias, depois participações e, em caso de empate, ID de cadastro. Aproveitamento é vitórias divididas por partidas decididas; HP médio é a média da vida final nas vitórias. A sequência segue a ordem de encerramento das partidas decididas; partidas sem resultado não a interrompem.</p>
+  <h2>Troféus e eventos</h2>
+  <ul>
+    <li><strong>Saco de pancadas:</strong> soma das reduções de vida registradas, inclusive pagamentos e ajustes manuais. Não identifica atacante ou causa.</li>
+    <li><strong>Pensador da mesa:</strong> soma dos intervalos de turnos concluídos atribuídos ao dono de cada turno, inclusive desconexões e correções. O turno ainda em andamento não é contado.</li>
+    <li><strong>Plano de saúde:</strong> soma dos aumentos de vida registrados.</li>
+    <li><strong>Só mais uma cartinha:</strong> cartas compradas pela ação Comprar, excluindo mão inicial e preparação.</li>
+    <li><strong>Fábrica de problemas:</strong> quantidade de fichas criadas. <strong>Devoto do D20:</strong> quantidade de ações de rolar dados.</li>
+    <li><strong>A mão nunca vem:</strong> quantidade de mulligans. <strong>O deck pediu férias:</strong> maior sequência atual de derrotas em partidas decididas.</li>
+  </ul>
+  <p>Os troféus escolhem o maior valor positivo; empates usam o menor ID. Sem evento elegível, o troféu fica vago. As últimas vitórias mostram até cinco resultados, ordenados pelo encerramento.</p>
+  <p class="note">O “Top 1 mais omisso” de agiotagem é uma homenagem fixa da interface, não uma estatística calculada nem uma conta criada pelo leaderboard.</p>
+  <h2>Onde conferir no código</h2>
+  <p>As consultas e cálculos estão em <a href="../api/internal/leaderboards/statistics.go">statistics.go</a>; autenticação e parâmetros em <a href="../api/internal/leaderboards/handlers.go">handlers.go</a>; apresentação em <a href="../app/src/features/leaderboards/LeaderboardScreen.tsx">LeaderboardScreen.tsx</a>. O histórico das regras aprovadas está em <a href="decisions/leaderboards.md">docs/decisions/leaderboards.md</a>.</p>
+</body>
+</html>

@@ -59,6 +59,8 @@ export function useMatch(roomId: number) {
   }
   return {
     match, error: error || syncError, busy, unconfirmed, optimisticPending,
+    addArrow: (source: string, target: string | undefined, player: number | undefined) => { const id = createActionIntent(); return act(() => roomsApi.addArrow(roomId, source, target, player, id)); },
+    clearArrows: () => { const id = createActionIntent(); return act(() => roomsApi.clearArrows(roomId, id)); },
     finish: () => {
       const intentId = createActionIntent();
       return act(() => roomsApi.finish(roomId, intentId));
