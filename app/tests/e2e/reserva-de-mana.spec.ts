@@ -9,7 +9,7 @@ test('reserva compartilha mana, zera terrenos e limpa ao passar o turno', async 
     let roomId = 0;
     for (const [request, login] of [[api, 'amigo'], [other.request, 'segundo']] as const) {
       expect((await request.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBeTruthy();
-      const { deck } = await (await request.post('/api/decks', { multipart: { file: { name: 'mana.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/><card number="1" name="Gargos, Vicious Watcher"/><card number="1" name="Urza&apos;s Saga"/></zone></cockatrice_deck>') } } })).json();
+      const { deck } = await (await request.post('/api/decks', { multipart: { file: { name: 'mana.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/><card number="1" name="Gargos, Vicious Watcher"/><card number="1" name="Three Color Test Land"/></zone></cockatrice_deck>') } } })).json();
       if (!roomId) roomId = (await (await request.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await request.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBeTruthy();
       expect((await request.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBeTruthy();
@@ -28,7 +28,7 @@ test('reserva compartilha mana, zera terrenos e limpa ao passar o turno', async 
     const own = state.players.find((p: { userId: number }) => p.userId === state.viewerId);
     const island = own.hand.find((c: { name: string }) => c.name === 'Island').id;
     const creature = own.hand.find((c: { name: string }) => c.name === 'Gargos, Vicious Watcher').id;
-    const nonbasic = own.hand.find((c: { name: string }) => c.name === "Urza's Saga").id;
+    const nonbasic = own.hand.find((c: { name: string }) => c.name === 'Three Color Test Land').id;
     state = await act({ kind: 'move', cardIds: [island, creature, nonbasic], to: 'battlefield' });
     state = await act({ kind: 'position', cardId: creature, x: 4, row: 0 });
     state = await act({ kind: 'position', cardId: nonbasic, x: 8, row: 0 });
