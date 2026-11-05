@@ -70,6 +70,8 @@ test('reserva compartilha mana, zera terrenos e limpa ao passar o turno', async 
     await field.locator(`[data-card-id="${nonbasic}"]`).dblclick();
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Adicionar mana verde: 0' }).click();
+    await expect(dialog).not.toBeVisible();
+    await pool.click();
     await expect(dialog.getByRole('button', { name: 'Adicionar mana verde: 1' })).toBeVisible();
     await page.keyboard.press('Escape');
     await land.click({ modifiers: ['Shift'] });
