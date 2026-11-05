@@ -165,11 +165,21 @@ func actionInput(w http.ResponseWriter, r *http.Request) (matchAction, bool) {
 	input.HasPosition = raw.PositionX != nil || raw.Row != nil
 	counterFields := raw.Target != "" || raw.PlayerID != 0 || raw.Subject != "" || raw.Color != "" || raw.Operation != "" || raw.Value != nil
 	stateFields := input.Kind != "set_tapped" && raw.Tapped != nil || input.Kind != "set_face_down" && raw.FaceDown != nil || input.Kind != "reveal_cards" && (raw.Revealed != nil || raw.RevealedTo != nil) || input.Kind != "set_face" && raw.FaceIndex != nil
-	if input.Kind != "arrow_add" && raw.TargetCardID != "" || input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && input.Kind != "counter_batch" && input.Kind != "arrow_add" && counterFields || input.Kind != "counter_batch" && raw.SecondValue != nil || input.Kind != "transfer_control" && raw.ControllerID != 0 || stateFields {
+	if input.Kind != "arrow_add" && raw.TargetCardID != "" || input.Kind != "create-token" && input.TokenName != "" || input.Kind != "create-custom-token" && (raw.CustomName != "" || raw.Description != "" || raw.Power != "" || raw.Toughness != "") || input.Kind != "counter" && input.Kind != "counter_batch" && input.Kind != "arrow_add" && input.Kind != "mana" && counterFields || input.Kind != "counter_batch" && raw.SecondValue != nil || input.Kind != "transfer_control" && raw.ControllerID != 0 || stateFields {
 		httpserver.WriteError(w, 400, "Ação inválida.")
 		return matchAction{}, false
 	}
 	switch input.Kind {
+	case "mana":
+		if !validManaColor(input.Color) || input.Operation != "increment" || raw.Value == nil || (input.Value != 1 && input.Value != -1) || input.Target != "" || input.PlayerID != 0 || input.Subject != "" || input.CardID != "" || len(input.CardIDs) != 0 || input.Count != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.HasPosition || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Mana inválida.")
+			return matchAction{}, false
+		}
+	case "mana_reset":
+		if input.CardID != "" || len(input.CardIDs) != 0 || input.Count != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.HasPosition || input.ConsultFrom != "" {
+			httpserver.WriteError(w, 400, "Mana inválida.")
+			return matchAction{}, false
+		}
 	case "arrow_add":
 		if input.CardID == "" || (input.TargetCardID == "") == (input.PlayerID == 0) || input.Target != "" || input.Subject != "" || input.Color != "" || input.Operation != "" || raw.Value != nil || input.Count != 0 || len(input.CardIDs) != 0 || input.To != "" || input.LibraryPlacement != "" || input.Sides != 0 || input.Direction != "" || input.HasPosition || input.ConsultFrom != "" {
 			httpserver.WriteError(w, 400, "Seta inválida.")

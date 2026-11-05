@@ -65,6 +65,12 @@ Abrir uma imagem é uma visualização local; fechar o detalhe oculta a carta,
 salvo se marcar **Manter revelada ao fechar**. Essas operações não interpretam
 texto de cartas.
 
+A reserva de mana fica abaixo do exílio e é visível para todos. Virar um
+terreno básico adiciona uma mana correspondente; para outras cartas, escolha
+as cores no painel. Clique na gema para adicionar ou use o botão − para gastar.
+**Zerar** limpa a própria reserva e desvira seus terrenos; passar o turno limpa
+as reservas sem desvirar os terrenos.
+
 Clique/toque na carta abre controles de virar/desvirar no campo, face para
 baixo/cima, escolha entre faces preservadas do catálogo e revelar/ocultar.
 Duplo clique no próprio campo vira/desvira; **Desvirar todas** fica ao lado da

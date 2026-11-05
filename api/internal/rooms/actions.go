@@ -512,6 +512,7 @@ func changeTurn(m *matchState, direction string) (actionLogPayload, error) {
 	if direction == "next" {
 		for i := range m.Players {
 			clearRevelations(&m.Players[i])
+			m.Players[i].Mana = nil
 		}
 		return actionLogPayload{Kind: "turn", Result: "avançou para o turno de " + m.TurnOrder[m.TurnIndex].Name + " e ocultou todas as revelações"}, nil
 	}
@@ -598,6 +599,25 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 	beforeCards := referencesForIDs(m, ids)
 	var payload actionLogPayload
 	switch input.Kind {
+	case "mana":
+		if p.Mana == nil {
+			p.Mana = map[string]int64{}
+		}
+		value := p.Mana[input.Color] + input.Value
+		if value < 0 || value > maxCounterValue {
+			return Match{}, errCounterRange
+		}
+		p.Mana[input.Color] = value
+		payload, err = actionLogPayload{Kind: input.Kind}, nil
+	case "mana_reset":
+		p.Mana = nil
+		for i := range p.Battlefield {
+			c := &p.Battlefield[i]
+			if c.ControllerID == u.ID && s.isLand(c.Name, c.Faces, c.FaceIndex) {
+				c.Tapped = false
+			}
+		}
+		payload, err = actionLogPayload{Kind: input.Kind}, nil
 	case "arrow_add":
 		arrow := targetArrow{OwnerID: u.ID, SourceCardID: input.CardID, TargetCardID: input.TargetCardID, TargetPlayerID: input.PlayerID}
 		if !validTargetArrow(&m, arrow) {
@@ -641,6 +661,23 @@ func (s *Service) action(ctx context.Context, roomID int64, u auth.User, input m
 			payload, err = changeCardState(p, input)
 		}
 	case "set_tapped", "untap_all", "set_face", "set_face_down":
+		if input.Kind == "set_tapped" && input.Tapped {
+			for _, id := range input.CardIDs {
+				for _, card := range p.Battlefield {
+					if card.ID == id && !card.Tapped && !card.FaceDown {
+						if color := basicMana(card); color != "" {
+							if p.Mana == nil {
+								p.Mana = map[string]int64{}
+							}
+							if p.Mana[color] >= maxCounterValue {
+								return Match{}, errCounterRange
+							}
+							p.Mana[color]++
+						}
+					}
+				}
+			}
+		}
 		payload, err = changeCardState(p, input)
 	case "draw":
 		payload, err = drawCards(p, input.Count)

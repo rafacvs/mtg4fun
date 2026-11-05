@@ -10,6 +10,7 @@ import { createLibraryGesture } from './libraryGesture';
 import { BattlefieldCanvas } from './BattlefieldCanvas';
 import { PlayingCard } from './PlayingCard';
 import { TableIcon, type TableIconName } from './TableIcon';
+import { ManaPool } from './ManaPool';
 
 export const zoneNames: Record<string, string> = { library: 'Grimório', hand: 'Mão', battlefield: 'Campo', graveyard: 'Cemitério', exile: 'Exílio', command: 'Comando', consulted: 'consulta', revealed: 'cartas reveladas' };
 
@@ -92,19 +93,16 @@ function revealedHeading(player: Match['players'][number], viewerId: number) {
   return player.userId === viewerId ? 'Reveladas · Só os escolhidos veem' : 'Reveladas · Para você';
 }
 
-export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, onOpenZone, selectionActions, disabled }: ZoneProps) {
+export function ZoneColumn({ player, viewerId, droppable, hoverZone, gesture, onLibrary, onDraw, onOpenZone, disabled }: ZoneProps) {
   return <div className="zone-column">
     <CardSlot zone="command" title="Comando" count={player.commandCount} card={topCard(player.command)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} />
     <LibraryPile count={player.libraryCount} droppable={droppable} hoverZone={hoverZone} onOpen={onLibrary} onDraw={player.consulting ? undefined : onDraw} disabled={disabled} />
     <CardSlot zone="graveyard" title="Cemitério" count={player.graveyardCount} card={topCard(player.graveyard)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} onOpen={onOpenZone ? anchor => onOpenZone(player, 'graveyard', anchor) : undefined} />
     <CardSlot zone="exile" title="Exílio" count={player.exileCount} card={topCard(player.exile)} viewerId={viewerId} droppable={droppable} hoverZone={hoverZone} gesture={gesture} onOpen={onOpenZone ? anchor => onOpenZone(player, 'exile', anchor) : undefined} />
+    <ManaPool player={player} own={player.userId === viewerId} disabled={disabled} />
     <div className="land-count" role="group" aria-label={`Terrenos no campo de ${player.name}`} title="Cartas do tipo Land atualmente neste campo">
       <TableIcon name="type-land" /><strong>{player.landCount ?? 0}</strong><span>Terrenos</span>
     </div>
-    {selectionActions && <button type="button" className="card-slot selection-actions-slot secondary" data-empty={selectionActions.count === 0} aria-label="Ações da seleção" aria-expanded={selectionActions.open} disabled={disabled || selectionActions.count === 0} onClick={selectionActions.onToggle}>
-      <span className="slot-label"><TableIcon name="adjust" />Ações</span>
-      <strong className="zone-count" aria-label={`${selectionActions.count} cartas selecionadas`}>{selectionActions.count}</strong>
-    </button>}
   </div>;
 }
 

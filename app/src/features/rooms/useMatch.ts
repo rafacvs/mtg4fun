@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createActionIntent } from './actionIntent';
 import { optimisticMove, optimisticPosition } from './optimisticMatch';
-import { roomsApi, UnconfirmedActionError, type BatchCounterAction, type CounterAction, type CustomToken, type Match } from './roomsApi';
+import { roomsApi, UnconfirmedActionError, type BatchCounterAction, type CounterAction, type CustomToken, type ManaColor, type Match } from './roomsApi';
 
 export function useMatch(roomId: number) {
   const [match, setMatch] = useState<Match | null>(null);
@@ -59,6 +59,8 @@ export function useMatch(roomId: number) {
   }
   return {
     match, error: error || syncError, busy, unconfirmed, optimisticPending,
+    changeMana: (color: ManaColor, value: number) => { const id = createActionIntent(); return act(() => roomsApi.mana(roomId, color, value, id)); },
+    resetMana: () => { const id = createActionIntent(); return act(() => roomsApi.resetMana(roomId, id)); },
     addArrow: (source: string, target: string | undefined, player: number | undefined) => { const id = createActionIntent(); return act(() => roomsApi.addArrow(roomId, source, target, player, id)); },
     clearArrows: () => { const id = createActionIntent(); return act(() => roomsApi.clearArrows(roomId, id)); },
     finish: () => {

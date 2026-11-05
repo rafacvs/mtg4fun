@@ -1,0 +1,78 @@
+.mana-pool-slot { display: grid; place-items: center; gap: 1px; flex: 0 0 auto; width: 100%; min-height: 76px; padding: 3px 1px; color: #aaa29a; background: #121319; border: 1px solid #80683c; border-radius: 5px; font: 10px Georgia, serif; }
+@media (min-width: 1001px) { .desktop-table .zone-column .mana-pool-slot { order: 6; } }
+.mana-pool-mini { display: grid; grid-template-columns: repeat(3, 17px); grid-template-rows: repeat(3, 16px); place-items: center; }
+.mana-orb { display: grid; place-items: center; border-radius: 50%; border: 2px solid #15151a; background: radial-gradient(ellipse at 35% 20%, #ffffffa8, transparent 48%), linear-gradient(160deg, var(--mana-color), var(--mana-color) 55%, #15151a); color: var(--mana-text, white); font-family: Georgia, serif; font-weight: 800; text-shadow: 0 1px 2px #0009; box-shadow: 0 0 0 1px #6666, inset 0 0 0 2px #ffffff35; }
+.mana-pool-mini .mana-orb { width: 17px; height: 17px; font-size: 10px; border-width: 1px; }
+.mana-pool-mini .mana-white { grid-area: 1 / 2; }
+.mana-pool-mini .mana-green { grid-area: 2 / 1; }
+.mana-pool-mini .mana-blue { grid-area: 2 / 3; }
+.mana-pool-mini .mana-colorless { grid-area: 2 / 2; }
+.mana-pool-mini .mana-red { grid-area: 3 / 1; }
+.mana-pool-mini .mana-black { grid-area: 3 / 3; }
+.mana-white { --mana-color: #e5dbaa; --mana-text: #292513; }
+.mana-blue { --mana-color: #248ed5; }
+.mana-black { --mana-color: #403e48; }
+.mana-red { --mana-color: #db3834; }
+.mana-green { --mana-color: #34a84c; }
+.mana-colorless { --mana-color: #a7a9b4; --mana-text: #222; }
+.mana-pool-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #918b80; font: 12px Georgia, serif; }
+.mana-pool-header button { border: 0; background: none; color: #d9b568; font: bold 12px Georgia, serif; min-height: 24px; padding: 0; }
+.mana-pool-grid { display: grid; grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 41px); justify-content: center; gap: 2px; padding: 8px 0; }
+.mana-position-white { grid-area: 1 / 2; }
+.mana-position-green { grid-area: 2 / 1; }
+.mana-position-blue { grid-area: 2 / 3; }
+.mana-position-colorless { grid-area: 2 / 2; transform: scale(.78); }
+.mana-position-red { grid-area: 3 / 1; transform: translateX(15px); }
+.mana-position-black { grid-area: 3 / 3; transform: translateX(-15px); }
+.mana-pool-entry { position: relative; }
+.mana-pool-entry .mana-orb { width: 48px; height: 48px; padding: 0; font-size: 18px; opacity: 1; }
+.mana-pool-entry .mana-remove { position: absolute; bottom: -4px; right: -4px; width: 22px; min-width: 22px; height: 22px; min-height: 22px; padding: 0; border-radius: 50%; background: #17191d; opacity: 0; }
+.match-board .mana-pool-entry .mana-remove { color: #f4f1e7; font: 700 14px/1 Georgia, serif; border: 1px solid #55545b; }
+.mana-pool-entry:hover .mana-remove, .mana-remove:focus-visible { opacity: 1; }
+@media (pointer: coarse) { .mana-pool-entry .mana-remove { opacity: 1; } }
+.mana-pool-help { margin: 4px 0 0; color: var(--muted); font-size: .7rem; }
+
+/* A coluna da mesa tem regras próprias para botões; preserve o resumo vertical. */
+.match-board .zone-column .mana-pool-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 100%; height: 76px; min-height: 76px; padding: 2px 0; overflow: hidden; }
+.match-board .mana-pool-mini { display: block; position: relative; flex: 0 0 auto; width: 53px; height: 52px; zoom: .78; }
+.match-board .mana-pool-mini .mana-orb { position: absolute; left: calc(26.5px + var(--dx) - 8.5px); top: calc(26px + var(--dy) - 8.5px); }
+.match-board .mana-pool-mini .mana-white { --dx: 0px; --dy: -19px; }
+.match-board .mana-pool-mini .mana-blue { --dx: 18px; --dy: -6px; }
+.match-board .mana-pool-mini .mana-black { --dx: 11px; --dy: 15px; }
+.match-board .mana-pool-mini .mana-red { --dx: -11px; --dy: 15px; }
+.match-board .mana-pool-mini .mana-green { --dx: -18px; --dy: -6px; }
+.match-board .mana-pool-mini .mana-colorless { --dx: 0px; --dy: 0px; width: 14px; height: 14px; margin: 1.5px; font-size: 9px; }
+.match-board .mana-pool-label { display: block; font: 10px/1 Georgia, serif; color: #8b8a85; }
+.match-board .table-panel.mana-pool-panel { z-index: 100; box-sizing: border-box; width: 200px; padding: 10px 12px 12px; gap: 0; overflow-x: hidden; border: 1px solid #2a2b31; border-radius: 12px; background: linear-gradient(180deg, #15161c, #0e0f13); }
+.match-board .mana-pool-panel .mana-pool-header button { all: unset; cursor: pointer; color: #c9a24b; font: 11px Georgia, serif; padding: 2px 5px; border-radius: 4px; }
+.match-board .mana-pool-panel .mana-pool-header button:focus-visible { outline: 2px solid #c9a24b; }
+.match-board .mana-pool-panel .mana-pool-header button:disabled { opacity: .5; cursor: not-allowed; }
+.match-board .zone-column .land-count { position: static; margin-top: 0; }
+@media (min-width: 1001px) {
+  .match-board.desktop-table .zone-column { --rail-unit: clamp(26px, calc(12cqh - 8px), 34px); gap: 3px; }
+  .match-board.desktop-table .zone-column .card-slot.zone-command { flex-basis: 70px; height: 70px; min-height: 70px; }
+  .match-board.desktop-table .zone-column .zone-command .playing-card, .match-board.desktop-table .zone-column .zone-command .slot-empty { top: 2px; bottom: 12px; height: calc(100% - 14px); }
+  .match-board.desktop-table .zone-column .zone-command .playing-card img { width: 100%; height: 100%; object-fit: contain; }
+  .match-board.desktop-table .zone-column .mana-pool-slot { height: 64px; min-height: 64px; }
+  .match-board.desktop-table .zone-column .land-count { min-height: 24px; padding: 2px; }
+}
+.mana-pool-panel .mana-pool-grid { display: block; position: relative; width: 170px; height: 156px; padding: 0; }
+.mana-pool-lines { position: absolute; inset: 0; width: 170px; height: 156px; pointer-events: none; }
+.mana-pool-panel .mana-pool-entry { position: absolute; width: var(--size, 44px); height: var(--size, 44px); left: calc(85px + var(--dx) - var(--size, 44px) / 2); top: calc(84px + var(--dy) - var(--size, 44px) / 2); transform: none; }
+.mana-pool-panel .mana-position-white { --dx: 0px; --dy: -50px; }
+.mana-pool-panel .mana-position-blue { --dx: 47.55px; --dy: -15.45px; }
+.mana-pool-panel .mana-position-black { --dx: 29.39px; --dy: 40.45px; }
+.mana-pool-panel .mana-position-red { --dx: -29.39px; --dy: 40.45px; }
+.mana-pool-panel .mana-position-green { --dx: -47.55px; --dy: -15.45px; }
+.mana-pool-panel .mana-position-colorless { --size: 34px; --dx: 0px; --dy: 0px; }
+.mana-white { --mana-color: #f2ecbf; --mana-dark: #b3a862; --mana-text: #3b3412; }
+.mana-blue { --mana-color: #3b9cf0; --mana-dark: #1a5aa8; }
+.mana-black { --mana-color: #4d4a52; --mana-dark: #17161b; }
+.mana-red { --mana-color: #ee4a3d; --mana-dark: #a3231b; }
+.mana-green { --mana-color: #4cbc4c; --mana-dark: #1f7a2e; }
+.mana-colorless { --mana-color: #c3c5cc; --mana-dark: #7d7f88; --mana-text: #25262a; }
+.match-board .mana-orb, .match-board .mana-pool-entry .mana-orb:hover:not(:disabled) { background: radial-gradient(circle at 50% 40%, var(--mana-color) 0%, var(--mana-color) 42%, var(--mana-dark) 100%); color: var(--mana-text, white); filter: grayscale(.8) brightness(.55); }
+.match-board .mana-orb.is-lit, .match-board .mana-pool-entry .mana-orb.is-lit:hover:not(:disabled) { filter: none; box-shadow: inset 0 0 0 2px #ffffff38, inset 0 -5px 9px #0004, 0 0 0 2px #09090b, 0 0 0 3px color-mix(in srgb, var(--mana-color) 65%, #000), 0 0 18px -3px var(--mana-color); }
+.match-board .mana-pool-entry .mana-orb { width: 100%; height: 100%; min-width: 0; min-height: 0; padding: 0; font: 700 20px/1 Georgia, serif; opacity: 1; }
+.match-board .mana-position-colorless .mana-orb { font-size: 16px; }
+.mana-pool-panel .mana-pool-help { display: none; }

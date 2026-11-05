@@ -18,6 +18,7 @@ export type RoomDraft = { name: string; format: string; seats: number; life: num
 
 export type MarkerColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple';
 export type Markers = Partial<Record<MarkerColor, number>>;
+export type ManaColor = 'white' | 'blue' | 'black' | 'red' | 'green' | 'colorless';
 export type Match = {
   arrows?: TargetArrow[];
   roomCreatedAt?: string;
@@ -34,7 +35,7 @@ export type Match = {
   currentTurn: { userId: number; name: string; roll: number };
   mulliganMode: 'standard' | 'aconchegaz';
   mulliganOpen: boolean;
-  players: { landCount?: number; playmat?: PlaymatSettings; userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; mulliganBottomed?: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
+  players: { mana?: Partial<Record<ManaColor, number>> | null; landCount?: number; playmat?: PlaymatSettings; userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; mulliganBottomed?: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
   log: { landPlays?: number; drawCount?: number; actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
 export type TargetArrow = { ownerId: number; sourceCardId: string; targetCardId?: string; targetPlayerId?: number };
@@ -107,6 +108,8 @@ function subscribe(updates: Updates): () => void {
 }
 
 export const roomsApi = {
+  mana: (id: number, color: ManaColor, value: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'mana', color, operation: 'increment', value }),
+  resetMana: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'mana_reset' }),
   addArrow: (id: number, cardId: string, targetCardId: string | undefined, playerId: number | undefined, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'arrow_add', cardId, ...(targetCardId ? { targetCardId } : { playerId }) }),
   clearArrows: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'arrow_clear' }),
   finish: (id: number, intentId: string) => matchChange(`/api/rooms/${id}/match/actions`, { intentId, kind: 'finish' }),

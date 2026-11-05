@@ -34,13 +34,21 @@ import './desktop-table.css';
 import './hand-dock.css';
 import './card-preview.css';
 import { TargetArrows } from './TargetArrows';
+import { ManaPoolActions } from './ManaPool';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
 type OpenZone = { playerId: number; zone: 'graveyard' | 'exile'; anchor: HTMLElement };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
-  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mill, mulligan, keepHand, undoKeepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, revealCardsTo, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl, addArrow, clearArrows } = useMatch(roomId);
+  const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mill, mulligan, keepHand, undoKeepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped: submitTapped, untapAll, setFace, setFaceDown, revealCards, revealCardsTo, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl, addArrow, clearArrows, changeMana, resetMana } = useMatch(roomId);
   const match = synced;
+  const setTapped = async (ids: string[], tapped: boolean) => {
+    const basic = /^(Snow-Covered )?(Plains|Island|Swamp|Mountain|Forest)$|^Wastes$/;
+    const needsChoice = tapped && ids.some(id => { const card = match && findCard(match, id); return card && !card.tapped && !basic.test(card.name); });
+    const ok = await submitTapped(ids, tapped);
+    if (ok && needsChoice) window.dispatchEvent(new Event('mana-pool-select'));
+    return ok;
+  };
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);
   const [sides, setSides] = useState(20);
   const [focusId, setFocusId] = useState<number | null>(null);
@@ -354,7 +362,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       {notice && <p role="status" className="library-notice">{notice}</p>}
       <div className="table-stage">
         <div className="table-main">
-          <TableFields hideDead={hideDead} fitAllRequest={fitAllRequest} match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : focusId} focusEnabled={compact} fieldFocusEnabled={!compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={waitingForHands && handKept ? undefined : openLibrary} onDraw={waitingForHands && handKept ? undefined : drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} selectionActions={{ count: selectionIds.length, open: selectionActionsOpen, onToggle: () => setSelectionActionsOpen(open => !open) }} ownCommands={compact && !waitingForHands ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} />
+          <ManaPoolActions.Provider value={{ change: changeMana, reset: resetMana }}><TableFields hideDead={hideDead} fitAllRequest={fitAllRequest} match={match} gesture={gesture} hoverZone={drag?.zone ?? null} focusedId={compact ? (overview ? null : focusId ?? match.viewerId) : focusId} focusEnabled={compact} fieldFocusEnabled={!compact} disabled={busy || unconfirmed} onPlayerMenu={openPlayer} onFocus={focusPlayer} onLibrary={waitingForHands && handKept ? undefined : openLibrary} onDraw={waitingForHands && handKept ? undefined : drawOne} onHideRevealed={() => void hideAllRevealed()} onOpenZone={(player, zone, anchor) => setOpenZone({ playerId: player.userId, zone, anchor })} selectionActions={{ count: selectionIds.length, open: selectionActionsOpen, onToggle: () => setSelectionActionsOpen(open => !open) }} ownCommands={compact && !waitingForHands ? <section className="mobile-turn-actions" aria-label="Seus comandos"><button disabled={busy || unconfirmed || own.consulting || !own.libraryCount} onClick={drawOne}>Comprar</button><button className="secondary" disabled={busy || unconfirmed} onClick={() => void turn('next')}>Passar a vez</button></section> : undefined} /></ManaPoolActions.Provider>
           <section ref={dockRef} className="own-dock" aria-label={compact ? 'Sua mão' : 'Sua mão e ações'}>
             <div className="dock-toggle" aria-hidden="true"><TableIcon name="hand" /><span>Sua mão<small><b>{own.handCount}</b> {own.handCount === 1 ? 'carta' : 'cartas'}</small></span></div>
             <div id="own-dock-content" className="dock-content">
