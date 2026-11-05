@@ -9,7 +9,7 @@ test('reserva compartilha mana, zera terrenos e limpa ao passar o turno', async 
     let roomId = 0;
     for (const [request, login] of [[api, 'amigo'], [other.request, 'segundo']] as const) {
       expect((await request.post('/api/session', { data: { login, password: 'senha-do-navegador' } })).ok()).toBeTruthy();
-      const { deck } = await (await request.post('/api/decks', { multipart: { file: { name: 'mana.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/><card number="1" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>') } } })).json();
+      const { deck } = await (await request.post('/api/decks', { multipart: { file: { name: 'mana.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="8" name="Island"/><card number="1" name="Gargos, Vicious Watcher"/><card number="1" name="Urza&apos;s Saga"/></zone></cockatrice_deck>') } } })).json();
       if (!roomId) roomId = (await (await request.post('/api/rooms', { data: roomBody() })).json()).room.id;
       else expect((await request.post(`/api/rooms/${roomId}/participants`, { data: {} })).ok()).toBeTruthy();
       expect((await request.put(`/api/rooms/${roomId}/participants/me/ready`, { data: { deckId: deck.id } })).ok()).toBeTruthy();
@@ -24,12 +24,14 @@ test('reserva compartilha mana, zera terrenos e limpa ao passar o turno', async 
       expect(response.ok(), await response.text()).toBeTruthy();
       return (await response.json()).match;
     };
-    let state = await act({ kind: 'draw', count: 9 });
+    let state = await act({ kind: 'draw', count: 10 });
     const own = state.players.find((p: { userId: number }) => p.userId === state.viewerId);
     const island = own.hand.find((c: { name: string }) => c.name === 'Island').id;
     const creature = own.hand.find((c: { name: string }) => c.name === 'Gargos, Vicious Watcher').id;
-    state = await act({ kind: 'move', cardIds: [island, creature], to: 'battlefield' });
+    const nonbasic = own.hand.find((c: { name: string }) => c.name === "Urza's Saga").id;
+    state = await act({ kind: 'move', cardIds: [island, creature, nonbasic], to: 'battlefield' });
     state = await act({ kind: 'position', cardId: creature, x: 4, row: 0 });
+    state = await act({ kind: 'position', cardId: nonbasic, x: 8, row: 0 });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/#/salas/${roomId}`);
     const field = page.locator(`[data-field-owner="${state.viewerId}"]`);
@@ -64,6 +66,11 @@ test('reserva compartilha mana, zera terrenos e limpa ao passar o turno', async 
     await field.locator(`[data-card-id="${creature}"]`).dblclick();
     dialog = page.getByRole('dialog', { name: 'Reserva de mana de Amigo da mesa' });
     await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await field.locator(`[data-card-id="${nonbasic}"]`).dblclick();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Adicionar mana verde: 0' }).click();
+    await expect(dialog.getByRole('button', { name: 'Adicionar mana verde: 1' })).toBeVisible();
     await page.keyboard.press('Escape');
     await land.click({ modifiers: ['Shift'] });
     await field.locator(`[data-card-id="${creature}"]`).click({ modifiers: ['Shift'] });
