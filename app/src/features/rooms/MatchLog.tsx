@@ -4,6 +4,7 @@ import { describeLogLine, groupLogTurns, isLogAdjustment, type LogEntry, type Lo
 import './match-log.css';
 import type { Match } from './roomsApi';
 import { MatchTimers, TurnStatistics } from './MatchStatistics';
+import { MatchChat } from './MatchChat';
 
 export function MatchLog({ match, entries, visible, onPreview, onInspect, onUnreadChange }: {
   match: Match;
@@ -13,7 +14,7 @@ export function MatchLog({ match, entries, visible, onPreview, onInspect, onUnre
   onInspect: (id: string) => void;
   onUnreadChange: (unread: boolean) => void;
 }) {
-  const [filter, setFilter] = useState<LogFilter>('game');
+  const [filter, setFilter] = useState<LogFilter | 'chat'>('game');
   const [unread, setUnread] = useState(false);
   const scroll = useRef<HTMLDivElement>(null);
   const following = useRef(true);
@@ -27,9 +28,9 @@ export function MatchLog({ match, entries, visible, onPreview, onInspect, onUnre
   return <section className="match-log" aria-label="Registro da partida">
     <MatchTimers match={match} />
     <div className="log-filters" role="group" aria-label="Filtrar registro">
-      {([['statistics', 'Terrenos / Draws'], ['game', 'Jogo'], ['adjustments', 'Ajustes'], ['all', 'Tudo']] as const).map(([value, label]) => <button key={value} className="secondary" aria-pressed={filter === value} onClick={() => { setFilter(value); }} >{label}</button>)}
+      {([['chat', 'Chat'], ['statistics', 'Terrenos / Draws'], ['game', 'Jogo'], ['adjustments', 'Ajustes'], ['all', 'Tudo']] as const).map(([value, label]) => <button key={value} className="secondary" aria-pressed={filter === value} onClick={() => { setFilter(value); }} >{label}</button>)}
     </div>
-    <div className="log-turns" ref={scroll} onScroll={event => {
+    {filter === 'chat' ? <MatchChat match={match} /> : <div className="log-turns" ref={scroll} onScroll={event => {
       following.current = event.currentTarget.scrollTop < 32;
       if (following.current) { setUnread(false); onUnreadChange(false); }
     }}>
@@ -40,8 +41,8 @@ export function MatchLog({ match, entries, visible, onPreview, onInspect, onUnre
         {!turn.lines.length && <p className="log-empty">Nenhuma ação neste filtro.</p>}
         </>}
       </details>)}
-    </div>
-    {unread && <button className="new-log-entries secondary" onClick={() => {
+    </div>}
+    {filter !== 'chat' && unread && <button className="new-log-entries secondary" onClick={() => {
       following.current = true;
       if (scroll.current) scroll.current.scrollTop = 0;
       setUnread(false); onUnreadChange(false);

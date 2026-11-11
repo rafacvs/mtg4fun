@@ -20,7 +20,7 @@ const maxPlayRolls = 50
 func (s *Service) setupLive() {
 	s.live = live.NewHub()
 	s.coinDuels = &minigames.CoinDuels{Hub: s.live, Participant: s.preparingParticipant}
-	s.live.Register(diceGame{s}, s.coinDuels, &minigames.Emoji{Hub: s.live, Participant: s.reactingParticipant})
+	s.live.Register(diceGame{s}, s.coinDuels, &minigames.Emoji{Hub: s.live, Participant: s.reactingParticipant}, shakeGame{s})
 }
 
 // CloseLive asks the connected clients to come back after a restart.

@@ -8,6 +8,7 @@ import { CardActionBar } from './CardActionBar';
 import { HandActionBar } from './HandActionBar';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { MatchLog } from './MatchLog';
+import { useMatchShake } from './useMatchShake';
 import { describeActionResult } from './matchLogPresentation';
 import { GameActions, type GameActionsScreen } from './GameActions';
 import { PlayerMenu } from './PlayerMenu';
@@ -39,6 +40,7 @@ type Drag = { card: Card; x: number; y: number; zone: string | null };
 type OpenZone = { playerId: number; zone: 'graveyard' | 'exile'; anchor: HTMLElement };
 
 export function MatchBoard({ roomId }: { roomId: number }) {
+  useMatchShake();
   const { match: synced, error, busy, unconfirmed, optimisticPending, draw, mill, mulligan, keepHand, undoKeepHand, move, position, roll, coin, turn, consult, reveal, revealSelection, reorder, reorderZone, closeConsultation, counter, batchCounter, retry, setTapped, untapAll, setFace, setFaceDown, revealCards, revealCardsTo, createToken, createCustomToken, copyCard, hideAllRevealed, finish, transferControl, addArrow, clearArrows } = useMatch(roomId);
   const match = synced;
   useEffect(() => { if (match?.finished) window.location.hash = '/salas'; }, [match?.finished]);

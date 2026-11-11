@@ -128,6 +128,9 @@ terrenos no campo. Turnos anteriores continuam consultáveis. Nos movimentos
 anteriores à atualização, a quantidade histórica de terrenos pode aparecer
 como “—”. Veja as [regras dos indicadores](docs/decisions/indicadores-partida.md).
 
+Na aba **Chat**, jogadores e espectadores conversam durante a partida. As mensagens ficam salvas; Enter envia e Shift+Enter quebra a linha. **Chamar atenção** faz a mesa tremer para quem está conectado. Os nomes dos jogadores usam as cores dos respectivos escudos. Veja a
+[decisão do chat](docs/decisions/chat-na-partida.md).
+
 O registro acompanha novas ações enquanto você está no final; ao ler entradas
 anteriores, mantém a posição e oferece **Novas ações** para voltar ao fim.
 Veja os [ajustes de regras e interface](docs/decisions/22-ajustes-da-mesa.md).
