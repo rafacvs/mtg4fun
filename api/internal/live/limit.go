@@ -9,11 +9,12 @@ import (
 // Every means no limit. With Grow, each message instead waits Every multiplied
 // by Grow per message in the streak, up to Max; idling for Rest ends the streak.
 type Limit struct {
-	Every time.Duration
-	Burst int
-	Grow  float64
-	Max   time.Duration
-	Rest  time.Duration
+	Every              time.Duration
+	Burst              int
+	CooldownAfterBurst bool
+	Grow               float64
+	Max                time.Duration
+	Rest               time.Duration
 }
 
 type bucket struct {
@@ -30,6 +31,19 @@ func newBucket(limit Limit, now time.Time) *bucket {
 
 // take spends one token or reports how long until the next one.
 func (b *bucket) take(now time.Time) (bool, time.Duration) {
+	if b.limit.CooldownAfterBurst {
+		if b.streak >= b.limit.Burst {
+			if now.Before(b.free) {
+				return false, b.free.Sub(now)
+			}
+			b.streak = 0
+		}
+		b.streak++
+		if b.streak == b.limit.Burst {
+			b.free = now.Add(b.limit.Every)
+		}
+		return true, 0
+	}
 	if b.limit.Grow > 0 {
 		return b.takeGrowing(now)
 	}

@@ -5,6 +5,7 @@ import { CardPreview } from './CardPreview';
 import { CardHoverZoom } from './HoverCardPreview';
 import { findCard } from './matchCards';
 import { MatchLog } from './MatchLog';
+import { useMatchShake } from './useMatchShake';
 import type { CardGesture } from './PlayerTable';
 import { PlayerMenu } from './PlayerMenu';
 import { PlayingCard } from './PlayingCard';
@@ -32,6 +33,7 @@ const noCounters = () => Promise.resolve(false);
 
 // Assistir só lê a partida e reage com emojis: nenhum gesto daqui chega a uma ação do jogo.
 export function SpectatorBoard({ roomId }: { roomId: number }) {
+  useMatchShake();
   const { match, error } = useMatch(roomId);
   const [compact, setCompact] = useState(() => window.matchMedia(compactQuery).matches);
   const [chosenId, setChosenId] = useState<number | null>(null);
@@ -112,7 +114,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
           </section>
         </div>
         {logOpen && <aside id="match-rail" className="side-rail spectator-rail" aria-label="Painéis da mesa">
-          {compact && <PanelHeader title="Crônica" closeLabel="Fechar crônica" onClose={() => setLogOpen(false)} />}
+          {compact && <PanelHeader title="Registro" closeLabel="Fechar crônica" onClose={() => setLogOpen(false)} />}
           <section className="rail-panel log-panel is-open">
             <div id="log-panel-content" className="rail-panel-content">
               <MatchLog match={match} entries={match.log} visible onUnreadChange={ignoreDrag} onPreview={ignoreDrag} onInspect={id => { if (findCard(match, id)) setPreviewId(id); }} />

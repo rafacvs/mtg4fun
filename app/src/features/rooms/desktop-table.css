@@ -262,7 +262,6 @@
   .desktop-table .log-panel.is-open { border: 0; border-radius: 0; background: transparent; }
   .desktop-table .log-panel .match-log { padding: 14px; background: transparent; }
   .desktop-table .log-filters { align-items: center; justify-content: flex-end; gap: 5px; padding: 0; margin: 0 0 12px; border: 0; }
-  .desktop-table .log-filters::before { content: 'CRÔNICA'; margin-right: auto; color: #d9b971; font: 700 10px/1 Cinzel, serif; letter-spacing: .2em; }
   .desktop-table .match-log .log-filters button { flex: 0 0 auto; min-height: 28px; padding: 4px 8px; border-radius: 3px; font-size: 10px; }
   .desktop-table .log-filters button[aria-pressed='true'] { background: #e2b45c; color: #1b1204; border-color: #e2b45c; }
   .desktop-table .log-turn { border: 0; }

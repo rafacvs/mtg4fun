@@ -32,6 +32,8 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("GET /api/rooms/{id}/preparation", s.preparationState)
 	mux.HandleFunc("POST /api/rooms/{id}/preparation/actions", s.preparationAction)
 	mux.HandleFunc("GET /api/rooms/{id}/match", s.getMatch)
+	mux.HandleFunc("GET /api/rooms/{id}/match/chat", s.getChat)
+	mux.HandleFunc("POST /api/rooms/{id}/match/chat", s.postChat)
 	mux.HandleFunc("GET /api/rooms/{id}/match/tokens", s.listTokens)
 	mux.HandleFunc("POST /api/rooms/{id}/match/actions", s.applyMatchAction)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
