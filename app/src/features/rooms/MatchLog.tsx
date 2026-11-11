@@ -28,7 +28,7 @@ export function MatchLog({ match, entries, visible, onPreview, onInspect, onUnre
   return <section className="match-log" aria-label="Registro da partida">
     <MatchTimers match={match} />
     <div className="log-filters" role="group" aria-label="Filtrar registro">
-      {([['statistics', 'Terrenos / Draws'], ['chat', 'Chat'], ['game', 'Jogo'], ['adjustments', 'Ajustes'], ['all', 'Tudo']] as const).map(([value, label]) => <button key={value} className="secondary" aria-pressed={filter === value} onClick={() => { setFilter(value); }} >{label}</button>)}
+      {([['chat', 'Chat'], ['statistics', 'Terrenos / Draws'], ['game', 'Jogo'], ['adjustments', 'Ajustes'], ['all', 'Tudo']] as const).map(([value, label]) => <button key={value} className="secondary" aria-pressed={filter === value} onClick={() => { setFilter(value); }} >{label}</button>)}
     </div>
     {filter === 'chat' ? <MatchChat match={match} /> : <div className="log-turns" ref={scroll} onScroll={event => {
       following.current = event.currentTarget.scrollTop < 32;

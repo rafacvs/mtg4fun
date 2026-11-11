@@ -12,6 +12,7 @@ ficando a tremida no WebSocket existente, com limite de frequência. O usuário
 pediu depois envio com Enter e nomes na mesma cor do escudo de vida.
 Esta aprovação amplia o uso do canal efêmero da sala, anteriormente restrito
 às brincadeiras, sem definir o transporte das ações da partida.
+Em seguida, o usuário pediu **Chat** à esquerda de **Terrenos / Draws**.
 
 ## Implementação
 

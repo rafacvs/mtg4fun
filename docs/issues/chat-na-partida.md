@@ -6,5 +6,7 @@ jogadores e espectadores. Uma ação deve chamar a atenção com uma tremida na
 tela de todos. O usuário também pediu envio com Enter e que a cor do nome seja
 a mesma do escudo do jogador.
 
+Depois, o usuário pediu **Chat** à esquerda de **Terrenos / Draws**.
+
 O histórico deve sobreviver a recargas e reinícios. A solução e o acesso foram
 aprovados na conversa e estão registrados em [chat na partida](../decisions/chat-na-partida.md).

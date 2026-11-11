@@ -15,6 +15,7 @@ test('jogador e espectador conversam, enviam com Enter e chamam atenção', asyn
     await confirmHands(room.id, page.request);
     await page.goto(`/#/salas/${room.id}`);
     await openMatchRail(page, 'Registro');
+    await expect(page.locator('.log-filters button').first()).toHaveText('Chat');
     await page.getByRole('button', { name: 'Chat', exact: true }).click();
     const input = page.getByRole('textbox', { name: 'Mensagem' });
     await input.fill('Primeira linha');
