@@ -6,6 +6,7 @@ import { CardHoverZoom } from './HoverCardPreview';
 import { findCard } from './matchCards';
 import { MatchLog } from './MatchLog';
 import { useMatchShake } from './useMatchShake';
+import { useChatShortcut } from './useChatShortcut';
 import type { CardGesture } from './PlayerTable';
 import { PlayerMenu } from './PlayerMenu';
 import { PlayingCard } from './PlayingCard';
@@ -41,6 +42,11 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
   const [overview, setOverview] = useState(false);
   const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
   const [logOpen, setLogOpen] = useState(false);
+  const [chatRequest, setChatRequest] = useState(0);
+  useChatShortcut(Boolean(match), () => {
+    if (logOpen) setLogOpen(false);
+    else { setChatRequest(value => value + 1); setLogOpen(true); }
+  });
   const [hideDead, setHideDead] = useState(false);
   const [menu, setMenu] = useState<{ playerId: number; anchor: HTMLElement } | null>(null);
   const [openZone, setOpenZone] = useState<OpenZone | null>(null);
@@ -117,7 +123,7 @@ export function SpectatorBoard({ roomId }: { roomId: number }) {
           {compact && <PanelHeader title="Registro" closeLabel="Fechar crônica" onClose={() => setLogOpen(false)} />}
           <section className="rail-panel log-panel is-open">
             <div id="log-panel-content" className="rail-panel-content">
-              <MatchLog match={match} entries={match.log} visible onUnreadChange={ignoreDrag} onPreview={ignoreDrag} onInspect={id => { if (findCard(match, id)) setPreviewId(id); }} />
+              <MatchLog match={match} chatRequest={chatRequest} entries={match.log} visible onUnreadChange={ignoreDrag} onPreview={ignoreDrag} onInspect={id => { if (findCard(match, id)) setPreviewId(id); }} />
             </div>
           </section>
         </aside>}

@@ -50,7 +50,8 @@ export function MatchChat({ match }: { match: Match }) {
       {messages.length === 0 && <p className="log-empty">Nenhuma mensagem ainda.</p>}
       {messages.map(message => {
         const index = match.players.findIndex(player => player.userId === message.authorId);
-        return <div className="chat-message" key={message.id}><strong style={{ color: index < 0 ? undefined : seatColors[index % seatColors.length] }}>{message.author}</strong><span>{message.body}</span></div>;
+        const date = new Date(message.createdAt);
+        return <div className="chat-message" key={message.id}><strong style={{ color: index < 0 ? undefined : seatColors[index % seatColors.length] }}>{message.author} <time dateTime={message.createdAt}>{Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</time></strong><span>{message.body}</span></div>;
       })}
       <div ref={end} />
     </div>

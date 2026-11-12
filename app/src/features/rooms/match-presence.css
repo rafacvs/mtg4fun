@@ -1,0 +1,7 @@
+.match-timers > .match-presence { display:flex; flex:0 1 auto; flex-direction:row; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:4px; max-width:84px; }
+.match-presence-player { display:inline-flex; position:relative; align-items:center; padding:0 3px 3px 0; }
+.match-timers .match-presence-shield { display:grid; place-items:center; width:15px; height:18px; background:var(--presence-color); color:#080b0d; clip-path:polygon(0 0,100% 0,100% 65%,50% 100%,0 65%); font:900 11px/1 sans-serif; text-shadow:0 0 1px #0005; }
+.match-presence-dot { position:absolute; width:7px; height:7px; right:0; bottom:0; border:1px solid #111; border-radius:50%; background:#ed5d5d; }
+.match-presence-dot.is-online { background:#55d487; }
+.match-presence-dot.is-away { background:#e7c54e; }
+.match-presence-dot.is-unknown { background:#888; }

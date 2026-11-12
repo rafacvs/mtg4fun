@@ -2,6 +2,7 @@
 .chat-messages { flex: 1; min-height: 80px; overflow-y: auto; overscroll-behavior: contain; }
 .chat-message { padding: 8px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; font-size: .8rem; }
 .chat-message strong { display: block; color: var(--gold-light); }
+.chat-message time { color: var(--muted); font-size: .7rem; font-weight: 400; margin-left: 6px; }
 .chat-message span { white-space: pre-wrap; }
 .chat-input-label { display: flex; flex-direction: column; gap: 4px; font-size: .75rem; }
 .chat-input-label textarea { width: 100%; resize: vertical; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 8px; font: inherit; }

@@ -9,6 +9,7 @@ import { HandActionBar } from './HandActionBar';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { MatchLog } from './MatchLog';
 import { useMatchShake } from './useMatchShake';
+import { useChatShortcut } from './useChatShortcut';
 import { describeActionResult } from './matchLogPresentation';
 import { GameActions, type GameActionsScreen } from './GameActions';
 import { PlayerMenu } from './PlayerMenu';
@@ -67,6 +68,17 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [hoverPreviewOpen, setHoverPreviewOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
   const [playersOpen, setPlayersOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
   const [logOpen, setLogOpen] = useState(false);
+  const [chatRequest, setChatRequest] = useState(0);
+  useChatShortcut(Boolean(match), () => {
+    if (logOpen && (!compact || informationOpen)) {
+      setLogOpen(false);
+      if (compact) setInformationOpen(false);
+    } else {
+      setChatRequest(value => value + 1);
+      setLogOpen(true);
+      if (compact) { setInformationTab('log'); setHoverPreviewOpen(false); setPlayersOpen(false); setInformationOpen(true); setCommandsOpen(false); }
+    }
+  });
   const toggleRailPanel = (panel: 'preview' | 'players' | 'log') => {
     if (compact) {
       setInformationTab(panel);
@@ -406,7 +418,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section className={`rail-panel log-panel ${logOpen ? 'is-open' : ''}`}>
             {compact && <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>}
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
-              <MatchLog match={match} entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
+              <MatchLog match={match} chatRequest={chatRequest} entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
                 const card = findCard(match, id);
                 if (card) setHoverCardId(card.id);
               }} onInspect={id => {

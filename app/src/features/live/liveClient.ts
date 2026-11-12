@@ -32,6 +32,7 @@ export class LiveClient {
     this.running = true;
     window.addEventListener('online', this.wake);
     document.addEventListener('visibilitychange', this.wake);
+    document.addEventListener('visibilitychange', this.reportVisibility);
     this.connect();
   }
 
@@ -40,6 +41,7 @@ export class LiveClient {
     clearTimeout(this.retry);
     window.removeEventListener('online', this.wake);
     document.removeEventListener('visibilitychange', this.wake);
+    document.removeEventListener('visibilitychange', this.reportVisibility);
     this.socket?.close();
     this.socket = null;
     this.failPending();
@@ -73,6 +75,10 @@ export class LiveClient {
     });
   }
 
+  private reportVisibility = () => {
+    if (this.socket?.readyState === WebSocket.OPEN) void this.request('presence', 'visibility', { visible: document.visibilityState === 'visible' }).catch(() => {});
+  };
+
   private wake = () => {
     if (!this.running || document.visibilityState !== 'visible' || this.socket) return;
     clearTimeout(this.retry);
@@ -82,7 +88,7 @@ export class LiveClient {
   private connect() {
     const socket = new WebSocket(this.url);
     this.socket = socket;
-    socket.onopen = () => { this.attempts = 0; this.setStatus('open'); };
+    socket.onopen = () => { this.attempts = 0; this.setStatus('open'); this.reportVisibility(); };
     socket.onmessage = event => this.receive(JSON.parse(event.data));
     socket.onclose = event => {
       if (this.socket !== socket) return;
