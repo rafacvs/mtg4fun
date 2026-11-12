@@ -211,6 +211,21 @@ func (h *Hub) allow(roomID, memberID int64, game Game) (bool, time.Duration) {
 }
 
 func (h *Hub) dispatch(ctx context.Context, c *connection, incoming message, data json.RawMessage) {
+	if incoming.Game == "presence" {
+		var input struct {
+			Visible *bool `json:"visible"`
+		}
+		if incoming.Type != "visibility" || json.Unmarshal(data, &input) != nil || input.Visible == nil {
+			c.reply(incoming, "error", errorData{Message: "Presença inválida."})
+			return
+		}
+		h.mu.Lock()
+		c.visible = *input.Visible
+		h.mu.Unlock()
+		h.publishPresence(c.roomID)
+		c.reply(incoming, "ack", nil)
+		return
+	}
 	game := h.games[incoming.Game]
 	if game == nil {
 		c.reply(incoming, "error", errorData{Message: "Jogo desconhecido."})
@@ -236,4 +251,39 @@ func (h *Hub) dispatch(ctx context.Context, c *connection, incoming message, dat
 type errorData struct {
 	Message      string `json:"message"`
 	RetryAfterMs int64  `json:"retryAfterMs,omitempty"`
+}
+
+// presenceLocked combines all connections of each member. A visible tab wins.
+func (h *Hub) presenceLocked(roomID int64) map[int64]string {
+	result := map[int64]string{}
+	if current := h.rooms[roomID]; current != nil {
+		for c := range current.connections {
+			if c.visible {
+				result[c.member.ID] = "online"
+			} else if result[c.member.ID] == "" {
+				result[c.member.ID] = "away"
+			}
+		}
+	}
+	return result
+}
+func (h *Hub) presenceSnapshot(roomID int64) map[int64]string {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.presenceLocked(roomID)
+}
+func (h *Hub) publishPresence(roomID int64) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	current := h.rooms[roomID]
+	if current == nil {
+		return
+	}
+	encoded, err := json.Marshal(message{Game: "presence", Type: "state", Data: h.presenceLocked(roomID)})
+	if err != nil {
+		return
+	}
+	for c := range current.connections {
+		c.enqueue(encoded)
+	}
 }

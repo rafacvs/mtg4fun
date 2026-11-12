@@ -27,7 +27,7 @@ test('crônica mantém compras e terrenos por jogador e turno, com timers e tota
     await openMatchRail(page, 'Registro');
     const log = page.getByRole('region', { name: 'Registro da partida' });
     await log.getByRole('button', { name: 'Terrenos / Draws', exact: true }).click();
-    await expect(log.getByRole('group', { name: 'Filtrar registro' }).getByRole('button')).toHaveCount(4);
+    await expect(log.getByRole('group', { name: 'Filtrar registro' }).getByRole('button')).toHaveCount(5);
     if (info.project.name === 'desktop') {
       const buttons = log.getByRole('group', { name: 'Filtrar registro' }).getByRole('button');
       const boxes = await buttons.evaluateAll(nodes => nodes.map(node => { const box = node.getBoundingClientRect(); return { x: box.x, y: box.y, right: box.right }; }));
@@ -35,9 +35,10 @@ test('crônica mantém compras e terrenos por jogador e turno, com timers e tota
       expect(boxes[0].right).toBeLessThanOrEqual(boxes[1].x);
       expect(Math.abs(boxes[0].y - boxes[3].y)).toBeLessThan(1);
     }
+    await expect(log.locator('.match-presence-shield')).toHaveText(['1', '2']);
     const timer = log.getByLabel('Tempo de partida', { exact: true });
     await expect(timer).toHaveText(/\d{2}:\d{2}:\d{2}/);
-    await expect(log.getByLabel('Tempo de sala', { exact: true })).toHaveText(/\d{2}:\d{2}:\d{2}/);
+    await expect(log.getByLabel('Tempo de sala', { exact: true })).toHaveCount(0);
     const initial = await timer.textContent();
     await expect.poll(() => timer.textContent()).not.toBe(initial);
     await expect(log.getByLabel('Compras de Amigo da mesa no turno 1', { exact: true })).toHaveText('0');

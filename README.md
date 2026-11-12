@@ -122,14 +122,14 @@ leitura e rolagem independente das entradas.
 Nas novas entradas do registro, os nomes de cartas também oferecem a prévia
 por mouse, foco de teclado ou toque, respeitando a visibilidade atual. Entradas
 antigas sem referência de carta continuam como texto.
-A crônica mostra os tempos de sala e partida e um resumo por jogador em cada
+A crônica mostra o tempo de partida e um resumo por jogador em cada
 turno na opção **Terrenos / Draws**, com compras e terrenos jogados. O trilho lateral mostra o total atual de
 terrenos no campo. Turnos anteriores continuam consultáveis. Nos movimentos
 anteriores à atualização, a quantidade histórica de terrenos pode aparecer
 como “—”. Veja as [regras dos indicadores](docs/decisions/indicadores-partida.md).
 
 Na aba **Chat**, jogadores e espectadores conversam durante a partida. As mensagens ficam salvas; Enter envia e Shift+Enter quebra a linha. **Chamar atenção** faz a mesa tremer para quem está conectado. Os nomes dos jogadores usam as cores dos respectivos escudos. Veja a
-[decisão do chat](docs/decisions/chat-na-partida.md).
+[decisão do chat](docs/decisions/chat-na-partida.md). Tab abre ou fecha a crônica no chat; as mensagens mostram horário e os escudos indicam presença. Veja a [decisão de presença](docs/decisions/presenca-chat.md).
 
 O registro acompanha novas ações enquanto você está no final; ao ler entradas
 anteriores, mantém a posição e oferece **Novas ações** para voltar ao fim.

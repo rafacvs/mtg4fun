@@ -6,15 +6,17 @@ import type { Match } from './roomsApi';
 import { MatchTimers, TurnStatistics } from './MatchStatistics';
 import { MatchChat } from './MatchChat';
 
-export function MatchLog({ match, entries, visible, onPreview, onInspect, onUnreadChange }: {
+export function MatchLog({ match, entries, visible, chatRequest = 0, onPreview, onInspect, onUnreadChange }: {
   match: Match;
   entries: LogEntry[];
   visible: boolean;
+  chatRequest?: number;
   onPreview: (id: string) => void;
   onInspect: (id: string) => void;
   onUnreadChange: (unread: boolean) => void;
 }) {
   const [filter, setFilter] = useState<LogFilter | 'chat'>('game');
+  useEffect(() => { if (chatRequest) setFilter('chat'); }, [chatRequest]);
   const [unread, setUnread] = useState(false);
   const scroll = useRef<HTMLDivElement>(null);
   const following = useRef(true);

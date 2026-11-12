@@ -30,6 +30,7 @@ type connection struct {
 	member    Member
 	send      chan []byte
 	closeOnce sync.Once
+	visible   bool // guarded by Hub.mu
 }
 
 // Serve upgrades an authorized request and blocks until the connection ends.
@@ -50,10 +51,13 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, roomID int64, member
 		return
 	}
 	defer func() {
-		if h.remove(c) {
+		last := h.remove(c)
+		h.publishPresence(roomID)
+		if last {
 			h.notifyPresence(roomID, member.ID, false)
 		}
 	}()
+	h.publishPresence(roomID)
 	if first {
 		h.notifyPresence(roomID, member.ID, true)
 	}
@@ -75,6 +79,13 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, roomID int64, member
 }
 
 func (h *Hub) writeSnapshots(ctx context.Context, c *connection) error {
+	initial, err := json.Marshal(message{Game: "presence", Type: "snapshot", Data: h.presenceSnapshot(c.roomID)})
+	if err != nil {
+		return err
+	}
+	if err := c.write(ctx, initial); err != nil {
+		return err
+	}
 	for name, game := range h.games {
 		snapshot, err := game.Snapshot(ctx, c.roomID, c.member)
 		if err != nil {

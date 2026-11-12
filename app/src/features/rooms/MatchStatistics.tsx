@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { Match } from './roomsApi';
 import { TableIcon } from './TableIcon';
+import { MatchPresence } from './MatchPresence';
 import { elapsedTime, turnStatistics } from './matchStatisticsLogic';
 import './match-statistics.css';
 
@@ -15,10 +16,10 @@ export function MatchTimers({ match }: { match: Match }) {
     return () => window.clearInterval(timer);
   }, []);
   const end = match.finishedAt ? Date.parse(match.finishedAt) : clock.server + now - clock.local;
-  return <div className="match-timers" role="group" aria-label="Tempo da sala e da partida">
+  return <div className="match-timers" role="group" aria-label="Tempo da partida">
     <TableIcon name="clock" />
-    <div><span>Sala</span><output aria-label="Tempo de sala">{elapsedTime(match.roomCreatedAt, end)}</output></div>
     <div><span>Partida</span><output aria-label="Tempo de partida">{elapsedTime(match.startedAt, end)}</output></div>
+    <MatchPresence match={match} />
   </div>;
 }
 
