@@ -147,3 +147,6 @@ A crônica mostra tempos de sala/partida e, para cada turno, compras e terrenos
 jogados por jogador, preservando resumos anteriores. O trilho do campo mostra
 o total atual de cartas Land. Regras, autorização e compatibilidade:
 [decisão dos indicadores](../decisions/indicadores-partida.md).
+Desde a [solicitação de 16/11/2026](../decisions/ajustes-mesa-novembro.md),
+cada turno numerado da crônica abrange uma volta pela ordem de jogadores,
+respeitando o avanço que pula jogadores sem vida.

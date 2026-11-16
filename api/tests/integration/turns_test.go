@@ -26,6 +26,10 @@ func TestPassingTheTurnSkipsPlayersWithoutLife(t *testing.T) {
 			TurnOrder []struct {
 				UserID int64 `json:"userId"`
 			} `json:"turnOrder"`
+			Log []struct {
+				Kind         string `json:"kind"`
+				TurnPlayerID int64  `json:"turnPlayerId"`
+			} `json:"log"`
 		} `json:"match"`
 	}
 	read := func() {
@@ -59,6 +63,15 @@ func TestPassingTheTurnSkipsPlayersWithoutLife(t *testing.T) {
 		if state.Match.CurrentTurn.UserID != id {
 			t.Fatalf("%s: turno de %d, esperado %d", when, state.Match.CurrentTurn.UserID, id)
 		}
+		for i := len(state.Match.Log) - 1; i >= 0; i-- {
+			if state.Match.Log[i].Kind == "turn" {
+				if state.Match.Log[i].TurnPlayerID != id {
+					t.Fatalf("%s: destino no histórico %d, esperado %d", when, state.Match.Log[i].TurnPlayerID, id)
+				}
+				return
+			}
+		}
+		t.Fatalf("%s: troca de turno ausente do histórico", when)
 	}
 
 	// O segundo morreu: passar a vez vai direto ao terceiro, e corrigir volta ao primeiro.

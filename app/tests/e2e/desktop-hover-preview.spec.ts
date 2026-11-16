@@ -27,6 +27,7 @@ test('hover no campo mostra prévia passiva sem abrir diálogo', async ({ browse
     expect((await contexts[0].request.post(`${roomPath}/match/actions`, { data: { kind: 'create-token', intentId: randomUUID(), tokenName: 'Soldier Token' } })).ok()).toBe(true);
 
     const page = await contexts[0].newPage();
+    await page.route('**/api/cards/image?*', route => route.fulfill({ path: 'public/library-back.png', contentType: 'image/png' }));
     await page.goto(`/#/salas/${roomId}`);
     const card = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true }).getByRole('button', { name: 'Soldier Token', exact: true });
     await card.hover();
@@ -52,6 +53,7 @@ test('hover no campo mostra prévia passiva sem abrir diálogo', async ({ browse
     await dialog.getByRole('button', { name: 'Virar', exact: true }).click();
     await expect(dialog.locator('.card-preview-image')).toHaveClass(/is-tapped/);
     await expect(dialog.getByText('Virada', { exact: true })).toBeVisible();
+    await expect(dialog.locator('.card-preview-art img')).toHaveCSS('transform', 'none');
     await page.screenshot({ path: testInfo.outputPath('inspecao-carta-virada.png'), animations: 'disabled' });
     await expect(dialog.getByRole('button', { name: 'Revelar para todos', exact: true })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Outras ações', exact: true })).toHaveCount(0);

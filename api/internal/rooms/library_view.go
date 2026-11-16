@@ -24,6 +24,16 @@ func (s *Service) enrichedView(state matchState, view Match, viewerID int64) Mat
 		for _, cards := range [][]VisibleCard{player.Hand, player.Battlefield, player.Graveyard, player.Exile, player.Command, player.Consulted, player.Revealed} {
 			for j := range cards {
 				s.addCreatedTokens(cards[j].Name, &cards[j].CreatedTokens)
+				name := cards[j].Name
+				if name != "" && len(cards[j].Faces) > 0 && cards[j].FaceIndex >= 0 && cards[j].FaceIndex < len(cards[j].Faces) {
+					name = cards[j].Faces[cards[j].FaceIndex]
+				}
+				if name != "" && s.catalog != nil {
+					entry, ok := s.catalog.Lookup(name)
+					if ok {
+						cards[j].Type = entry.Type
+					}
+				}
 			}
 		}
 		for j := range player.ExposedCards {

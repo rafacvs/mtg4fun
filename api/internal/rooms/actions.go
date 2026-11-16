@@ -62,14 +62,15 @@ type matchAction struct {
 }
 
 type actionLogPayload struct {
-	DrawCount *int               `json:"drawCount,omitempty"`
-	LandPlays *int               `json:"landPlays,omitempty"`
-	Cards     []logCardReference `json:"cards,omitempty"`
-	Kind      string             `json:"kind"`
-	From      string             `json:"from,omitempty"`
-	To        string             `json:"to,omitempty"`
-	Count     int                `json:"count,omitempty"`
-	Result    string             `json:"result,omitempty"`
+	TurnPlayerID int64              `json:"turnPlayerId,omitempty"`
+	DrawCount    *int               `json:"drawCount,omitempty"`
+	LandPlays    *int               `json:"landPlays,omitempty"`
+	Cards        []logCardReference `json:"cards,omitempty"`
+	Kind         string             `json:"kind"`
+	From         string             `json:"from,omitempty"`
+	To           string             `json:"to,omitempty"`
+	Count        int                `json:"count,omitempty"`
+	Result       string             `json:"result,omitempty"`
 }
 
 func playerByID(m *matchState, id int64) *playerState {
@@ -513,9 +514,9 @@ func changeTurn(m *matchState, direction string) (actionLogPayload, error) {
 		for i := range m.Players {
 			clearRevelations(&m.Players[i])
 		}
-		return actionLogPayload{Kind: "turn", Result: "avançou para o turno de " + m.TurnOrder[m.TurnIndex].Name + " e ocultou todas as revelações"}, nil
+		return actionLogPayload{Kind: "turn", TurnPlayerID: m.TurnOrder[m.TurnIndex].UserID, Result: "avançou para o turno de " + m.TurnOrder[m.TurnIndex].Name + " e ocultou todas as revelações"}, nil
 	}
-	return actionLogPayload{Kind: "turn", Result: "corrigiu para o turno de " + m.TurnOrder[m.TurnIndex].Name}, nil
+	return actionLogPayload{Kind: "turn", TurnPlayerID: m.TurnOrder[m.TurnIndex].UserID, Result: "corrigiu para o turno de " + m.TurnOrder[m.TurnIndex].Name}, nil
 }
 
 // nextLivingTurn walks the turn order skipping players without life. When
