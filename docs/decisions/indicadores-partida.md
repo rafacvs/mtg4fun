@@ -38,6 +38,9 @@ sem mudar comandos existentes, dependências, banco ou transporte.
   pelo `intentId`. Cada mudança de turno abre um novo resumo (inclusive a
   correção para o jogador anterior); não desfaz ações nem resumos históricos.
   Todas as pessoas da partida aparecem em cada resumo, inclusive com zero.
+- A partir da [alteração de 16/11/2026](ajustes-mesa-novembro.md), a crônica
+  agrupa as trocas de vez em uma volta pela ordem dos jogadores por turno
+  numerado, substituindo a abertura de resumo em cada troca de jogador.
 - Resumos são calculados antes dos filtros da crônica. Eventos consecutivos
   agrupados somam os contadores. Turnos antigos podem ser expandidos.
 - Partidas existentes reaproveitam horários e compras registrados. Movimentos

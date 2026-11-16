@@ -69,6 +69,7 @@ export function PreparationDice({
   const [shared, setShared] = useState<
     { playerId: number; name: string; image?: string }[]
   >([]);
+  const deckSelection = room.participants.map((player) => `${player.id}:${player.deckId ?? 0}:${player.deckRevision ?? 0}`).join(',');
   const canvas = useRef<DiceTableHandle>(null);
   const surface = useRef<HTMLDivElement>(null);
   const seen = useRef(new Set<string>());
@@ -152,11 +153,13 @@ export function PreparationDice({
   }, [deciding, finished]);
 
   useEffect(() => {
+    let active = true;
     void preparationDiceApi
       .decks(room.id)
-      .then((d) => setShared(d.decks))
+      .then((d) => { if (active) setShared(d.decks); })
       .catch(() => {});
-  }, [room.id, room.status]);
+    return () => { active = false; };
+  }, [room.id, deckSelection]);
   useEffect(() => {
     if (!surface.current) return;
     const element = surface.current;
@@ -435,7 +438,7 @@ export function PreparationDice({
                   : `other-${others.findIndex((v) => v.id === p.id)}`;
               const roll = order.find((v) => v.id === p.id)?.roll;
               const deck = shared.find((d) => d.playerId === p.id);
-              const ownDeck = decks.decks.find((d) => d.id === p.deckId);
+              const ownDeck = p.id === userId ? decks.decks.find((d) => d.id === p.deckId) : undefined;
               const image = deck?.image || ownDeck?.commander;
               return (
                 <article

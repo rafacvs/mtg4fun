@@ -26,7 +26,7 @@ export function MatchLog({ match, entries, visible, chatRequest = 0, onPreview, 
       setUnread(false); onUnreadChange(false);
     } else { setUnread(true); onUnreadChange(true); }
   }, [entries.length, visible, onUnreadChange]);
-  const turns = groupLogTurns(entries).map(turn => ({ ...turn, allLines: turn.lines, lines: turn.lines.filter(({ entry }) => filter === 'all' || isLogAdjustment(entry) === (filter === 'adjustments')) }));
+  const turns = groupLogTurns(entries, match.turnOrder).map(turn => ({ ...turn, allLines: turn.lines, lines: turn.lines.filter(({ entry }) => filter === 'all' || isLogAdjustment(entry) === (filter === 'adjustments')) }));
   return <section className="match-log" aria-label="Registro da partida">
     <MatchTimers match={match} />
     <div className="log-filters" role="group" aria-label="Filtrar registro">

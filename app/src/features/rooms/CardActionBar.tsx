@@ -15,6 +15,9 @@ export function CardActionBar({ cards, viewerId, disabled, onApply, onClear }: {
   const input = useRef<HTMLInputElement>(null);
   const submitted = useRef('');
   const first = cards[0];
+  const creaturesOnly = cards.length > 1 && cards.every(card => /\bCreature\b/i.test((card.type ?? '').split(/—| - /)[0]) || (card.instanceKind === 'custom-token' && Boolean(card.printedPower?.trim()) && Boolean(card.printedToughness?.trim())));
+  const damageKnown = creaturesOnly && cards.every(card => /^[+-]?\d+$/.test(card.printedPower ?? ''));
+  const damage = damageKnown ? cards.reduce((total, card) => total + BigInt(card.printedPower!) + BigInt(card.power ?? 0), 0n).toString() : null;
   const common = first && cards.every(card => (card.power ?? 0) === (first.power ?? 0) && (card.toughness ?? 0) === (first.toughness ?? 0))
     ? `${first.power ?? 0}/${first.toughness ?? 0}` : '';
   const [draft, setDraft] = useState(common);
@@ -40,7 +43,7 @@ export function CardActionBar({ cards, viewerId, disabled, onApply, onClear }: {
   };
   return <>
     <div className="card-action-bar" role="toolbar" aria-label="Ações da seleção">
-      <div className="selection-heading"><span className="selection-fan" aria-hidden="true">{cards.slice(0, 4).map((card, index) => <img key={card.id} src={card.faceDown || !card.name ? '/library-back.png' : cardImageURL(card)} alt="" style={{ '--fan-index': index } as CSSProperties} />)}</span><div><strong>{cards.length} carta{cards.length > 1 ? 's' : ''}</strong><span>selecionada{cards.length > 1 ? 's' : ''}</span></div></div>
+      <div className="selection-heading"><span className="selection-fan" aria-hidden="true">{cards.slice(0, 4).map((card, index) => <img key={card.id} src={card.faceDown || !card.name ? '/library-back.png' : cardImageURL(card)} alt="" style={{ '--fan-index': index } as CSSProperties} />)}</span><div><strong>{cards.length} carta{cards.length > 1 ? 's' : ''}</strong><span>selecionada{cards.length > 1 ? 's' : ''}</span></div>{creaturesOnly && <div className="selection-damage"><strong>Dano total</strong><span>{damage ?? 'Indisponível'}</span></div>}</div>
       {editable && <>
         <div className="selection-pair" role="group" aria-label="Poder e resistência da seleção">
           <div className="selection-pair-caption"><strong>Poder / resistência</strong><span>{common ? 'ajuste para todas' : 'ajustes diferentes · digite para igualar'}</span></div>

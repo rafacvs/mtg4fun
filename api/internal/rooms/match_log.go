@@ -141,7 +141,7 @@ func matchLog(ctx context.Context, q queryer, roomID int64, m matchState, viewer
 			stamp := at
 			history.FinishedAt = &stamp
 		}
-		entry := MatchLog{DrawCount: p.DrawCount, LandPlays: p.LandPlays, ActorID: actor, ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result}
+		entry := MatchLog{TurnPlayerID: p.TurnPlayerID, DrawCount: p.DrawCount, LandPlays: p.LandPlays, ActorID: actor, ActorName: names[actor], Kind: p.Kind, From: p.From, To: p.To, Count: p.Count, Result: p.Result}
 		for _, ref := range p.Cards {
 			if ref.Public || actor == viewerID || slices.Contains(ref.Viewers, viewerID) {
 				if card, ok := visible[ref.ID]; ok {
