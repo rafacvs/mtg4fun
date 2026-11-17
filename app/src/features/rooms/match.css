@@ -39,7 +39,7 @@
 .table-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .match-players { flex: 1; min-width: 0; min-height: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 370px), 1fr)); grid-auto-rows: minmax(0, 1fr); overflow: hidden; }
 .player-table { min-width: 0; min-height: 0; height: 100%; overflow: hidden; display: flex; flex-direction: column; background: linear-gradient(180deg, rgba(243, 236, 218, .045), transparent 36px), linear-gradient(165deg, var(--panel2), var(--panel) 68%); border: 1px solid var(--table-edge); border-radius: 16px; padding: 10px; box-shadow: inset 0 1px rgba(243, 236, 218, .06), 0 14px 32px rgba(0, 0, 0, .32); }
-.player-table.is-current-turn { border-color: color-mix(in srgb, var(--gold) 72%, var(--line)); box-shadow: inset 0 1px rgba(243, 236, 218, .08), 0 0 0 1px var(--gold-wash), 0 14px 32px rgba(0, 0, 0, .32); }
+.player-table.is-current-turn { border-color: #f2c665; box-shadow: inset 0 0 0 2px #f2c665, 0 0 15px #eab95488; }
 .player-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; min-width: 0; }
 .player-heading .player-identity { display: flex; flex: 1 1 auto; align-items: center; justify-content: flex-start !important; min-width: 0; max-width: 100%; overflow: hidden; min-height: 44px; padding: 3px 6px; border-color: transparent; background: transparent; text-align: left; }
 .player-view-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; flex-shrink: 0; }

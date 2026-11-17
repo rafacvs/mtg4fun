@@ -30,15 +30,15 @@ export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean,
   }, [open, ref, returnFocus]);
 }
 
-export function TablePanel({ open, label, anchor, wide = false, fitViewport = false, aboveDock = false, blocking = false, align = 'end', className = '', children, onClose }: {
+export function TablePanel({ open, label, anchor, wide = false, fitViewport = false, aboveDock = false, blocking = false, dismissOutside = true, align = 'end', className = '', children, onClose }: {
   open: boolean; label: string; anchor?: HTMLElement | null; wide?: boolean; align?: 'start' | 'end' | 'above';
-  fitViewport?: boolean; aboveDock?: boolean; blocking?: boolean;
+  fitViewport?: boolean; aboveDock?: boolean; blocking?: boolean; dismissOutside?: boolean;
   className?: string; children: ReactNode; onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<{ left: number; top: number; maxHeight?: number }>({ left: 12, top: 12 });
   const [anchorY, setAnchorY] = useState<number | null>(null);
-  usePanelFocus(ref, open, onClose, anchor?.matches('button, a[href], input, select, [tabindex]') ? anchor : undefined);
+  usePanelFocus(ref, open && dismissOutside, onClose, anchor?.matches('button, a[href], input, select, [tabindex]') ? anchor : undefined);
   useLayoutEffect(() => {
     if (!open || !ref.current) return;
     const panel = ref.current;
@@ -95,7 +95,7 @@ export function TablePanel({ open, label, anchor, wide = false, fitViewport = fa
     };
   }, [open, anchor, wide, fitViewport, aboveDock, align]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || !dismissOutside) return;
     const outside = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Node) || ref.current?.contains(target) || anchor?.contains(target)) return;
@@ -103,9 +103,9 @@ export function TablePanel({ open, label, anchor, wide = false, fitViewport = fa
     };
     document.addEventListener('pointerdown', outside);
     return () => document.removeEventListener('pointerdown', outside);
-  }, [open, anchor, onClose]);
+  }, [open, anchor, onClose, dismissOutside]);
   if (!open) return null;
-  return <><div className={`table-panel-scrim ${blocking ? 'blocking' : ''}`} aria-hidden="true" onPointerDown={event => event.stopPropagation()} onClick={onClose} /><div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={{ ...placement, ...(anchorY === null ? {} : { '--anchor-y': `${anchorY}px`, '--anchor-opacity': 1 }) } as CSSProperties}>{children}</div></>;
+  return <>{dismissOutside && <div className={`table-panel-scrim ${blocking ? 'blocking' : ''}`} aria-hidden="true" onPointerDown={event => event.stopPropagation()} onClick={onClose} />}<div ref={ref} role="dialog" aria-label={label} tabIndex={-1} className={`table-panel actions-panel ${wide ? 'table-panel-wide' : ''} ${className}`} style={{ ...placement, ...(anchorY === null ? {} : { '--anchor-y': `${anchorY}px`, '--anchor-opacity': 1 }) } as CSSProperties}>{children}</div></>;
 }
 
 export function PanelHeader({ title, subtitle, onClose, onBack, closeLabel = 'Fechar menu', children }: {

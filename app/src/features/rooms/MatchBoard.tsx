@@ -474,7 +474,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       const player = match.players.find(item => item.userId === openZone.playerId);
       if (!player) return null;
       const title = openZone.zone === 'graveyard' ? 'Cemitério' : 'Exílio';
-      return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} viewerId={match.viewerId} disabled={busy || unconfirmed} gesture={gesture} onInspect={card => setPreviewId(card.id)} onReorder={player.userId === match.viewerId ? ids => reorderZone(openZone.zone, ids) : undefined} onClose={() => setOpenZone(null)} />;
+      return <PublicZoneViewer title={title} playerName={player.name} cards={player[openZone.zone] ?? []} anchor={openZone.anchor} viewerId={match.viewerId} disabled={busy || unconfirmed} gesture={gesture} onInspect={card => setPreviewId(card.id)} onReorder={player.userId === match.viewerId ? ids => reorderZone(openZone.zone, ids) : undefined} onMove={player.userId === match.viewerId ? move : undefined} onClose={() => setOpenZone(null)} />;
     })()}
     <GameActions match={match} onFinish={finish} anchor={actionsAnchor} initialScreen={actionsScreen} roomId={roomId} actorName={own.name} onCreateToken={async name => {
       const cell = firstFreeCell(own.battlefield ?? []);

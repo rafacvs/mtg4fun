@@ -13,7 +13,7 @@ export type LibraryOperations = {
   onClose: (placement: 'top' | 'bottom', shuffle: boolean) => Promise<boolean>;
 };
 
-function hasType(card: Card, type: string) {
+export function hasType(card: Card, type: string) {
   return type === 'unknown' ? !card.type : Boolean(card.type?.split('—')[0].trim().split(/\s+/).includes(type));
 }
 

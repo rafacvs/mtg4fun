@@ -263,16 +263,17 @@ type ExposedCard struct {
 	CreatedTokens    []string    `json:"createdTokens,omitempty"`
 }
 type MatchLog struct {
-	DrawCount *int      `json:"drawCount,omitempty"`
-	LandPlays *int      `json:"landPlays,omitempty"`
-	Cards     []LogCard `json:"cards,omitempty"`
-	ActorID   int64     `json:"actorId"`
-	ActorName string    `json:"actorName"`
-	Kind      string    `json:"kind"`
-	From      string    `json:"from,omitempty"`
-	To        string    `json:"to,omitempty"`
-	Count     int       `json:"count,omitempty"`
-	Result    string    `json:"result,omitempty"`
+	TurnPlayerID int64     `json:"turnPlayerId,omitempty"`
+	DrawCount    *int      `json:"drawCount,omitempty"`
+	LandPlays    *int      `json:"landPlays,omitempty"`
+	Cards        []LogCard `json:"cards,omitempty"`
+	ActorID      int64     `json:"actorId"`
+	ActorName    string    `json:"actorName"`
+	Kind         string    `json:"kind"`
+	From         string    `json:"from,omitempty"`
+	To           string    `json:"to,omitempty"`
+	Count        int       `json:"count,omitempty"`
+	Result       string    `json:"result,omitempty"`
 }
 
 func hideCardModifiers(c Card, viewerID int64) bool {

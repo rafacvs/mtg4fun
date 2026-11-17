@@ -35,7 +35,7 @@ export type Match = {
   mulliganMode: 'standard' | 'aconchegaz';
   mulliganOpen: boolean;
   players: { landCount?: number; playmat?: PlaymatSettings; userId: number; name: string; life: number; markers?: Markers; mulligans: number; mulliganKept: boolean; mulliganBottomed?: number; libraryCount: number; handCount: number; battlefieldCount: number; graveyardCount: number; exileCount: number; commandCount: number; hand?: Card[]; battlefield?: Card[]; graveyard?: Card[]; exile?: Card[]; command?: Card[]; consulted?: Card[]; revealed?: Card[]; exposedCards?: Card[]; consulting?: boolean; consultationFrom?: 'top' | 'bottom' | 'all' }[];
-  log: { landPlays?: number; drawCount?: number; actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
+  log: { turnPlayerId?: number; landPlays?: number; drawCount?: number; actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
 export type TargetArrow = { ownerId: number; sourceCardId: string; targetCardId?: string; targetPlayerId?: number };
 export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; revealedTo?: number[]; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; createdTokens?: string[] };

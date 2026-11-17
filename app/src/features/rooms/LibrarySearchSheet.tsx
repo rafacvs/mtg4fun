@@ -19,7 +19,7 @@ const zones: { id: Zone; label: string; icon: TableIconName; destination: string
   { id: 'library', label: 'Grimório', icon: 'rail-library', destination: 'do grimório', ordered: true },
 ];
 
-const types: { id: string; label: string; icon: TableIconName; optional?: boolean }[] = [
+export const types: { id: string; label: string; icon: TableIconName; optional?: boolean }[] = [
   { id: 'Creature', label: 'Criaturas', icon: 'type-creature' },
   { id: 'Land', label: 'Terrenos', icon: 'type-land' },
   { id: 'Artifact', label: 'Artefatos', icon: 'sun' },
@@ -152,6 +152,6 @@ export function LibrarySearchSheet({ state, pool, consultedIDs, libraryCount, cl
   </>;
 }
 
-function TypeChip({ label, icon, count, active, onClick }: { label: string; icon: TableIconName; count: number; active: boolean; onClick: () => void }) {
+export function TypeChip({ label, icon, count, active, onClick }: { label: string; icon: TableIconName; count: number; active: boolean; onClick: () => void }) {
   return <button type="button" aria-label={label} aria-pressed={active} className={`search-chip ${count ? '' : 'empty'}`} disabled={!count && !active} onClick={onClick}><TableIcon name={icon} />{label}<b>{count}</b></button>;
 }
