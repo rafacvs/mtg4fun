@@ -39,7 +39,7 @@ export function GameActions({ open, anchor, initialScreen, roomId, actorName, si
   const header = headers[screen];
   useEffect(() => { setScreen(open ? initialScreen : 'menu'); }, [open, initialScreen]);
   return (
-    <TablePanel open={open} anchor={anchor} align="above" fitViewport label="Ações do jogo" className={`game-actions game-actions-${screen}`} onClose={onClose}>
+    <TablePanel open={open} anchor={anchor} align="above" fitViewport label="Ações do jogo" className={`game-actions game-actions-${screen}`} onClose={() => screen === 'menu' ? onClose() : setScreen('menu')}>
       <PanelHeader title={header.title} subtitle={header.subtitle} onClose={onClose} closeLabel="Fechar ações" />
       <PanelFeedback error={error} busy={busy} unconfirmed={unconfirmed} onRetry={onRetry} />
       {screen === 'menu' && <div className="table-menu actions-grid">

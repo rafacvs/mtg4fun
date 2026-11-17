@@ -59,7 +59,7 @@ export function CreateInstances({ roomId, busy, actorName, onCancel, onCreateTok
   };
   return <div className="token-creation">
     <div className="segmented token-tabs" role="tablist" aria-label="Tipo de ficha">
-      {tabs.map(item => <button key={item.id} type="button" role="tab" id={`token-tab-${item.id}`} aria-controls={`token-panel-${item.id}`} aria-selected={tab === item.id} onClick={() => { setTab(item.id); setResult(''); }}><TableIcon name={item.icon} /><span>{item.label}</span></button>)}
+      {tabs.map(item => <button key={item.id} type="button" data-menu-option role="tab" id={`token-tab-${item.id}`} aria-controls={`token-panel-${item.id}`} aria-selected={tab === item.id} onClick={() => { setTab(item.id); setResult(''); }}><TableIcon name={item.icon} /><span>{item.label}</span></button>)}
     </div>
     {tab === 'catalog' && <section className="creations-catalog" role="tabpanel" id="token-panel-catalog" aria-labelledby="token-tab-catalog">
       <div className="catalog-search">
@@ -75,7 +75,7 @@ export function CreateInstances({ roomId, busy, actorName, onCancel, onCreateTok
       {catalog.tokens.length > 0 && <ul className="token-grid">{catalog.tokens.map(item => {
         const stats = statsLabel(item.power, item.toughness);
         return <li key={item.name}>
-          <button type="button" className="token-tile" aria-label={`Selecionar ${item.name}`} aria-pressed={selected?.name === item.name} disabled={busy || catalog.loading} onClick={() => setSelected(item)}>
+          <button type="button" data-menu-option className="token-tile" aria-label={`Selecionar ${item.name}`} aria-pressed={selected?.name === item.name} disabled={busy || catalog.loading} onClick={() => setSelected(item)}>
             <TokenArt token={item} />
             {stats && <span className="token-stats-badge" aria-label={`Poder e resistência ${stats}`}>{stats}</span>}
             {selected?.name === item.name && <span className="token-selected-check" aria-hidden="true">✓</span>}
