@@ -1,7 +1,6 @@
 import { test, expect, roomBody, confirmHands, inspectCard } from './fixtures';
 
-test('marcadores tipados e modificadores são independentes e persistem', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop');
+test('marcadores tipados e modificadores são independentes e persistem', async ({ page }) => {
   const api = page.request;
   expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBeTruthy();
   const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'creature.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="7" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>') } } })).json();

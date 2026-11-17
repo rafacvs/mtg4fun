@@ -115,7 +115,7 @@ test('transfere o controle e devolve a carta à zona do dono por mouse ou toque'
     await expect(ownerTable.getByRole('region', { name: 'Cemitério', exact: true }).getByRole('button', { name: 'Island', exact: true })).toHaveCount(0);
 
     const controllerPreview = chosenPage.getByRole('dialog', { name: 'Imagem de Island' });
-    await expect(controllerPreview.getByRole('button', { name: /^(Adicionar|Editar)$/, exact: true })).toBeVisible();
+    await expect(controllerPreview.getByRole('button', { name: 'Aumentar marcador vermelho', exact: true })).toBeVisible();
     const ownerZones = controllerPreview.getByRole('region', { name: 'Controle da carta' });
     await expect(ownerZones.getByText('Mover para zona de Amigo da mesa', { exact: false })).toBeVisible();
     await ownerZones.getByLabel('Mover para zona de Amigo da mesa').selectOption('graveyard');

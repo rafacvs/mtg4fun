@@ -20,3 +20,15 @@ de intervalo excedido. O botão de diminuir agora fica desativado em zero e a
 API responde com mensagem específica para quantidade negativa. O build, os
 testes Go de salas e o teste desktop em janela visível passaram após o ajuste;
 a nova avaliação do usuário está pendente.
+
+O usuário pediu a inspeção conforme as imagens de referência, preservando os
+controles existentes, com a carta sempre em pé e indicação de virada abaixo.
+Depois pediu ícones maiores e a carta e o texto mais legíveis. Ao revisar a
+apresentação, disse “ficou lindo de mais”. Os marcadores coloridos passaram
+a ser editados diretamente; os marcadores +1/+1 e -1/-1 continuam independentes.
+
+O build e os testes de navegador da inspeção e dos marcadores passaram no
+desktop; o teste de marcadores também passou no celular. A transferência e a
+edição de poder/resistência passaram em repetição no desktop. A suíte antiga
+de ajustes no celular falhou na preparação, antes de abrir a inspeção, porque
+as mãos não estavam confirmadas; ela não valida esta alteração.

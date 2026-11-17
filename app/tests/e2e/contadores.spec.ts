@@ -257,7 +257,7 @@ test('edita poder e resistência direto no detalhe, em par e com permissão', as
     const minus = preview.getByRole('button', { name: 'Diminuir poder e resistência', exact: true });
     const plus = preview.getByRole('button', { name: 'Aumentar poder e resistência', exact: true });
     await expect(preview.getByRole('button', { name: 'Ajustes', exact: true })).toHaveCount(0);
-    await expect(preview.getByRole('button', { name: /^(Adicionar|Editar)$/, exact: true })).toBeVisible();
+    await expect(preview.getByRole('button', { name: 'Aumentar marcador vermelho', exact: true })).toBeVisible();
     await expect(power).toHaveCount(1);
     await expect(toughness).toHaveCount(1);
     await expect(preview.getByRole('button', { name: 'Diminuir Poder', exact: true })).toHaveCount(0);
