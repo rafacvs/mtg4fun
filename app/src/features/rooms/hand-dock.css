@@ -41,6 +41,9 @@
   .desktop-table .own-dock .zone-hand .playing-card:not(:first-child) {
     margin-left: min(-14px, calc((100cqw - var(--hand-count, 1) * var(--hand-card)) / max(1, var(--hand-count, 1) - 1)));
   }
+  .desktop-table .own-dock .zone-hand .playing-card[style*="--hand-gap-share"] {
+    margin-left: calc(-1 * var(--hand-card) + (100cqw - var(--hand-card)) * var(--hand-gap-share));
+  }
   .desktop-table .own-dock .zone-hand .playing-card img { flex: 0 0 auto; width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 7px; }
   .desktop-table .own-dock .zone-hand .playing-card:hover:not(:disabled) {
     z-index: 2; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 18px 34px #000d;

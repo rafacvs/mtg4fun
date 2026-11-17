@@ -7,12 +7,16 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
   const row = useRef<HTMLDivElement>(null);
   const stopSelection = useRef<(() => void) | null>(null);
   const [selectionBox, setSelectionBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [handFocus, setHandFocus] = useState<number | null>(null);
   useEffect(() => () => stopSelection.current?.(), []);
   const [order, setOrder] = useState<string[]>([]);
   const ordered = [...cards].sort((a, b) => {
     const rank = (id: string) => order.includes(id) ? order.indexOf(id) : order.length + cards.findIndex(card => card.id === id);
     return rank(a.id) - rank(b.id);
   });
+  // Allocate more of the available hand width to the cards near the pointer.
+  const weights = ordered.slice(1).map((_, index) => handFocus === null ? 1 : 1 + 3 * Math.exp(-(((index + 0.5 - handFocus * (ordered.length - 1)) / 2) ** 2)));
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
   const reorderAt = (card: Card, index: number) => {
     const ids = ordered.filter(item => item.id !== card.id).map(item => item.id);
     ids.splice(Math.max(0, index), 0, card.id);
@@ -20,7 +24,11 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
   };
   return <section className={`table-zone zone-hand ${hoverZone === 'hand' ? 'drop-hover' : ''}`} aria-label="Mão" data-drop-zone="hand">
     <header><span>Mão · {count}</span></header>
-    <div ref={row} className="zone-cards hand-selection-canvas" style={{ '--hand-count': ordered.length } as CSSProperties} tabIndex={0} aria-label="Cartas da mão" onPointerDown={event => {
+    <div ref={row} className="zone-cards hand-selection-canvas" style={{ '--hand-count': ordered.length } as CSSProperties} tabIndex={0} aria-label="Cartas da mão" onPointerMove={event => {
+      if (event.pointerType !== 'mouse' || event.buttons || ordered.length <= 10) return;
+      const box = event.currentTarget.getBoundingClientRect();
+      setHandFocus(Math.max(0, Math.min(1, (event.clientX - box.left) / box.width)));
+    }} onPointerLeave={() => setHandFocus(null)} onPointerDown={event => {
       if (event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('.playing-card')) return;
       const canvas = event.currentTarget, pointerId = event.pointerId, start = { x: event.clientX, y: event.clientY };
       const draw = (x: number, y: number) => { const box = canvas.getBoundingClientRect(); setSelectionBox({ left: Math.min(start.x, x) - box.left + canvas.scrollLeft, top: Math.min(start.y, y) - box.top + canvas.scrollTop, width: Math.abs(x - start.x), height: Math.abs(y - start.y) }); };
@@ -32,7 +40,7 @@ export function OwnHand({ cards = [], count, hoverZone, viewerId, gesture, scrol
       stopSelection.current?.(); stopSelection.current = cleanup;
       window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', cancel);
     }}>
-      {ordered.map((card, index) => <PlayingCard style={{ '--fan-angle': `${Math.max(-7, Math.min(7, (index - (ordered.length - 1) / 2) * 2))}deg`, '--fan-offset': index - (ordered.length - 1) / 2 } as CSSProperties} key={card.id} card={card} draggable={card.controllerId === viewerId} selected={gesture.selectedIds?.includes(card.id)} scrollable scrollAxis={scrollAxis} {...gesture} onDragMove={(card, x, y) => {
+      {ordered.map((card, index) => <PlayingCard style={{ '--fan-angle': `${Math.max(-7, Math.min(7, (index - (ordered.length - 1) / 2) * 2))}deg`, '--fan-offset': index - (ordered.length - 1) / 2, ...(ordered.length > 10 && handFocus !== null && index > 0 ? { '--hand-gap-share': weights[index - 1] / totalWeight } : {}) } as CSSProperties} key={card.id} card={card} draggable={card.controllerId === viewerId} selected={gesture.selectedIds?.includes(card.id)} scrollable scrollAxis={scrollAxis} {...gesture} onDragMove={(card, x, y) => {
         const box = row.current?.getBoundingClientRect();
         if (box) {
           if (x < box.left + 32) row.current!.scrollLeft -= 12;

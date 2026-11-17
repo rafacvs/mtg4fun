@@ -1,6 +1,30 @@
 import { test, expect, roomBody, returnOpeningHandToLibrary, confirmHands } from './fixtures';
 import type { Match } from '../../src/features/rooms/roomsApi';
 
+test('mão cheia abre espaço perto do ponteiro em ambos os lados', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const api = page.request;
+  expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBeTruthy();
+  const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'hand.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="20" name="Island"/></zone></cockatrice_deck>') } } })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
+  await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
+  expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
+  expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'draw', count: 9 } })).ok()).toBeTruthy();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/#/salas/${room.id}`);
+  const hand = page.getByRole('region', { name: 'Mão', exact: true });
+  const cards = hand.locator('.playing-card');
+  await expect(cards).toHaveCount(16);
+  const row = hand.getByLabel('Cartas da mão');
+  const box = (await row.boundingBox())!;
+  const gaps = () => cards.evaluateAll(nodes => nodes.slice(1).map((node, i) => (node as HTMLElement).offsetLeft - (nodes[i] as HTMLElement).offsetLeft));
+  await page.mouse.move(box.x + box.width * .15, box.y + box.height / 2);
+  await expect.poll(async () => { const g = await gaps(); return g[1] > g[12]; }).toBe(true);
+  await page.mouse.move(box.x + box.width * .85, box.y + box.height / 2);
+  await expect.poll(async () => { const g = await gaps(); return g[12] > g[1]; }).toBe(true);
+});
+
 test('mão em leque rebaixada, inteira no hover, e marcadores na lateral da carta', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop');
   test.setTimeout(60_000);
