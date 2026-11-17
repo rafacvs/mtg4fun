@@ -1,0 +1,37 @@
+import { test, expect, roomBody, confirmHands, inspectCard } from './fixtures';
+
+test('marcadores tipados e modificadores são independentes e persistem', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const api = page.request;
+  expect((await api.post('/api/session', { data: { login: 'amigo', password: 'senha-do-navegador' } })).ok()).toBeTruthy();
+  const { deck } = await (await api.post('/api/decks', { multipart: { file: { name: 'creature.cod', mimeType: 'application/xml', buffer: Buffer.from('<cockatrice_deck><zone name="main"><card number="7" name="Gargos, Vicious Watcher"/></zone></cockatrice_deck>') } } })).json();
+  const { room } = await (await api.post('/api/rooms', { data: roomBody() })).json();
+  await api.put(`/api/rooms/${room.id}/participants/me/ready`, { data: { deckId: deck.id } });
+  expect((await api.post(`/api/rooms/${room.id}/start`, { data: {} })).ok()).toBeTruthy();
+  await confirmHands(room.id, api);
+  const { match } = await (await api.get(`/api/rooms/${room.id}/match`)).json();
+  const id = match.players[0].hand[0].id;
+  expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'move', cardIds: [id], to: 'battlefield' } })).ok()).toBeTruthy();
+  await page.goto(`/#/salas/${room.id}`);
+  const card = page.locator(`.zone-battlefield .playing-card[data-card-id="${id}"]`);
+  await inspectCard(page, card);
+  const dialog = page.getByRole('dialog', { name: 'Imagem de Gargos, Vicious Watcher' });
+  await dialog.getByRole('button', { name: 'Aumentar marcador +1/+1' }).click();
+  await dialog.getByRole('button', { name: 'Aumentar marcador +1/+1' }).click();
+  await dialog.getByRole('button', { name: 'Aumentar marcador -1/-1' }).click();
+  await dialog.getByRole('button', { name: 'Aumentar marcador Veneno' }).click();
+  await dialog.getByRole('button', { name: 'Aumentar poder e resistência' }).click();
+  await expect(dialog.getByLabel('marcador +1/+1', { exact: true })).toHaveValue('2');
+  await dialog.getByRole('button', { name: 'Fechar', exact: true }).click();
+  await expect(card.getByLabel('Poder e resistência')).toHaveText('10/9');
+  await page.reload();
+  await expect(card.getByLabel('Poder e resistência')).toHaveText('10/9');
+  await inspectCard(page, card);
+  await expect(dialog.getByLabel('marcador Veneno', { exact: true })).toHaveValue('1');
+  const rejected = await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'card', cardId: id, subject: 'poison', operation: 'set', value: -1 } });
+  expect(rejected.ok()).toBe(false);
+  expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'move', cardIds: [id], to: 'graveyard' } })).ok()).toBeTruthy();
+  const after = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.players[0].graveyard.find((item: { id: string }) => item.id === id);
+  expect(after.typedCounters?.plusOne ?? 0).toBe(0);
+  expect(after.typedCounters?.poison ?? 0).toBe(0);
+});

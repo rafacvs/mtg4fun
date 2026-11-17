@@ -182,6 +182,7 @@ func placeCards(p *playerState, cards []Card, from, to, placement string) {
 		}
 		if from != to {
 			card.Markers = colorCounts{}
+			card.Counters = cardCounters{}
 			card.Power, card.Toughness = 0, 0
 			card.Tapped = false
 		}

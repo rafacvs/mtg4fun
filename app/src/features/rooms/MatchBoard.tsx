@@ -513,7 +513,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     }} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
-      if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
+      if (subject !== 'marker') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
       return Promise.resolve(false);
     }} onClose={closePreview} {...(waitingForHands ? readOnlyPreview : {})} />
     {zoomCard && <CardHoverZoom card={zoomCard} />}
