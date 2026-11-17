@@ -16,9 +16,14 @@ test('marcadores tipados e modificadores são independentes e persistem', async 
   const card = page.locator(`.zone-battlefield .playing-card[data-card-id="${id}"]`);
   await inspectCard(page, card);
   const dialog = page.getByRole('dialog', { name: 'Imagem de Gargos, Vicious Watcher' });
+  for (const label of ['+1/+1', '-1/-1', 'Veneno']) await expect(dialog.getByRole('button', { name: `Diminuir marcador ${label}` })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Aumentar marcador +1/+1' }).click();
   await dialog.getByRole('button', { name: 'Aumentar marcador +1/+1' }).click();
   await dialog.getByRole('button', { name: 'Aumentar marcador -1/-1' }).click();
+  await dialog.getByRole('button', { name: 'Aumentar marcador Veneno' }).click();
+  await expect(dialog.getByRole('button', { name: 'Diminuir marcador Veneno' })).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Diminuir marcador Veneno' }).click();
+  await expect(dialog.getByRole('button', { name: 'Diminuir marcador Veneno' })).toBeDisabled();
   await dialog.getByRole('button', { name: 'Aumentar marcador Veneno' }).click();
   await dialog.getByRole('button', { name: 'Aumentar poder e resistência' }).click();
   await expect(dialog.getByLabel('marcador +1/+1', { exact: true })).toHaveValue('2');
@@ -30,6 +35,7 @@ test('marcadores tipados e modificadores são independentes e persistem', async 
   await expect(dialog.getByLabel('marcador Veneno', { exact: true })).toHaveValue('1');
   const rejected = await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'counter', target: 'card', cardId: id, subject: 'poison', operation: 'set', value: -1 } });
   expect(rejected.ok()).toBe(false);
+  expect((await rejected.json()).error).toContain('não pode ser negativa');
   expect((await api.post(`/api/rooms/${room.id}/match/actions`, { data: { intentId: crypto.randomUUID(), kind: 'move', cardIds: [id], to: 'graveyard' } })).ok()).toBeTruthy();
   const after = (await (await api.get(`/api/rooms/${room.id}/match`)).json()).match.players[0].graveyard.find((item: { id: string }) => item.id === id);
   expect(after.typedCounters?.plusOne ?? 0).toBe(0);

@@ -9,6 +9,7 @@ const maxCounterValue int64 = 9007199254740991
 
 var errCounterPermission = errors.New("Você só pode alterar seus contadores e as cartas autorizadas.")
 var errCounterRange = errors.New("O valor do contador excede o intervalo permitido.")
+var errNegativeCardCounter = errors.New("A quantidade de marcadores não pode ser negativa.")
 
 func validColor(color string) bool {
 	switch color {
@@ -165,7 +166,7 @@ func changeCounter(m *matchState, actor *playerState, input matchAction) (action
 					var value int64
 					value, err = counterValue(*slot, input)
 					if err == nil && value < 0 {
-						err = errCounterRange
+						err = errNegativeCardCounter
 					}
 					if err == nil {
 						*slot = value
