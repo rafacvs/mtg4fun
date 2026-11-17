@@ -102,15 +102,17 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
         <section className="card-inspection-section" aria-label="Estado da carta">
           <h3 className="card-section-heading">Estado</h3>
           <div className="card-state-grid">
-          <div className="card-inspection-row"><span>Modificador de poder / resistência</span>{editable && onCounter
+          <div className="card-inspection-row card-modifier-panel"><span><TableIcon name="adjust" />Modificador de poder / resistência</span>{editable && onCounter
             ? <PowerToughnessAdjust key={card.id} power={card.power ?? 0} toughness={card.toughness ?? 0} disabled={disabled} owed={owedPair} onApply={(subject, operation, value) => onCounter(subject, operation, value)} />
             : <span className="card-pt-readout" aria-label="Modificador de poder e resistência">{card.power ?? 0} / {card.toughness ?? 0}</span>}</div>
-          {viewerId && onStateChange && controlled && <div className="card-inspection-row card-visibility-row"><span>Visibilidade</span><CardStateControls mode="other" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} /></div>}
+          {viewerId && onStateChange && controlled && <div className="card-inspection-row card-visibility-row"><span><TableIcon name="eye" />Visibilidade</span><CardStateControls mode="other" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} /></div>}
           </div>
           <div className="card-color-section"><h3 className="card-section-heading">Marcadores de cor</h3>{editable && onCounter ? <MarkerColumns markers={card.markers} disabled={disabled} onApply={(color, operation, value) => onCounter('marker', operation, value, color)} /> : <div className="card-marker-summary">
             {activeMarkers.length ? <span className="card-marker-values">{activeMarkers.map(item => <span key={item.color} aria-label={`marcador ${item.name}: ${markerValue(card.markers, item.color)}`}><i className={`card-marker-diamond marker-${item.color}`} />{markerValue(card.markers, item.color)}</span>)}</span> : <span className="card-marker-empty">Nenhum</span>}
           </div>}</div>
-          {([['plusOne', '+1/+1'], ['minusOne', '-1/-1']] as const).map(([subject, label]) => <div className="card-inspection-row" key={subject}><span>Marcador {label}</span>{editable && onCounter ? <NumericCounter label={`marcador ${label}`} value={card.typedCounters?.[subject] ?? 0} min={0} disabled={disabled} onApply={(operation, value) => onCounter(subject, operation, value)} /> : <span>{card.typedCounters?.[subject] ?? 0}</span>}</div>)}
+          <div className="card-typed-section"><h3 className="card-section-heading">Marcadores de poder / resistência</h3><div className="card-typed-grid">
+            {([['plusOne', '+1/+1'], ['minusOne', '-1/-1']] as const).map(([subject, label]) => <div className="card-typed-counter" key={subject}><span className="card-typed-label"><i className={`card-typed-gem ${subject}`} aria-hidden="true" />Marcador {label}</span>{editable && onCounter ? <NumericCounter label={`marcador ${label}`} value={card.typedCounters?.[subject] ?? 0} min={0} disabled={disabled} onApply={(operation, value) => onCounter(subject, operation, value)} /> : <span className="card-typed-readout">{card.typedCounters?.[subject] ?? 0}</span>}</div>)}
+          </div></div>
           {card.revealed && controlled && onHide && <label className="keep-revealed"><input type="checkbox" checked={keepRevealed} onChange={event => setKeepRevealed(event.target.checked)} />Manter revelada ao fechar (até passar o turno)</label>}
         </section>
         {controlled && card.ownerId === viewerId && onMove && <section className="card-inspection-section"><h3 className="card-section-heading">Mover para</h3><div className="card-move-grid">

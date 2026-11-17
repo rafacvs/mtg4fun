@@ -26,6 +26,9 @@ controles existentes, com a carta sempre em pé e indicação de virada abaixo.
 Depois pediu ícones maiores e a carta e o texto mais legíveis. Ao revisar a
 apresentação, disse “ficou lindo de mais”. Os marcadores coloridos passaram
 a ser editados diretamente; os marcadores +1/+1 e -1/-1 continuam independentes.
+Em nova revisão, pediu que os controles de modificador, visibilidade e os
+dois marcadores tivessem o mesmo acabamento suave da referência. Os controles
+mantêm edição direta e suas permissões anteriores.
 
 O build e os testes de navegador da inspeção e dos marcadores passaram no
 desktop; o teste de marcadores também passou no celular. A transferência e a
