@@ -23,6 +23,13 @@ test('soltar fora de uma carta no visualizador não atravessa para o campo; arra
     await own.locator(`.zone-${zone} .zone-open`).click();
     const panel = page.getByRole('dialog', { name: `${label} de Amigo da mesa` });
     const cards = panel.locator('.playing-card'); await expect(cards).toHaveCount(2);
+    const search = panel.getByRole('textbox', { name: `Buscar no ${label.toLocaleLowerCase('pt-BR')}` });
+    await search.fill('inexistente');
+    await expect(cards).toHaveCount(0);
+    await expect(panel.getByText('Nenhuma carta com esses filtros.')).toBeVisible();
+    await search.fill('island');
+    await expect(cards).toHaveCount(2);
+    await panel.getByRole('button', { name: 'Limpar busca' }).click();
     const first = (await cards.nth(0).boundingBox())!, header = (await panel.locator('.table-panel-header').boundingBox())!;
     const before: Match = (await (await api.get(path)).json()).match;
     await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2); await page.mouse.down();
@@ -32,17 +39,25 @@ test('soltar fora de uma carta no visualizador não atravessa para o campo; arra
     await expect.poll(async () => (await (await api.get(path)).json()).match.log.length).toBe(before.log.length);
     const after: Match = (await (await api.get(path)).json()).match;
     expect(after.players.find(p => p.userId === after.viewerId)![zone]?.map(card => card.id)).toEqual(before.players.find(p => p.userId === before.viewerId)![zone]?.map(card => card.id));
-    await panel.getByRole('button', { name: `Fechar ${label.toLocaleLowerCase('pt-BR')}` }).click();
+    await panel.getByRole('button', { name: 'Diminuir painel' }).click();
+    await expect(panel).toHaveClass(/public-zone-compact/);
+    await panel.getByRole('button', { name: 'Expandir painel' }).click();
+    await expect(panel).not.toHaveClass(/public-zone-compact/);
+    await panel.locator('[data-panel-close]').click();
   }
   await page.locator('.own-table-surface .zone-graveyard .zone-open').click();
   const panel = page.getByRole('dialog', { name: 'Cemitério de Amigo da mesa' });
-  const source = (await panel.locator('.playing-card').first().boundingBox())!;
-  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2); await page.mouse.down();
-  await page.mouse.move(source.x + source.width / 2 + 12, source.y + source.height / 2, { steps: 3 });
-  await expect(page.locator('.drag-ghost')).toBeVisible();
-  const box = (await page.locator('.own-table-surface').getByRole('region', { name: 'Campo', exact: true }).boundingBox())!;
-  await page.mouse.move(box.x + box.width - 40, box.y + box.height / 2, { steps: 8 }); await page.mouse.up();
-  await expect.poll(async () => (await (await api.get(path)).json()).match.players.find((p: { userId: number }, _i: number, _a: unknown) => p.userId === drawn.viewerId).battlefield.length).toBe(1);
+  await panel.locator('.playing-card').first().click();
+  await expect(panel.getByText('1 selecionada', { exact: true })).toBeVisible();
+  await panel.getByRole('group', { name: 'Para onde' }).getByRole('button', { name: 'Campo' }).click();
+  await panel.getByRole('button', { name: /Enviar 1 carta/ }).click();
+  await expect.poll(async () => ((await (await api.get(path)).json()).match.players.find((p: { userId: number }) => p.userId === drawn.viewerId).battlefield ?? []).length).toBe(1);
+  await panel.getByRole('button', { name: 'Diminuir painel' }).click();
+  const compactBox = (await panel.boundingBox())!;
+  expect(compactBox.x).toBeLessThan(30);
+  await expect(panel.getByRole('button', { name: 'Expandir painel' })).toBeVisible();
+  await panel.getByRole('button', { name: 'Expandir painel' }).click();
+  await expect(panel.locator('.playing-card')).toHaveCount(1);
 });
 
 test('o dono reordena cemitério e exílio arrastando a carta; o oponente só vê', async ({ browser, baseURL }, info) => {
@@ -86,7 +101,7 @@ test('o dono reordena cemitério e exílio arrastando a carta; o oponente só v�
       await expect(rows.first()).toHaveAttribute('data-zone-card-id', cards[1]);
       await rows.first().locator('.playing-card').press('ArrowRight');
       await expect.poll(async () => (await read())[zone]!.map(card => card.id)).toEqual([cards[2], cards[1], cards[0]]);
-      await panel.getByRole('button', { name: `Fechar ${label.toLocaleLowerCase('pt-BR')}` }).click();
+      await panel.locator('[data-panel-close]').click();
     }
     const opponent = await other.newPage();
     await opponent.goto(`/#/salas/${room.id}`);
