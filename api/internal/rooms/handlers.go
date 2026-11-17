@@ -326,7 +326,7 @@ func (s *Service) applyMatchAction(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
 	case errors.Is(err, errNotParticipant):
 		httpserver.WriteError(w, 404, "Partida não encontrada.")
-	case errors.Is(err, errMatchFinished), errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange), errors.Is(err, errMulliganClosed), errors.Is(err, errMulliganSelection), errors.Is(err, errMulliganPending), errors.Is(err, errMulliganConsulting):
+	case errors.Is(err, errMatchFinished), errors.Is(err, errInvalidCardState), errors.Is(err, errCardNotFound), errors.Is(err, errNotController), errors.Is(err, errInsufficientCards), errors.Is(err, errInvalidPosition), errors.Is(err, errStackFull), errors.Is(err, errCounterPermission), errors.Is(err, errCounterRange), errors.Is(err, errNegativeCardCounter), errors.Is(err, errMulliganClosed), errors.Is(err, errMulliganSelection), errors.Is(err, errMulliganPending), errors.Is(err, errMulliganConsulting):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)
