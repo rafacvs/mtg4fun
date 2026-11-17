@@ -8,6 +8,7 @@ import { CardActionBar } from './CardActionBar';
 import { HandActionBar } from './HandActionBar';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { MatchLog } from './MatchLog';
+import { MatchChat } from './MatchChat';
 import { useMatchShake } from './useMatchShake';
 import { useChatShortcut } from './useChatShortcut';
 import { describeActionResult } from './matchLogPresentation';
@@ -517,6 +518,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       return Promise.resolve(false);
     }} onClose={closePreview} {...(waitingForHands ? readOnlyPreview : {})} />
     {zoomCard && <CardHoverZoom card={zoomCard} />}
+    <MatchChat match={match} />
   </section>;
 }
 
