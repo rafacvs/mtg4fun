@@ -56,6 +56,7 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
   }
   onCloseRef.current = () => {
     if (busy) return;
+    if (step !== 'view') { setStep('view'); return; }
     if (card?.revealed && card.controllerId === viewerId && !keepRevealed && onHide) {
       void onHide(card.id).then(ok => { if (ok) onClose(); });
     } else onClose();
