@@ -486,6 +486,7 @@ var errNotCreator = errors.New("Somente o criador pode iniciar a partida.")
 var errNotReady = errors.New("Todos os participantes precisam confirmar um deck.")
 var errDeckNotFound = errors.New("Deck não encontrado.")
 var errDeckRequired = errors.New("Selecione um deck antes de confirmar.")
+var errDeckIncomplete = errors.New("Resolva as cartas pendentes e adicione cartas válidas antes de confirmar.")
 var errReadyLocked = errors.New("Desfaça a prontidão para trocar de deck.")
 
 func (s *Service) setMulliganMode(ctx context.Context, id int64, mode string, u auth.User) (Room, error) {
@@ -619,6 +620,9 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 			if r.Participants[i].DeckID == 0 {
 				return Room{}, errDeckRequired
 			}
+			if err := s.validateDeckForPlay(ctx, tx, r.Participants[i].DeckID, u.ID); err != nil {
+				return Room{}, err
+			}
 			r.Participants[i].Ready = true
 			if e = save(ctx, tx, r, u.ID, "ready"); e != nil {
 				return Room{}, e
@@ -628,6 +632,45 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 		}
 	}
 	return Room{}, sql.ErrNoRows
+}
+
+func (s *Service) validateDeckForPlay(ctx context.Context, tx *sql.Tx, deckID, userID int64) error {
+	var owned int
+	if err := tx.QueryRowContext(ctx, "SELECT 1 FROM decks WHERE id=? AND user_id=? FOR UPDATE", deckID, userID).Scan(&owned); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errDeckNotFound
+		}
+		return err
+	}
+	rows, err := tx.QueryContext(ctx, "SELECT name,quantity FROM deck_cards WHERE deck_id=? ORDER BY position", deckID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	total := int64(0)
+	for rows.Next() {
+		var name string
+		var quantity int64
+		if err := rows.Scan(&name, &quantity); err != nil {
+			return err
+		}
+		if quantity <= 0 {
+			return errDeckIncomplete
+		}
+		if s.catalog != nil {
+			if _, ok := s.catalog.Lookup(name); !ok {
+				return errDeckIncomplete
+			}
+		}
+		total += quantity
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if total == 0 {
+		return errDeckIncomplete
+	}
+	return nil
 }
 
 func (s *Service) unready(ctx context.Context, id int64, u auth.User) (Room, error) {

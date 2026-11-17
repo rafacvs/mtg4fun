@@ -433,7 +433,7 @@ func (s *Service) readyParticipant(w http.ResponseWriter, r *http.Request) {
 		httpserver.WriteError(w, 404, "Sala não encontrada.")
 	case errors.Is(err, errDeckNotFound):
 		httpserver.WriteError(w, 404, err.Error())
-	case errors.Is(err, errDeckRequired), errors.Is(err, errRoomStarted), errors.Is(err, errReadyLocked):
+	case errors.Is(err, errDeckRequired), errors.Is(err, errDeckIncomplete), errors.Is(err, errRoomStarted), errors.Is(err, errReadyLocked):
 		httpserver.WriteError(w, 409, err.Error())
 	case err != nil:
 		httpserver.InternalError(w, err)

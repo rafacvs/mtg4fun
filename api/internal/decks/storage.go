@@ -7,17 +7,22 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"mtg4fun/internal/catalog"
 )
 
 type Card struct {
-	Name      string `json:"name"`
-	Quantity  int64  `json:"quantity"`
-	Text      string `json:"text"`
-	Colors    string `json:"colors,omitempty"`
-	Token     bool   `json:"token"`
-	Available bool   `json:"available"`
+	Name          string `json:"name"`
+	Quantity      int64  `json:"quantity"`
+	Text          string `json:"text"`
+	Colors        string `json:"colors,omitempty"`
+	Type          string `json:"type"`
+	MainType      string `json:"mainType"`
+	CMC           int    `json:"cmc"`
+	ColorIdentity string `json:"colorIdentity,omitempty"`
+	Token         bool   `json:"token"`
+	Available     bool   `json:"available"`
 }
 
 type Groups struct {
@@ -69,14 +74,23 @@ func (s *Service) UseRooms(rooms RoomUsage) { s.rooms = rooms }
 
 func (s *Service) resolve(card *Card) {
 	entry, ok := s.catalog.Lookup(card.Name)
-	card.Text, card.Colors, card.Token, card.Available = entry.Text, entry.Colors, entry.Token, ok
+	card.Text, card.Colors, card.Type, card.MainType, card.CMC, card.ColorIdentity, card.Token, card.Available = entry.Text, entry.Colors, entry.Type, entry.Maintype, entry.CMC, entry.ColorIdentity, entry.Token, ok
 }
 
 func (s *Service) save(ctx context.Context, userID int64, deck Deck) (Deck, error) {
+	if len(deck.Cards) > 2000 {
+		return Deck{}, fmt.Errorf("%w: O limite técnico é de 2.000 nomes por deck.", errInvalidDeck)
+	}
+	var total int64
 	for i := range deck.Cards {
-		if s.resolve(&deck.Cards[i]); !deck.Cards[i].Available {
-			return Deck{}, fmt.Errorf("%w: Carta não encontrada no catálogo: %s.", errInvalidDeck, deck.Cards[i].Name)
+		if deck.Cards[i].Quantity < 1 || deck.Cards[i].Quantity > 100000 {
+			return Deck{}, fmt.Errorf("%w: Quantidade fora do limite técnico de 100.000 cartas.", errInvalidDeck)
 		}
+		total += deck.Cards[i].Quantity
+		if total > 100000 {
+			return Deck{}, fmt.Errorf("%w: O limite técnico é de 100.000 cartas por deck.", errInvalidDeck)
+		}
+		s.resolve(&deck.Cards[i])
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -102,8 +116,111 @@ func (s *Service) save(ctx context.Context, userID int64, deck Deck) (Deck, erro
 	s.present(&deck)
 	return deck, nil
 }
+
+func (s *Service) createDraft(ctx context.Context, userID int64) (Deck, error) {
+	result, err := s.db.ExecContext(ctx, "INSERT INTO decks(user_id,name) VALUES (?,?)", userID, "Novo deck")
+	if err != nil {
+		return Deck{}, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return Deck{}, err
+	}
+	return Deck{ID: id, Name: "Novo deck", Cards: []Card{}, Groups: Groups{Commander: []Card{}, Creatures: []Card{}, Spells: []Card{}, Artifacts: []Card{}, Lands: []Card{}, Other: []Card{}}, Curve: []CurveBin{}}, nil
+}
+
+func (s *Service) update(ctx context.Context, userID, deckID int64, name, commander string, cards []Card) (Deck, error) {
+	name = strings.TrimSpace(name)
+	if name == "" || len([]rune(name)) > 100 {
+		return Deck{}, errInvalidDeck
+	}
+	if len(cards) > 2000 {
+		return Deck{}, errInvalidDeck
+	}
+	seen := map[string]bool{}
+	var total int64
+	for i := range cards {
+		cards[i].Name = strings.TrimSpace(cards[i].Name)
+		if cards[i].Name == "" || len(cards[i].Name) > 1024 || cards[i].Quantity < 1 || cards[i].Quantity > 100000 || seen[cards[i].Name] {
+			return Deck{}, errInvalidDeck
+		}
+		seen[cards[i].Name] = true
+		total += cards[i].Quantity
+		if total > 100000 {
+			return Deck{}, errInvalidDeck
+		}
+		s.resolve(&cards[i])
+	}
+	commander = strings.TrimSpace(commander)
+	if commander != "" && !seen[commander] {
+		return Deck{}, errUnknownCommander
+	}
+	if commander != "" {
+		for _, card := range cards {
+			if card.Name == commander && !card.Available {
+				return Deck{}, errUnknownCommander
+			}
+		}
+	}
+	if s.rooms != nil {
+		locked, err := s.rooms.DeckLocked(ctx, userID, deckID)
+		if err != nil {
+			return Deck{}, err
+		}
+		if locked {
+			return Deck{}, errDeckLocked
+		}
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Deck{}, err
+	}
+	defer tx.Rollback()
+	var owner int64
+	if err = tx.QueryRowContext(ctx, "SELECT user_id FROM decks WHERE id=? FOR UPDATE", deckID).Scan(&owner); err != nil {
+		return Deck{}, err
+	}
+	if owner != userID {
+		return Deck{}, sql.ErrNoRows
+	}
+	if s.rooms != nil {
+		locked, lockErr := s.rooms.DeckLocked(ctx, userID, deckID)
+		if lockErr != nil {
+			return Deck{}, lockErr
+		}
+		if locked {
+			return Deck{}, errDeckLocked
+		}
+	}
+	var stored any
+	if commander != "" {
+		stored = commander
+	}
+	if _, err = tx.ExecContext(ctx, "UPDATE decks SET name=?,commander=? WHERE id=? AND user_id=?", name, stored, deckID, userID); err != nil {
+		return Deck{}, err
+	}
+	if _, err = tx.ExecContext(ctx, "DELETE FROM deck_cards WHERE deck_id=?", deckID); err != nil {
+		return Deck{}, err
+	}
+	for position, card := range cards {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO deck_cards(deck_id,position,name,quantity) VALUES (?,?,?,?)", deckID, position, card.Name, card.Quantity); err != nil {
+			return Deck{}, err
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return Deck{}, err
+	}
+	deck := Deck{ID: deckID, Name: name, Commander: commander, Cards: cards}
+	s.present(&deck)
+	if s.rooms != nil {
+		if err := s.rooms.DeckChanged(ctx, userID, deckID); err != nil {
+			log.Printf("avisar salas sobre o deck %d: %v", deckID, err)
+		}
+	}
+	return deck, nil
+}
 func (s *Service) list(ctx context.Context, userID int64) ([]Deck, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT d.id,d.name,d.commander,c.name,c.quantity FROM decks d JOIN deck_cards c ON c.deck_id=d.id WHERE d.user_id=? ORDER BY d.id DESC,c.position`, userID)
+	rows, err := s.db.QueryContext(ctx, `SELECT d.id,d.name,d.commander,c.name,c.quantity FROM decks d LEFT JOIN deck_cards c ON c.deck_id=d.id WHERE d.user_id=? ORDER BY d.id DESC,c.position`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -113,15 +230,22 @@ func (s *Service) list(ctx context.Context, userID int64) ([]Deck, error) {
 		var id int64
 		var name string
 		var commander sql.NullString
-		var card Card
-		if err = rows.Scan(&id, &name, &commander, &card.Name, &card.Quantity); err != nil {
+		var cardName sql.NullString
+		var quantity sql.NullInt64
+		if err = rows.Scan(&id, &name, &commander, &cardName, &quantity); err != nil {
 			return nil, err
+		}
+		card := Card{}
+		if cardName.Valid {
+			card.Name, card.Quantity = cardName.String, quantity.Int64
 		}
 		s.resolve(&card)
 		if len(decks) == 0 || decks[len(decks)-1].ID != id {
 			decks = append(decks, Deck{ID: id, Name: name, Commander: commander.String, Cards: []Card{}})
 		}
-		decks[len(decks)-1].Cards = append(decks[len(decks)-1].Cards, card)
+		if cardName.Valid {
+			decks[len(decks)-1].Cards = append(decks[len(decks)-1].Cards, card)
+		}
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
@@ -169,7 +293,7 @@ func (s *Service) setCommander(ctx context.Context, userID, deckID int64, name s
 	if name != "" {
 		found := false
 		for _, card := range deck.Cards {
-			if card.Name == name {
+			if card.Name == name && card.Available {
 				found = true
 				break
 			}

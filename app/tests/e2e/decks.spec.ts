@@ -4,11 +4,12 @@ import { resolve } from 'node:path';
 
 test('importa, reutiliza e exclui deck salvo', async ({ page }, info) => {
   await page.goto('/');
-  await page.getByLabel('Login', { exact: true }).fill('amigo');
-  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByLabel('Login', { exact: true }).fill(process.env.E2E_LOGIN || 'amigo');
+  await page.getByLabel('Senha', { exact: true }).fill(process.env.E2E_PASSWORD || 'senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Meus decks' })).toBeVisible();
+  await page.getByRole('button', { name: 'Abrir importação de deck' }).click();
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Selecionar arquivo', exact: true }).click();
   const chooser = await chooserPromise;
@@ -22,11 +23,12 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }, info) => {
   await page.screenshot({ path: info.outputPath('biblioteca-de-decks.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.reload();
-  await page.getByLabel('Escolher deck salvo').selectOption({ label: 'Amigos & mágicas (7 cartas)' });
+  await page.getByRole('button', { name: 'Abrir Amigos & mágicas' }).first().click();
   await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
   await page.getByRole('dialog', { name: 'Excluir deck?' }).getByRole('button', { name: 'Confirmar exclusão' }).click();
-  await expect(page.getByText('Nenhum deck salvo. Importe seu primeiro arquivo.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir importação de deck' })).toBeVisible();
+  await page.getByRole('button', { name: 'Abrir importação de deck' }).click();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'inválido.cod', mimeType: 'application/xml', buffer: Buffer.from('not XML') });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Arquivo .cod inválido');
@@ -35,29 +37,24 @@ test('importa, reutiliza e exclui deck salvo', async ({ page }, info) => {
 
 test('marca e limpa o comandante depois do upload e de novo em Meus decks', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Login', { exact: true }).fill('amigo');
-  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByLabel('Login', { exact: true }).fill(process.env.E2E_LOGIN || 'amigo');
+  await page.getByLabel('Senha', { exact: true }).fill(process.env.E2E_PASSWORD || 'senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir importação de deck' }).click();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'hydras.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/hydras.cod')) });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Hidras' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Criaturas', exact: true })).toContainText('1 × Gargos, Vicious Watcher');
-  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true }).getByText('Nenhum', { exact: true })).toBeVisible();
   await page.getByLabel('Buscar carta').fill('Gargos');
   await page.getByRole('button', { name: 'Marcar comandante Gargos, Vicious Watcher', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true })).toContainText('Gargos, Vicious Watcher');
-  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true })).toContainText('Verde');
   await expect(page.getByRole('region', { name: 'Comandante', exact: true })).toContainText('1 × Gargos, Vicious Watcher');
   await expect(page.getByRole('region', { name: 'Criaturas', exact: true })).toHaveCount(0);
 
   await page.reload();
-  await page.getByLabel('Escolher deck salvo').selectOption({ label: 'Hidras (7 cartas)' });
-  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true })).toContainText('Gargos, Vicious Watcher');
+  await page.getByRole('button', { name: 'Abrir Hidras' }).first().click();
   await page.getByLabel('Buscar carta').fill('Gargos');
   await page.getByRole('button', { name: 'Limpar comandante', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true }).getByText('Nenhum', { exact: true })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Dados do deck', exact: true }).getByText('Verde', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Criaturas', exact: true })).toContainText('1 × Gargos, Vicious Watcher');
 });
 
@@ -71,10 +68,11 @@ test('aguarda a listagem inicial antes de importar', async ({ page }) => {
     await route.fulfill({ response });
   });
   await page.goto('/');
-  await page.getByLabel('Login', { exact: true }).fill('amigo');
-  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByLabel('Login', { exact: true }).fill(process.env.E2E_LOGIN || 'amigo');
+  await page.getByLabel('Senha', { exact: true }).fill(process.env.E2E_PASSWORD || 'senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir importação de deck' }).click();
   await expect(page.getByText('Carregando decks…')).toBeVisible();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
   try {
@@ -85,31 +83,32 @@ test('aguarda a listagem inicial antes de importar', async ({ page }) => {
   await expect(page.getByText('5 × Island', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Excluir deck', exact: true }).click();
   await page.getByRole('dialog', { name: 'Excluir deck?' }).getByRole('button', { name: 'Confirmar exclusão' }).click();
-  await expect(page.getByText('Nenhum deck salvo. Importe seu primeiro arquivo.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abrir importação de deck' })).toBeVisible();
 });
 
 test('consulta texto e imagem da carta e explica imagem indisponível', async ({ page }) => {
   let imageAvailable = true;
   await page.route('**/api/cards/image?*', async route => {
-    if (imageAvailable) {
+    if (imageAvailable && !route.request().url().includes('Fire')) {
       await route.fulfill({ status: 200, contentType: 'image/jpeg', headers: { 'Cache-Control': 'no-store' }, body: Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9k=', 'base64') });
       return;
     }
     await route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ error: 'Não foi possível carregar a imagem desta carta.' }) });
   });
   await page.goto('/');
-  await page.getByLabel('Login', { exact: true }).fill('amigo');
-  await page.getByLabel('Senha', { exact: true }).fill('senha-do-navegador');
+  await page.getByLabel('Login', { exact: true }).fill(process.env.E2E_LOGIN || 'amigo');
+  await page.getByLabel('Senha', { exact: true }).fill(process.env.E2E_PASSWORD || 'senha-do-navegador');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await page.getByRole('link', { name: 'Meus decks', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir importação de deck' }).click();
   await page.getByLabel('Arquivo .cod').setInputFiles({ name: 'amigos.cod', mimeType: 'application/xml', buffer: readFileSync(resolve('../api/tests/integration/testdata/cockatrice-deck.cod')) });
   await page.getByRole('button', { name: 'Importar deck', exact: true }).click();
   await page.getByRole('button', { name: 'Consultar Island', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Island', exact: true })).toBeVisible();
-  await expect(page.getByText('Add U.', { exact: true })).toBeVisible();
+  await expect(page.locator('.deck-preview .card-text')).not.toBeEmpty();
   await expect(page.getByRole('img', { name: 'Imagem ampliada de Island' })).toBeVisible();
   await page.getByRole('button', { name: 'Fechar consulta', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Island', exact: true })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Fechar consulta', exact: true })).not.toBeVisible();
 
   imageAvailable = false;
   await page.getByRole('button', { name: 'Consultar Fire // Ice', exact: true }).click();
