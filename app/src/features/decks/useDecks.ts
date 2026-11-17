@@ -12,7 +12,10 @@ export function useDecks() {
     let active = true;
     deckApi.list()
       .then(data => {
-        if (active) setDecks(data);
+        if (active) {
+          setDecks(data);
+          setSelected(current => current ?? data[0]?.id ?? null);
+        }
       })
       .catch(reason => {
         if (active) setError(reason.message);
@@ -56,6 +59,28 @@ export function useDecks() {
     }
   }
 
+  async function createDraft() {
+    if (loading || busy) return null;
+    setBusy(true); setError('');
+    try {
+      const deck = await deckApi.draft();
+      setDecks(current => [deck, ...current]); setSelected(deck.id); return deck;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível criar o deck.'); return null;
+    } finally { setBusy(false); }
+  }
+
+  async function update(id: number, name: string, commander: string, cards: { name: string; quantity: number }[]) {
+    if (loading || busy) return null;
+    setBusy(true); setError('');
+    try {
+      const deck = await deckApi.update(id, name, commander, cards);
+      setDecks(current => current.map(item => item.id === id ? deck : item)); return deck;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível salvar as alterações.'); return null;
+    } finally { setBusy(false); }
+  }
+
   async function remove(id: number) {
     setBusy(true);
     setError('');
@@ -72,5 +97,5 @@ export function useDecks() {
     }
   }
 
-  return { decks, loading, busy, error, selected, setSelected, upload, setCommander, remove };
+  return { decks, loading, busy, error, selected, setSelected, upload, setCommander, createDraft, update, remove };
 }

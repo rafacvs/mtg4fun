@@ -28,6 +28,21 @@ func (s *Service) Handler(users *auth.Service) http.Handler {
 		}
 		httpserver.WriteJSON(w, 200, map[string]any{"decks": decks})
 	})
+	mux.HandleFunc("GET /api/decks/catalog", func(w http.ResponseWriter, r *http.Request) {
+		s.searchCatalog(w, r, users)
+	})
+	mux.HandleFunc("POST /api/decks/draft", func(w http.ResponseWriter, r *http.Request) {
+		user, ok := currentUser(w, r, users)
+		if !ok {
+			return
+		}
+		deck, err := s.createDraft(r.Context(), user.ID)
+		if err != nil {
+			httpserver.InternalError(w, err)
+			return
+		}
+		httpserver.WriteJSON(w, 201, map[string]any{"deck": deck})
+	})
 	mux.HandleFunc("POST /api/decks", func(w http.ResponseWriter, r *http.Request) {
 		user, ok := currentUser(w, r, users)
 		if !ok {
@@ -69,6 +84,58 @@ func (s *Service) Handler(users *auth.Service) http.Handler {
 			return
 		}
 		httpserver.WriteJSON(w, 201, map[string]any{"deck": deck})
+	})
+	mux.HandleFunc("PUT /api/decks/{id}", func(w http.ResponseWriter, r *http.Request) {
+		user, ok := currentUser(w, r, users)
+		if !ok {
+			return
+		}
+		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil || id <= 0 {
+			httpserver.WriteError(w, 404, "Deck não encontrado.")
+			return
+		}
+		if strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
+			httpserver.WriteError(w, 415, "Envie JSON.")
+			return
+		}
+		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 512*1024))
+		decoder.DisallowUnknownFields()
+		var input struct {
+			Name      string `json:"name"`
+			Commander string `json:"commander"`
+			Cards     []Card `json:"cards"`
+		}
+		if err := decoder.Decode(&input); err != nil {
+			httpserver.WriteError(w, 400, "Conteúdo do deck inválido.")
+			return
+		}
+		if decoder.Decode(&struct{}{}) != io.EOF {
+			httpserver.WriteError(w, 400, "Conteúdo do deck inválido.")
+			return
+		}
+		deck, err := s.update(r.Context(), user.ID, id, input.Name, input.Commander, input.Cards)
+		if errors.Is(err, sql.ErrNoRows) {
+			httpserver.WriteError(w, 404, "Deck não encontrado.")
+			return
+		}
+		if errors.Is(err, errDeckLocked) {
+			httpserver.WriteError(w, 409, err.Error())
+			return
+		}
+		if errors.Is(err, errUnknownCommander) {
+			httpserver.WriteError(w, 400, err.Error())
+			return
+		}
+		if errors.Is(err, errInvalidDeck) {
+			httpserver.WriteError(w, 400, "Nome, lista ou quantidades inválidas.")
+			return
+		}
+		if err != nil {
+			httpserver.InternalError(w, err)
+			return
+		}
+		httpserver.WriteJSON(w, 200, map[string]any{"deck": deck})
 	})
 	mux.HandleFunc("DELETE /api/decks/{id}", func(w http.ResponseWriter, r *http.Request) {
 		user, ok := currentUser(w, r, users)

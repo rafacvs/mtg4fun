@@ -29,6 +29,7 @@ type Card struct {
 
 type Catalog struct {
 	cards map[string]Card
+	names []string
 }
 
 type datasetCard struct {
@@ -37,7 +38,7 @@ type datasetCard struct {
 	Token          string       `xml:"token"`
 	Sets           []datasetSet `xml:"set"`
 	ReverseRelated []string     `xml:"reverse-related"`
-	Related []struct {
+	Related        []struct {
 		Name   string `xml:",chardata"`
 		Attach string `xml:"attach,attr"`
 	} `xml:"related"`
@@ -119,6 +120,21 @@ func Load(cardsPath, tokensPath string) (*Catalog, error) {
 		sort.Strings(card.CreatedTokens)
 		catalog.cards[creator] = card
 	}
+	catalog.names = make([]string, 0, len(catalog.cards))
+	for name := range catalog.cards {
+		catalog.names = append(catalog.names, name)
+	}
+	sort.Slice(catalog.names, func(i, j int) bool {
+		left, leftFeatured := starterCardOrder[catalog.names[i]]
+		right, rightFeatured := starterCardOrder[catalog.names[j]]
+		if leftFeatured != rightFeatured {
+			return leftFeatured
+		}
+		if leftFeatured {
+			return left < right
+		}
+		return catalog.names[i] < catalog.names[j]
+	})
 	return catalog, nil
 }
 
