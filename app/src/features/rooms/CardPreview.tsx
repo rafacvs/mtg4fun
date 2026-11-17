@@ -18,7 +18,7 @@ const destinations: { value: string; title: string; icon: TableIconName }[] = [
   { value: 'library-bottom', title: 'Grimório — fundo', icon: 'library' },
   { value: 'command', title: 'Comando', icon: 'crown' },
 ];
-type CardCounter = (subject: 'power' | 'toughness' | 'marker' | 'plusOne' | 'minusOne' | 'poison', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
+type CardCounter = (subject: 'power' | 'toughness' | 'marker' | 'plusOne' | 'minusOne', operation: CounterOperation, value: number, color?: MarkerColor) => Promise<boolean>;
 
 export function CardPreview({ mobileSheet = false, card, editable = false, disabled = false, onCounter, onClose, onHide, viewerId, onStateChange, onCopy, onCreateToken, busy = false, error = '', unconfirmed = false, onRetry, players, onFocusOwner, onTransfer, onMoveToOwner, onMove }: {
   mobileSheet?: boolean;
@@ -109,7 +109,7 @@ export function CardPreview({ mobileSheet = false, card, editable = false, disab
             {activeMarkers.length ? <span className="card-marker-values">{activeMarkers.map(item => <span key={item.color} aria-label={`marcador ${item.name}: ${markerValue(card.markers, item.color)}`}><i className={`card-marker-diamond marker-${item.color}`} />{markerValue(card.markers, item.color)}</span>)}</span> : <span className="card-marker-empty">Nenhum</span>}
             {editable && onCounter && <button className="secondary" disabled={disabled} onClick={() => setStep('markers')}>{activeMarkers.length ? 'Editar' : 'Adicionar'} <TableIcon name="chevron" /></button>}
           </div></div>
-          {([['plusOne', '+1/+1'], ['minusOne', '-1/-1'], ['poison', 'Veneno']] as const).map(([subject, label]) => <div className="card-inspection-row" key={subject}><span>Marcador {label}</span>{editable && onCounter ? <NumericCounter label={`marcador ${label}`} value={card.typedCounters?.[subject] ?? 0} min={0} disabled={disabled} onApply={(operation, value) => onCounter(subject, operation, value)} /> : <span>{card.typedCounters?.[subject] ?? 0}</span>}</div>)}
+          {([['plusOne', '+1/+1'], ['minusOne', '-1/-1']] as const).map(([subject, label]) => <div className="card-inspection-row" key={subject}><span>Marcador {label}</span>{editable && onCounter ? <NumericCounter label={`marcador ${label}`} value={card.typedCounters?.[subject] ?? 0} min={0} disabled={disabled} onApply={(operation, value) => onCounter(subject, operation, value)} /> : <span>{card.typedCounters?.[subject] ?? 0}</span>}</div>)}
           {viewerId && onStateChange && controlled && <div className="card-inspection-row card-visibility-row"><span>Visibilidade</span><CardStateControls mode="other" card={card} viewerId={viewerId} disabled={disabled} onChange={onStateChange} /></div>}
           {card.revealed && controlled && onHide && <label className="keep-revealed"><input type="checkbox" checked={keepRevealed} onChange={event => setKeepRevealed(event.target.checked)} />Manter revelada ao fechar (até passar o turno)</label>}
         </section>

@@ -34,7 +34,7 @@ func validCounterInput(input matchAction) bool {
 		return player
 	case "power", "toughness":
 		return card
-	case "plusOne", "minusOne", "poison":
+	case "plusOne", "minusOne":
 		return card
 	case "marker":
 		return (player || card) && validColor(input.Color)
@@ -155,13 +155,10 @@ func changeCounter(m *matchState, actor *playerState, input matchAction) (action
 					}
 				case "marker":
 					_, err = applyMarker(&card.Markers, input)
-				case "plusOne", "minusOne", "poison":
+				case "plusOne", "minusOne":
 					slot := &card.Counters.PlusOne
 					if input.Subject == "minusOne" {
 						slot = &card.Counters.MinusOne
-					}
-					if input.Subject == "poison" {
-						slot = &card.Counters.Poison
 					}
 					var value int64
 					value, err = counterValue(*slot, input)

@@ -38,7 +38,7 @@ export type Match = {
   log: { landPlays?: number; drawCount?: number; actorId: number; actorName: string; kind: string; from?: string; to?: string; count?: number; result?: string; cards?: { id: string; name: string }[] }[];
 };
 export type TargetArrow = { ownerId: number; sourceCardId: string; targetCardId?: string; targetPlayerId?: number };
-export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; revealedTo?: number[]; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; typedCounters?: { plusOne?: number; minusOne?: number; poison?: number }; createdTokens?: string[] };
+export type Card = { pending?: boolean; type?: string; libraryPosition?: number; id: string; name: string; ownerId: number; controllerId: number; zone: string; positionX: number; row: number; stackOrder: number; revealed?: boolean; revealedTo?: number[]; tapped?: boolean; faceDown?: boolean; faces?: string[]; faceIndex?: number; text?: string; imageName?: string; instanceKind?: string; isToken?: boolean; power?: number; toughness?: number; printedPower?: string; printedToughness?: string; markers?: Markers; typedCounters?: { plusOne?: number; minusOne?: number }; createdTokens?: string[] };
 export type CatalogToken = { name: string; text?: string; power?: string; toughness?: string; imageName?: string };
 export type CustomToken = { name: string; description: string; power?: string; toughness?: string };
 
@@ -47,7 +47,7 @@ export type BatchCounterAction = { cardIds: string[]; operation: 'set' | 'increm
 export type CounterAction =
   | { target: 'player'; playerId: number; subject: 'life'; operation: 'set' | 'increment'; value: number }
   | { target: 'player'; playerId: number; subject: 'marker'; color: MarkerColor; operation: 'set' | 'increment'; value: number }
-  | { target: 'card'; cardId: string; subject: 'power' | 'toughness' | 'plusOne' | 'minusOne' | 'poison'; operation: 'set' | 'increment'; value: number }
+  | { target: 'card'; cardId: string; subject: 'power' | 'toughness' | 'plusOne' | 'minusOne'; operation: 'set' | 'increment'; value: number }
   | { target: 'card'; cardId: string; subject: 'marker'; color: MarkerColor; operation: 'set' | 'increment'; value: number };
 
 async function send(path: string, method: string, body: unknown): Promise<Response> {

@@ -6,6 +6,10 @@ veneno não altera esses valores. Os modificadores manuais existentes permanecem
 independentes. O estado novo usa campo separado dos formatos antigos e segue as
 mesmas permissões e limpeza de estado nas mudanças de zona.
 
+Na revisão seguinte, o usuário pediu remover o marcador de veneno da inspeção.
+A ação de veneno foi retirada; um eventual valor já salvo durante os testes é
+preservado no snapshot até a limpeza normal da carta ao mudar de zona.
+
 O build, os testes Go do módulo de salas e o teste de navegador desktop em
 janela visível passaram. O teste verifica edição, cálculo com modificador,
 recarga, rejeição de valor negativo e limpeza ao mover. A avaliação do usuário
