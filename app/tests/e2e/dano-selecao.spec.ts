@@ -56,5 +56,19 @@ test('seleção de criaturas soma poder atual e seleção mista não mostra dano
     await page.locator(`.own-table-surface .playing-card[data-card-id="${island}"]`).click({ modifiers: ['Shift'] });
     await page.locator(`.own-table-surface .playing-card[data-card-id="${custom}"]`).click({ modifiers: ['Shift'] });
     await expect(bar.locator('.selection-damage')).toContainText('6');
+    if (info.project.name === 'desktop') {
+      await page.keyboard.press('k');
+      const help = page.getByRole('dialog', { name: 'Ajuda e atalhos' });
+      await expect(help).toBeVisible();
+      await expect(bar).toHaveCount(0);
+      await expect(help.getByRole('textbox', { name: 'Atalho: Comprar uma carta' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(bar).toHaveCount(0);
+      await page.locator('.own-table-surface .zone-column').getByRole('button', { name: 'Ações da seleção' }).click();
+      await expect(bar).toBeVisible();
+      await page.keyboard.press('g');
+      await expect(page.getByRole('dialog', { name: 'Grimório', exact: true })).toBeVisible();
+      await expect(bar).toHaveCount(0);
+    }
   } finally { await other.close(); }
 });

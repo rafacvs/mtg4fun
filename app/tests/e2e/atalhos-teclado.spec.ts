@@ -47,6 +47,7 @@ test('atalhos personalizados, consulta, seleção e comandos usam a mesa/API rea
     await drawBinding.fill('U'); await drawBinding.press('Tab');
     await expect(shortcuts.getByRole('alert')).toContainText('já está atribuído');
     await drawBinding.fill('Q'); await drawBinding.press('Tab');
+    await expect(shortcuts.getByRole('alert')).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'Comprar', exact: true })).toHaveAttribute('title', 'Comprar uma carta (Q)');
     await page.keyboard.press('q');
@@ -170,7 +171,9 @@ test('atalhos personalizados, consulta, seleção e comandos usam a mesa/API rea
     await page.evaluate(() => { (window as Window & { shortcutEvents?: string[] }).shortcutEvents = []; });
     await page.keyboard.press('z');
     await expect.poll(() => page.evaluate(() => (window as Window & { shortcutEvents?: string[] }).shortcutEvents)).toEqual(['open']);
+    await expect(page.getByRole('textbox', { name: 'Mensagem' })).toBeFocused();
     await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: 'Abrir chat' })).toBeVisible();
     await page.keyboard.down('z'); await page.waitForTimeout(300); await page.keyboard.up('z');
     await expect.poll(() => page.evaluate(() => (window as Window & { shortcutEvents?: string[] }).shortcutEvents)).toEqual(['open', 'hold', 'release']);
   } finally { await opponent.close(); }

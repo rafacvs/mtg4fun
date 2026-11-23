@@ -28,12 +28,13 @@ export function KeyboardShortcutsPanel({ open, bindings, onChange, onClose }: {
   };
   return <TablePanel open={open} wide label="Ajuda e atalhos" onClose={onClose} className="keyboard-shortcuts-panel">
     <PanelHeader title="Ajuda e atalhos" subtitle="Atalhos desta mesa" onClose={onClose} closeLabel="Fechar atalhos" />
+    <p className="shortcut-intro">Encontre uma ação e personalize sua tecla. As alterações ficam salvas neste navegador.</p>
     <label className="shortcut-search">Buscar ação<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex.: grimório, turno…" /></label>
     {error && <p role="alert" className="error">{error}</p>}
     <div className="shortcut-list" role="list" aria-label="Atalhos configuráveis">
       {visible.map(key => <label className="shortcut-row" role="listitem" key={key}><span>{labels[key]}</span><input aria-label={`Atalho: ${labels[key]}`} value={drafts[key] ?? bindings[key]} onChange={event => setDrafts(current => ({ ...current, [key]: event.target.value }))} onBlur={event => update(key, event.target.value)} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); }} /></label>)}
       {!visible.length && <p role="status">Nenhum atalho encontrado.</p>}
     </div>
-    <button type="button" className="secondary" onClick={() => { const defaults = { ...shortcutDefaults }; onChange(defaults); saveShortcutBindings(defaults); setError(''); }}>Restaurar padrões</button>
+    <button type="button" className="secondary shortcut-reset" onClick={() => { const defaults = { ...shortcutDefaults }; onChange(defaults); saveShortcutBindings(defaults); setError(''); }}>Restaurar padrões</button>
   </TablePanel>;
 }

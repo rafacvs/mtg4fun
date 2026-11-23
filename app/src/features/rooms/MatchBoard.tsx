@@ -332,6 +332,17 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     return () => { window.removeEventListener('keyup', release, true); window.removeEventListener('blur', blur); blur(); };
   }, [shortcutBindings]);
   useEffect(() => {
+    if (!selectionActionsOpen) return;
+    const closeForPanel = () => {
+      const panels = document.querySelectorAll<HTMLElement>('.match-board [role="dialog"]:not(.selection-marker-panel), .match-board dialog[open], .match-board .match-chat-overlay, .match-board .mobile-commands, .match-board.mobile-table .side-rail');
+      if ([...panels].some(panel => panel.getClientRects().length > 0)) setSelectionActionsOpen(false);
+    };
+    closeForPanel();
+    const observer = new MutationObserver(closeForPanel);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class', 'open'] });
+    return () => observer.disconnect();
+  }, [selectionActionsOpen]);
+  useEffect(() => {
     const numberMenuItems = () => {
       for (const panel of document.querySelectorAll<HTMLElement>('[role="dialog"], dialog[open]')) {
         const items = [...panel.querySelectorAll<HTMLElement>('[data-menu-option]')].filter(item => item.getClientRects().length > 0);
