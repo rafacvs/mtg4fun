@@ -60,6 +60,9 @@ test('crônica mantém compras e terrenos por jogador e turno, com timers e tota
     await act({ kind: 'set_tapped', cardIds: [selected[0]], tapped: true });
     await expect(lands.locator('strong')).toHaveText('2');
     await act({ kind: 'turn', direction: 'next' });
+    await expect(log.getByLabel('Turno 2', { exact: true })).toHaveCount(0);
+    await expect(log.getByLabel('Compras de Amigo da mesa no turno 1', { exact: true })).toHaveText('10');
+    await act({ kind: 'turn', direction: 'next' });
     await expect(log.getByLabel('Compras de Amigo da mesa no turno 2', { exact: true })).toHaveText('0');
     await expect(log.getByLabel('Terrenos jogados por Amigo da mesa no turno 2', { exact: true })).toHaveText('0');
     await act({ kind: 'move', cardIds: [selected[1]], to: 'hand' });
@@ -78,8 +81,13 @@ test('crônica mantém compras e terrenos por jogador e turno, com timers e tota
     await log.getByRole('button', { name: 'Ajustes', exact: true }).click();
     await log.getByRole('button', { name: 'Terrenos / Draws', exact: true }).click();
     await expect(log.getByLabel('Compras de Amigo da mesa no turno 1', { exact: true })).toHaveText('10');
+    await act({ kind: 'turn', direction: 'previous' });
+    await expect(log.getByLabel('Turno 1', { exact: true })).toContainText('Atual');
+    await act({ kind: 'turn', direction: 'next' });
+    await expect(log.getByLabel('Turno 2', { exact: true })).toContainText('Atual');
     await page.screenshot({ path: info.outputPath('indicadores.png'), fullPage: true });
     if (info.project.name === 'desktop') {
+      await lands.scrollIntoViewIfNeeded();
       await expect(lands).toBeInViewport();
       const bounds = (await lands.boundingBox())!;
       expect(bounds.width).toBeGreaterThan(35);

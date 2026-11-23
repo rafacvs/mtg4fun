@@ -1,0 +1,33 @@
+.table-panel [data-menu-number] { position: relative; }
+.table-panel [data-menu-number]::after {
+  content: attr(data-menu-number);
+  position: absolute;
+  top: .35rem;
+  right: .4rem;
+  display: grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 .15rem;
+  border: 1px solid currentColor;
+  border-radius: .3rem;
+  opacity: .72;
+  font-size: .72rem;
+  line-height: 1;
+  pointer-events: none;
+}
+ .match-board .table-panel.keyboard-shortcuts-panel { width: min(620px, calc(100vw - 24px)); height: min(740px, calc(100dvh - 24px)); min-height: 0; padding: 24px; gap: 12px; overflow: hidden; border: 1px solid #a1854e; border-radius: 10px; background: radial-gradient(ellipse at top, #30291c, transparent 45%), linear-gradient(155deg, #151c1b, #0b1011); box-shadow: 0 22px 70px #000d, inset 0 0 0 3px #0c1111, inset 0 0 0 4px #a1854e44; }
+.keyboard-shortcuts-panel .table-panel-header { padding: 0 0 12px; border-bottom: 1px solid #806b434f; }
+.keyboard-shortcuts-panel .table-panel-header h2 { color: #f2e4c3; font: 700 22px/1.2 Cinzel, serif; }
+.keyboard-shortcuts-panel .table-panel-header button { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+.keyboard-shortcuts-panel .shortcut-intro { margin: 0; color: #aaa99d; font: 14px/1.5 Geist, sans-serif; }
+.keyboard-shortcuts-panel .shortcut-search { display: grid; gap: 6px; margin: 0; color: #d3bd8c; font-size: 12px; font-weight: 700; }
+.match-board .keyboard-shortcuts-panel .shortcut-search input { width: 100%; min-height: 42px; padding: 8px 12px; border: 1px solid #5a513d; border-radius: 5px; background: #0a1011; color: #f1e9d6; font: 14px Geist, sans-serif; }
+.keyboard-shortcuts-panel .shortcut-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; }
+.keyboard-shortcuts-panel .shortcut-row { display: grid; grid-template-columns: minmax(0, 1fr) 130px; align-items: center; gap: 16px; min-height: 51px; padding: 6px 10px; border-bottom: 1px solid #80714b30; color: #e5dfd0; font: 14px Geist, sans-serif; }
+.keyboard-shortcuts-panel .shortcut-row:nth-child(odd) { background: #ffffff06; }
+.match-board .keyboard-shortcuts-panel .shortcut-row input { width: 100%; min-width: 0; min-height: 36px; padding: 6px 10px; border: 1px solid #65583a; border-radius: 5px; background: #0b1112; color: #e7c982; font: 600 13px Geist, sans-serif; text-align: center; }
+.match-board .keyboard-shortcuts-panel input:focus { outline: 2px solid #d4ab5d; outline-offset: 1px; }
+.match-board .keyboard-shortcuts-panel .shortcut-reset { align-self: flex-end; min-height: 40px; padding: 8px 16px; }
+@media (max-width: 480px) { .match-board .table-panel.keyboard-shortcuts-panel { padding: 16px; } .keyboard-shortcuts-panel .shortcut-row { grid-template-columns: minmax(0, 1fr) 95px; gap: 8px; } }
+.keyboard-destinations .keyboard-destination-list { display: grid; grid-template-columns: repeat(2, minmax(8rem, 1fr)); gap: .5rem; }

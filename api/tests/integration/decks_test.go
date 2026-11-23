@@ -89,7 +89,28 @@ func TestDeckImportIsolationAndPersistence(t *testing.T) {
 	e.start(false)
 	changed := e.request("GET", "/api/decks", "", owner, nil)
 	requireStatus(t, changed, 200)
-	if !bytes.Contains(changed.body, []byte("Updated Island text.")) || !bytes.Contains(changed.body, []byte(`"name":"Fire // Ice","quantity":1,"text":"","token":false,"available":false`)) {
+	var updatedLibrary struct {
+		Decks []struct {
+			Cards []struct {
+				Name      string `json:"name"`
+				Quantity  int64  `json:"quantity"`
+				Text      string `json:"text"`
+				Available bool   `json:"available"`
+			} `json:"cards"`
+		} `json:"decks"`
+	}
+	if err := json.Unmarshal(changed.body, &updatedLibrary); err != nil {
+		t.Fatal(err)
+	}
+	missingPreserved := false
+	for _, deck := range updatedLibrary.Decks {
+		for _, card := range deck.Cards {
+			if card.Name == "Fire // Ice" && card.Quantity == 1 && card.Text == "" && !card.Available {
+				missingPreserved = true
+			}
+		}
+	}
+	if !bytes.Contains(changed.body, []byte("Updated Island text.")) || !missingPreserved {
 		t.Fatalf("atualização perdeu biblioteca: %s", changed.body)
 	}
 	e.stop()
@@ -114,7 +135,6 @@ func TestDeckRejectsInvalidFilesAndFailedWrites(t *testing.T) {
 		"not xml", `<cockatrice_deck><zone name="main"><card number="0" name="Island"/></zone></cockatrice_deck>`,
 		`<cockatrice_deck><zone name="main"><card number="-1" name="Island"/></zone></cockatrice_deck>`,
 		`<cockatrice_deck><zone name="main"><card number="many" name="Island"/></zone></cockatrice_deck>`,
-		`<cockatrice_deck><zone name="main"><card number="1" name="Unknown"/></zone></cockatrice_deck>`,
 		`<cockatrice_deck><zone name="side"><card number="1" name="Island"/></zone></cockatrice_deck>`,
 		`<cockatrice_deck/> <cockatrice_deck/>`,
 		string(bytes.Repeat([]byte("x"), 2*1024*1024+1)),
@@ -145,6 +165,81 @@ func TestDeckRejectsInvalidFilesAndFailedWrites(t *testing.T) {
 		t.Fatalf("fichas não resolvidas: %s", result.body)
 	}
 	requireStatus(t, e.uploadDeck(cookie, nested), 201)
+}
+
+func TestDeckEditorDraftCRUDPartialImportAndCatalogSearch(t *testing.T) {
+	e := newEnvironment(t)
+	e.mustCreate("rafa", "Rafa", "senha-segura-de-teste")
+	e.mustCreate("amigo", "Amigo", "senha-segura-de-teste")
+	e.start(false)
+	owner := sessionCookie(t, e.login("rafa", "senha-segura-de-teste"))
+	other := sessionCookie(t, e.login("amigo", "senha-segura-de-teste"))
+	requireStatus(t, e.request("POST", "/api/decks/draft", "", nil, nil), 401)
+	requireStatus(t, e.request("GET", "/api/decks/catalog?q=Island", "", nil, nil), 401)
+	for _, cards := range []string{
+		`<card number="100001" name="Island"/>`,
+		`<card number="60000" name="Island"/><card number="60000" name="Island"/>`,
+	} {
+		requireStatus(t, e.uploadDeck(owner, []byte(`<cockatrice_deck><zone name="main">`+cards+`</zone></cockatrice_deck>`)), 400)
+	}
+	draftResponse := e.request("POST", "/api/decks/draft", "", owner, nil)
+	requireStatus(t, draftResponse, 201)
+	var draft struct {
+		Deck struct {
+			ID    int64  `json:"id"`
+			Name  string `json:"name"`
+			Cards []any  `json:"cards"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(draftResponse.body, &draft); err != nil {
+		t.Fatal(err)
+	}
+	if draft.Deck.ID <= 0 || draft.Deck.Name == "" || len(draft.Deck.Cards) != 0 {
+		t.Fatalf("rascunho inesperado: %s", draftResponse.body)
+	}
+	id := strconv.FormatInt(draft.Deck.ID, 10)
+	requireStatus(t, e.request("PUT", "/api/decks/"+id, `{"name":"Ilhas","commander":"","cards":[{"name":"Island","quantity":4}]}`, other, nil), 404)
+	filters := e.request("GET", "/api/decks/catalog?q=Add%20U.&type=Land&color=U&cmc=0", "", owner, nil)
+	requireStatus(t, filters, 200)
+	if !bytes.Contains(filters.body, []byte(`"name":"Island"`)) || bytes.Contains(filters.body, []byte(`"name":"Fire // Ice"`)) {
+		t.Fatalf("busca e filtros não respeitados: %s", filters.body)
+	}
+	updated := e.request("PUT", "/api/decks/"+id, `{"name":"Ilhas","commander":"Island","cards":[{"name":"Island","quantity":4}]}`, owner, nil)
+	requireStatus(t, updated, 200)
+	if !bytes.Contains(updated.body, []byte(`"commander":"Island"`)) || !bytes.Contains(updated.body, []byte(`"quantity":4`)) {
+		t.Fatalf("edição não retornou o deck atualizado: %s", updated.body)
+	}
+	invalid := e.request("PUT", "/api/decks/"+id, `{"name":"Ilhas","commander":"","cards":[{"name":"Island","quantity":0}]}`, owner, nil)
+	requireStatus(t, invalid, 400)
+	partial := e.uploadDeck(owner, []byte(`<cockatrice_deck><deckname>Com pendência</deckname><zone name="main"><card number="2" name="Island"/><card number="3" name="Carta ausente localmente"/></zone></cockatrice_deck>`))
+	requireStatus(t, partial, 201)
+	if !bytes.Contains(partial.body, []byte(`"name":"Carta ausente localmente","quantity":3`)) || !bytes.Contains(partial.body, []byte(`"available":false`)) {
+		t.Fatalf("importação parcial não preservou pendência: %s", partial.body)
+	}
+	var imported struct {
+		Deck struct {
+			ID int64 `json:"id"`
+		} `json:"deck"`
+	}
+	if err := json.Unmarshal(partial.body, &imported); err != nil {
+		t.Fatal(err)
+	}
+	roomResponse := e.request("POST", "/api/rooms", roomJSON(), owner, nil)
+	requireStatus(t, roomResponse, 201)
+	roomID := decodeRoom(t, roomResponse).ID
+	roomPath := "/api/rooms/" + strconv.FormatInt(roomID, 10)
+	requireStatus(t, e.request("PUT", roomPath+"/participants/me/deck", `{"deckId":`+strconv.FormatInt(imported.Deck.ID, 10)+`}`, owner, nil), 200)
+	incomplete := e.request("PUT", roomPath+"/participants/me/ready", "{}", owner, nil)
+	requireStatus(t, incomplete, 409)
+	if !bytes.Contains(incomplete.body, []byte("pendentes")) {
+		t.Fatalf("deck incompleto deveria explicar como corrigir: %s", incomplete.body)
+	}
+	list := e.request("GET", "/api/decks", "", owner, nil)
+	requireStatus(t, list, 200)
+	if !bytes.Contains(list.body, []byte(`"name":"Ilhas"`)) || !bytes.Contains(list.body, []byte(`"name":"Com pendência"`)) {
+		t.Fatalf("CRUD não persistiu decks: %s", list.body)
+	}
+	requireStatus(t, e.request("DELETE", "/api/decks/"+id, "", other, nil), 404)
 }
 
 func TestServerRefusesInvalidCatalog(t *testing.T) {

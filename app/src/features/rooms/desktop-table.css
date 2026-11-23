@@ -51,7 +51,7 @@
   .desktop-fields.has-field-focus .focused-table-surface .player-table { --field-card-width: 108px; }
   .desktop-fields.has-field-focus .focused-table-surface .zone-battlefield { --card-width: var(--field-card-width); }
   .desktop-table .player-table { border-radius: 8px; padding: 8px; background: linear-gradient(150deg, color-mix(in srgb, var(--seat-color) 8%, var(--panel)), var(--panel)); border-color: color-mix(in srgb, var(--seat-color) 24%, var(--line)); }
-  .desktop-table .player-table.is-current-turn { border-color: var(--seat-color); box-shadow: inset 0 0 0 1px var(--seat-color), 0 0 15px color-mix(in srgb, var(--seat-color) 16%, transparent); }
+  .desktop-table .player-table.is-current-turn { border-color: #f2c665; box-shadow: inset 0 0 0 2px #f2c665, 0 0 15px #eab95488; }
   .seat-heading { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; min-width: 0; margin-bottom: 6px; }
   .seat-number { display: grid; place-items: center; width: 26px; height: 30px; flex-shrink: 0; color: var(--bg); background: var(--seat-color); clip-path: polygon(0 0,100% 0,100% 65%,50% 100%,0 65%); font-weight: 800; }
   .seat-name { flex: 1; min-width: 0; line-height: 1.2; }

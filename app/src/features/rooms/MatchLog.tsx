@@ -4,19 +4,18 @@ import { describeLogLine, groupLogTurns, isLogAdjustment, type LogEntry, type Lo
 import './match-log.css';
 import type { Match } from './roomsApi';
 import { MatchTimers, TurnStatistics } from './MatchStatistics';
-import { MatchChat } from './MatchChat';
 
-export function MatchLog({ match, entries, visible, chatRequest = 0, onPreview, onInspect, onUnreadChange }: {
+export function MatchLog({ match, entries, visible, onPreview, onInspect, onUnreadChange }: {
   match: Match;
   entries: LogEntry[];
   visible: boolean;
+  /** Transitional prop retained while the board's legacy log request is removed. */
   chatRequest?: number;
   onPreview: (id: string) => void;
   onInspect: (id: string) => void;
   onUnreadChange: (unread: boolean) => void;
 }) {
-  const [filter, setFilter] = useState<LogFilter | 'chat'>('game');
-  useEffect(() => { if (chatRequest) setFilter('chat'); }, [chatRequest]);
+  const [filter, setFilter] = useState<LogFilter>('game');
   const [unread, setUnread] = useState(false);
   const scroll = useRef<HTMLDivElement>(null);
   const following = useRef(true);
@@ -26,13 +25,13 @@ export function MatchLog({ match, entries, visible, chatRequest = 0, onPreview, 
       setUnread(false); onUnreadChange(false);
     } else { setUnread(true); onUnreadChange(true); }
   }, [entries.length, visible, onUnreadChange]);
-  const turns = groupLogTurns(entries).map(turn => ({ ...turn, allLines: turn.lines, lines: turn.lines.filter(({ entry }) => filter === 'all' || isLogAdjustment(entry) === (filter === 'adjustments')) }));
+  const turns = groupLogTurns(entries, match.turnOrder).map(turn => ({ ...turn, allLines: turn.lines, lines: turn.lines.filter(({ entry }) => filter === 'all' || isLogAdjustment(entry) === (filter === 'adjustments')) }));
   return <section className="match-log" aria-label="Registro da partida">
     <MatchTimers match={match} />
     <div className="log-filters" role="group" aria-label="Filtrar registro">
-      {([['chat', 'Chat'], ['statistics', 'Terrenos / Draws'], ['game', 'Jogo'], ['adjustments', 'Ajustes'], ['all', 'Tudo']] as const).map(([value, label]) => <button key={value} className="secondary" aria-pressed={filter === value} onClick={() => { setFilter(value); }} >{label}</button>)}
+      {([['statistics', 'Terrenos / Draws'], ['game', 'Jogo'], ['adjustments', 'Ajustes'], ['all', 'Tudo']] as const).map(([value, label]) => <button key={value} className="secondary" aria-pressed={filter === value} onClick={() => { setFilter(value); }} >{label}</button>)}
     </div>
-    {filter === 'chat' ? <MatchChat match={match} /> : <div className="log-turns" ref={scroll} onScroll={event => {
+    <div className="log-turns" ref={scroll} onScroll={event => {
       following.current = event.currentTarget.scrollTop < 32;
       if (following.current) { setUnread(false); onUnreadChange(false); }
     }}>
@@ -43,8 +42,8 @@ export function MatchLog({ match, entries, visible, chatRequest = 0, onPreview, 
         {!turn.lines.length && <p className="log-empty">Nenhuma ação neste filtro.</p>}
         </>}
       </details>)}
-    </div>}
-    {filter !== 'chat' && unread && <button className="new-log-entries secondary" onClick={() => {
+    </div>
+    {unread && <button className="new-log-entries secondary" onClick={() => {
       following.current = true;
       if (scroll.current) scroll.current.scrollTop = 0;
       setUnread(false); onUnreadChange(false);

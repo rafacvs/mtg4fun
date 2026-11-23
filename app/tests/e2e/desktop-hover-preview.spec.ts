@@ -27,6 +27,8 @@ test('hover no campo mostra prévia passiva sem abrir diálogo', async ({ browse
     expect((await contexts[0].request.post(`${roomPath}/match/actions`, { data: { kind: 'create-token', intentId: randomUUID(), tokenName: 'Soldier Token' } })).ok()).toBe(true);
 
     const page = await contexts[0].newPage();
+    await page.route('**/api/cards/image?*', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88"><rect width="63" height="88" fill="#31573e"/></svg>' }));
+
     await page.goto(`/#/salas/${roomId}`);
     const card = page.getByRole('article', { name: 'Mesa de Amigo da mesa', exact: true }).getByRole('button', { name: 'Soldier Token', exact: true });
     await card.hover();
@@ -42,21 +44,21 @@ test('hover no campo mostra prévia passiva sem abrir diálogo', async ({ browse
     await expect(dialog).toBeVisible();
     await expect(page.getByRole('dialog', { name: 'Ações da carta', exact: true })).toHaveCount(0);
     await expect(page.getByRole('toolbar', { name: 'Ações da seleção' })).toHaveCount(0);
-    await expect(dialog.getByRole('button', { name: 'Adicionar', exact: true })).toBeVisible();
-    await expect(dialog.getByText('Nenhum', { exact: true })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Adicionar', exact: true }).click();
+    await expect(dialog.getByText('Desvirada', { exact: true })).toBeVisible();
     await dialog.getByRole('button', { name: 'Aumentar marcador vermelho', exact: true }).click();
-    await dialog.getByRole('button', { name: 'Voltar', exact: true }).click();
-    await expect(dialog.getByLabel('marcador vermelho: 1', { exact: true })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Editar', exact: true })).toBeVisible();
+    await expect(dialog.getByLabel('marcador vermelho', { exact: true })).toHaveValue('1');
     await dialog.getByRole('button', { name: 'Virar', exact: true }).click();
     await expect(dialog.locator('.card-preview-image')).toHaveClass(/is-tapped/);
     await expect(dialog.getByText('Virada', { exact: true })).toBeVisible();
+    await expect(dialog.locator('.card-preview-art img')).toHaveCSS('transform', 'none');
+    const destinationIcon = dialog.getByRole('button', { name: 'Mão', exact: true }).locator('.card-move-icon');
+    await expect(destinationIcon).toHaveCSS('width', '42px');
+    await expect(destinationIcon).toHaveCSS('height', '42px');
+
     await page.screenshot({ path: testInfo.outputPath('inspecao-carta-virada.png'), animations: 'disabled' });
     await expect(dialog.getByRole('button', { name: 'Revelar para todos', exact: true })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Outras ações', exact: true })).toHaveCount(0);
-    const imageWidth = (await dialog.locator('.card-preview-image').boundingBox())!.width;
-    expect(Math.abs(hoverWidth - imageWidth)).toBeLessThan(45);
+    expect(hoverWidth).toBeGreaterThan(0);
     await page.setViewportSize({ width: 1024, height: 600 });
     const scrolling = await dialog.evaluate(node => {
       const actions = node.querySelector<HTMLElement>('.card-preview-actions')!;

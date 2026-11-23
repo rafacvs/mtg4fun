@@ -8,7 +8,7 @@ export function LibrarySection({ title, children }: { title: string; children: R
 }
 
 function MenuTile({ tile, tall = false }: { tile: Tile; tall?: boolean }) {
-  return <button type="button" aria-label={tile.label} className={`library-tile ${tall ? 'library-tile-tall' : 'library-tile-row'}`} disabled={tile.disabled} onClick={tile.onClick}>
+  return <button type="button" data-menu-option aria-label={tile.label} className={`library-tile ${tall ? 'library-tile-tall' : 'library-tile-row'}`} disabled={tile.disabled} onClick={tile.onClick}>
     {tile.opensModal && <span className="library-tile-external"><TableIcon name="external" /></span>}
     <span className={`library-medal library-medal-${tile.tone}`}><TableIcon name={tile.icon} /></span>
     <span className="library-tile-text">

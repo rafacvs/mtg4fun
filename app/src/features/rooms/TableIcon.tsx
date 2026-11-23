@@ -29,6 +29,7 @@ const paths = {
   markers: 'M10 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm12 0a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm-6 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
   grid: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
   focus: 'M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5',
+  'window-minimize': 'M4 12h16',
   pin: 'm16 3 5 5-4 1-3 3v4l-2 2-2-6-6-6 2-2h4l3-3Zm-7 12-5 5',
   log: 'M6 3h12v18H6zM9 7h6M9 11h6M9 15h4',
   close: 'm6 6 12 12M6 18 18 6',

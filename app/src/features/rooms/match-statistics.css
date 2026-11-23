@@ -11,7 +11,7 @@
 .turn-statistics-player { font-size:11px; }
 .turn-statistics-player > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border-left:2px solid var(--player-color); padding-left:6px; }
 .turn-statistics-player > strong { justify-self:center; min-width:26px; padding:3px 5px; border-radius:4px; background:#d6ad5512; color:var(--gold-light); text-align:center; font-variant-numeric:tabular-nums; }
-.zone-column .land-count { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:1px; flex:0 0 auto; order:8; position:sticky; bottom:0; z-index:9; padding:3px 2px; margin-top:auto; border:1px solid #b88b3b66; border-radius:6px; background:linear-gradient(150deg, #d9ae5520, #080d10e8); color:var(--gold-light); }
+.zone-column .land-count { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:1px; flex:0 0 auto; order:8; padding:3px 2px; margin-top:auto; border:1px solid #b88b3b66; border-radius:6px; background:linear-gradient(150deg, #d9ae5520, #080d10e8); color:var(--gold-light); }
 .land-count .table-icon { width:18px; height:16px; flex:none; }
 .land-count strong { font-size:16px; line-height:1; font-variant-numeric:tabular-nums; }
 .land-count > span { flex-basis:100%; text-align:center; font-size:8px; line-height:1; color:var(--muted); }

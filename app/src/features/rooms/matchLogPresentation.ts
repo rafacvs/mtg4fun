@@ -13,11 +13,30 @@ export type LogTurn = { number: number; lines: LogLine[] };
 
 // Turn changes and adjacency come from the ordered public log. Filtering happens
 // after grouping so a hidden adjustment cannot join two separate plays.
-export function groupLogTurns(entries: LogEntry[]): LogTurn[] {
+export function groupLogTurns(entries: LogEntry[], order: Match['turnOrder']): LogTurn[] {
   const turns: LogTurn[] = [{ number: 1, lines: [] }];
+  let currentIndex = 0;
+  let currentRound = 1;
   entries.forEach((entry, index) => {
-    if (entry.kind === 'turn') turns.push({ number: turns.length + 1, lines: [] });
-    const lines = turns[turns.length - 1].lines;
+    if (entry.kind === 'turn' && order.length) {
+      const backwards = entry.result?.startsWith('corrigiu para o turno de ') ?? false;
+      const name = entry.result?.replace(/^avançou para o turno de /, '').replace(/^corrigiu para o turno de /, '').replace(/ e ocultou todas as revelações$/, '');
+      let target = entry.turnPlayerId ? order.findIndex(player => player.userId === entry.turnPlayerId) : -1;
+      if (target < 0 && name) {
+        for (let distance = 1; distance <= order.length; distance++) {
+          const candidate = (currentIndex + (backwards ? -distance : distance) + order.length * 2) % order.length;
+          if (order[candidate].name === name) { target = candidate; break; }
+        }
+      }
+      if (target >= 0) {
+        if (!backwards && target <= currentIndex) currentRound++;
+        if (backwards && target >= currentIndex) currentRound = Math.max(1, currentRound - 1);
+        currentIndex = target;
+      }
+    }
+    let turn = turns.find(value => value.number === currentRound);
+    if (!turn) { turn = { number: currentRound, lines: [] }; turns.push(turn); }
+    const lines = turn.lines;
     const previous = lines[lines.length - 1];
     if (previous && canJoin(previous.entry, entry)) {
       const cards = [...previous.entry.cards ?? [], ...entry.cards ?? []];
@@ -31,7 +50,7 @@ export function groupLogTurns(entries: LogEntry[]): LogTurn[] {
       previous.actions += 1;
     } else lines.push({ index, entry: { ...entry }, actions: 1 });
   });
-  return turns.reverse().map(turn => ({ ...turn, lines: turn.lines.reverse() }));
+  return turns.sort((a, b) => a.number === currentRound ? -1 : b.number === currentRound ? 1 : b.number - a.number).map(turn => ({ ...turn, lines: turn.lines.reverse() }));
 }
 
 function canJoin(previous: LogEntry, next: LogEntry) {

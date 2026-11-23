@@ -26,15 +26,16 @@ function integerText(raw: string) {
   return Number.isSafeInteger(numeric) ? numeric : null;
 }
 
-function NumericField({ inputLabel, value, disabled, onApply, textual = false }: {
-  inputLabel: string; value: number | undefined; disabled: boolean; onApply: Apply; textual?: boolean;
+function NumericField({ inputLabel, value, disabled, onApply, textual = false, min }: {
+  inputLabel: string; value: number | undefined; disabled: boolean; onApply: Apply; textual?: boolean; min?: number;
 }) {
   const [draft, setDraft] = useState(value === undefined ? '' : String(value));
   const inputRef = useRef<HTMLInputElement>(null);
   const pending = useRef<number | null>(null);
   const submitted = useRef<number | null>(null);
   const restoreFocus = useRef(false);
-  const numeric = integerText(draft);
+  const parsed = integerText(draft);
+  const numeric = parsed !== null && (min === undefined || parsed >= min) ? parsed : null;
   useEffect(() => { if (document.activeElement !== inputRef.current) setDraft(value === undefined ? '' : String(value)); }, [value]);
   useEffect(() => { if (submitted.current === value) submitted.current = null; }, [value]);
   useEffect(() => {
@@ -57,7 +58,7 @@ function NumericField({ inputLabel, value, disabled, onApply, textual = false }:
     submitted.current = numeric;
     void onApply('set', numeric);
   };
-  return <input ref={inputRef} aria-label={inputLabel} title="Digite um inteiro e pressione Enter" type={textual ? 'text' : 'number'} inputMode={textual ? 'decimal' : undefined} autoComplete="off" spellCheck={false} step={textual ? undefined : 1} value={draft} placeholder={value === undefined ? '—' : undefined} aria-invalid={draft !== '' && numeric === null} disabled={disabled} onChange={event => {
+  return <input ref={inputRef} aria-label={inputLabel} title="Digite um inteiro e pressione Enter" type={textual ? 'text' : 'number'} min={min} inputMode={textual ? 'decimal' : undefined} autoComplete="off" spellCheck={false} step={textual ? undefined : 1} value={draft} placeholder={value === undefined ? '—' : undefined} aria-invalid={draft !== '' && numeric === null} disabled={disabled} onChange={event => {
     const next = event.target.value;
     setDraft(next);
     if (integerText(next) !== submitted.current) submitted.current = null;
@@ -68,12 +69,12 @@ function NumericField({ inputLabel, value, disabled, onApply, textual = false }:
   }} />;
 }
 
-export function NumericCounter({ label, inputLabel = label, value, disabled, onApply, textual = false }: {
-  label: string; inputLabel?: string; value: number | undefined; disabled: boolean; onApply: Apply; textual?: boolean;
+export function NumericCounter({ label, inputLabel = label, value, disabled, onApply, textual = false, min }: {
+  label: string; inputLabel?: string; value: number | undefined; disabled: boolean; onApply: Apply; textual?: boolean; min?: number;
 }) {
   return <div className="numeric-counter">
-    <button type="button" className="secondary" aria-label={`Diminuir ${label}`} disabled={disabled} onClick={() => void onApply('increment', -1)}>−</button>
-    <NumericField inputLabel={inputLabel} value={value} disabled={disabled} onApply={onApply} textual={textual} />
+    <button type="button" className="secondary" aria-label={`Diminuir ${label}`} disabled={disabled || (min !== undefined && value !== undefined && value <= min)} onClick={() => void onApply('increment', -1)}>−</button>
+    <NumericField inputLabel={inputLabel} value={value} disabled={disabled} onApply={onApply} textual={textual} min={min} />
     <button type="button" className="secondary" aria-label={`Aumentar ${label}`} disabled={disabled} onClick={() => void onApply('increment', 1)}>+</button>
   </div>;
 }
