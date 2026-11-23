@@ -1,0 +1,24 @@
+.table-panel [data-menu-number] { position: relative; }
+.table-panel [data-menu-number]::after {
+  content: attr(data-menu-number);
+  position: absolute;
+  top: .35rem;
+  right: .4rem;
+  display: grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 .15rem;
+  border: 1px solid currentColor;
+  border-radius: .3rem;
+  opacity: .72;
+  font-size: .72rem;
+  line-height: 1;
+  pointer-events: none;
+}
+.keyboard-shortcuts-panel .shortcut-search { display: grid; gap: .4rem; margin: .75rem 0; }
+.keyboard-shortcuts-panel .shortcut-search input,
+.keyboard-shortcuts-panel .shortcut-row input { min-width: 5rem; border-radius: .45rem; padding: .5rem; }
+.keyboard-shortcuts-panel .shortcut-list { max-height: min(55vh, 32rem); overflow: auto; margin: .5rem 0; }
+.keyboard-shortcuts-panel .shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-bottom: 1px solid var(--panel-border, #444); }
+.keyboard-destinations .keyboard-destination-list { display: grid; grid-template-columns: repeat(2, minmax(8rem, 1fr)); gap: .5rem; }

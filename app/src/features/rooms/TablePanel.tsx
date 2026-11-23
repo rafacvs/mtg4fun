@@ -10,7 +10,7 @@ export function usePanelFocus(ref: RefObject<HTMLElement | null>, open: boolean,
     if (!open || !ref.current) return;
     const panel = ref.current;
     const previous = returnFocus ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-    panel.querySelector<HTMLElement>('[data-panel-close], button, input, select')?.focus({ preventScroll: true });
+    panel.querySelector<HTMLElement>('[autofocus], [data-panel-close], button, input, select')?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if ([...document.querySelectorAll('[role="dialog"], dialog[open]')].at(-1) !== panel) return;
       if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); close.current(); }
@@ -122,7 +122,7 @@ export function PanelHeader({ title, subtitle, onClose, onBack, closeLabel = 'Fe
 export function MenuItem({ icon, title, description, disabled, opens = true, onClick }: {
   icon: TableIconName; title: string; description?: string; disabled?: boolean; opens?: boolean; onClick: () => void;
 }) {
-  return <button type="button" aria-label={title} className="table-menu-item secondary" disabled={disabled} onClick={onClick}>
+  return <button type="button" data-menu-option aria-label={title} className="table-menu-item secondary" disabled={disabled} onClick={onClick}>
     <span className="menu-item-icon"><TableIcon name={icon} /></span>
     <span className="menu-item-label"><strong>{title}</strong>{description && <small>{description}</small>}</span>
     {opens && <TableIcon name="chevron" />}

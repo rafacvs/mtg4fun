@@ -8,18 +8,19 @@ import { CardActionBar } from './CardActionBar';
 import { HandActionBar } from './HandActionBar';
 import { CardHoverZoom, HoverCardPreview } from './HoverCardPreview';
 import { MatchLog } from './MatchLog';
+import { MatchChat } from './MatchChat';
 import { useMatchShake } from './useMatchShake';
-import { useChatShortcut } from './useChatShortcut';
 import { describeActionResult } from './matchLogPresentation';
 import { GameActions, type GameActionsScreen } from './GameActions';
 import { PlayerMenu } from './PlayerMenu';
 import { MobileTableControls } from './MobileTableControls';
 import { TableQuickActions } from './TableQuickActions';
-import { PanelFeedback, PanelHeader } from './TablePanel';
+import { PanelFeedback, PanelHeader, TablePanel } from './TablePanel';
 import { TableIcon } from './TableIcon';
 import { EmojiBar } from '../minigames/EmojiBar';
 import { TableFields } from './TableFields';
-import { shortcutCommand } from './libraryGesture';
+import { customizedShortcutCommand, isTextEntry, readShortcutBindings, visibleCardButtons, type ShortcutBindings } from './libraryGesture';
+import { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';
 import { cardImageURL } from './cardImage';
 import { findCard } from './matchCards';
 import { LibraryConsultation } from './LibraryConsultation';
@@ -35,6 +36,7 @@ import './mobile-table.css';
 import './desktop-table.css';
 import './hand-dock.css';
 import './card-preview.css';
+import './keyboard-shortcuts.css';
 import { TargetArrows } from './TargetArrows';
 
 type Drag = { card: Card; x: number; y: number; zone: string | null };
@@ -68,17 +70,13 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   const [hoverPreviewOpen, setHoverPreviewOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
   const [playersOpen, setPlayersOpen] = useState(() => window.matchMedia('(min-width: 1001px)').matches);
   const [logOpen, setLogOpen] = useState(false);
-  const [chatRequest, setChatRequest] = useState(0);
-  useChatShortcut(Boolean(match), () => {
-    if (logOpen && (!compact || informationOpen)) {
-      setLogOpen(false);
-      if (compact) setInformationOpen(false);
-    } else {
-      setChatRequest(value => value + 1);
-      setLogOpen(true);
-      if (compact) { setInformationTab('log'); setHoverPreviewOpen(false); setPlayersOpen(false); setInformationOpen(true); setCommandsOpen(false); }
-    }
-  });
+  const [shortcutBindings, setShortcutBindings] = useState<ShortcutBindings>(() => readShortcutBindings());
+  const chatPressTimer = useRef<number | null>(null);
+  const chatHeld = useRef(false);
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
+  const [destinationsOpen, setDestinationsOpen] = useState(false);
+  const [keyboardCardIndex, setKeyboardCardIndex] = useState(-1);
+  const [cardNavigationZone, setCardNavigationZone] = useState<'hand' | 'battlefield'>('hand');
   const toggleRailPanel = (panel: 'preview' | 'players' | 'log') => {
     if (compact) {
       setInformationTab(panel);
@@ -155,6 +153,11 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     setLibraryAnchor(document.querySelector<HTMLElement>('.focused-table .library-open') ?? document.querySelector<HTMLElement>('.library-open'));
     setLibraryOpen(true); setActionsOpen(false); setMenuPlayerId(null); setNotice('');
   };
+  const toggleLibrary = () => {
+    if (!libraryOpen) { openLibrary(); return; }
+    if (searchInProgress) { setNotice('Finalize a busca pelo grimório antes de fechar a consulta.'); return; }
+    setLibraryOpen(false);
+  };
   const focusPlayer = (id: number) => {
     if (focusId === id) {
       setFocusId(null); setOverview(true); setInformationOpen(false);
@@ -192,7 +195,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   useEffect(() => {
     const swallowSpace = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
-      if (event.key === ' ' && !target?.closest('input, textarea, select, [contenteditable], [role="textbox"]')) event.preventDefault();
+      if (event.key === ' ' && !target?.closest('input, textarea, select, button, a, [contenteditable], [role="textbox"], [role="dialog"]')) event.preventDefault();
     };
     window.addEventListener('keydown', swallowSpace, true);
     window.addEventListener('keyup', swallowSpace, true);
@@ -200,25 +203,149 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   }, []);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      const editing = Boolean(target?.closest('input, textarea, select, [contenteditable], [role="textbox"]'));
-      const command = shortcutCommand(event, editing || Boolean(document.querySelector('[role="dialog"]')));
-      if (!match || busy || unconfirmed || !command || mulliganPending(match)) return;
+      if (event.repeat || event.isComposing || event.key === 'Process') return;
+      const editing = isTextEntry(event.target);
+      const panel = [...document.querySelectorAll<HTMLElement>('[role="dialog"], dialog[open]')].filter(item => item.getClientRects().length > 0).at(-1) ?? null;
+      // Numeric choices are derived from the visible menu order, so heterogeneous
+      // menus and submenus keep the same keyboard behavior without item-specific keys.
+      if (!editing && panel && /^[1-9]$/.test(event.key) && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+        const items = [...panel.querySelectorAll<HTMLElement>('[data-menu-option]')].filter(item => item.getClientRects().length > 0);
+        const item = items[Number(event.key) - 1];
+        if (item) { event.preventDefault(); const control = item instanceof HTMLLabelElement ? item.querySelector<HTMLInputElement>('input[type="radio"]') : item; if (control && (!(control instanceof HTMLButtonElement || control instanceof HTMLInputElement) || !control.disabled)) control.click(); }
+        return;
+      }
+      if (!match || event.ctrlKey || event.altKey || event.metaKey || editing || mulliganPending(match)) return;
+      if (!panel && event.key === 'Enter') {
+        const focused = document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLButtonElement>('button.playing-card') : null;
+        const card = focused?.dataset.cardId ? findCard(match, focused.dataset.cardId) : null;
+        if (card?.controllerId === match.viewerId) {
+          event.preventDefault(); selectionGesture.current = false; setSelectionActionsOpen(false);
+          setSelectionIds(current => current.includes(card.id) ? current.filter(item => item !== card.id) : [...current, card.id]);
+        }
+        return;
+      }
+      // Tab is card navigation on the table surface. Menus and inputs retain native focus traversal.
+      if (event.key === 'Tab') {
+        if (panel) return;
+        const cards = visibleCardButtons(cardNavigationZone, focusId ?? match.viewerId);
+        if (!cards.length) return;
+        event.preventDefault();
+        const focusedIndex = cards.indexOf(document.activeElement as HTMLButtonElement);
+        const base = focusedIndex >= 0 ? focusedIndex : keyboardCardIndex;
+        const next = base < 0 ? (event.shiftKey ? cards.length - 1 : 0) : (base + (event.shiftKey ? -1 : 1) + cards.length) % cards.length;
+        setKeyboardCardIndex(next); cards[next].focus({ preventScroll: true }); cards[next].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        return;
+      }
+      const command = customizedShortcutCommand(event, shortcutBindings);
+      if (!command) return;
+      if (command === 'chat') {
+        event.preventDefault();
+        if (panel) return;
+        if (chatPressTimer.current === null && !chatHeld.current) chatPressTimer.current = window.setTimeout(() => {
+          chatPressTimer.current = null; chatHeld.current = true;
+          document.dispatchEvent(new CustomEvent('mtg4fun:chat-shortcut', { detail: { action: 'hold' } }));
+        }, 250);
+        return;
+      }
+      if (panel) {
+        if (command === 'library' && panel.classList.contains('library-consultation')) { event.preventDefault(); if (searchInProgress) setNotice('Finalize a busca pelo grimório antes de fechar a consulta.'); else setLibraryOpen(false); }
+        else if ((command === 'graveyard' || command === 'exile') && panel.classList.contains('public-zone-viewer')) {
+          event.preventDefault();
+          if (openZone?.zone === command) setOpenZone(null);
+          else setOpenZone({ playerId: match.viewerId, zone: command, anchor: document.body });
+        }
+        return;
+      }
       event.preventDefault();
-      if (command === 'draw') drawOne();
+      if (command === 'shortcuts') setShortcutHelpOpen(value => !value);
+      else if (command === 'library') toggleLibrary();
+      else if (command === 'graveyard' || command === 'exile') {
+        const zone = command;
+        if (openZone?.playerId === match.viewerId && openZone.zone === zone) setOpenZone(null);
+        else {
+          const button = [...document.querySelectorAll<HTMLButtonElement>('.match-board .zone-open')].find(item => item.textContent?.toLocaleLowerCase('pt-BR').includes(zone === 'graveyard' ? 'cemitério' : 'exílio'));
+          setOpenZone({ playerId: match.viewerId, zone, anchor: button ?? document.body });
+        }
+      }
+      else if (command === 'draw') drawOne();
       else if (command === 'untap') void untapAll();
-      else if (command === 'turn') void turn('next');
+      else if (command === 'turn' || command === 'observe-next') {
+        if (command === 'turn') void turn('next');
+        else { const index = match.players.findIndex(player => player.userId === (focusId ?? match.viewerId)); focusPlayer(match.players[(index + 1) % match.players.length].userId); }
+      }
+      else if (command === 'observe-previous') { const index = match.players.findIndex(player => player.userId === (focusId ?? match.viewerId)); focusPlayer(match.players[(index - 1 + match.players.length) % match.players.length].userId); }
       else if (command === 'turn-previous') void turn('previous');
       else if (command === 'tap') {
-        const cards = selectionIds.map(id => findCard(match, id)).filter((card): card is Card => Boolean(card && card.zone === 'battlefield' && card.controllerId === match.viewerId));
+        const activeCard = document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLButtonElement>('button.playing-card') : null;
+        const focusedCard = activeCard?.dataset.cardId ?? visibleCardButtons(cardNavigationZone, match.viewerId)[keyboardCardIndex]?.dataset.cardId;
+        const ids = selectionIds.length ? selectionIds : focusedCard ? [focusedCard] : [];
+        const cards = ids.map(id => findCard(match, id)).filter((card): card is Card => Boolean(card && card.zone === 'battlefield' && card.controllerId === match.viewerId));
         if (cards.length) void setTapped(cards.map(card => card.id), !cards[0].tapped);
-      } else if (command === 'marker') void addMarkers(selectionIds);
-      else if (command === 'hand' || command === 'graveyard' || command === 'exile') void moveSelection(selectionIds, command);
-      else if (command === 'random' || command === 'token') openActions(command === 'token' ? 'token' : 'menu');
+      } else if (command === 'hand') void moveSelection(selectionIds, 'hand');
+      else if (command === 'destinations') {
+        const activeCard = document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLButtonElement>('button.playing-card') : null;
+        const id = activeCard?.dataset.cardId ?? visibleCardButtons(cardNavigationZone, focusId ?? match.viewerId)[keyboardCardIndex]?.dataset.cardId ?? selectionIds[0];
+        if (selectionIds.length) setDestinationsOpen(true);
+        else if (id) { setSelectionIds([id]); setDestinationsOpen(true); }
+      }
+      else if (command === 'actions') openActions('menu');
+      else if (command === 'token') openActions('token');
+      else if (command === 'life') openPlayer(match.viewerId, document.querySelector<HTMLElement>('[data-life-anchor]') ?? document.body);
+      else if (command === 'emoji') document.querySelector<HTMLButtonElement>('.emoji-toggle')?.click();
+      else if (command === 'own-field') { setFocusId(match.viewerId); setOverview(false); setCardNavigationZone('battlefield'); setKeyboardCardIndex(-1); }
+      else if (command === 'overview') showOverview();
+      else if (command === 'cycle-zone') {
+        const zone = cardNavigationZone === 'hand' ? 'battlefield' : 'hand';
+        setCardNavigationZone(zone); setKeyboardCardIndex(-1);
+        const activePlayer = focusId ?? match.viewerId;
+        const button = document.querySelector<HTMLButtonElement>(zone === 'hand' ? '.own-dock .playing-card' : `[data-field-owner="${activePlayer}"].zone-battlefield .playing-card`);
+        button?.focus({ preventScroll: true }); button?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+      else if (command === 'inspect') {
+        const activeCard = document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLButtonElement>('button.playing-card') : null;
+        const id = activeCard?.dataset.cardId ?? visibleCardButtons(cardNavigationZone, focusId ?? match.viewerId)[keyboardCardIndex]?.dataset.cardId ?? selectionIds[0];
+        if (id) setPreviewId(id);
+      }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [match, busy, unconfirmed, draw, untapAll, turn, setTapped, selectionIds, move, counter]);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [match, busy, unconfirmed, draw, untapAll, turn, setTapped, selectionIds, move, counter, libraryOpen, searchInProgress, openZone, keyboardCardIndex, focusId, compact, cardNavigationZone, shortcutBindings]);
+  useEffect(() => {
+    const release = (event?: KeyboardEvent) => {
+      if (event && customizedShortcutCommand(event, shortcutBindings) !== 'chat') return;
+      if (event && !chatHeld.current && isTextEntry(event.target)) return;
+      if (chatPressTimer.current !== null) {
+        window.clearTimeout(chatPressTimer.current); chatPressTimer.current = null;
+        document.dispatchEvent(new CustomEvent('mtg4fun:chat-shortcut', { detail: { action: 'open' } }));
+      } else if (chatHeld.current) {
+        chatHeld.current = false;
+        document.dispatchEvent(new CustomEvent('mtg4fun:chat-shortcut', { detail: { action: 'release' } }));
+      }
+    };
+    const blur = () => {
+      if (chatPressTimer.current !== null) window.clearTimeout(chatPressTimer.current);
+      chatPressTimer.current = null;
+      if (chatHeld.current) document.dispatchEvent(new CustomEvent('mtg4fun:chat-shortcut', { detail: { action: 'release' } }));
+      chatHeld.current = false;
+    };
+    window.addEventListener('keyup', release, true); window.addEventListener('blur', blur);
+    return () => { window.removeEventListener('keyup', release, true); window.removeEventListener('blur', blur); blur(); };
+  }, [shortcutBindings]);
+  useEffect(() => {
+    const numberMenuItems = () => {
+      for (const panel of document.querySelectorAll<HTMLElement>('[role="dialog"], dialog[open]')) {
+        const items = [...panel.querySelectorAll<HTMLElement>('[data-menu-option]')].filter(item => item.getClientRects().length > 0);
+        items.forEach((item, index) => {
+          if (index < 9) item.dataset.menuNumber = String(index + 1);
+          else delete item.dataset.menuNumber;
+        });
+      }
+    };
+    numberMenuItems();
+    const observer = new MutationObserver(numberMenuItems);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled', 'class'] });
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     const visible = match?.players.flatMap(player => [...player.hand ?? [], ...player.battlefield ?? [], ...player.graveyard ?? [], ...player.exile ?? [], ...player.command ?? []]) ?? [];
     const controllers = new Map(visible.map(card => [card.id, card.controllerId]));
@@ -229,14 +356,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
   }, [match]);
   useEffect(() => {
     const clear = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]')) {
+      if (event.key === 'Escape' && !document.querySelector('[role="dialog"]') && !searchInProgress) {
         setSelectionIds([]);
         if (window.matchMedia('(max-width: 1000px)').matches) { setInformationOpen(false); setCommandsOpen(false); }
       }
     };
     window.addEventListener('keydown', clear);
     return () => window.removeEventListener('keydown', clear);
-  }, []);
+  }, [searchInProgress]);
   const gesture: CardGesture = {
     selectedIds: selectionIds,
     onSelectArea: cards => { selectionGesture.current = true; setSelectionIds(cards.filter(card => card.controllerId === match?.viewerId).map(card => card.id)); },
@@ -354,7 +481,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     onKeep={() => { if (mulliganBottom) setMulliganPanelOpen(true); else void confirmHand([]); }}
     onUndo={() => void undoKeepHand()} />;
   const deadCount = match.players.filter(player => player.userId !== match.viewerId && player.life <= 0).length;
-  const quickActions = <TableQuickActions deadCount={deadCount} hideDead={hideDead} onToggleDead={() => setHideDead(value => !value)} onFitAll={() => setFitAllRequest(value => value + 1)} disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen} logOpen={logOpen && (!compact || informationOpen)} onChronicle={() => { if (compact) { setInformationTab('log'); setLogOpen(true); setHoverPreviewOpen(false); setPlayersOpen(false); setInformationOpen(true); setCommandsOpen(false); } else setLogOpen(value => !value); }}
+  const quickActions = <TableQuickActions bindings={shortcutBindings} deadCount={deadCount} hideDead={hideDead} onToggleDead={() => setHideDead(value => !value)} onFitAll={() => setFitAllRequest(value => value + 1)} disabled={busy || unconfirmed} canDraw={own.libraryCount > 0 && !own.consulting} actionsOpen={actionsOpen} logOpen={logOpen && (!compact || informationOpen)} onChronicle={() => { if (compact) { setInformationTab('log'); setLogOpen(true); setHoverPreviewOpen(false); setPlayersOpen(false); setInformationOpen(true); setCommandsOpen(false); } else setLogOpen(value => !value); }}
     onTurn={() => void turn('next')} onPreviousTurn={() => void turn('previous')} onDraw={drawOne} onUntap={() => void untapAll()}
     onActions={anchor => { setActionsAnchor(compact ? moreControl.current ?? anchor : anchor); setActionsScreen('menu'); setActionsOpen(value => !value); setCommandsOpen(false); setLibraryOpen(false); setMenuPlayerId(null); }} />;
   const closeFloatingPanel = () => { setCommandsOpen(false); setInformationOpen(false); };
@@ -418,7 +545,7 @@ export function MatchBoard({ roomId }: { roomId: number }) {
           <section className={`rail-panel log-panel ${logOpen ? 'is-open' : ''}`}>
             {compact && <button className="rail-tab secondary" aria-expanded={logOpen} aria-controls="log-panel-content" onClick={() => toggleRailPanel('log')}><TableIcon name="log" /><span>Registro</span>{unreadLog && <small>Novas</small>}<TableIcon name="chevron" /></button>}
             <div id="log-panel-content" className="rail-panel-content" hidden={!logOpen}>
-              <MatchLog match={match} chatRequest={chatRequest} entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
+              <MatchLog match={match} entries={match.log} visible={logOpen && (!compact || informationOpen)} onUnreadChange={setUnreadLog} onPreview={id => {
                 const card = findCard(match, id);
                 if (card) setHoverCardId(card.id);
               }} onInspect={id => {
@@ -446,6 +573,14 @@ export function MatchBoard({ roomId }: { roomId: number }) {
       }} onReveal={playerIds => playerIds.length ? revealCardsTo(cards.map(card => card.id), playerIds) : revealCards(cards.map(card => card.id), false)} onClear={() => setSelectionIds([])} />;
       return <CardActionBar key={selectionIds.join('|')} cards={cards} viewerId={match.viewerId} disabled={busy || unconfirmed} onApply={batchCounter} onClear={() => setSelectionIds([])} />;
     })()}
+    <KeyboardShortcutsPanel open={shortcutHelpOpen} bindings={shortcutBindings} onChange={setShortcutBindings} onClose={() => setShortcutHelpOpen(false)} />
+    <TablePanel open={destinationsOpen} label="Destinos da seleção" onClose={() => setDestinationsOpen(false)} className="keyboard-destinations">
+      <PanelHeader title="Mover seleção" subtitle={`${selectionIds.length} carta(s)`} onClose={() => setDestinationsOpen(false)} closeLabel="Fechar destinos" />
+      <div className="keyboard-destination-list">
+        {keyboardDestinations(match, selectionIds).map(destination => <button type="button" data-menu-option className="secondary" key={destination.value} disabled={busy || unconfirmed} onClick={() => void moveSelection(selectionIds, destination.value).then(ok => { if (ok) setDestinationsOpen(false); })}>{destination.label}</button>)}
+        {!keyboardDestinations(match, selectionIds).length && <p role="status">Selecione cartas que você pode mover.</p>}
+      </div>
+    </TablePanel>
     <LibraryConsultation
       open={libraryOpen}
       match={match}
@@ -513,10 +648,11 @@ export function MatchBoard({ roomId }: { roomId: number }) {
     }} onStateChange={changeCardState} onCounter={(subject, operation, value, color) => {
       if (!preview) return Promise.resolve(false);
       if (subject === 'marker' && color) return counter({ target: 'card', cardId: preview.id, subject, operation, value, color });
-      if (subject === 'power' || subject === 'toughness') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
+      if (subject !== 'marker') return counter({ target: 'card', cardId: preview.id, subject, operation, value });
       return Promise.resolve(false);
     }} onClose={closePreview} {...(waitingForHands ? readOnlyPreview : {})} />
     {zoomCard && <CardHoverZoom card={zoomCard} />}
+    <MatchChat match={match} />
   </section>;
 }
 
@@ -538,6 +674,18 @@ function selectionGroup(card: Card | null) {
 
 function canEditCounter(card: Card, viewerId: number) {
   return (card.zone === 'battlefield' ? card.controllerId : card.ownerId) === viewerId;
+}
+
+function keyboardDestinations(match: Match, ids: string[]) {
+  const cards = ids.map(id => findCard(match, id)).filter((card): card is Card => Boolean(card));
+  if (!cards.length || cards.some(card => card.controllerId !== match.viewerId)) return [];
+  const borrowed = cards.some(card => card.zone === 'battlefield' && card.ownerId !== match.viewerId);
+  return [
+    { value: 'battlefield', label: 'Campo' }, { value: 'hand', label: 'Mão' },
+    { value: 'graveyard', label: 'Cemitério' }, { value: 'exile', label: 'Exílio' },
+    { value: 'command', label: 'Comando' }, { value: 'library-top', label: 'Topo do grimório' },
+    { value: 'library-bottom', label: 'Fundo do grimório' },
+  ].filter(item => item.value !== cards[0].zone && !(borrowed && item.value !== 'battlefield'));
 }
 
 function dropZoneAt(x: number, y: number) {

@@ -105,30 +105,37 @@ type colorCounts struct {
 	Blue   int64 `json:"blue,omitempty"`
 	Purple int64 `json:"purple,omitempty"`
 }
+
+type cardCounters struct {
+	PlusOne  int64 `json:"plusOne,omitempty"`
+	MinusOne int64 `json:"minusOne,omitempty"`
+	Poison   int64 `json:"poison,omitempty"`
+}
 type Card struct {
-	IsToken          bool        `json:"isToken,omitempty"`
-	Tapped           bool        `json:"tapped,omitempty"`
-	FaceDown         bool        `json:"faceDown,omitempty"`
-	Faces            []string    `json:"faces,omitempty"`
-	FaceIndex        int         `json:"faceIndex,omitempty"`
-	ID               string      `json:"id"`
-	Name             string      `json:"name"`
-	OwnerID          int64       `json:"ownerId"`
-	ControllerID     int64       `json:"controllerId"`
-	Zone             string      `json:"zone"`
-	PositionX        int         `json:"positionX"`
-	Row              int         `json:"row"`
-	StackOrder       int         `json:"stackOrder"`
-	Revealed         bool        `json:"revealed,omitempty"`
-	RevealedTo       []int64     `json:"revealedTo,omitempty"`
-	Text             string      `json:"text,omitempty"`
-	ImageName        string      `json:"imageName,omitempty"`
-	InstanceKind     string      `json:"instanceKind,omitempty"`
-	PrintedPower     string      `json:"printedPower,omitempty"`
-	PrintedToughness string      `json:"printedToughness,omitempty"`
-	Power            int64       `json:"power,omitempty"`
-	Toughness        int64       `json:"toughness,omitempty"`
-	Markers          colorCounts `json:"markers,omitempty"`
+	Counters         cardCounters `json:"typedCounters,omitempty"`
+	IsToken          bool         `json:"isToken,omitempty"`
+	Tapped           bool         `json:"tapped,omitempty"`
+	FaceDown         bool         `json:"faceDown,omitempty"`
+	Faces            []string     `json:"faces,omitempty"`
+	FaceIndex        int          `json:"faceIndex,omitempty"`
+	ID               string       `json:"id"`
+	Name             string       `json:"name"`
+	OwnerID          int64        `json:"ownerId"`
+	ControllerID     int64        `json:"controllerId"`
+	Zone             string       `json:"zone"`
+	PositionX        int          `json:"positionX"`
+	Row              int          `json:"row"`
+	StackOrder       int          `json:"stackOrder"`
+	Revealed         bool         `json:"revealed,omitempty"`
+	RevealedTo       []int64      `json:"revealedTo,omitempty"`
+	Text             string       `json:"text,omitempty"`
+	ImageName        string       `json:"imageName,omitempty"`
+	InstanceKind     string       `json:"instanceKind,omitempty"`
+	PrintedPower     string       `json:"printedPower,omitempty"`
+	PrintedToughness string       `json:"printedToughness,omitempty"`
+	Power            int64        `json:"power,omitempty"`
+	Toughness        int64        `json:"toughness,omitempty"`
+	Markers          colorCounts  `json:"markers,omitempty"`
 }
 type playerState struct {
 	Playmat          *playmats.Settings `json:"playmat,omitempty"`
@@ -210,57 +217,59 @@ type MatchPlayer struct {
 	ConsultationFrom string             `json:"consultationFrom,omitempty"`
 }
 type VisibleCard struct {
-	Type             string      `json:"type,omitempty"`
-	LibraryPosition  int         `json:"libraryPosition,omitempty"`
-	IsToken          bool        `json:"isToken,omitempty"`
-	Tapped           bool        `json:"tapped,omitempty"`
-	FaceDown         bool        `json:"faceDown,omitempty"`
-	Faces            []string    `json:"faces,omitempty"`
-	FaceIndex        int         `json:"faceIndex,omitempty"`
-	ID               string      `json:"id"`
-	Name             string      `json:"name,omitempty"`
-	Text             string      `json:"text,omitempty"`
-	ImageName        string      `json:"imageName,omitempty"`
-	InstanceKind     string      `json:"instanceKind,omitempty"`
-	OwnerID          int64       `json:"ownerId"`
-	ControllerID     int64       `json:"controllerId"`
-	Zone             string      `json:"zone"`
-	PositionX        int         `json:"positionX"`
-	Row              int         `json:"row"`
-	StackOrder       int         `json:"stackOrder"`
-	Revealed         bool        `json:"revealed,omitempty"`
-	RevealedTo       []int64     `json:"revealedTo,omitempty"`
-	PrintedPower     string      `json:"printedPower,omitempty"`
-	PrintedToughness string      `json:"printedToughness,omitempty"`
-	Power            int64       `json:"power,omitempty"`
-	Toughness        int64       `json:"toughness,omitempty"`
-	Markers          colorCounts `json:"markers,omitempty"`
-	CreatedTokens    []string    `json:"createdTokens,omitempty"`
+	Counters         cardCounters `json:"typedCounters,omitempty"`
+	Type             string       `json:"type,omitempty"`
+	LibraryPosition  int          `json:"libraryPosition,omitempty"`
+	IsToken          bool         `json:"isToken,omitempty"`
+	Tapped           bool         `json:"tapped,omitempty"`
+	FaceDown         bool         `json:"faceDown,omitempty"`
+	Faces            []string     `json:"faces,omitempty"`
+	FaceIndex        int          `json:"faceIndex,omitempty"`
+	ID               string       `json:"id"`
+	Name             string       `json:"name,omitempty"`
+	Text             string       `json:"text,omitempty"`
+	ImageName        string       `json:"imageName,omitempty"`
+	InstanceKind     string       `json:"instanceKind,omitempty"`
+	OwnerID          int64        `json:"ownerId"`
+	ControllerID     int64        `json:"controllerId"`
+	Zone             string       `json:"zone"`
+	PositionX        int          `json:"positionX"`
+	Row              int          `json:"row"`
+	StackOrder       int          `json:"stackOrder"`
+	Revealed         bool         `json:"revealed,omitempty"`
+	RevealedTo       []int64      `json:"revealedTo,omitempty"`
+	PrintedPower     string       `json:"printedPower,omitempty"`
+	PrintedToughness string       `json:"printedToughness,omitempty"`
+	Power            int64        `json:"power,omitempty"`
+	Toughness        int64        `json:"toughness,omitempty"`
+	Markers          colorCounts  `json:"markers,omitempty"`
+	CreatedTokens    []string     `json:"createdTokens,omitempty"`
 }
 
 // ExposedCard shares a revealed identity without disclosing private zone order or positions.
 type ExposedCard struct {
-	IsToken          bool        `json:"isToken,omitempty"`
-	ID               string      `json:"id"`
-	Name             string      `json:"name"`
-	Text             string      `json:"text,omitempty"`
-	ImageName        string      `json:"imageName,omitempty"`
-	InstanceKind     string      `json:"instanceKind,omitempty"`
-	OwnerID          int64       `json:"ownerId"`
-	ControllerID     int64       `json:"controllerId"`
-	Zone             string      `json:"zone"`
-	Tapped           bool        `json:"tapped,omitempty"`
-	FaceDown         bool        `json:"faceDown,omitempty"`
-	Faces            []string    `json:"faces,omitempty"`
-	FaceIndex        int         `json:"faceIndex,omitempty"`
-	Revealed         bool        `json:"revealed"`
-	RevealedTo       []int64     `json:"revealedTo,omitempty"`
-	PrintedPower     string      `json:"printedPower,omitempty"`
-	PrintedToughness string      `json:"printedToughness,omitempty"`
-	Power            int64       `json:"power,omitempty"`
-	Toughness        int64       `json:"toughness,omitempty"`
-	Markers          colorCounts `json:"markers,omitempty"`
-	CreatedTokens    []string    `json:"createdTokens,omitempty"`
+	Counters         cardCounters `json:"typedCounters,omitempty"`
+	IsToken          bool         `json:"isToken,omitempty"`
+	ID               string       `json:"id"`
+	Name             string       `json:"name"`
+	Text             string       `json:"text,omitempty"`
+	ImageName        string       `json:"imageName,omitempty"`
+	InstanceKind     string       `json:"instanceKind,omitempty"`
+	OwnerID          int64        `json:"ownerId"`
+	ControllerID     int64        `json:"controllerId"`
+	Zone             string       `json:"zone"`
+	Tapped           bool         `json:"tapped,omitempty"`
+	FaceDown         bool         `json:"faceDown,omitempty"`
+	Faces            []string     `json:"faces,omitempty"`
+	FaceIndex        int          `json:"faceIndex,omitempty"`
+	Revealed         bool         `json:"revealed"`
+	RevealedTo       []int64      `json:"revealedTo,omitempty"`
+	PrintedPower     string       `json:"printedPower,omitempty"`
+	PrintedToughness string       `json:"printedToughness,omitempty"`
+	Power            int64        `json:"power,omitempty"`
+	Toughness        int64        `json:"toughness,omitempty"`
+	Markers          colorCounts  `json:"markers,omitempty"`
+	CreatedTokens    []string     `json:"createdTokens,omitempty"`
 }
 type MatchLog struct {
 	TurnPlayerID int64     `json:"turnPlayerId,omitempty"`
@@ -298,7 +307,7 @@ func visible(cards []Card, viewerID int64) []VisibleCard {
 			v.FaceIndex = c.FaceIndex
 		}
 		if !hideCardModifiers(c, viewerID) {
-			v.Power, v.Toughness, v.Markers = c.Power, c.Toughness, c.Markers
+			v.Power, v.Toughness, v.Markers, v.Counters = c.Power, c.Toughness, c.Markers, c.Counters
 		}
 		if viewerID == c.OwnerID {
 			v.RevealedTo = c.RevealedTo
@@ -324,7 +333,7 @@ func (m matchState) view(viewerID int64, log []MatchLog) Match {
 					if inConsultation {
 						continue
 					}
-					view := ExposedCard{PrintedPower: card.PrintedPower, PrintedToughness: card.PrintedToughness, IsToken: isToken(card), Text: card.Text, ImageName: card.ImageName, InstanceKind: card.InstanceKind, ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: card.Revealed, RevealedTo: card.RevealedTo, Power: card.Power, Toughness: card.Toughness, Markers: card.Markers}
+					view := ExposedCard{PrintedPower: card.PrintedPower, PrintedToughness: card.PrintedToughness, IsToken: isToken(card), Text: card.Text, ImageName: card.ImageName, InstanceKind: card.InstanceKind, ID: card.ID, Name: card.Name, OwnerID: card.OwnerID, ControllerID: card.ControllerID, Zone: card.Zone, Tapped: card.Tapped, FaceDown: card.FaceDown, Faces: card.Faces, FaceIndex: card.FaceIndex, Revealed: card.Revealed, RevealedTo: card.RevealedTo, Power: card.Power, Toughness: card.Toughness, Markers: card.Markers, Counters: card.Counters}
 					p[i].ExposedCards = append(p[i].ExposedCards, view)
 				}
 			}
@@ -487,6 +496,7 @@ var errNotCreator = errors.New("Somente o criador pode iniciar a partida.")
 var errNotReady = errors.New("Todos os participantes precisam confirmar um deck.")
 var errDeckNotFound = errors.New("Deck não encontrado.")
 var errDeckRequired = errors.New("Selecione um deck antes de confirmar.")
+var errDeckIncomplete = errors.New("Resolva as cartas pendentes e adicione cartas válidas antes de confirmar.")
 var errReadyLocked = errors.New("Desfaça a prontidão para trocar de deck.")
 
 func (s *Service) setMulliganMode(ctx context.Context, id int64, mode string, u auth.User) (Room, error) {
@@ -620,6 +630,9 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 			if r.Participants[i].DeckID == 0 {
 				return Room{}, errDeckRequired
 			}
+			if err := s.validateDeckForPlay(ctx, tx, r.Participants[i].DeckID, u.ID); err != nil {
+				return Room{}, err
+			}
 			r.Participants[i].Ready = true
 			if e = save(ctx, tx, r, u.ID, "ready"); e != nil {
 				return Room{}, e
@@ -629,6 +642,45 @@ func (s *Service) ready(ctx context.Context, id, deckID int64, u auth.User) (Roo
 		}
 	}
 	return Room{}, sql.ErrNoRows
+}
+
+func (s *Service) validateDeckForPlay(ctx context.Context, tx *sql.Tx, deckID, userID int64) error {
+	var owned int
+	if err := tx.QueryRowContext(ctx, "SELECT 1 FROM decks WHERE id=? AND user_id=? FOR UPDATE", deckID, userID).Scan(&owned); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errDeckNotFound
+		}
+		return err
+	}
+	rows, err := tx.QueryContext(ctx, "SELECT name,quantity FROM deck_cards WHERE deck_id=? ORDER BY position", deckID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	total := int64(0)
+	for rows.Next() {
+		var name string
+		var quantity int64
+		if err := rows.Scan(&name, &quantity); err != nil {
+			return err
+		}
+		if quantity <= 0 {
+			return errDeckIncomplete
+		}
+		if s.catalog != nil {
+			if _, ok := s.catalog.Lookup(name); !ok {
+				return errDeckIncomplete
+			}
+		}
+		total += quantity
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if total == 0 {
+		return errDeckIncomplete
+	}
+	return nil
 }
 
 func (s *Service) unready(ctx context.Context, id int64, u auth.User) (Room, error) {

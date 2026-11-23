@@ -14,10 +14,10 @@ type Props = {
 
 const cardsLabel = (count: number) => count === 1 ? '1 carta' : count ? `${count} cartas` : 'cartas';
 
-function CountStepper({ count, libraryCount, busy, onCount, large = false }: Pick<Props, 'count' | 'libraryCount' | 'busy' | 'onCount'> & { large?: boolean }) {
+function CountStepper({ count, libraryCount, busy, onCount, onBegin, large = false }: Pick<Props, 'count' | 'libraryCount' | 'busy' | 'onCount' | 'onBegin'> & { large?: boolean }) {
   return <div className={`library-count ${large ? 'library-count-large' : ''}`}>
     <button type="button" aria-label="Diminuir quantidade" disabled={busy || count <= 1} onClick={() => onCount(count - 1)}>−</button>
-    <input type="number" aria-label="Quantidade de cartas" min="1" max={libraryCount} disabled={busy} value={count} onChange={event => onCount(Number(event.target.value))} />
+    <input type="number" aria-label="Quantidade de cartas" min="1" max={libraryCount} disabled={busy} value={count} autoFocus={large} onFocus={event => { if (large) event.currentTarget.select(); }} onChange={event => onCount(Number(event.target.value))} onKeyDown={event => { if (event.key === 'Enter' && !busy && Number.isInteger(count) && count >= 1 && count <= libraryCount) { event.preventDefault(); onBegin(); } }} />
     <button type="button" aria-label="Aumentar quantidade" disabled={busy || count >= libraryCount} onClick={() => onCount(count + 1)}>+</button>
   </div>;
 }
@@ -52,7 +52,7 @@ function DepthDiagram({ source, count }: { source: Source; count: number }) {
 }
 
 function SourceOption({ value, icon, title, description, source, busy, onSource }: { value: Source; icon: TableIconName; title: string; description: string; source: Source; busy: boolean; onSource: (source: Source) => void }) {
-  return <label className={`library-source-option ${source === value ? 'selected' : ''}`}>
+  return <label data-menu-option className={`library-source-option ${source === value ? 'selected' : ''}`}>
     <input type="radio" name="library-source" aria-label={title} checked={source === value} disabled={busy} onChange={() => onSource(value)} />
     <TableIcon name={icon} />
     <span><strong>{title}</strong><small>{description}</small></span>
@@ -62,7 +62,7 @@ function SourceOption({ value, icon, title, description, source, busy, onSource 
 
 export function LibrarySetup({ view, source, count, libraryCount, busy, viewers, onSource, onCount, onBegin, onCancel }: Props) {
   const valid = Number.isInteger(count) && count >= 1 && count <= libraryCount;
-  const stepper = { count, libraryCount, busy, onCount };
+  const stepper = { count, libraryCount, busy, onCount, onBegin };
   const action = view === 'draw' ? `Comprar ${cardsLabel(count)}` : view === 'mill' ? `Descartar ${cardsLabel(count)}` : view === 'reveal' ? `Revelar ${cardsLabel(count)}` : `Olhar ${cardsLabel(count)} do ${source === 'top' ? 'topo' : 'fundo'}`;
   return <div className={`library-setup library-setup-${view}`}>
     {view === 'draw' && <>

@@ -3,9 +3,16 @@ export type DeckCard = {
   quantity: number;
   text: string;
   colors?: string;
+  type: string;
+  mainType: string;
+  cmc: number;
+  colorIdentity?: string;
   token: boolean;
   available: boolean;
 };
+
+export type CatalogCard = Omit<DeckCard, 'quantity' | 'available'>;
+export type CatalogPage = { cards: CatalogCard[]; total: number; offset: number; limit: number; hasMore: boolean };
 
 export type DeckGroups = {
   commander: DeckCard[];
@@ -50,6 +57,13 @@ export const deckApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     })).deck;
+  },
+	draft: async (): Promise<Deck> => (await request('/api/decks/draft', { method: 'POST' })).deck,
+	update: async (id: number, name: string, commander: string, cards: { name: string; quantity: number }[]): Promise<Deck> => (await request(`/api/decks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, commander, cards }) })).deck,
+  catalog: async (filters: { q?: string; type?: string; color?: string; cmc?: string; offset: number; limit: number }, signal: AbortSignal): Promise<CatalogPage> => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) if (value !== '' && value !== undefined) params.set(key, String(value));
+    return await request(`/api/decks/catalog?${params.toString()}`, { signal });
   },
   remove: async (id: number): Promise<void> => {
     await request(`/api/decks/${id}`, { method: 'DELETE' });

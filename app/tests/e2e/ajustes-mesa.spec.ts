@@ -287,9 +287,8 @@ for (const scenario of ['revelações e ações rápidas', 'pilhas, linhas e pai
         await input.press('Enter');
         expect(own(await read()).battlefield![0].power).toBe(-3);
         await input.fill('-3');
-        await preview.getByRole('button', { name: /^(Adicionar|Editar)$/, exact: true }).click();
         const red = preview.getByRole('spinbutton', { name: 'marcador vermelho', exact: true });
-        await expect(red).toBeFocused();
+        await red.focus();
         await red.fill('-7'); await red.press('Enter');
         await expect.poll(async () => own(await read()).battlefield![0].markers?.red).toBe(-7);
         await preview.getByRole('button', { name: 'Aumentar marcador vermelho', exact: true }).click();

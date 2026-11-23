@@ -89,6 +89,11 @@ export function LibraryConsultation(props: Props) {
     );
   }
 
+  const dismissOrBack = () => {
+    if (!active && state.view !== 'menu') state.choose('menu');
+    else onDismiss();
+  };
+
   const selectedCount = state.selectedIDs.length;
   const viewers = match.players.filter(player => player.userId !== match.viewerId).map(player => ({
     userId: player.userId,
@@ -101,7 +106,7 @@ export function LibraryConsultation(props: Props) {
       open={open}
       anchor={props.anchor}
       aboveDock
-      onClose={onDismiss}
+      onClose={dismissOrBack}
       label="Grimório"
       className={`library-consultation library-framed ${active ? 'library-active' : ''}`}
     >
